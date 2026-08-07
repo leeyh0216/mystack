@@ -9,12 +9,17 @@
 | 확장형 Proxy registry | 구현·단위 테스트 완료 | Proxy 코드 변경 없이 새 AWS JSON/SigV4 emulator 등록 |
 | AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
-| EMR control plane | 개발 중 | EMR public API 광범위 호환 |
-| EMR bootstrap/Spark | 개발 중 | LocalStack S3를 사용하는 실제 Spark 3.5.x local 실행 |
-| Glue Data Catalog | 개발 중 | database/table/version/partition/UDF와 문서화된 오류 |
-| Spark + Hive + Glue Catalog | 개발 중 | Hive 호환 metadata 상호운용 |
-| Spark + Iceberg + Glue Catalog | 개발 중 | LocalStack S3에서 Iceberg 1.7.1 read/write |
-| Web console | 계획 | EMR 및 Glue Catalog 리소스/상태/로그 조회 |
+| EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
+| EMR bootstrap/Spark | Vertical slice 구현: boto3, S3 bootstrap, Spark 3.5.4 local S3A write E2E | 더 많은 EMR step 유형과 runtime 정합성 |
+| Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
+| Spark + Hive + Glue Catalog | Vertical slice 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
+| Spark + Iceberg + Glue Catalog | Vertical slice 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
+| Web console | 부분 구현: route/thread/task 진단 console | EMR 및 Glue Catalog 리소스/상태/로그 조회 |
+
+관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata는 설정된
+`glue.state_file`에 원자적으로 저장됩니다. 현재 partition expression evaluator는 따옴표로
+감싼 동등/부등 조건을 `AND`로 연결한 문법을 지원하며, 지원하지 않는 식은 잘못된 결과를
+조용히 반환하지 않고 `InvalidInputException`을 반환합니다.
 
 ## 명시적 제외
 
@@ -34,3 +39,4 @@
 
 Glue 버전은 [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html)와 [공식 Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), EMR 의미론은 [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)를 기준으로 합니다.
 
+AWS 문서상 [Data Catalog는 type 문자열을 검증하지 않으므로](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), Glue type field를 임의로 제한하지 않고 그대로 보존합니다.

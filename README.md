@@ -15,6 +15,22 @@ The project targets:
 
 Glue Jobs, JobRuns, and Crawlers are intentionally out of scope. Compatibility is delivered incrementally and tracked in [the support scope](docs/support-scope.md) and [compatibility matrix](docs/compatibility/api-coverage.md).
 
+## Quick start
+
+```bash
+cp .env.example .env
+direnv allow          # optional
+make bootstrap
+make up
+aws --endpoint-url http://localhost:4566 glue get-databases
+```
+
+Open `http://localhost:4566/_mystack/console` for the route, thread-stack, and asyncio-task
+console. `make up CONFIG=path/in/repository.yaml` embeds the selected file in locally built
+images; `compose.mount-config.yaml` optionally mounts a file read-only for live development or
+prebuilt images. Use `MYSTACK__SECTION__KEY` only for deployment-specific overrides. See the
+[configuration guide](docs/configuration.md) and [Docker Compose specification](https://docs.docker.com/reference/compose-file/).
+
 ## Architecture
 
 Each service follows ports and adapters. Domain code has no dependency on FastAPI, boto3, Docker, subprocesses, or persistence implementations.
@@ -35,6 +51,8 @@ See [architecture.md](docs/architecture.md), [AWS protocol analysis](docs/protoc
 
 ## Status
 
-The repository is under active construction. The baseline and implementation-derived UseCase catalog live under [`docs/project`](docs/project).
+The repository is under active construction. EMR currently exposes 13 boto3-tested operations,
+and Glue exposes 22 boto3-tested Data Catalog operations. The baseline and
+implementation-derived UseCase catalog live under [`docs/project`](docs/project).
 
 Official behavior sources include the [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html), [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html), [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data), and [AWS Glue type-system documentation](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).

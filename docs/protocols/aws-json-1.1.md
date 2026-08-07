@@ -107,6 +107,8 @@ Glue Job and JobRun APIs are out of scope. Spark interoperability uses a version
 - boto3 exercises the Glue Data Catalog API through the public proxy endpoint.
 - Hive-compatible type strings are preserved; the Data Catalog does not validate type text.
 - Spark Hive metastore and Iceberg catalog adapters point back to the emulator and LocalStack S3.
-- E2E tests cover catalog create/read/update/delete, duplicate errors, partition behavior, and Iceberg read/write.
+- boto3 contracts cover catalog CRUD, duplicate errors, partition CRUD/batches, type preservation,
+  and table versions. The real Glue 5 E2E covers Hive complex types plus Iceberg
+  create/append/read/schema evolution on LocalStack S3.
 
 See [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html), [the official Glue 5.0 Docker image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), [Glue type systems](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), and [Iceberg in Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).

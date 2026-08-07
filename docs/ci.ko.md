@@ -6,7 +6,7 @@
 
 | Workflow | Trigger | 계약 |
 | --- | --- | --- |
-| `ci.yml` | push, PR, manual | Python 3.11/3.12, lint, format, docs, model manifest, unit/architecture/contract test, package |
+| `ci.yml` | push, PR, manual | Python 3.11/3.12, lint, format, docs, model/requirements drift, Compose, unit/architecture/contract test, package |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg 테스트와 로그 보존 |
 | `docker-publish.yml` | version tag, manual | amd64/arm64 Proxy/EMR/Glue image, provenance, SBOM, private ECR push |
@@ -23,6 +23,11 @@ Dependabot은 [공식 설정 방식](https://docs.github.com/en/code-security/ho
 
 AWS SDK 업데이트는 contract manifest, operation coverage, 한·영 문서, boto3 contract가 모두 일치해야 완료됩니다.
 
+Container dependency는 `uv.lock`에서 hash와 함께 export합니다. `make requirements`가 세
+component file을 갱신하고 CI는 공식 [uv export 방식](https://docs.astral.sh/uv/reference/cli/#uv-export)으로
+stale export를 거부합니다. 기본 image base는 mutable tag 대신 immutable multi-architecture
+digest를 사용합니다.
+
 ## ECR 게시
 
 Repository variable `AWS_ROLE_ARN`, `AWS_REGION`, `ECR_REGISTRY`를 설정합니다. GitHub OIDC token으로 AWS role을 교환하며 장기 AWS key를 저장하지 않습니다. [AWS OIDC provider 지침](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)을 참고하세요.
@@ -32,4 +37,3 @@ Tag는 `vMAJOR.MINOR.PATCH`를 사용합니다. 각 component는 version과 `lat
 ## 실패 artifact
 
 CI는 coverage, model drift, Docker log, test artifact를 항상 보존하려고 시도합니다. 로그는 component 경계와 side effect event를 담되 secret은 포함하지 않습니다.
-

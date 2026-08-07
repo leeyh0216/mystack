@@ -24,6 +24,21 @@ Initial vertical slices prioritize the APIs needed to execute workloads:
 - EMR: `RunJobFlow`, `DescribeCluster`, `ListClusters`, `AddJobFlowSteps`, `DescribeStep`, `ListSteps`, `CancelSteps`, `TerminateJobFlows`, bootstrap actions and tags.
 - Glue catalog: databases, tables, table versions, partitions, batch partition APIs and user-defined functions.
 
+## Implemented operations
+
+The following operations currently have boto3 black-box contracts through a real TCP server.
+“Implemented” is not a claim that every optional semantic branch is complete.
+
+| Service | Operations |
+| --- | --- |
+| EMR | `RunJobFlow`, `DescribeCluster`, `ListClusters`, `AddJobFlowSteps`, `DescribeStep`, `ListSteps`, `CancelSteps`, `TerminateJobFlows`, `ListBootstrapActions`, `AddTags`, `RemoveTags`, `SetTerminationProtection`, `SetVisibleToAllUsers` |
+| Glue | `CreateDatabase`, `GetDatabase`, `GetDatabases`, `UpdateDatabase`, `DeleteDatabase`, `CreateTable`, `GetTable`, `GetTables`, `UpdateTable`, `DeleteTable`, `GetTableVersion`, `GetTableVersions`, `CreatePartition`, `BatchCreatePartition`, `GetPartition`, `GetPartitions`, `BatchGetPartition`, `UpdatePartition`, `BatchUpdatePartition`, `DeletePartition`, `BatchDeletePartition`, `GetCatalogImportStatus` |
+
+Documented Glue conflicts are part of the contracts: duplicate single-partition creation
+returns HTTP 400 `AlreadyExistsException`, while batch operations return per-item
+`ErrorDetail`. See the official [Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
+and [Glue exceptions](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html).
+
 The machine-generated per-operation table will be written to `api-coverage.generated.md` by the service-model coverage tool.
 
 Official operation and shape inventory: [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data). Glue behavior: [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html).

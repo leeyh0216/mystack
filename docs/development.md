@@ -33,9 +33,9 @@ The AWS endpoint environment follows the [official SDK endpoint configuration](h
 
 ## Configuration precedence
 
-1. `config/mystack.yaml`
-2. generic `MYSTACK__SECTION__KEY` environment override
-3. executable `--config`, `--host`, and `--port` options where supported
+1. executable `--config`, `MYSTACK_CONFIG_FILE`, or the default selects a YAML file
+2. generic `MYSTACK__SECTION__KEY` environment overrides its nested values
+3. executable `--host` and `--port` override only the process listener
 
 Examples:
 
@@ -46,7 +46,10 @@ export MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600
 mystack-proxy --config "$MYSTACK_CONFIG_FILE"
 ```
 
-In Docker the same file is mounted read-only, following [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/). Never commit shared-environment management tokens or real AWS credentials.
+`make up CONFIG=...` embeds a repository-local YAML file at build time. For a read-only live
+mount, add `-f compose.mount-config.yaml` as described in the [configuration guide](configuration.md).
+Both modes follow [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/).
+Never commit shared-environment management tokens or real AWS credentials.
 
 ## Daily commands
 
@@ -54,6 +57,7 @@ Run `make help` for the source of truth. Common flows:
 
 ```bash
 make format
+make requirements
 make test
 make contract
 make e2e
@@ -82,4 +86,3 @@ The dependency direction is enforced using the [AWS hexagonal architecture model
 - `make threads` and `make tasks` capture live stacks without frame locals.
 - `model-drift-report.json` names changed operations and fix locations.
 - E2E failure artifacts include all container logs.
-

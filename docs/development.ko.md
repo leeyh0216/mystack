@@ -33,9 +33,9 @@ AWS endpoint 환경변수는 [공식 SDK endpoint 설정](https://docs.aws.amazo
 
 ## 설정 우선순위
 
-1. `config/mystack.yaml`
-2. 범용 `MYSTACK__SECTION__KEY` 환경변수 override
-3. 지원 executable의 `--config`, `--host`, `--port`
+1. executable `--config`, `MYSTACK_CONFIG_FILE`, 기본값 순으로 YAML file 선택
+2. 범용 `MYSTACK__SECTION__KEY` 환경변수로 nested value override
+3. executable `--host`, `--port`로 process listener만 마지막 override
 
 ```bash
 export MYSTACK_CONFIG_FILE=config/mystack.yaml
@@ -44,7 +44,10 @@ export MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600
 mystack-proxy --config "$MYSTACK_CONFIG_FILE"
 ```
 
-Docker에서는 같은 파일을 [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/) 방식으로 read-only mount합니다. 공유 환경 management token과 실제 AWS credential은 commit하지 않습니다.
+`make up CONFIG=...`은 repository 안의 YAML을 build 시 image에 포함합니다. Read-only live
+mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f compose.mount-config.yaml`을
+추가합니다. 두 방식 모두 [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/)
+계약을 따릅니다. 공유 환경 management token과 실제 AWS credential은 commit하지 않습니다.
 
 ## 일상 명령
 
@@ -52,6 +55,7 @@ Docker에서는 같은 파일을 [Docker Compose configs](https://docs.docker.co
 
 ```bash
 make format
+make requirements
 make test
 make contract
 make e2e
@@ -80,4 +84,3 @@ Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap ti
 - `make threads`, `make tasks`: frame locals 없는 live stack 수집
 - `model-drift-report.json`: 변경 operation과 수정 위치
 - E2E artifact: 모든 container log
-

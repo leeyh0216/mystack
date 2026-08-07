@@ -28,11 +28,14 @@
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
 - 실제 Spark 3.5.x process 뒤 output object와 Step 상태를 검증합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
-- Iceberg create, append, read, partition, schema evolution은 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
+- 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
 
 ## 재현성
 
-Lockfile, YAML runtime profile, container base, botocore manifest, Spark/Iceberg 버전은 모두 테스트 입력입니다. 어느 하나를 갱신해도 해당 manifest/profile 문서와 E2E 증거가 필요합니다.
+Lockfile, hash-locked container export, YAML runtime profile, immutable container-base digest,
+botocore manifest, Spark checksum/version, Iceberg version은 모두 테스트 입력입니다. 어느
+하나를 갱신해도 해당 manifest/profile 문서와 E2E 증거가 필요합니다. CI는 `uv.lock`과
+다른 `requirements/*.txt` export를 거부하며 공식 [uv export 명령](https://docs.astral.sh/uv/reference/cli/#uv-export)을
+사용합니다.
 
 AWS의 [Hexagonal architecture 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)는 독립 core test와 E2E 자동화를 권장합니다.
-

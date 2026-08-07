@@ -9,12 +9,17 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | Extensible proxy registry | Implemented, unit tested | Any AWS JSON/SigV4 emulator can register without proxy code changes |
 | AWS JSON 1.1 codec/model validation | Implemented, unit tested | EMR and Glue modeled request/response/error coverage |
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
-| EMR control plane | In development | Broad public EMR API compatibility |
-| EMR bootstrap/Spark | In development | Real Spark 3.5.x local execution with LocalStack S3 |
-| Glue Data Catalog | In development | Database/table/version/partition/UDF and documented errors |
-| Spark + Hive + Glue Catalog | In development | Hive-compatible metadata interoperability |
-| Spark + Iceberg + Glue Catalog | In development | Iceberg 1.7.1 read/write on LocalStack S3 |
-| Web console | Planned | EMR and Glue Catalog resource/status/log views |
+| EMR control plane | Partial: 13 boto3-tested operations | Broad public EMR API compatibility |
+| EMR bootstrap/Spark | Implemented vertical slice: boto3, S3 bootstrap, Spark 3.5.4 local S3A write E2E | More EMR step types and runtime fidelity |
+| Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
+| Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
+| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
+| Web console | Partial: route/thread/task diagnostic console | EMR and Glue Catalog resource/status/log views |
+
+The management console is served at `/_mystack/console`. Glue metadata is atomically
+persisted to the configured `glue.state_file`. The current partition expression evaluator
+supports quoted equality and inequality predicates joined by `AND`; unsupported expressions
+return `InvalidInputException` instead of silently producing an incorrect result.
 
 ## Explicit exclusions
 
@@ -34,3 +39,5 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 
 The Glue runtime versions follow [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html) and the [official Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html). EMR semantics follow the [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html).
 
+Glue type fields are deliberately preserved rather than narrowed because AWS documents that
+the [Data Catalog does not validate type strings](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).

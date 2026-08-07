@@ -76,7 +76,8 @@ Glue Job/JobRun은 범위 밖입니다. Spark 상호운용성 profile은 Spark 3
 - boto3가 public Proxy endpoint를 통해 Glue Data Catalog API를 검증합니다.
 - Data Catalog가 type text를 검증하지 않는 공식 동작을 보존하면서 Hive 호환 type string을 저장합니다.
 - Spark Hive metastore와 Iceberg catalog adapter는 emulator와 LocalStack S3를 사용합니다.
-- E2E는 catalog CRUD, 중복 오류, partition, Iceberg read/write를 실제로 수행합니다.
+- boto3 contract는 catalog CRUD, 중복 오류, partition CRUD/batch, type 보존, table version을
+  검증합니다. 실제 Glue 5 E2E는 Hive complex type과 LocalStack S3 기반 Iceberg
+  create/append/read/schema evolution을 수행합니다.
 
 공식 기준: [Glue 5.0 이미지](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), [Glue 타입 시스템](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), [Glue Iceberg](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)
-

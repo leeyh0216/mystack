@@ -58,6 +58,15 @@ EMR은 emulated cluster별 Spark local process를 실행합니다. Glue Job/JobR
 
 Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side effect 전후와 오류를 구조화 JSON으로 기록합니다. Authorization과 payload 원문은 제외하고 request ID, operation, 모델 버전/fingerprint, payload 길이/해시, duration, 상태를 기록합니다. 모델 불일치 로그에는 수정할 adapter와 문서를 가리키는 `fix_hint`를 포함합니다.
 
+## 저장과 실행
+
+Resource metadata는 repository port를 통해 접근합니다. Glue는 named volume의 JSON
+document를 원자적으로 교체해 저장하고, EMR cluster state는 현재 process-local입니다.
+향후 durable adapter를 추가해도 Domain/Application을 변경하지 않도록 port를 유지합니다.
+Spark는 shell 없이 명시적 argument vector로 실행하며 bootstrap script는 Proxy가 아닌 EMR
+container 경계 안에서만 실행합니다. Python의 원자적 교체는 [os.replace](https://docs.python.org/3/library/os.html#os.replace)를
+사용합니다.
+
 ## 비목표
 
 - Glue Job과 JobRun
@@ -71,4 +80,3 @@ Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side
 - [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 - [AWS Prescriptive Guidance: 테스트와 CI 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
 - [AWS SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
-

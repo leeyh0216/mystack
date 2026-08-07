@@ -35,6 +35,8 @@ echo "[mystack] syncing locked Python workspace"
 uv sync --locked --all-packages
 echo "[mystack] checking bilingual documentation and official references"
 uv run python scripts/check_docs.py
+echo "[mystack] checking hash-locked container requirements"
+uv run python scripts/export_requirements.py --check
 echo "[mystack] checking pinned AWS service models"
 uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 echo "[mystack] running fast tests with configured timeout"
@@ -48,4 +50,3 @@ else
   echo "[mystack] direnv is optional: https://direnv.net/"
 fi
 echo "[mystack] bootstrap complete; next: make up"
-

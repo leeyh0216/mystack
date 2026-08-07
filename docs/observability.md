@@ -33,3 +33,7 @@ Use `make threads` or `make tasks`. Stack source is operationally sensitive even
 
 Model load and validation events contain botocore version, service API version, model fingerprint, operation, and input shape. A fingerprint change points first to the protocol facade; an operation shape change points to that service inbound mapper and contract tests.
 
+`proxy.routing.fallback` records safe protocol evidence (target prefix, SigV4 signing name, host
+prefix, content type, and parsed SDK versions) without credentials or the full User-Agent. Its
+`fix_hint` distinguishes a configuration-only route metadata update from an actual evidence-parser
+change in `routing.py`.

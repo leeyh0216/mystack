@@ -66,7 +66,9 @@ The EMR emulator runs one local Spark process at a time per emulated cluster by 
 
 ## Persistence and execution
 
-- Resource metadata is accessed through repository ports. SQLite is the default durable adapter; an in-memory adapter supports unit tests.
+- Resource metadata is accessed through repository ports. Glue currently uses an atomically
+  replaced JSON document on a named volume; EMR cluster state is process-local. The ports permit
+  later durable implementations without changing Domain/Application code.
 - Work directories and logs are stored on named Docker volumes.
 - S3 artifacts are resolved through an object-store port configured for path-style LocalStack access.
 - Spark is launched without a shell and receives an explicit argument vector.

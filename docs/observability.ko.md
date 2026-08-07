@@ -33,3 +33,6 @@ YAML `management.diagnostics.enabled`, `stack_limit`, 선택적 `token`을 따�
 
 Model load/validation event는 botocore version, service API version, model fingerprint, operation, input shape를 포함합니다. Fingerprint 변경은 protocol facade, operation shape 변경은 해당 service inbound mapper와 contract test가 첫 수정 위치입니다.
 
+`proxy.routing.fallback`은 credential이나 전체 User-Agent 없이 target prefix, SigV4 signing
+name, host prefix, content type, parse한 SDK version을 기록합니다. `fix_hint`는 YAML route
+metadata만 고칠 상황과 `routing.py`의 evidence parser를 고칠 상황을 구분합니다.
