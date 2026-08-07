@@ -35,6 +35,7 @@ proxy:
 localstack:
   endpoint_url: http://localstack:4566
   region: us-east-1
+  account_id: "000000000000"
   access_key_id: test
   secret_access_key: test
   s3_path_style: true
@@ -46,7 +47,18 @@ emr:
   work_root: /var/lib/mystack/emr
   process_timeout_seconds: 3600
   bootstrap_timeout_seconds: 900
-  spark_profile: spark-3.5.4
+  bootstrap_shell: /bin/bash
+  terminate_grace_seconds: 10
+  output_tail_bytes: 32768
+  command_runner_jars: [command-runner.jar]
+  api_page_size: 50
+  max_active_steps: 256
+  default_release_label: emr-7.8.0
+  release_profiles:
+    emr-7.8.0:
+      runtime_profile: spark-3.5.4
+      aws_spark_version: 3.5.4-amzn-0
+      source: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-release-app-versions-7.x.html
 
 glue:
   listen:
@@ -62,6 +74,42 @@ runtime_profiles:
     python_version: "3.11"
     java_version: "17"
     master: local[*]
+    spark_submit: /opt/spark/bin/spark-submit
+    submit_aliases: [spark-submit]
+    spark_packages:
+      - org.apache.hadoop:hadoop-aws:3.3.4
+    spark_conf:
+      spark.ui.enabled: "false"
+      spark.driver.bindAddress: 127.0.0.1
+    # Options that consume the next token, used to locate the application resource.
+    # Source: https://spark.apache.org/docs/3.5.4/submitting-applications.html
+    option_value_names:
+      - --archives
+      - --class
+      - --conf
+      - --deploy-mode
+      - --driver-class-path
+      - --driver-java-options
+      - --driver-library-path
+      - --driver-memory
+      - --executor-cores
+      - --executor-memory
+      - --files
+      - --jars
+      - --keytab
+      - --kill
+      - --master
+      - --name
+      - --packages
+      - --packages-exclude
+      - --principal
+      - --properties-file
+      - --proxy-user
+      - --py-files
+      - --queue
+      - --repositories
+      - --status
+      - --total-executor-cores
   glue-5.0:
     base_image: public.ecr.aws/glue/aws-glue-libs:5
     spark_version: 3.5.4
@@ -73,4 +121,3 @@ tests:
   unit_timeout_seconds: 60
   contract_timeout_seconds: 120
   e2e_timeout_seconds: 1200
-
