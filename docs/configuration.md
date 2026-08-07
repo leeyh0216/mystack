@@ -65,6 +65,12 @@ adapter, covered by a typed configuration test, and documented in both languages
 and Application modules receive typed policy/value objects and never read files or environment
 variables.
 
+After environment overrides, every process validates the complete document against the packaged
+[`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,
+missing members, invalid URLs/account IDs/ports, and non-positive deadlines fail before startup
+with the exact dotted path. The schema uses the official
+[JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core).
+
 ## Reproducible build inputs
 
 - `uv.lock` is the development dependency lock.

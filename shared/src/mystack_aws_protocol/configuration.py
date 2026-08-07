@@ -3,6 +3,7 @@
 Docker configuration references:
 - https://docs.docker.com/reference/compose-file/configs/
 - https://docs.docker.com/compose/how-tos/use-secrets/
+- https://json-schema.org/draft/2020-12/json-schema-core
 
 Environment overrides use MYSTACK__SECTION__KEY. Values are parsed as YAML scalars or
 collections, so booleans and numeric timeouts retain their types.
@@ -15,10 +16,12 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
 import yaml
+from jsonschema import Draft202012Validator, FormatChecker
 
 from .observability import log_event
 
@@ -66,6 +69,8 @@ def load_configuration(path: str | Path | None = None) -> LoadedConfiguration:
         _set_nested(raw, parts, yaml.safe_load(value))
         override_paths.append(".".join(parts))
 
+    _validate_schema(raw)
+
     canonical = json.dumps(raw, sort_keys=True, separators=(",", ":"), default=str)
     fingerprint = hashlib.sha256(canonical.encode()).hexdigest()[:16]
     safe_override_paths = tuple(_redact_path(path) for path in override_paths)
@@ -111,3 +116,23 @@ def _redact_path(path: str) -> str:
     if any(sensitive in segment for segment in segments for sensitive in _SENSITIVE_SEGMENTS):
         return "<sensitive-path>"
     return path
+
+
+def _validate_schema(document: dict[str, Any]) -> None:
+    schema_resource = files("mystack_aws_protocol").joinpath("mystack.schema.json")
+    schema = json.loads(schema_resource.read_text(encoding="utf-8"))
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    errors = sorted(validator.iter_errors(document), key=lambda error: tuple(error.absolute_path))
+    if not errors:
+        return
+    error = errors[0]
+    path = ".".join(map(str, error.absolute_path)) or "<root>"
+    safe_message = (
+        "value does not satisfy the configuration schema"
+        if _redact_path(path) == "<sensitive-path>"
+        else error.message
+    )
+    raise ConfigurationError(
+        f"Invalid Mystack configuration at {path}: {safe_message}. "
+        "See mystack_aws_protocol/mystack.schema.json and docs/configuration.md."
+    )

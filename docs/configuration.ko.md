@@ -63,6 +63,13 @@ Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 
 mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 Domain/Application module은
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
 
+Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
+[`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.
+Unknown key, 누락 member, 잘못된 URL/account ID/port, 0 이하 deadline은 시작 전에 정확한
+dotted path와 함께 실패합니다. Schema는 공식
+[JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core)을
+사용합니다.
+
 ## 재현 가능한 build 입력
 
 - `uv.lock`: 개발 dependency lock
