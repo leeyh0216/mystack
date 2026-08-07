@@ -1,0 +1,34 @@
+name: Feature / 기능
+description: Propose a bilingual, testable change. 한·영으로 검증 가능한 변경을 제안합니다.
+title: ""
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: english
+    attributes:
+      label: English
+      description: Describe the goal, behavior, boundaries, and non-goals.
+    validations:
+      required: true
+  - type: textarea
+    id: korean
+    attributes:
+      label: 한국어
+      description: 목표, 동작, 경계, 비목표를 설명하세요.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria / 완료 기준
+      description: Include tests, timeouts, logs, side effects, docs, and compatibility evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Official references / 공식 참고 자료
+      description: Direct AWS, SDK, Python, Docker, Spark, Hive, Iceberg, or GitHub links.
+    validations:
+      required: true
+

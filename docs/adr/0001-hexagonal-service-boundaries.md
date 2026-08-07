@@ -1,5 +1,7 @@
 # ADR 0001: Hexagonal service boundaries
 
+[한국어](0001-hexagonal-service-boundaries.ko.md) | English
+
 - Status: Accepted
 - Date: 2026-08-08
 
@@ -19,4 +21,8 @@ Imports are allowed only inward. Architecture tests enforce the rule.
 - Replacing in-memory storage with SQLite or a different execution backend does not modify use cases.
 - AWS request/response mapping stays at an inbound adapter and cannot leak wire dictionaries throughout the domain.
 - Some mapping code is intentionally duplicated between bounded contexts rather than sharing business concepts.
+
+## Official reference
+
+[AWS Prescriptive Guidance: Building hexagonal architectures](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 

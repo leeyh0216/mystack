@@ -1,0 +1,53 @@
+# botocore models are the official SDK source used by AWS CLI/boto3:
+# https://github.com/boto/botocore/tree/develop/botocore/data
+name: Upstream AWS model drift
+
+on:
+  schedule:
+    - cron: "17 18 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compare-latest-botocore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+      - name: Compare latest botocore with pinned contracts
+        id: drift
+        continue-on-error: true
+        run: >-
+          uv run --no-project --with botocore
+          python scripts/model_manifest.py
+          --check contracts/service-model-manifest.json
+          --report model-drift-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aws-model-drift-report
+          path: model-drift-report.json
+      - name: Open one actionable drift issue
+        if: steps.drift.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --state open --search 'AWS SDK model drift detected in:title' --json number --jq '.[0].number // empty')
+          if [ -z "$existing" ]; then
+            gh issue create \
+              --title 'AWS SDK model drift detected' \
+              --label 'area:protocol,type:compatibility' \
+              --body-file model-drift-report.json
+          else
+            gh issue comment "$existing" --body-file model-drift-report.json
+          fi
+      - name: Fail after preserving the report
+        if: steps.drift.outcome == 'failure'
+        run: exit 1
+

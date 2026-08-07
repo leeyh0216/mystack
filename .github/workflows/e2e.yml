@@ -1,0 +1,54 @@
+# Docker Compose reference: https://docs.docker.com/compose/how-tos/ci-cd/
+name: Docker E2E
+
+on:
+  pull_request:
+    paths:
+      - "proxy/**"
+      - "shared/**"
+      - "emr/**"
+      - "glue/**"
+      - "tests/e2e/**"
+      - "compose.yaml"
+      - ".github/workflows/e2e.yml"
+  schedule:
+    - cron: "43 17 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boto-spark-catalog-iceberg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install E2E client dependencies
+        run: uv sync --locked --all-packages
+      - name: Build and start Mystack
+        run: docker compose up --build --detach --wait --wait-timeout 300
+      - name: Run boto3 and real runtime E2E tests
+        run: uv run pytest tests/e2e -m e2e -vv --timeout 1200 --timeout-method thread
+      - name: Collect component logs
+        if: always()
+        run: docker compose logs --no-color > docker-compose.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+      - name: Stop Mystack
+        if: always()
+        run: docker compose down --volumes --remove-orphans

@@ -1,0 +1,44 @@
+# Amazon ECR OIDC guidance:
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
+name: Publish ECR images
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: vars.AWS_ROLE_ARN != '' && vars.AWS_REGION != '' && vars.ECR_REGISTRY != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [proxy, emr, glue]
+    steps:
+      - uses: actions/checkout@v4
+      # Official AWS credentials action: https://github.com/aws-actions/configure-aws-credentials
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.component }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ vars.ECR_REGISTRY }}/mystack-${{ matrix.component }}:${{ github.ref_name }}
+            ${{ vars.ECR_REGISTRY }}/mystack-${{ matrix.component }}:latest
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          provenance: mode=max
+          sbom: true
+

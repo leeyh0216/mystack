@@ -1,0 +1,38 @@
+# Proxy 코드 변경 없이 새 emulator 추가
+
+한국어 | [English](extending-proxy.md)
+
+Proxy route registry는 공식 AWS request 근거인 `X-Amz-Target`, SigV4 credential-scope service, service host prefix를 사용합니다. [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html)와 [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data)을 참고하세요.
+
+## 절차
+
+1. 공식 service model에서 `targetPrefix`, `endpointPrefix`, signing name, protocol, JSON/API version을 확인합니다.
+2. 새 emulator를 독립 서비스로 만들고 Domain/Application/Adapter를 분리합니다.
+3. YAML entry 하나를 추가합니다.
+
+```yaml
+proxy:
+  routes:
+    - name: athena
+      backend_url: http://athena:8080
+      target_prefixes: [AmazonAthena]
+      signing_names: [athena]
+      host_prefixes: [athena]
+```
+
+4. Internal network의 Compose service를 추가하고 별도 public AWS port를 노출하지 않습니다.
+5. Route detector test와 Proxy를 통과하는 boto3 black-box contract를 추가합니다.
+6. 한글·영문 protocol, 범위, 설정, operation coverage 문서를 추가합니다.
+7. 새 저장소, process, network, container side effect에 전·후·오류 로그를 추가합니다.
+
+Proxy의 `if service == ...` 분기는 허용하지 않습니다. 중복 target/signing/host claim은 시작 시 설정 검증에서 실패합니다.
+
+## Protocol 변경과 서비스 변경
+
+- 공통 AWS JSON 직렬화 변경은 `shared`
+- 서비스별 shape mapping은 새 inbound adapter
+- 비즈니스 상태와 규칙은 Domain/Application
+- Endpoint와 배포 값은 YAML 또는 deployment override만
+
+Client는 [공식 custom endpoint 방식](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)으로 같은 public URL을 선택합니다.
+

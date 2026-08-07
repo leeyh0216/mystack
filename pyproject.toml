@@ -1,0 +1,44 @@
+[project]
+name = "mystack-dev"
+version = "0.1.0"
+description = "Development workspace for Mystack"
+requires-python = ">=3.11,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "boto3==1.43.66",
+  "httpx>=0.28,<0.29",
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.25,<1",
+  "pytest-cov>=6,<7",
+  "pytest-timeout>=2.4,<3",
+  "ruff>=0.11,<0.12",
+]
+
+[tool.uv.workspace]
+members = ["shared", "proxy", "emr", "glue"]
+
+[tool.uv.sources]
+mystack-aws-protocol = { workspace = true }
+mystack-proxy = { workspace = true }
+mystack-emr = { workspace = true }
+mystack-glue = { workspace = true }
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["shared/tests", "proxy/tests", "emr/tests", "glue/tests", "tests"]
+asyncio_mode = "auto"
+timeout = 60
+timeout_method = "thread"
+markers = [
+  "contract: boto3 or wire-level protocol contract test",
+  "e2e: Docker and real runtime end-to-end test",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC", "RUF"]

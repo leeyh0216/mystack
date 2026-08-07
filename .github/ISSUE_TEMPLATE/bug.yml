@@ -1,0 +1,40 @@
+name: Bug / 버그
+description: Report an implementation defect, not an AWS service error. 구현 결함을 보고합니다.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: english
+    attributes:
+      label: English
+      description: Expected behavior, actual behavior, and minimal reproduction.
+    validations:
+      required: true
+  - type: textarea
+    id: korean
+    attributes:
+      label: 한국어
+      description: 기대 동작, 실제 동작, 최소 재현 방법을 적으세요.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions / 버전
+      description: Commit, botocore, Spark/runtime profile, Docker platform.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs and timeout / 민감정보 제거 로그와 timeout
+      description: Include request ID, operation, model fingerprint, and configured deadline.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Official expected-behavior source / 공식 기대 동작 출처
+    validations:
+      required: true
+

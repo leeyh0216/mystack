@@ -1,0 +1,21 @@
+[project]
+name = "mystack-proxy"
+version = "0.1.0"
+description = "Transparent AWS routing proxy for Mystack"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<0.29",
+  "mystack-aws-protocol",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.scripts]
+mystack-proxy = "mystack_proxy.main:run"
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+mystack-aws-protocol = { workspace = true }

@@ -1,0 +1,74 @@
+# 아키텍처
+
+한국어 | [English](architecture.md)
+
+## 목표
+
+Mystack은 AWS API 경계에서 관찰되는 EMR 및 Glue Data Catalog 동작을 에뮬레이션하고 실제 Spark 작업을 로컬에서 실행합니다. 프로토콜, 상태 전이, 검증, 오류, 로그, side effect를 모두 계약으로 취급합니다.
+
+## 시스템 경계
+
+| 컴포넌트 | 책임 | 알면 안 되는 것 |
+| --- | --- | --- |
+| `proxy` | AWS 서비스 판별과 HTTP 교환의 투명 전달 | EMR/Glue 도메인 규칙과 저장 방식 |
+| `emr` | EMR 리소스, 클러스터/Step 상태 머신, bootstrap/Spark 실행 | Proxy 라우팅과 Glue 모델 |
+| `glue` | Glue Data Catalog, Glue 타입, Hive/Iceberg 상호운용성 | Proxy 라우팅과 EMR 모델 |
+| `shared` | AWS JSON 1.1 codec, 공식 서비스 모델, 요청 검증 | EMR/Glue 비즈니스 규칙 |
+
+Proxy route registry는 설정 기반입니다. 새 emulator는 target prefix, SigV4 signing name, host prefix, backend URL만 등록하며 Proxy 코드를 변경하거나 새 서비스 패키지를 import하지 않습니다.
+
+## 의존성 규칙
+
+두 emulator 모두 다음 방향만 허용합니다.
+
+```text
+domain <- application <- adapters <- bootstrap / FastAPI app
+```
+
+- Domain: entity, value object, 상태 머신, domain exception, repository port
+- Application: use case와 orchestration; Domain과 내부에서 선언한 port에만 의존
+- Adapter: AWS JSON 입력, 저장소, S3, Spark/process 구현
+- Composition root: concrete dependency와 FastAPI route 구성
+
+CI의 architecture test가 안쪽 계층에서 바깥 계층으로 향하는 import를 거부합니다. 이는 AWS의 [Hexagonal architecture 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)을 적용한 것입니다.
+
+## 실행 토폴로지
+
+```text
+host:4566 -> proxy:8080
+                |-- ElasticMapReduce.* -> emr:8080
+                |-- AWSGlue.*          -> glue:8080
+                `-- 기타 모든 요청    -> localstack:4566
+```
+
+EMR은 emulated cluster별 Spark local process를 실행합니다. Glue Job/JobRun은 구현하지 않으며 Spark 기반 Glue Catalog/Hive/Iceberg 검증은 versioned runtime profile에서 실행합니다.
+
+## 호환성 전략
+
+1. operation, shape, enum, exception 기준이 되는 공식 botocore 모델 버전을 고정합니다.
+2. 전체 model과 operation별 fingerprint를 contract manifest에 기록합니다.
+3. boto3/AWS CLI로 실제 endpoint 직렬화 계약을 테스트합니다.
+4. 상태와 오류 의미론을 별도 contract test로 검증합니다.
+5. 최신 botocore와의 차이를 매주 검사하고 변경 operation과 수정 위치를 이슈로 보고합니다.
+6. Spark/Hive/Iceberg 조합은 runtime profile별 E2E matrix로 검증합니다.
+
+호환 오류란 문서화된 exception type, HTTP status, error code, 관련 message field, side effect 유무가 일치함을 뜻하며 AWS의 미문서화 버그를 재현한다는 뜻이 아닙니다.
+
+## 로깅
+
+Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side effect 전후와 오류를 구조화 JSON으로 기록합니다. Authorization과 payload 원문은 제외하고 request ID, operation, 모델 버전/fingerprint, payload 길이/해시, duration, 상태를 기록합니다. 모델 불일치 로그에는 수정할 adapter와 문서를 가리키는 `fix_hint`를 포함합니다.
+
+## 비목표
+
+- Glue Job과 JobRun
+- Glue Crawler
+- 초기 runtime에서 분산 EC2/YARN/HDFS의 물리적 재현
+- strict authentication mode가 아닌 경우 IAM policy 평가
+- 미문서화된 AWS 버그 재현
+
+## 공식 참고 자료
+
+- [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
+- [AWS Prescriptive Guidance: 테스트와 CI 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
+- [AWS SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+

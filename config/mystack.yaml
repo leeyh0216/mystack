@@ -1,0 +1,76 @@
+# Schema and mount behavior are documented in:
+# https://docs.docker.com/reference/compose-file/configs/
+schema_version: 1
+
+logging:
+  level: INFO
+  format: json
+
+management:
+  diagnostics:
+    enabled: true
+    stack_limit: 100
+    # Supply through a secret environment override in shared environments:
+    # MYSTACK__MANAGEMENT__DIAGNOSTICS__TOKEN
+    token: null
+
+proxy:
+  listen:
+    host: 0.0.0.0
+    port: 8080
+  fallback_url: http://localstack:4566
+  request_timeout_seconds: 300
+  routes:
+    - name: emr
+      backend_url: http://emr:8080
+      target_prefixes: [ElasticMapReduce]
+      signing_names: [elasticmapreduce]
+      host_prefixes: [elasticmapreduce, emr]
+    - name: glue
+      backend_url: http://glue:8080
+      target_prefixes: [AWSGlue]
+      signing_names: [glue]
+      host_prefixes: [glue]
+
+localstack:
+  endpoint_url: http://localstack:4566
+  region: us-east-1
+  access_key_id: test
+  secret_access_key: test
+  s3_path_style: true
+
+emr:
+  listen:
+    host: 0.0.0.0
+    port: 8080
+  work_root: /var/lib/mystack/emr
+  process_timeout_seconds: 3600
+  bootstrap_timeout_seconds: 900
+  spark_profile: spark-3.5.4
+
+glue:
+  listen:
+    host: 0.0.0.0
+    port: 8080
+  data_root: /var/lib/mystack/glue
+  catalog_id: "000000000000"
+  runtime_profile: glue-5.0
+
+runtime_profiles:
+  spark-3.5.4:
+    spark_version: 3.5.4
+    python_version: "3.11"
+    java_version: "17"
+    master: local[*]
+  glue-5.0:
+    base_image: public.ecr.aws/glue/aws-glue-libs:5
+    spark_version: 3.5.4
+    python_version: "3.11"
+    java_version: "17"
+    iceberg_version: 1.7.1
+
+tests:
+  unit_timeout_seconds: 60
+  contract_timeout_seconds: 120
+  e2e_timeout_seconds: 1200
+

@@ -1,0 +1,39 @@
+name: Upstream compatibility / Upstream 호환성
+description: Track an AWS model or runtime change. AWS model 또는 runtime 변경을 추적합니다.
+title: "Compatibility: "
+labels: ["type:compatibility"]
+body:
+  - type: textarea
+    id: english
+    attributes:
+      label: English analysis
+      description: Name changed metadata, operations, shapes, or runtime behavior and affected adapters.
+    validations:
+      required: true
+  - type: textarea
+    id: korean
+    attributes:
+      label: 한국어 분석
+      description: 변경 metadata, operation, shape, runtime 동작과 영향 adapter를 적으세요.
+    validations:
+      required: true
+  - type: textarea
+    id: matrix
+    attributes:
+      label: Version matrix and fingerprints / 버전 matrix와 fingerprint
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria / 완료 기준
+      description: Manifest, bilingual docs, boto3 contract, real runtime E2E, logs, rollback.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Official references / 공식 참고 자료
+    validations:
+      required: true
+

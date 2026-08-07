@@ -1,5 +1,7 @@
 # EMR and Glue wire protocol analysis
 
+[한국어](aws-json-1.1.ko.md) | English
+
 ## Sources of truth
 
 The implementation uses these sources in descending order:
@@ -98,14 +100,13 @@ The proxy must not validate a signature and then mutate a signed component. Back
 
 See the official [bootstrap action lifecycle](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html) and [Spark step mapping](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html).
 
-## Glue runtime mapping
+## Glue Catalog runtime mapping
 
-Glue version `5.0` maps to Spark 3.5.4, Python 3.11, Java 17 and Iceberg 1.7.1. The Glue Docker runtime derives from `public.ecr.aws/glue/aws-glue-libs:5`, the image AWS documents for local Glue 5.0 development and testing.
+Glue Job and JobRun APIs are out of scope. Spark interoperability uses a versioned Glue-compatible profile: Spark 3.5.4, Python 3.11, Java 17, and Iceberg 1.7.1. The test/runtime image derives from `public.ecr.aws/glue/aws-glue-libs:5`, which AWS documents for local Glue 5.0 development and testing.
 
-- `glueetl`/`gluestreaming` commands launch `spark-submit` with Glue libraries.
-- `pythonshell` launches Python without Spark.
-- default arguments are merged with per-run arguments using Glue precedence rules.
-- Hive-compatible Data Catalog metadata and Iceberg catalog configuration point back to the emulator/LocalStack endpoint.
+- boto3 exercises the Glue Data Catalog API through the public proxy endpoint.
+- Hive-compatible type strings are preserved; the Data Catalog does not validate type text.
+- Spark Hive metastore and Iceberg catalog adapters point back to the emulator and LocalStack S3.
+- E2E tests cover catalog create/read/update/delete, duplicate errors, partition behavior, and Iceberg read/write.
 
 See [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html), [the official Glue 5.0 Docker image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), [Glue type systems](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), and [Iceberg in Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
-

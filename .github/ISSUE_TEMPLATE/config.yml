@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: AWS behavior source / AWS 동작 기준
+    url: https://docs.aws.amazon.com/
+    about: Link the exact official page in every compatibility issue. 호환성 이슈에는 정확한 공식 페이지를 링크하세요.
+

@@ -1,5 +1,7 @@
 # Architecture
 
+[한국어](architecture.ko.md) | English
+
 ## Goals
 
 Mystack emulates EMR and Glue observable behavior at the AWS API boundary while executing real Spark work locally. Protocol compatibility, state transitions, validation, errors, logs, and side effects are first-class contracts.
@@ -10,7 +12,7 @@ Mystack emulates EMR and Glue observable behavior at the AWS API boundary while 
 | --- | --- | --- |
 | `proxy` | Detect the AWS service and transparently forward the HTTP exchange | EMR/Glue domain rules or persistence |
 | `emr` | EMR resources, cluster/step state machines, bootstrap and Spark orchestration | Proxy routing or Glue models |
-| `glue` | Glue jobs/runs, Data Catalog, Glue types, Spark/Glue runtime orchestration | Proxy routing or EMR models |
+| `glue` | Glue Data Catalog, Glue types, and Hive/Iceberg interoperability | Proxy routing or EMR models |
 | `shared` | AWS JSON 1.1 codec, official service-model access, request validation primitives | Any EMR/Glue business rule |
 
 Business abstractions are not placed in `shared`. Sharing is limited to the wire protocol boundary.
@@ -50,7 +52,7 @@ host:4566 -> proxy:8080
                 `-- all other traffic  -> localstack:4566
 ```
 
-The EMR emulator runs one local Spark process at a time per emulated cluster by default. The Glue emulator runs isolated job-run processes and enforces the job's execution/concurrency settings. Runtime processes receive LocalStack endpoints and test credentials through environment variables.
+The EMR emulator runs one local Spark process at a time per emulated cluster by default. Spark-based Glue interoperability tests use versioned runtime profiles; Glue Job/JobRun execution is not implemented. Runtime processes receive LocalStack endpoints and test credentials through environment variables.
 
 ## Compatibility strategy
 
@@ -72,8 +74,14 @@ The EMR emulator runs one local Spark process at a time per emulated cluster by 
 
 ## Non-goals
 
+- Glue Jobs and JobRuns
 - Glue Crawlers
 - distributed EC2/YARN/HDFS fidelity in the initial runtime
 - IAM policy evaluation unless an authentication-enforcement mode is enabled
 - reproduction of undocumented AWS bugs
 
+## Official references
+
+- [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
+- [AWS Prescriptive Guidance: Best practices and CI testing](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
+- [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)

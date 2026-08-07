@@ -1,0 +1,70 @@
+# GitHub Actions workflow syntax: https://docs.github.com/actions/writing-workflows
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-contracts:
+    name: Python ${{ matrix.python-version }} contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      # Official setup-uv action: https://github.com/astral-sh/setup-uv
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - name: Install the locked workspace
+        run: uv sync --locked --all-packages
+      - name: Lint
+        run: uv run ruff check .
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Validate bilingual documentation contracts
+        run: uv run python scripts/check_docs.py
+      - name: Verify pinned AWS service-model manifest
+        run: >-
+          uv run python scripts/model_manifest.py
+          --check contracts/service-model-manifest.json
+          --report model-drift-report.json
+      - name: Unit, architecture, and protocol contract tests
+        run: >-
+          uv run pytest
+          -m "not e2e"
+          --timeout 60
+          --timeout-method thread
+          --cov=shared/src
+          --cov=proxy/src
+          --cov=emr/src
+          --cov=glue/src
+          --cov-report=term-missing
+          --cov-report=xml
+      - name: Build all Python distributions
+        run: |
+          uv build --package mystack-aws-protocol
+          uv build --package mystack-proxy
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-${{ matrix.python-version }}-diagnostics
+          path: |
+            coverage.xml
+            model-drift-report.json
+          if-no-files-found: ignore

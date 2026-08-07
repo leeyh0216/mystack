@@ -1,0 +1,143 @@
+"""Pinned official SDK model facade and server-side shape validation.
+
+Reference implementation and data:
+https://github.com/boto/botocore/tree/develop/botocore/data
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import logging
+from dataclasses import dataclass
+from functools import cached_property
+from typing import Any, ClassVar
+
+import botocore
+import botocore.session
+from botocore.model import OperationModel, ServiceModel
+from botocore.validate import ParamValidator
+
+from .errors import AwsServiceError
+from .observability import log_event
+
+_LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class AwsServiceMetadata:
+    service_name: str
+    api_version: str
+    endpoint_prefix: str
+    json_version: str
+    target_prefix: str
+    signing_name: str
+
+
+class AwsServiceModel:
+    """Read-only facade over the pinned official botocore service model."""
+
+    _INVALID_INPUT_ERRORS: ClassVar[dict[str, str]] = {
+        "glue": "InvalidInputException",
+        "emr": "ValidationException",
+    }
+
+    def __init__(self, service_name: str) -> None:
+        self._service_name = service_name
+
+    @cached_property
+    def description(self) -> dict[str, Any]:
+        loader = botocore.session.get_session().get_component("data_loader")
+        return loader.load_service_model(self._service_name, "service-2")
+
+    @cached_property
+    def raw(self) -> ServiceModel:
+        model = ServiceModel(self.description, service_name=self._service_name)
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "protocol.model.loaded",
+            service=self._service_name,
+            botocore_version=botocore.__version__,
+            api_version=model.api_version,
+            operation_count=len(model.operation_names),
+            model_fingerprint=self.fingerprint,
+            model_source="botocore/data/<service>/<api-version>/service-2",
+            fix_hint=(
+                "If this fingerprint changed, run the coverage drift test and update the service "
+                "inbound mappings plus documented compatibility matrix."
+            ),
+        )
+        return model
+
+    @cached_property
+    def fingerprint(self) -> str:
+        canonical = json.dumps(self.description, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(canonical.encode()).hexdigest()[:16]
+
+    @cached_property
+    def metadata(self) -> AwsServiceMetadata:
+        raw_metadata: dict[str, Any] = self.raw.metadata
+        endpoint_prefix = str(raw_metadata["endpointPrefix"])
+        return AwsServiceMetadata(
+            service_name=self._service_name,
+            api_version=str(raw_metadata["apiVersion"]),
+            endpoint_prefix=endpoint_prefix,
+            json_version=str(raw_metadata["jsonVersion"]),
+            target_prefix=str(raw_metadata["targetPrefix"]),
+            signing_name=str(raw_metadata.get("signingName", endpoint_prefix)),
+        )
+
+    @property
+    def operation_names(self) -> tuple[str, ...]:
+        return tuple(self.raw.operation_names)
+
+    def operation(self, name: str) -> OperationModel:
+        if name not in self.raw.operation_names:
+            raise AwsServiceError(
+                "UnknownOperationException",
+                f"Unknown operation {name}",
+                http_status=404,
+            )
+        return self.raw.operation_model(name)
+
+    def validate(self, operation: OperationModel, payload: Any) -> None:
+        if not isinstance(payload, dict):
+            raise AwsServiceError(
+                "SerializationException",
+                "Start of structure or map found where not expected.",
+            )
+        input_shape = operation.input_shape
+        if input_shape is None:
+            if payload:
+                self._invalid(operation.name, "Request must be empty")
+            return
+        errors = ParamValidator().validate(payload, input_shape)
+        if errors.has_errors():
+            report = errors.generate_report()
+            log_event(
+                _LOGGER,
+                logging.WARNING,
+                "protocol.validation.failed",
+                service=self._service_name,
+                operation=operation.name,
+                input_shape=input_shape.name,
+                botocore_version=botocore.__version__,
+                api_version=self.metadata.api_version,
+                model_fingerprint=self.fingerprint,
+                validation_report=report,
+                fix_hint=(
+                    "Compare the pinned botocore input shape and AWS API Reference; update "
+                    "shared/model.py only for generic codec behavior, otherwise update the "
+                    "service operation mapper."
+                ),
+            )
+            self._invalid(operation.name, report)
+
+    def _invalid(self, operation: str, message: str) -> None:
+        error_code = self._INVALID_INPUT_ERRORS.get(self._service_name, "ValidationException")
+        raise AwsServiceError(
+            error_code,
+            f"{operation}: {message}",
+            fix_hint="Review the operation input shape in the pinned botocore service model.",
+        )
