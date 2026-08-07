@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -80,3 +82,59 @@ def test_rejects_payload_that_violates_the_official_shape() -> None:
     assert response.status_code == 400
     assert response.json()["__type"] == "InvalidInputException"
     assert "Name" in response.json()["Message"]
+
+
+def test_rejects_official_enum_and_pattern_constraints() -> None:
+    client = TestClient(app_for(OperationDispatcher()))
+    enum_response = client.post(
+        "/",
+        headers={"X-Amz-Target": "AWSGlue.CreateDatabase"},
+        json={
+            "DatabaseInput": {
+                "Name": "analytics",
+                "CreateTableDefaultPermissions": [
+                    {"Principal": {"DataLakePrincipalIdentifier": "test"}, "Permissions": ["NOPE"]}
+                ],
+            }
+        },
+    )
+    pattern_response = client.post(
+        "/",
+        headers={"X-Amz-Target": "AWSGlue.CreateTable"},
+        json={
+            "DatabaseName": "analytics",
+            "TableInput": {
+                "Name": "events",
+                "StorageDescriptor": {"SchemaReference": {"SchemaVersionId": "Z" * 36}},
+            },
+        },
+    )
+
+    assert enum_response.status_code == 400
+    assert "must be one of" in enum_response.json()["Message"]
+    assert pattern_response.status_code == 400
+    assert "must satisfy modeled pattern" in pattern_response.json()["Message"]
+
+
+def test_validation_logs_never_include_payload_values(caplog) -> None:
+    secret = "never-log-this-payload-value"
+    client = TestClient(app_for(OperationDispatcher()))
+    with caplog.at_level(logging.INFO):
+        response = client.post(
+            "/",
+            headers={"X-Amz-Target": "AWSGlue.GetDatabase"},
+            json={"Name": {"secret": secret}},
+        )
+
+    assert response.status_code == 400
+    emitted = json.dumps(
+        [
+            {
+                "message": record.getMessage(),
+                "fields": getattr(record, "mystack_fields", {}),
+            }
+            for record in caplog.records
+        ],
+        default=str,
+    )
+    assert secret not in emitted

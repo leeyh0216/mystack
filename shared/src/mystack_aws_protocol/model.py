@@ -2,6 +2,9 @@
 
 Reference implementation and data:
 https://github.com/boto/botocore/tree/develop/botocore/data
+
+Pattern semantics:
+https://smithy.io/2.0/spec/constraint-traits.html#pattern-trait
 """
 
 from __future__ import annotations
@@ -9,6 +12,8 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, ClassVar
@@ -22,6 +27,12 @@ from .errors import AwsServiceError
 from .observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
+_LEGACY_SURROGATE_PAIR_RANGE = r"\uD800\uDC00-\uDBFF\uDFFF"
+_PYTHON_ASTRAL_RANGE = r"\U00010000-\U0010FFFF"
+_UNICODE_CATEGORY_CLASS = re.compile(
+    r"^\[(?P<categories>(?:\\p\{[A-Z][a-z]?\})+)\](?P<quantifier>[*+?]?)$"
+)
+_UNICODE_CATEGORY = re.compile(r"\\p\{(?P<category>[A-Z][a-z]?)\}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +63,24 @@ class AwsServiceModel:
 
     @cached_property
     def raw(self) -> ServiceModel:
+        unsupported_patterns = _unsupported_patterns(self.description)
+        if unsupported_patterns:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "protocol.model.pattern_dialect_unsupported",
+                service=self._service_name,
+                botocore_version=botocore.__version__,
+                shape_names=unsupported_patterns,
+                fix_hint=(
+                    "Add a generic ECMA-262 translation in shared/model.py and its protocol "
+                    "contract before accepting this botocore model."
+                ),
+            )
+            raise RuntimeError(
+                "Unsupported service-model pattern dialect in shapes: "
+                + ", ".join(unsupported_patterns)
+            )
         model = ServiceModel(self.description, service_name=self._service_name)
         log_event(
             _LOGGER,
@@ -113,8 +142,10 @@ class AwsServiceModel:
                 self._invalid(operation.name, "Request must be empty")
             return
         errors = ParamValidator().validate(payload, input_shape)
-        if errors.has_errors():
-            report = errors.generate_report()
+        constraint_errors = _constraint_errors(payload, input_shape)
+        if errors.has_errors() or constraint_errors:
+            base_report = errors.generate_report() if errors.has_errors() else ""
+            report = "\n".join(part for part in (base_report, *constraint_errors) if part)
             log_event(
                 _LOGGER,
                 logging.WARNING,
@@ -125,7 +156,8 @@ class AwsServiceModel:
                 botocore_version=botocore.__version__,
                 api_version=self.metadata.api_version,
                 model_fingerprint=self.fingerprint,
-                validation_report=report,
+                validation_error_count=len(report.splitlines()),
+                model_constraint_error_count=len(constraint_errors),
                 fix_hint=(
                     "Compare the pinned botocore input shape and AWS API Reference; update "
                     "shared/model.py only for generic codec behavior, otherwise update the "
@@ -141,3 +173,66 @@ class AwsServiceModel:
             f"{operation}: {message}",
             fix_hint="Review the operation input shape in the pinned botocore service model.",
         )
+
+
+def _constraint_errors(value: Any, shape: Any, path: str = "input") -> list[str]:
+    """Validate constraints intentionally omitted by botocore's client validator."""
+
+    errors: list[str] = []
+    if shape.type_name == "string" and isinstance(value, str):
+        allowed = shape.metadata.get("enum")
+        if allowed and value not in allowed:
+            errors.append(
+                f"Invalid enum for parameter {path}; must be one of: {', '.join(allowed)}"
+            )
+        pattern = shape.metadata.get("pattern")
+        if pattern and not _matches_pattern(value, pattern):
+            errors.append(f"Invalid format for parameter {path}; must satisfy modeled pattern")
+    elif shape.type_name == "structure" and isinstance(value, dict):
+        for name, member in shape.members.items():
+            if name in value:
+                errors.extend(_constraint_errors(value[name], member, f"{path}.{name}"))
+    elif shape.type_name == "list" and isinstance(value, list | tuple):
+        for index, member in enumerate(value):
+            errors.extend(_constraint_errors(member, shape.member, f"{path}[{index}]"))
+    elif shape.type_name == "map" and isinstance(value, dict):
+        for key, member in value.items():
+            errors.extend(_constraint_errors(key, shape.key, f"{path} (key)"))
+            errors.extend(_constraint_errors(member, shape.value, f"{path}.{key}"))
+    return errors
+
+
+def _matches_pattern(value: str, pattern: str) -> bool:
+    translated = pattern.replace(_LEGACY_SURROGATE_PAIR_RANGE, _PYTHON_ASTRAL_RANGE)
+    try:
+        return re.search(translated, value) is not None
+    except re.error:
+        category_class = _UNICODE_CATEGORY_CLASS.fullmatch(pattern)
+        if category_class is None:
+            raise
+        quantifier = category_class.group("quantifier")
+        if quantifier in {"*", "?"}:
+            return True
+        categories = {
+            match.group("category")
+            for match in _UNICODE_CATEGORY.finditer(category_class.group("categories"))
+        }
+        return any(
+            any(unicodedata.category(character).startswith(category) for category in categories)
+            for character in value
+        )
+
+
+def _unsupported_patterns(description: dict[str, Any]) -> tuple[str, ...]:
+    unsupported: list[str] = []
+    for name, shape in description.get("shapes", {}).items():
+        pattern = shape.get("pattern")
+        if not pattern:
+            continue
+        translated = pattern.replace(_LEGACY_SURROGATE_PAIR_RANGE, _PYTHON_ASTRAL_RANGE)
+        try:
+            re.compile(translated)
+        except re.error:
+            if _UNICODE_CATEGORY_CLASS.fullmatch(pattern) is None:
+                unsupported.append(str(name))
+    return tuple(sorted(unsupported))

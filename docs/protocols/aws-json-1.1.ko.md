@@ -53,6 +53,14 @@ Proxy는 target prefix, SigV4 credential scope, host pattern 순으로 route reg
 - 필수 member, primitive, enum, collection member, length/range/pattern을 use case 호출 전에 검증합니다.
 - model fingerprint와 operation별 shape closure fingerprint를 기록하여 botocore 변경을 탐지합니다.
 
+Botocore client의 `ParamValidator`가 structure/type/length/range 검사를 담당하고, 누락된
+model enum/pattern 검사는 server codec이 같은 고정 shape를 순회하며 보완합니다. Pattern은
+implicit anchor가 없는 공식 [Smithy pattern
+의미론](https://smithy.io/2.0/spec/constraint-traits.html#pattern-trait)을 따릅니다. 시작 시
+dialect audit에서 해석할 수 없는 새 model pattern을 발견하면 실행을 중단하고
+`shared/model.py`를 수정 위치로 기록합니다. 검증 로그에는 shape path와 개수만 남기며 거부된
+값은 기록하지 않습니다.
+
 ## 응답과 오류
 
 성공 응답은 HTTP 200과 model output JSON을 반환합니다. 모든 응답은 `application/x-amz-json-1.1`과 `x-amzn-RequestId`를 포함합니다.

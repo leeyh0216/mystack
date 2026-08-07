@@ -92,7 +92,6 @@ class AwsJsonRpcEndpoint:
                 service=self._model.metadata.service_name,
                 error_code=error.code,
                 status_code=error.http_status,
-                message=error.message,
                 model_fingerprint=self._model.fingerprint,
                 fix_hint=error.fix_hint,
                 duration_ms=round((time.monotonic() - started) * 1000, 3),

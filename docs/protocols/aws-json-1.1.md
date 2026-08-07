@@ -65,6 +65,14 @@ Method, path, query string, request body, content type, authorization, tracing h
 - The codec validates required members, primitive kinds, enums, list/map members and documented length/range/pattern constraints before invoking a use case.
 - Unknown request members are rejected according to AWS JSON server behavior; botocore often rejects the same input client-side first.
 
+Botocore's client `ParamValidator` supplies structural/type/length/range checks but does not
+enforce every modeled enum or pattern. The server codec therefore walks the same pinned shapes
+and adds those constraints. Patterns use the documented [Smithy pattern
+semantics](https://smithy.io/2.0/spec/constraint-traits.html#pattern-trait), including the absence
+of implicit anchors. A startup dialect audit rejects a future model pattern that the translation
+layer cannot interpret and logs `shared/model.py` as the repair boundary. Validation logs contain
+only shape paths and counts, never rejected values.
+
 ## HTTP response and errors
 
 Successful operations return the operation's modeled JSON output and HTTP 200. Responses include `Content-Type: application/x-amz-json-1.1` and `x-amzn-RequestId`.

@@ -45,6 +45,13 @@ def test_database_table_type_and_version_contracts(glue_client) -> None:
     database = glue_client.get_database(Name="analytics")["Database"]
     assert database["Name"] == "analytics"
     assert glue_client.get_databases(MaxResults=1).get("NextToken")
+    glue_client.update_database(
+        Name="analytics",
+        DatabaseInput={"Name": "analytics", "Description": "updated database"},
+    )
+    assert glue_client.get_database(Name="analytics")["Database"]["Description"] == (
+        "updated database"
+    )
 
     table_input = {
         "Name": "Events",
@@ -109,6 +116,12 @@ def test_database_table_type_and_version_contracts(glue_client) -> None:
         )
     assert captured.value.response["Error"]["Code"] == "VersionMismatchException"
     assert glue_client.get_catalog_import_status()["ImportStatus"]["ImportCompleted"] is True
+
+    glue_client.create_table(DatabaseName="analytics", TableInput={"Name": "disposable"})
+    glue_client.delete_table(DatabaseName="analytics", Name="disposable")
+    with pytest.raises(ClientError) as deleted:
+        glue_client.get_table(DatabaseName="analytics", Name="disposable")
+    assert deleted.value.response["Error"]["Code"] == "EntityNotFoundException"
 
 
 @pytest.mark.contract
