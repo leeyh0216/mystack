@@ -7,6 +7,7 @@ https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1
 from __future__ import annotations
 
 import logging
+import re
 import time
 from collections.abc import Mapping
 
@@ -30,6 +31,10 @@ _HOP_BY_HOP_HEADERS = {
     "transfer-encoding",
     "upgrade",
 }
+_CLIENT_VERSION = re.compile(
+    r"(?P<name>Boto3|Botocore|aws-cli|aws-sdk-java)[/#](?P<version>[^\s]+)",
+    flags=re.IGNORECASE,
+)
 
 
 class AwsRequestForwarder:
@@ -43,6 +48,12 @@ class AwsRequestForwarder:
         self._settings = settings
         self._detector = detector or AwsServiceDetector(settings.routes)
 
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """Expose the shared pool to composition-root management requests."""
+
+        return self._client
+
     async def forward(self, request: Request) -> Response:
         started = time.monotonic()
         match = self._detector.detect(request.headers)
@@ -53,6 +64,34 @@ class AwsRequestForwarder:
 
         body = await request.body()
         route_name = match.route.name if match.route else "fallback"
+        client_versions = sorted(
+            {
+                f"{value.group('name').lower()}={value.group('version')}"
+                for value in _CLIENT_VERSION.finditer(request.headers.get("user-agent", ""))
+            }
+        )
+        protocol_evidence = {
+            "target_prefix": match.target_prefix,
+            "signing_name": match.signing_name,
+            "host_prefix": match.host_prefix,
+            "content_type": request.headers.get("content-type", ""),
+            "client_versions": client_versions,
+        }
+        if match.route is None:
+            _log(
+                logging.WARNING,
+                "proxy.routing.fallback",
+                method=request.method,
+                path=request.url.path,
+                fallback_url=self._settings.fallback_url,
+                **protocol_evidence,
+                fix_hint=(
+                    "If an emulator request unexpectedly reached fallback, compare the current "
+                    "SDK service model metadata and add its target/signing/host evidence to "
+                    "proxy.routes in the YAML configuration; change routing.py only if the AWS "
+                    "evidence format itself changed."
+                ),
+            )
         _log(
             logging.INFO,
             "proxy.forward.started",
@@ -64,6 +103,7 @@ class AwsRequestForwarder:
             backend_origin=base_url,
             payload_bytes=len(body),
             payload_fingerprint=payload_fingerprint(body),
+            **protocol_evidence,
         )
         try:
             response = await self._client.request(

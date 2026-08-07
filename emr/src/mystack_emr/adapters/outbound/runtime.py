@@ -388,6 +388,8 @@ def _aws_environment(settings: ObjectStoreSettings) -> dict[str, str]:
         "AWS_SECRET_ACCESS_KEY": settings.secret_access_key,
         "AWS_DEFAULT_REGION": settings.region,
         "AWS_REGION": settings.region,
+        "AWS_ENDPOINT_URL": settings.endpoint_url,
+        "AWS_ENDPOINT_URL_S3": settings.endpoint_url,
     }
 
 

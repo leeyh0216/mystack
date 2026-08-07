@@ -127,26 +127,6 @@ def emr_client(emr_server, test_timeout: float):
     )
 
 
-def wait_for_cluster_state(client, cluster_id: str, states: set[str], timeout: float):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        cluster = client.describe_cluster(ClusterId=cluster_id)["Cluster"]
-        if cluster["Status"]["State"] in states:
-            return cluster
-        time.sleep(0.01)
-    raise TimeoutError(f"Cluster {cluster_id} did not enter {sorted(states)}")
-
-
-def wait_for_step_state(client, cluster_id: str, step_id: str, states: set[str], timeout: float):
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        step = client.describe_step(ClusterId=cluster_id, StepId=step_id)["Step"]
-        if step["Status"]["State"] in states:
-            return step
-        time.sleep(0.01)
-    raise TimeoutError(f"Step {step_id} did not enter {sorted(states)}")
-
-
 def _free_port() -> int:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))

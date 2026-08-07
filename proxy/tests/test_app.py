@@ -83,3 +83,35 @@ def test_forwards_path_query_and_unknown_service_to_localstack() -> None:
 
     assert response.status_code == 204
     assert observed["url"] == "http://localstack:4566/bucket/key?versionId=1"
+
+
+def test_console_and_component_diagnostics_are_registry_driven() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/_mystack/diagnostics/threads"
+        assert request.headers["authorization"] == "Bearer token"
+        return httpx.Response(200, json={"service": "emr", "thread_count": 2})
+
+    route = ServiceRoute(
+        name="emr",
+        backend_url="http://emr:8080",
+        target_prefixes=("ElasticMapReduce",),
+        signing_names=("elasticmapreduce",),
+        host_prefixes=("emr",),
+    )
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(
+        create_app(
+            settings((route,)),
+            client=async_client,
+            diagnostics_settings=_DIAGNOSTICS,
+        )
+    ) as client:
+        assert client.get("/_mystack/components").json() == {"components": ["proxy", "emr"]}
+        assert "Mystack Console" in client.get("/_mystack/console").text
+        response = client.get(
+            "/_mystack/components/emr/diagnostics/threads",
+            headers={"Authorization": "Bearer token"},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"service": "emr", "thread_count": 2}

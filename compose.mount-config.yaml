@@ -1,0 +1,12 @@
+# Optional development override for live, read-only file configuration.
+# Compose merge reference: https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/
+services:
+  proxy:
+    volumes:
+      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro
+  emr:
+    volumes:
+      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro
+  glue:
+    volumes:
+      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro

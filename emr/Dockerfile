@@ -1,0 +1,81 @@
+# syntax=docker/dockerfile:1.7
+# Amazon Linux public ECR source: https://gallery.ecr.aws/amazonlinux/amazonlinux
+ARG AMAZON_LINUX_BASE=public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2
+FROM ${AMAZON_LINUX_BASE}
+
+ARG SPARK_VERSION=3.5.4
+ARG SPARK_DISTRIBUTION=hadoop3
+ARG SPARK_ARCHIVE_BASE_URL=https://archive.apache.org/dist/spark
+ARG AWS_CLI_VERSION=2.27.41
+ARG TARGETARCH
+ARG MYSTACK_VERSION=0.1.0
+ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+LABEL org.opencontainers.image.title="Mystack EMR Spark Emulator" \
+      org.opencontainers.image.version="${MYSTACK_VERSION}" \
+      org.opencontainers.image.source="https://github.com/leeyh0216/mystack" \
+      org.opencontainers.image.spark.version="${SPARK_VERSION}"
+
+# Corretto package reference:
+# https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
+RUN dnf install -y \
+      gzip \
+      java-17-amazon-corretto-headless \
+      python3.11 \
+      python3.11-pip \
+      shadow-utils \
+      tar \
+      unzip \
+    && dnf clean all
+
+# Spark release reference: https://spark.apache.org/releases/spark-release-3-5-4.html
+RUN archive="spark-${SPARK_VERSION}-bin-${SPARK_DISTRIBUTION}.tgz" \
+    && curl --fail --location --retry 5 \
+      "${SPARK_ARCHIVE_BASE_URL}/spark-${SPARK_VERSION}/${archive}" \
+      --output "/tmp/${archive}" \
+    && curl --fail --location --retry 5 \
+      "${SPARK_ARCHIVE_BASE_URL}/spark-${SPARK_VERSION}/${archive}.sha512" \
+      --output "/tmp/${archive}.sha512" \
+    && cd /tmp \
+    && sha512sum --check "${archive}.sha512" \
+    && mkdir -p /opt/spark \
+    && tar --extract --gzip --file "/tmp/${archive}" --strip-components=1 --directory /opt/spark \
+    && rm -f "/tmp/${archive}" "/tmp/${archive}.sha512"
+
+# Pinned AWS CLI installer and architecture mapping follow the official install guide:
+# https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+RUN case "${TARGETARCH}" in \
+      amd64) cli_arch=x86_64 ;; \
+      arm64) cli_arch=aarch64 ;; \
+      *) echo "Unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
+    esac \
+    && curl --fail --location --retry 5 \
+      "https://awscli.amazonaws.com/awscli-exe-linux-${cli_arch}-${AWS_CLI_VERSION}.zip" \
+      --output /tmp/awscliv2.zip \
+    && unzip -q /tmp/awscliv2.zip -d /tmp \
+    && /tmp/aws/install \
+    && rm -rf /tmp/aws /tmp/awscliv2.zip
+
+ENV JAVA_HOME=/usr/lib/jvm/jre-17 \
+    SPARK_HOME=/opt/spark \
+    PATH=/opt/spark/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin \
+    PYSPARK_PYTHON=python3.11 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    MYSTACK_CONFIG_FILE=/etc/mystack/mystack.yaml
+
+WORKDIR /opt/mystack
+COPY requirements/emr.txt /opt/requirements.txt
+RUN python3.11 -m pip install --no-cache-dir --require-hashes -r /opt/requirements.txt
+COPY shared /opt/src/shared
+COPY emr /opt/src/emr
+COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
+RUN python3.11 -m pip install --no-cache-dir --no-deps /opt/src/shared /opt/src/emr \
+    && rm -rf /opt/src /opt/requirements.txt \
+    && useradd --create-home --uid 10001 mystack \
+    && mkdir -p /var/lib/mystack/emr /home/mystack/.ivy2 \
+    && chown -R mystack:mystack /var/lib/mystack /home/mystack
+
+USER mystack
+EXPOSE 8080
+ENTRYPOINT ["mystack-emr"]
+CMD ["--config", "/etc/mystack/mystack.yaml"]

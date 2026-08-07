@@ -61,6 +61,7 @@ def test_unknown_service_falls_back_to_localstack() -> None:
     match = detector().detect({"Host": "localhost:4566"})
     assert match.route is None
     assert match.evidence == "fallback"
+    assert match.host_prefix == "localhost"
 
 
 def test_detects_a_new_emulator_from_configuration_only() -> None:

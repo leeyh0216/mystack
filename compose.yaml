@@ -1,0 +1,107 @@
+# Compose Specification: https://docs.docker.com/reference/compose-file/
+name: mystack
+
+x-mystack-service: &mystack-service
+  restart: unless-stopped
+  environment:
+    MYSTACK_CONFIG_FILE: /etc/mystack/mystack.yaml
+  networks: [mystack]
+
+services:
+  proxy:
+    <<: *mystack-service
+    image: ${MYSTACK_PROXY_IMAGE:-mystack/proxy:dev}
+    build:
+      context: .
+      dockerfile: proxy/Dockerfile
+      args:
+        PYTHON_BASE: ${PYTHON_BASE:-public.ecr.aws/docker/library/python:3.11-slim-bookworm@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3}
+        MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.0}
+    ports:
+      - "${MYSTACK_PORT:-4566}:8080"
+    depends_on:
+      localstack: {condition: service_healthy}
+      emr: {condition: service_healthy}
+      glue: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  emr:
+    <<: *mystack-service
+    image: ${MYSTACK_EMR_IMAGE:-mystack/emr:dev}
+    build:
+      context: .
+      dockerfile: emr/Dockerfile
+      args:
+        AMAZON_LINUX_BASE: ${AMAZON_LINUX_BASE:-public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2}
+        SPARK_VERSION: ${SPARK_VERSION:-3.5.4}
+        SPARK_DISTRIBUTION: ${SPARK_DISTRIBUTION:-hadoop3}
+        SPARK_ARCHIVE_BASE_URL: ${SPARK_ARCHIVE_BASE_URL:-https://archive.apache.org/dist/spark}
+        AWS_CLI_VERSION: ${AWS_CLI_VERSION:-2.27.41}
+        MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.0}
+    volumes:
+      - emr-data:/var/lib/mystack/emr
+      - ivy-cache:/home/mystack/.ivy2
+    healthcheck:
+      test: [CMD, python3.11, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  glue:
+    <<: *mystack-service
+    image: ${MYSTACK_GLUE_IMAGE:-mystack/glue:dev}
+    build:
+      context: .
+      dockerfile: glue/Dockerfile
+      args:
+        GLUE_BASE: ${GLUE_BASE:-public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7}
+        GLUE_VERSION: ${GLUE_VERSION:-5.0}
+        SPARK_VERSION: ${GLUE_SPARK_VERSION:-3.5.4}
+        ICEBERG_VERSION: ${ICEBERG_VERSION:-1.7.1}
+        MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.0}
+    volumes:
+      - glue-data:/var/lib/mystack/glue
+    environment:
+      MYSTACK_CONFIG_FILE: /etc/mystack/mystack.yaml
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ENDPOINT_URL_GLUE: ${GLUE_CATALOG_ENDPOINT_URL:-http://proxy:8080}
+      AWS_ENDPOINT_URL_S3: ${OBJECT_STORE_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL_STS: ${STS_ENDPOINT_URL:-http://localstack:4566}
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  localstack:
+    image: ${LOCALSTACK_IMAGE:-localstack/localstack:4.7.0@sha256:12253acd9676770e9bd31cbfcf17c5ca6fd7fb5c0c62f3c46dd701f20304260c}
+    environment:
+      DEBUG: ${LOCALSTACK_DEBUG:-0}
+      PERSISTENCE: ${LOCALSTACK_PERSISTENCE:-1}
+    volumes:
+      - localstack-data:/var/lib/localstack
+    networks: [mystack]
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:4566/_localstack/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  emr-data:
+  glue-data:
+  ivy-cache:
+  localstack-data:
+
+networks:
+  mystack:

@@ -5,9 +5,10 @@ API reference: https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from botocore.exceptions import ClientError
-from conftest import wait_for_cluster_state, wait_for_step_state
 
 
 @pytest.mark.contract
@@ -125,3 +126,23 @@ def test_boto3_receives_documented_invalid_request(emr_client) -> None:
     response = captured.value.response
     assert response["Error"]["Code"] == "InvalidRequestException"
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+
+def wait_for_cluster_state(client, cluster_id: str, states: set[str], timeout: float):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        cluster = client.describe_cluster(ClusterId=cluster_id)["Cluster"]
+        if cluster["Status"]["State"] in states:
+            return cluster
+        time.sleep(0.01)
+    raise TimeoutError(f"Cluster {cluster_id} did not enter {sorted(states)}")
+
+
+def wait_for_step_state(client, cluster_id: str, step_id: str, states: set[str], timeout: float):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        step = client.describe_step(ClusterId=cluster_id, StepId=step_id)["Step"]
+        if step["Status"]["State"] in states:
+            return step
+        time.sleep(0.01)
+    raise TimeoutError(f"Step {step_id} did not enter {sorted(states)}")

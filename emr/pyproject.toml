@@ -14,9 +14,8 @@ dependencies = [
 mystack-emr = "mystack_emr.main:run"
 
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12"]
+requires = ["uv_build==0.11.8"]
 build-backend = "uv_build"
 
 [tool.uv.sources]
 mystack-aws-protocol = { workspace = true }
-

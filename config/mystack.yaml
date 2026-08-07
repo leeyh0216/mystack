@@ -65,7 +65,10 @@ glue:
     host: 0.0.0.0
     port: 8080
   data_root: /var/lib/mystack/glue
+  state_file: catalog-state.json
   catalog_id: "000000000000"
+  api_page_size: 100
+  create_default_database: true
   runtime_profile: glue-5.0
 
 runtime_profiles:
@@ -81,6 +84,7 @@ runtime_profiles:
     spark_conf:
       spark.ui.enabled: "false"
       spark.driver.bindAddress: 127.0.0.1
+      spark.driver.host: 127.0.0.1
     # Options that consume the next token, used to locate the application resource.
     # Source: https://spark.apache.org/docs/3.5.4/submitting-applications.html
     option_value_names:
@@ -121,3 +125,21 @@ tests:
   unit_timeout_seconds: 60
   contract_timeout_seconds: 120
   e2e_timeout_seconds: 1200
+  compose_wait_timeout_seconds: 300
+  e2e:
+    endpoint_url: http://127.0.0.1:4566
+    poll_interval_seconds: 0.5
+    sdk_connect_timeout_seconds: 5
+    sdk_read_timeout_seconds: 30
+    sdk_max_attempts: 3
+    compose_file: compose.yaml
+    emr_release_label: emr-7.8.0
+    emr_expected_spark_version_prefix: 3.5.4
+    glue_service: glue
+    glue_spark_submit: spark-submit
+    glue_catalog_script: /opt/mystack/e2e/glue_catalog_job.py
+    glue_expected_spark_version_prefix: 3.5.4
+    glue_catalog_endpoint_url: http://proxy:8080
+    object_store_endpoint_url: http://localstack:4566
+    sts_endpoint_url: http://localstack:4566
+    artifacts_dir: test-artifacts

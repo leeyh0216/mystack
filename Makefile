@@ -3,7 +3,7 @@ CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 
-.PHONY: help bootstrap sync lint format docs model-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync requirements lint format docs model-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -13,6 +13,9 @@ bootstrap: ## Validate tools, install locked dependencies, and run fast contract
 
 sync: ## Recreate the Python workspace from uv.lock.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv sync --locked --all-packages
+
+requirements: ## Regenerate hash-locked container requirements from uv.lock.
+	@uv run python scripts/export_requirements.py
 
 lint: ## Run source and import-quality checks.
 	@uv run ruff check .
@@ -36,7 +39,8 @@ contract: ## Run boto3 and wire protocol contracts with configured timeout.
 	uv run pytest -m contract --timeout "$$timeout" --timeout-method thread -vv
 
 up: ## Build and start the Docker stack with the selected YAML config.
-	@MYSTACK_CONFIG_FILE="$(CONFIG)" docker compose up --build --detach --wait --wait-timeout 300
+	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.compose_wait_timeout_seconds); \
+	MYSTACK_CONFIG_SOURCE="$(CONFIG)" docker compose up --build --detach --wait --wait-timeout "$$wait_timeout"
 
 e2e: ## Run black-box boto3, Spark, Hive, and Iceberg E2E tests.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.e2e_timeout_seconds); \
