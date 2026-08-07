@@ -47,6 +47,8 @@ jobs:
           uv run python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
+      - name: Verify contributor pre-commit gates
+        run: uv run pre-commit run --all-files
       - name: Unit, architecture, and protocol contract tests
         run: >-
           uv run pytest

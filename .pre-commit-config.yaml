@@ -1,0 +1,38 @@
+# Local hooks avoid a second dependency resolver and run from the uv lock.
+# Official configuration reference: https://pre-commit.com/#pre-commit-configyaml---top-level
+default_install_hook_types: [pre-commit]
+fail_fast: false
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ruff-format
+        name: Ruff format check
+        entry: uv run ruff format --check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: documentation-contract
+        name: Bilingual documentation contract
+        entry: uv run python scripts/check_docs.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: requirement-locks
+        name: Container requirement lock drift
+        entry: uv run python scripts/export_requirements.py --check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: aws-model-manifest
+        name: AWS service-model drift
+        entry: uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+        language: system
+        pass_filenames: false
+        always_run: true

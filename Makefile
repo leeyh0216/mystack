@@ -3,7 +3,7 @@ CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 
-.PHONY: help bootstrap sync requirements lint format docs model-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -13,6 +13,10 @@ bootstrap: ## Validate tools, install locked dependencies, and run fast contract
 
 sync: ## Recreate the Python workspace from uv.lock.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv sync --locked --all-packages
+
+pre-commit: ## Install and run repository-local commit quality gates.
+	@uv run pre-commit install
+	@uv run pre-commit run --all-files
 
 requirements: ## Regenerate hash-locked container requirements from uv.lock.
 	@uv run python scripts/export_requirements.py

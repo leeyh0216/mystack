@@ -18,6 +18,7 @@ cd mystack
 cp .env.example .env
 direnv allow                 # 선택
 make bootstrap
+make pre-commit
 make up
 ```
 
@@ -55,6 +56,7 @@ mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f comp
 
 ```bash
 make format
+make pre-commit
 make requirements
 make test
 make contract
@@ -65,6 +67,11 @@ make down
 ```
 
 Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap timeout은 별도이며 가능한 경우 바깥 test timeout보다 먼저 adapter가 hung subprocess를 종료합니다.
+
+`make pre-commit`은 `uv.lock`으로 재현되는 repository-local hook을 설치하고 실행합니다.
+Lint/format, 한·영 문서, container requirement lock, botocore model manifest drift를 commit
+전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
+계약](https://pre-commit.com/#install)을 따릅니다.
 
 ## 변경 위치
 

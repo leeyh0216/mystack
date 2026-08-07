@@ -9,6 +9,7 @@ dependencies = []
 dev = [
   "boto3==1.43.66",
   "httpx>=0.28,<0.29",
+  "pre-commit>=4.2,<5",
   "pytest>=8.3,<9",
   "pytest-asyncio>=0.25,<1",
   "pytest-cov>=6,<7",

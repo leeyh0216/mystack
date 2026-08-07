@@ -18,6 +18,7 @@ cd mystack
 cp .env.example .env
 direnv allow                 # optional
 make bootstrap
+make pre-commit
 make up
 ```
 
@@ -57,6 +58,7 @@ Run `make help` for the source of truth. Common flows:
 
 ```bash
 make format
+make pre-commit
 make requirements
 make test
 make contract
@@ -67,6 +69,11 @@ make down
 ```
 
 Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible.
+
+`make pre-commit` installs and runs repository-local hooks backed by `uv.lock`. The hooks reject
+lint/format, bilingual documentation, container requirement lock, and botocore model-manifest
+drift. Their lifecycle follows the official [pre-commit installation and usage
+contract](https://pre-commit.com/#install).
 
 ## Where to make changes
 
