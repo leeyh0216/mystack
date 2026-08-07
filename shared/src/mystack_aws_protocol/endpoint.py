@@ -38,8 +38,8 @@ class AwsJsonRpcEndpoint:
         model: AwsServiceModel,
         dispatcher: OperationDispatcher,
         *,
-        default_region: str = "us-east-1",
-        account_id: str = "000000000000",
+        default_region: str,
+        account_id: str,
     ) -> None:
         self._model = model
         self._dispatcher = dispatcher

@@ -26,7 +26,7 @@ mystack-emr = { workspace = true }
 mystack-glue = { workspace = true }
 
 [tool.pytest.ini_options]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --import-mode=importlib"
 testpaths = ["shared/tests", "proxy/tests", "emr/tests", "glue/tests", "tests"]
 asyncio_mode = "auto"
 timeout = 60

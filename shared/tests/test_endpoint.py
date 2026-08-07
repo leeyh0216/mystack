@@ -10,7 +10,12 @@ from mystack_aws_protocol.dispatcher import OperationDispatcher
 
 def app_for(dispatcher: OperationDispatcher) -> FastAPI:
     app = FastAPI()
-    endpoint = AwsJsonRpcEndpoint(AwsServiceModel("glue"), dispatcher)
+    endpoint = AwsJsonRpcEndpoint(
+        AwsServiceModel("glue"),
+        dispatcher,
+        default_region="test-region-1",
+        account_id="000000000000",
+    )
 
     @app.post("/")
     async def aws(request: Request):

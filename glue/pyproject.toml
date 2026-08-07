@@ -1,0 +1,20 @@
+[project]
+name = "mystack-glue"
+version = "0.1.0"
+description = "Protocol-compatible AWS Glue Data Catalog emulator for Mystack"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "mystack-aws-protocol",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.scripts]
+mystack-glue = "mystack_glue.main:run"
+
+[build-system]
+requires = ["uv_build==0.11.8"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+mystack-aws-protocol = { workspace = true }
