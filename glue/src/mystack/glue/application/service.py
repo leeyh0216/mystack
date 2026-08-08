@@ -13,6 +13,7 @@ from mystack.glue.application.batch import (
     PartitionBatchHandler,
 )
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
+from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.initialization import CatalogInitializer
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition import (
@@ -55,7 +56,7 @@ class CatalogApplication:
         paginator = Paginator(policy.api_page_size)
         self._database_commands = DatabaseCommands(repository, clock)
         self._database_queries = DatabaseQueries(repository, paginator)
-        self._table_commands = TableCommands(repository, clock)
+        self._table_commands = TableCommands(repository, clock, IcebergCommitObserver())
         self._table_queries = TableQueries(repository, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
         self._partition_commands = PartitionCommands(repository, clock)

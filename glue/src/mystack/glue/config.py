@@ -31,11 +31,21 @@ class GlueRuntimeProfile:
 
 
 @dataclass(frozen=True, slots=True)
+class GlueCatalogLockSettings:
+    """Bounded inter-process lock settings for the durable catalog file."""
+
+    lock_file: Path
+    acquire_timeout_seconds: float
+    poll_interval_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
 class GlueSettings:
     listen_host: str
     listen_port: int
     data_root: Path
     state_file: Path
+    catalog_lock: GlueCatalogLockSettings
     default_region: str
     runtime: GlueRuntimeProfile
     policy: CatalogPolicy
@@ -50,6 +60,7 @@ class GlueSettings:
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
         expression = require_mapping(glue, "partition_expressions")
+        catalog_lock = require_mapping(glue, "catalog_lock")
         fault_injection = require_mapping(glue, "fault_injection")
         try:
             runtime_name = str(glue["runtime_profile"])
@@ -61,11 +72,31 @@ class GlueSettings:
                 if configured_state_file.is_absolute()
                 else data_root / configured_state_file
             )
+            configured_lock_file = Path(str(catalog_lock["file"]))
+            lock_file = (
+                configured_lock_file
+                if configured_lock_file.is_absolute()
+                else data_root / configured_lock_file
+            )
+            lock_timeout_seconds = float(catalog_lock["acquire_timeout_seconds"])
+            lock_poll_interval_seconds = float(catalog_lock["poll_interval_seconds"])
+            if lock_file.resolve(strict=False) == state_file.resolve(strict=False):
+                raise ConfigurationError("glue.catalog_lock.file must differ from glue.state_file")
+            if lock_poll_interval_seconds > lock_timeout_seconds:
+                raise ConfigurationError(
+                    "glue.catalog_lock.poll_interval_seconds must be no greater than "
+                    "glue.catalog_lock.acquire_timeout_seconds"
+                )
             return cls(
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
                 data_root=data_root,
                 state_file=state_file,
+                catalog_lock=GlueCatalogLockSettings(
+                    lock_file=lock_file,
+                    acquire_timeout_seconds=lock_timeout_seconds,
+                    poll_interval_seconds=lock_poll_interval_seconds,
+                ),
                 default_region=str(localstack["region"]),
                 runtime=GlueRuntimeProfile(
                     name=runtime_name,

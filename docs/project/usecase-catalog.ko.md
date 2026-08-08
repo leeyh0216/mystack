@@ -119,13 +119,17 @@
 - 저장/변경: current table, 단조 증가 version, 선택적 archive입니다.
 - 책임: `CatalogTable`이 revision/archive/CAS를 소유하고 table command, query, version-query
   handler를 분리합니다.
-- 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit하며
-  Mystack이 Iceberg metadata format을 구현하지 않습니다.
-- 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작.
-- 실패: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input 제외.
-- 관측: mapped domain error/version/persistence test, Spark Hive/Iceberg E2E가 API 사용.
+- 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit합니다.
+  Iceberg update는 전달받은 `metadata_location`을 원자적으로 교체하며 Mystack이 Iceberg metadata
+  format을 구현하거나 parse하지 않습니다.
+- 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작이며 같은
+  state file을 공유하는 JSON-backed process는 설정된 상한이 있는 POSIX lock도 공유합니다.
+- 실패: AlreadyExists, EntityNotFound, InvalidInput과 modeled `ConcurrentModificationException`으로
+  변환하는 domain version mismatch이며 open-table-format input은 제외합니다.
+- 관측: 안전한 Iceberg commit/version/conflict/persistence event, spawn process CAS test와 두 container
+  실제 Spark/Iceberg retry E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
-  `glue/tests/test_persistence.py`
+  `glue/tests/test_iceberg_commit.py`, `docs/protocols/glue-iceberg-commits.ko.md`
 - 신뢰도: High
 
 <!-- section: uc-007 -->

@@ -52,13 +52,15 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. Model 최댓값,
   자연 오류, batch 항목 순서와 rollback을 결정적으로 처리합니다. 직렬화한 candidate
   transaction이 visible publish 전에 schema-2 JSON을 persist/fsync/replace하고 schema 1을
-  migration하며 rename/cascade/version check를 한 commit으로 처리합니다. Inbound adapter는 domain
-  error를 문서화된 오류로 변환합니다.
+  migration하며 rename/cascade/version check를 한 commit으로 처리합니다. 제한된 POSIX lock과 최신
+  state reload로 같은 transaction을 emulator process 사이까지 확장합니다. Inbound adapter는
+  domain error를 문서화된 오류로 변환합니다.
 - Glue 책임은 immutable lossless domain snapshot이 name/revision/archive/partition invariant를,
   focused command/query/version/batch/pagination/initialization handler가 application policy를
   소유하며 repository는 collection snapshot과 candidate transaction만 노출하도록 분리했습니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
-  create/append/read/schema evolution, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
+  create/append/read/schema evolution과 concurrent `VersionId` commit retry, AWS SDK for pandas
+  3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
 - 운영 기능은 EMR cluster/Step command와 Glue metadata 탐색을 제공하는 service-aware Console,
   resource/log view, route/thread/task 진단, authorization과 payload 내용을 제외한 구조화 boundary
   log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.

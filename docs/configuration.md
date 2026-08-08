@@ -71,7 +71,7 @@ and is not required for image consumers.
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
-| `glue` | Durable catalog state, catalog ID, paging, partition-expression/fault policies, and runtime profile |
+| `glue` | Durable catalog state/lock, catalog ID, paging, partition-expression/fault policies, and runtime profile |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -84,6 +84,14 @@ variables.
 `max_length` defaults to the official 2,048-character API limit, `max_tokens` bounds parser work,
 and `supported_key_types` defines the typed compatibility profile. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md).
+
+`glue.catalog_lock` configures the inter-process boundary for the JSON catalog. `file` resolves
+under `glue.data_root` unless absolute and must differ from `glue.state_file`.
+`acquire_timeout_seconds` bounds waiting for another emulator process;
+`poll_interval_seconds` controls non-blocking POSIX `flock` retries and cannot exceed the timeout.
+All processes sharing a state file must mount and configure the same lock file. See the
+[Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md) and Python's official
+[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) reference.
 
 `glue.fault_injection` is disabled by default. When enabled, each rule selects one implemented
 operation and either `OperationTimeoutException` or `InternalServiceException`; only one rule may
@@ -161,6 +169,9 @@ Browser interaction deadlines and whether missing Chromium is fatal are configur
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
 The isolated wheel co-installation deadline is `tests.package_smoke_timeout_seconds`.
+`tests.e2e.glue_iceberg_contention_script` names the image-owned Spark job used by the CI-only
+two-container optimistic-commit scenario; it is a file setting so custom Glue images can relocate
+the harness without changing test code.
 
 After environment overrides, every process validates the complete document against the packaged
 [`mystack.schema.json`](../shared/src/mystack/aws_protocol/mystack.schema.json). Unknown keys,

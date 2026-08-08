@@ -3,6 +3,8 @@
 References:
 - https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html
 - https://docs.aws.amazon.com/glue/latest/webapi/API_TableVersion.html
+- https://iceberg.apache.org/docs/1.7.1/aws/#optimistic-locking
+- https://docs.python.org/3/library/fcntl.html#fcntl.flock
 - https://docs.python.org/3/library/os.html#os.replace
 - https://docs.python.org/3/library/os.html#os.fsync
 """
@@ -11,10 +13,12 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import fcntl
 import hashlib
 import json
 import logging
 import os
+import time
 from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
@@ -39,6 +43,171 @@ class CatalogStateStore(Protocol):
     def load(self) -> CatalogState: ...
 
     async def save(self, candidate: CatalogState) -> None: ...
+
+
+class CatalogStateSynchronizer(Protocol):
+    """Coordinate state-file access without leaking locking into application code."""
+
+    @property
+    def reload_on_access(self) -> bool: ...
+
+    def hold(self, *, operation: str) -> AbstractAsyncContextManager[None]: ...
+
+
+class LocalCatalogStateSynchronizer:
+    """No-op boundary for stores already owned by one repository instance."""
+
+    @property
+    def reload_on_access(self) -> bool:
+        return False
+
+    @asynccontextmanager
+    async def hold(self, *, operation: str) -> AsyncIterator[None]:
+        del operation
+        yield
+
+
+class FileCatalogStateSynchronizer:
+    """Bounded POSIX advisory lock shared by Glue processes on one mounted volume."""
+
+    def __init__(
+        self,
+        lock_file: Path,
+        *,
+        acquire_timeout_seconds: float,
+        poll_interval_seconds: float,
+    ) -> None:
+        if acquire_timeout_seconds <= 0:
+            raise ValueError("Catalog lock acquire timeout must be positive")
+        if poll_interval_seconds <= 0 or poll_interval_seconds > acquire_timeout_seconds:
+            raise ValueError(
+                "Catalog lock poll interval must be positive and no greater than its timeout"
+            )
+        self._lock_file = lock_file
+        self._acquire_timeout_seconds = acquire_timeout_seconds
+        self._poll_interval_seconds = poll_interval_seconds
+
+    @property
+    def reload_on_access(self) -> bool:
+        return True
+
+    @asynccontextmanager
+    async def hold(self, *, operation: str) -> AsyncIterator[None]:
+        started = time.monotonic()
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.repository.process_lock.acquire.before",
+            operation=operation,
+            lock_file=str(self._lock_file),
+            timeout_seconds=self._acquire_timeout_seconds,
+            side_effect=True,
+            fix_hint=(
+                "If contention grows after a Spark/Iceberg client update, inspect writer retry "
+                "logs before changing glue.catalog_lock limits."
+            ),
+        )
+        acquisition = asyncio.create_task(asyncio.to_thread(self._acquire))
+        try:
+            descriptor = await asyncio.shield(acquisition)
+        except asyncio.CancelledError as cancellation:
+            # asyncio.to_thread cannot cancel a running flock loop. Wait for its bounded
+            # result and release an acquired descriptor so cancellation cannot leak a lock.
+            try:
+                descriptor = await acquisition
+            except Exception:
+                log_event(
+                    _LOGGER,
+                    logging.WARNING,
+                    "glue.repository.process_lock.acquire.cancelled",
+                    operation=operation,
+                    lock_file=str(self._lock_file),
+                    lock_acquired=False,
+                    duration_ms=round((time.monotonic() - started) * 1000, 3),
+                    side_effect=True,
+                )
+                raise cancellation from None
+            await self._release_without_interruption(descriptor)
+            log_event(
+                _LOGGER,
+                logging.WARNING,
+                "glue.repository.process_lock.acquire.cancelled",
+                operation=operation,
+                lock_file=str(self._lock_file),
+                lock_acquired=True,
+                duration_ms=round((time.monotonic() - started) * 1000, 3),
+                side_effect=True,
+            )
+            raise cancellation
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "glue.repository.process_lock.acquire.failed",
+                operation=operation,
+                lock_file=str(self._lock_file),
+                duration_ms=round((time.monotonic() - started) * 1000, 3),
+                side_effect=True,
+                exc_info=True,
+            )
+            raise
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.repository.process_lock.acquire.after",
+            operation=operation,
+            lock_file=str(self._lock_file),
+            duration_ms=round((time.monotonic() - started) * 1000, 3),
+            side_effect=True,
+        )
+        try:
+            yield
+        finally:
+            await self._release_without_interruption(descriptor)
+            log_event(
+                _LOGGER,
+                logging.DEBUG,
+                "glue.repository.process_lock.release.after",
+                operation=operation,
+                lock_file=str(self._lock_file),
+                held_ms=round((time.monotonic() - started) * 1000, 3),
+                side_effect=True,
+            )
+
+    async def _release_without_interruption(self, descriptor: int) -> None:
+        release = asyncio.create_task(asyncio.to_thread(self._release, descriptor))
+        try:
+            await asyncio.shield(release)
+        except asyncio.CancelledError:
+            await release
+            raise
+
+    def _acquire(self) -> int:
+        self._lock_file.parent.mkdir(parents=True, exist_ok=True)
+        descriptor = os.open(self._lock_file, os.O_CREAT | os.O_RDWR, 0o600)
+        deadline = time.monotonic() + self._acquire_timeout_seconds
+        try:
+            while True:
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    return descriptor
+                except BlockingIOError as error:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"Timed out acquiring catalog lock after "
+                            f"{self._acquire_timeout_seconds} seconds"
+                        ) from error
+                    time.sleep(self._poll_interval_seconds)
+        except BaseException:
+            os.close(descriptor)
+            raise
+
+    @staticmethod
+    def _release(descriptor: int) -> None:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
 
 
 class VolatileCatalogStateStore:
@@ -196,14 +365,21 @@ class JsonCatalogStateStore:
 class TransactionalCatalogRepository:
     """Publish a candidate only after its composed state store commits successfully."""
 
-    def __init__(self, store: CatalogStateStore) -> None:
+    def __init__(
+        self,
+        store: CatalogStateStore,
+        synchronizer: CatalogStateSynchronizer | None = None,
+    ) -> None:
         self._store = store
+        self._synchronizer = synchronizer or LocalCatalogStateSynchronizer()
         self._visible = copy.deepcopy(store.load())
         self._transaction_lock = asyncio.Lock()
 
     async def snapshot(self) -> CatalogState:
         async with self._transaction_lock:
-            snapshot = copy.deepcopy(self._visible)
+            async with self._synchronizer.hold(operation="snapshot"):
+                await self._refresh_visible_state()
+                snapshot = copy.deepcopy(self._visible)
         log_event(
             _LOGGER,
             logging.DEBUG,
@@ -223,43 +399,53 @@ class TransactionalCatalogRepository:
         resource_key: tuple[object, ...],
     ) -> AsyncIterator[CatalogState]:
         async with self._transaction_lock:
-            base = self._visible
-            candidate = copy.deepcopy(base)
-            fingerprint = _resource_fingerprint(resource_key)
-            log_event(
-                _LOGGER,
-                logging.INFO,
-                "glue.repository.transaction.before",
-                operation=operation,
-                resource_key_fingerprint=fingerprint,
-                visible_revision=base.revision,
-                side_effect=True,
-            )
-            try:
-                yield candidate
-            except BaseException:
+            async with self._synchronizer.hold(operation=operation):
+                await self._refresh_visible_state()
+                base = self._visible
+                candidate = copy.deepcopy(base)
+                fingerprint = _resource_fingerprint(resource_key)
                 log_event(
                     _LOGGER,
-                    logging.WARNING,
-                    "glue.repository.transaction.rolled_back",
+                    logging.INFO,
+                    "glue.repository.transaction.before",
                     operation=operation,
                     resource_key_fingerprint=fingerprint,
                     visible_revision=base.revision,
-                    rollback_reason="mutation-failed",
                     side_effect=True,
-                    exc_info=True,
                 )
-                raise
-            candidate.revision = base.revision + 1
-            save_task = asyncio.create_task(self._store.save(copy.deepcopy(candidate)))
-            cancellation: asyncio.CancelledError | None = None
-            try:
-                await asyncio.shield(save_task)
-            except asyncio.CancelledError as error:
-                cancellation = error
                 try:
-                    await save_task
+                    yield candidate
                 except BaseException:
+                    log_event(
+                        _LOGGER,
+                        logging.WARNING,
+                        "glue.repository.transaction.rolled_back",
+                        operation=operation,
+                        resource_key_fingerprint=fingerprint,
+                        visible_revision=base.revision,
+                        rollback_reason="mutation-failed",
+                        side_effect=True,
+                        exc_info=True,
+                    )
+                    raise
+                candidate.revision = base.revision + 1
+                save_task = asyncio.create_task(self._store.save(copy.deepcopy(candidate)))
+                cancellation: asyncio.CancelledError | None = None
+                try:
+                    await asyncio.shield(save_task)
+                except asyncio.CancelledError as error:
+                    cancellation = error
+                    try:
+                        await save_task
+                    except BaseException:
+                        self._log_persistence_rollback(
+                            operation,
+                            fingerprint,
+                            base.revision,
+                            candidate.revision,
+                        )
+                        raise
+                except Exception:
                     self._log_persistence_rollback(
                         operation,
                         fingerprint,
@@ -267,38 +453,47 @@ class TransactionalCatalogRepository:
                         candidate.revision,
                     )
                     raise
-            except Exception:
-                self._log_persistence_rollback(
-                    operation,
-                    fingerprint,
-                    base.revision,
-                    candidate.revision,
-                )
-                raise
-            self._visible = copy.deepcopy(candidate)
-            log_event(
-                _LOGGER,
-                logging.INFO,
-                "glue.repository.transaction.after",
-                operation=operation,
-                resource_key_fingerprint=fingerprint,
-                committed_revision=candidate.revision,
-                database_count=len(candidate.databases),
-                table_count=len(candidate.tables),
-                partition_count=len(candidate.partitions),
-                side_effect=True,
-            )
-            if cancellation is not None:
+                self._visible = copy.deepcopy(candidate)
                 log_event(
                     _LOGGER,
-                    logging.WARNING,
-                    "glue.repository.transaction.cancelled_after_commit",
+                    logging.INFO,
+                    "glue.repository.transaction.after",
                     operation=operation,
                     resource_key_fingerprint=fingerprint,
                     committed_revision=candidate.revision,
+                    database_count=len(candidate.databases),
+                    table_count=len(candidate.tables),
+                    partition_count=len(candidate.partitions),
                     side_effect=True,
                 )
-                raise cancellation
+                if cancellation is not None:
+                    log_event(
+                        _LOGGER,
+                        logging.WARNING,
+                        "glue.repository.transaction.cancelled_after_commit",
+                        operation=operation,
+                        resource_key_fingerprint=fingerprint,
+                        committed_revision=candidate.revision,
+                        side_effect=True,
+                    )
+                    raise cancellation
+
+    async def _refresh_visible_state(self) -> None:
+        if not self._synchronizer.reload_on_access:
+            return
+        previous_revision = self._visible.revision
+        refreshed = await asyncio.to_thread(self._store.load)
+        self._visible = copy.deepcopy(refreshed)
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.repository.external_state.refresh.after",
+            previous_revision=previous_revision,
+            refreshed_revision=refreshed.revision,
+            database_count=len(refreshed.databases),
+            table_count=len(refreshed.tables),
+            partition_count=len(refreshed.partitions),
+        )
 
     @staticmethod
     def _log_persistence_rollback(
@@ -346,9 +541,24 @@ class InMemoryCatalogRepository:
 class JsonCatalogRepository:
     """Durable repository composed with JSON storage rather than inherited behavior."""
 
-    def __init__(self, state_file: Path) -> None:
+    def __init__(
+        self,
+        state_file: Path,
+        *,
+        lock_file: Path | None = None,
+        lock_timeout_seconds: float = 30.0,
+        lock_poll_interval_seconds: float = 0.05,
+    ) -> None:
         self._store = JsonCatalogStateStore(state_file)
-        self._delegate = TransactionalCatalogRepository(self._store)
+        resolved_lock_file = lock_file or state_file.with_name(f"{state_file.name}.lock")
+        if resolved_lock_file.resolve(strict=False) == state_file.resolve(strict=False):
+            raise ValueError("Catalog lock file must differ from catalog state file")
+        synchronizer = FileCatalogStateSynchronizer(
+            resolved_lock_file,
+            acquire_timeout_seconds=lock_timeout_seconds,
+            poll_interval_seconds=lock_poll_interval_seconds,
+        )
+        self._delegate = TransactionalCatalogRepository(self._store, synchronizer)
 
     async def snapshot(self) -> CatalogState:
         return await self._delegate.snapshot()

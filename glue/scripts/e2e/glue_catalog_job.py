@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass
 
 from pyspark.sql import SparkSession
+from spark_catalog_session import GlueSparkCatalogSettings
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,49 +44,14 @@ def main() -> None:
     hive_repair_table = "hive_partition_repair"
     hive_alter_table = "hive_table_alter"
     iceberg_table = "iceberg_types"
-    warehouse = f"s3://{args.bucket}/warehouse"
-    builder = (
-        SparkSession.builder.appName("mystack-glue-catalog-e2e")
-        .config(
-            "spark.hadoop.hive.metastore.client.factory.class",
-            "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
-        )
-        .config("spark.hadoop.aws.glue.endpoint", args.catalog_endpoint)
-        .config("spark.hadoop.aws.region", args.region)
-        .config("spark.hadoop.hive.metastore.glue.catalogid", args.catalog_id)
-        .config("spark.hadoop.fs.s3a.endpoint", args.object_store_endpoint)
-        .config("spark.hadoop.fs.s3a.path.style.access", "true")
-        .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
-        .config(
-            "spark.sql.extensions",
-            "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
-        )
-        .config(
-            f"spark.sql.catalog.{args.catalog_name}",
-            "org.apache.iceberg.spark.SparkCatalog",
-        )
-        .config(
-            f"spark.sql.catalog.{args.catalog_name}.catalog-impl",
-            "org.apache.iceberg.aws.glue.GlueCatalog",
-        )
-        .config(
-            f"spark.sql.catalog.{args.catalog_name}.io-impl",
-            "org.apache.iceberg.aws.s3.S3FileIO",
-        )
-        .config(f"spark.sql.catalog.{args.catalog_name}.warehouse", warehouse)
-        .config(
-            f"spark.sql.catalog.{args.catalog_name}.glue.endpoint",
-            args.catalog_endpoint,
-        )
-        .config(f"spark.sql.catalog.{args.catalog_name}.glue.id", args.catalog_id)
-        .config(
-            f"spark.sql.catalog.{args.catalog_name}.s3.endpoint",
-            args.object_store_endpoint,
-        )
-        .config(f"spark.sql.catalog.{args.catalog_name}.s3.path-style-access", "true")
-        .enableHiveSupport()
-    )
-    spark = builder.getOrCreate()
+    spark = GlueSparkCatalogSettings(
+        catalog_endpoint=args.catalog_endpoint,
+        object_store_endpoint=args.object_store_endpoint,
+        region=args.region,
+        catalog_id=args.catalog_id,
+        bucket=args.bucket,
+        catalog_name=args.catalog_name,
+    ).create_session("mystack-glue-catalog-e2e")
     try:
         spark.sql(f"CREATE DATABASE IF NOT EXISTS `{hive_database}`")
         spark.sql(

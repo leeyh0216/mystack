@@ -61,9 +61,10 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
-- Inject Glue state-store failure, cancellation, concurrent writers, stale table versions, restart,
-  rename/cascade, and schema-1 migration. These contracts prove Data Catalog metadata atomicity;
-  they do not claim the separate Iceberg table-transaction target is complete.
+- Inject Glue state-store failure, cancellation, same-process and spawned-process concurrent
+  writers, stale table versions, bounded file-lock contention, restart, rename/cascade, and schema-1
+  migration. These contracts prove Data Catalog metadata atomicity and Iceberg catalog-pointer CAS;
+  they do not claim that Iceberg data/manifest/snapshot features are implemented by Mystack.
 - Mutate Glue input/output dictionaries around domain construction and assert that names, table
   revision/archive/CAS, partition cardinality, and aggregate moves remain immutable. Executable
   responsibility tests restrict every handler and repository to its documented public methods.
@@ -82,7 +83,12 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   archive. The Compose subprocess and every HTTP/SDK wait use the configured E2E timeout. Docker's
   official [`compose restart` contract](https://docs.docker.com/reference/cli/docker/compose/restart/)
   defines the injected lifecycle event.
-- The current Iceberg scenario covers create, append, read, and schema evolution. Partition and transaction scenarios remain target scope, using the [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
+- The current Iceberg scenario covers create, append, read, schema evolution, and two
+  barrier-synchronized Spark writers in separate Glue-image containers. The client must
+  refresh/retry the stale `VersionId` commit and retain both appends. Partition/sort evolution,
+  row-level DML, snapshots, refs, procedures, and lifecycle operations remain separate target scope.
+  See the [Iceberg commit protocol](protocols/glue-iceberg-commits.md) and
+  [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
 <!-- section: reproducibility -->
 ## Reproducibility

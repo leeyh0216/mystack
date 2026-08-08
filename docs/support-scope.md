@@ -19,7 +19,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial API inventory: 22 boto3-tested operations with complete deterministic database/table/version/partition/batch errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
 | Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, supported Hive V1 table ALTER metadata semantics, and deterministic errors for every implemented operation | Broader Spark/Hive client variants |
-| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
+| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution plus atomic `VersionId` pointer commit and concurrent-writer retry E2E | Partition/sort evolution, row-level DML, snapshots/refs/procedures, lifecycle operations, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
@@ -29,8 +29,10 @@ to EMR. Glue metadata mutations use serialized
 candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
 database/table rename or deletion includes child tables and partitions in one commit. The versioned
 JSON document is stored at `glue.state_file`; schema version 1 is migrated on the next mutation.
-This is Glue Data Catalog metadata transaction behavior, distinct from the Iceberg table-transaction
-target in the matrix. `GetPartitions` supports the documented comparison, logical, `IN`,
+For Iceberg tables, this transaction now includes inter-process file locking, latest-state reload,
+and an atomic `VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
+metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
+`GetPartitions` supports the documented comparison, logical, `IN`,
 `BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.
 Spark Hive partition add/drop/rename/location and repair mappings are documented in the

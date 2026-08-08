@@ -11,6 +11,7 @@ from __future__ import annotations
 import copy
 import re
 
+from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock
 from mystack.glue.application.state import database, name, rename_table_partitions, table
@@ -20,14 +21,21 @@ from mystack.glue.domain import (
     CatalogTableVersion,
     EntityNotFoundError,
     InvalidInputError,
+    VersionMismatchError,
 )
 from mystack.glue.domain.repositories import CatalogRepository
 
 
 class TableCommands:
-    def __init__(self, repository: CatalogRepository, clock: Clock) -> None:
+    def __init__(
+        self,
+        repository: CatalogRepository,
+        clock: Clock,
+        iceberg_commits: IcebergCommitObserver,
+    ) -> None:
         self._repository = repository
         self._clock = clock
+        self._iceberg_commits = iceberg_commits
 
     async def create(
         self,
@@ -69,32 +77,57 @@ class TableCommands:
         if version_id is not None:
             version_id = CatalogTableVersion.validated_id(version_id)
         old_key = (catalog_id, normalized_database, normalized_old)
-        async with self._repository.transaction(
-            operation="update-table",
-            resource_key=old_key,
-        ) as state:
-            current = table(state, catalog_id, normalized_database, normalized_old)
-            new_key = (catalog_id, normalized_database, revised_name)
-            if new_key != old_key and new_key in state.tables:
-                raise AlreadyExistsError(
-                    f"Table {normalized_database}.{revised_name} already exists"
+        attempt = None
+        try:
+            async with self._repository.transaction(
+                operation="update-table",
+                resource_key=old_key,
+            ) as state:
+                current = table(state, catalog_id, normalized_database, normalized_old)
+                attempt = self._iceberg_commits.begin(
+                    current,
+                    definition,
+                    expected_version_id=version_id,
+                    skip_archive=skip_archive,
                 )
-            revised = current.revise(
-                definition,
-                now=self._clock.now(),
-                expected_version_id=version_id,
-                skip_archive=skip_archive,
-            )
-            state.tables.pop(old_key)
-            state.tables[new_key] = revised
-            if new_key != old_key:
-                rename_table_partitions(
-                    state,
-                    catalog_id,
-                    normalized_database,
-                    normalized_old,
-                    revised.name,
-                )
+                new_key = (catalog_id, normalized_database, revised_name)
+                if new_key != old_key and new_key in state.tables:
+                    raise AlreadyExistsError(
+                        f"Table {normalized_database}.{revised_name} already exists"
+                    )
+                try:
+                    revised = current.revise(
+                        definition,
+                        now=self._clock.now(),
+                        expected_version_id=version_id,
+                        skip_archive=skip_archive,
+                    )
+                except VersionMismatchError:
+                    if attempt is not None:
+                        attempt.conflicted()
+                    raise
+                if attempt is not None:
+                    attempt.accepted(revised.version_id)
+                state.tables.pop(old_key)
+                state.tables[new_key] = revised
+                if new_key != old_key:
+                    rename_table_partitions(
+                        state,
+                        catalog_id,
+                        normalized_database,
+                        normalized_old,
+                        revised.name,
+                    )
+                if attempt is not None:
+                    attempt.persisting(revised.version_id)
+        except VersionMismatchError:
+            raise
+        except BaseException as error:
+            if attempt is not None:
+                attempt.failed(error)
+            raise
+        if attempt is not None:
+            attempt.succeeded(revised.version_id)
 
     async def delete(self, catalog_id: str, database_name: str, table_name: str) -> None:
         normalized_database = name(database_name)

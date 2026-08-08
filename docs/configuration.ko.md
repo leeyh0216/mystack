@@ -69,7 +69,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
-| `glue` | durable catalog state, catalog ID, paging, partition expression/fault 정책, runtime profile |
+| `glue` | durable catalog state/lock, catalog ID, paging, partition expression/fault 정책, runtime profile |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -81,6 +81,14 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 `max_length` 기본값은 공식 API의 2,048자 제한이고, `max_tokens`는 parser 작업량을 제한하며,
 `supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
 protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+
+`glue.catalog_lock`은 JSON catalog의 process 간 경계를 설정합니다. `file`은 absolute가 아니면
+`glue.data_root` 아래에서 해석하며 `glue.state_file`과 달라야 합니다.
+`acquire_timeout_seconds`는 다른 emulator process의 lock을 기다리는 시간을 제한하고
+`poll_interval_seconds`는 non-blocking POSIX `flock` 재시도 주기이며 timeout보다 클 수 없습니다.
+State file을 공유하는 모든 process가 같은 lock file을 mount하고 설정해야 합니다. [Iceberg
+GlueCatalog commit 계약](protocols/glue-iceberg-commits.ko.md)과 Python 공식
+[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) 문서를 참고하세요.
 
 `glue.fault_injection`은 기본적으로 꺼져 있습니다. 활성화하면 rule 하나가 구현된 operation
 하나와 `OperationTimeoutException` 또는 `InternalServiceException` 중 하나를 선택합니다. 한
@@ -162,6 +170,9 @@ Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
 격리된 wheel 동시 설치 제한 시간은 `tests.package_smoke_timeout_seconds`로 설정합니다.
+`tests.e2e.glue_iceberg_contention_script`는 CI 전용 두 container optimistic-commit 시나리오에서
+사용하는 image 내부 Spark job path입니다. Custom Glue image가 harness 위치를 바꾸더라도 test
+코드를 고치지 않도록 file 설정으로 둡니다.
 
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
 [`mystack.schema.json`](../shared/src/mystack/aws_protocol/mystack.schema.json)으로 검증합니다.

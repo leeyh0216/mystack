@@ -61,9 +61,10 @@
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
-- Glue state store의 실패·cancellation·concurrent writer·stale table version·restart·rename/cascade·
-  schema-1 migration을 주입합니다. 이 계약은 Data Catalog metadata 원자성을 검증하며 별도 Iceberg
-  table transaction 목표의 완료를 의미하지 않습니다.
+- Glue state store의 실패·cancellation·같은 process 및 spawn process concurrent writer·stale table
+  version·상한이 있는 file-lock contention·restart·rename/cascade·schema-1 migration을 주입합니다. 이
+  계약은 Data Catalog metadata 원자성과 Iceberg catalog-pointer CAS를 검증하지만 Mystack이 Iceberg
+  data/manifest/snapshot 기능을 구현한다는 뜻은 아닙니다.
 - Glue domain 생성 전후 input/output dictionary를 변경해도 name, table revision/archive/CAS,
   partition cardinality, aggregate move가 immutable인지 확인합니다. 실행 가능한 책임 test는 각
   handler와 repository의 public method를 문서화된 범위로 제한합니다.
@@ -80,7 +81,12 @@
   boto3 modeled not-found 동작, idempotent S3 archive 재게시를 검증합니다. Compose subprocess와
   모든 HTTP/SDK wait는 설정한 E2E timeout을 사용합니다. 주입한 lifecycle event는 Docker 공식
   [`compose restart` 계약](https://docs.docker.com/reference/cli/docker/compose/restart/)을 따릅니다.
-- 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
+- 현재 Iceberg 시나리오는 create, append, read, schema evolution과 서로 다른 Glue-image container의
+  barrier 동기화 Spark writer 두 개를 검증합니다. Client가 stale `VersionId` commit을 refresh/retry하고
+  append 둘을 모두 보존해야 합니다. Partition/sort evolution, row-level DML, snapshot, ref, procedure,
+  lifecycle operation은 별도 목표 범위입니다. [Iceberg commit
+  protocol](protocols/glue-iceberg-commits.ko.md)과 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
+  참고하세요.
 
 <!-- section: reproducibility -->
 ## 재현성

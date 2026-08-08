@@ -41,6 +41,7 @@ class E2ESettings:
     glue_service: str
     glue_spark_submit: str
     glue_catalog_script: str
+    glue_iceberg_contention_script: str
     glue_expected_spark_version_prefix: str
     glue_catalog_endpoint_url: str
     object_store_endpoint_url: str
@@ -80,6 +81,7 @@ class E2ESettings:
             glue_service=str(e2e["glue_service"]),
             glue_spark_submit=str(e2e["glue_spark_submit"]),
             glue_catalog_script=str(e2e["glue_catalog_script"]),
+            glue_iceberg_contention_script=str(e2e["glue_iceberg_contention_script"]),
             glue_expected_spark_version_prefix=str(e2e["glue_expected_spark_version_prefix"]),
             glue_catalog_endpoint_url=str(e2e["glue_catalog_endpoint_url"]),
             object_store_endpoint_url=str(e2e["object_store_endpoint_url"]),

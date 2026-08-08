@@ -33,6 +33,8 @@ Mystack from an application, start with the [user guide](index.md).
   [protocol analysis](protocols/aws-json-1.1.md)
 - Deterministic partition validation, update, batch ordering, and partial success:
   [Glue partition/batch error contract](protocols/glue-partition-batch-errors.md)
+- Iceberg `VersionId` pointer CAS, process locking, retry evidence, and repair locations:
+  [Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md)
 - Pinned botocore models and implementation status: [API coverage](compatibility/api-coverage.md)
 - E2E claims by external client: [client compatibility matrix](compatibility/client-matrix.md)
 - AWS, boto, and Spark evolution plus automated repair locations: [evolution policy](evolution.md)

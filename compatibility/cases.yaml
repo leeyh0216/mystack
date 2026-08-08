@@ -178,7 +178,7 @@ compatibility_profiles:
       iceberg: 1.7.1
     services: [glue, s3]
     runtime_kinds: [glue]
-    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution]
+    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution, iceberg-concurrent-commit-retry]
     model_fingerprints:
       glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
     operation_ids:
@@ -213,7 +213,7 @@ scenario_sets:
   glue-real-spark-catalogs:
     kind: e2e
     test_nodes: [tests/e2e/test_glue_spark_catalog.py]
-    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve]
+    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve, iceberg-multi-container-contention]
 
 lanes:
   required:

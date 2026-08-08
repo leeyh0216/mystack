@@ -62,7 +62,12 @@ def create_app(
     )
 
     configure_logging("glue", log_level)
-    repository = repository or JsonCatalogRepository(settings.state_file)
+    repository = repository or JsonCatalogRepository(
+        settings.state_file,
+        lock_file=settings.catalog_lock.lock_file,
+        lock_timeout_seconds=settings.catalog_lock.acquire_timeout_seconds,
+        lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
+    )
     clock = clock or SystemClock()
     if application is None:
         application = CatalogApplication(
@@ -105,6 +110,9 @@ def create_app(
             config_fingerprint=settings.config_fingerprint,
             data_root=str(settings.data_root),
             state_file=str(settings.state_file),
+            catalog_lock_file=str(settings.catalog_lock.lock_file),
+            catalog_lock_acquire_timeout_seconds=(settings.catalog_lock.acquire_timeout_seconds),
+            catalog_lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
             operation_count=len(dispatcher.operations),
             operations=sorted(dispatcher.operations),
             runtime_profile={

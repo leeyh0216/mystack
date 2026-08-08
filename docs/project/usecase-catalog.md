@@ -119,13 +119,17 @@
 - Stored/changed data: current table, monotonically incremented version and optional archive.
 - Responsibility: `CatalogTable` owns revision/archive/CAS; table command, query, and version-query
   handlers are independent.
-- Side effects: one candidate commit for table rename, archived version, and child partition keys; no
-  Iceberg metadata-format implementation in Mystack.
-- Preconditions/rules: database exists, unique normalized name, optimistic version and archive behavior.
-- Failures: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input excluded.
-- Observability: mapped domain errors and version/persistence tests; Spark Hive/Iceberg E2E consumes API.
+- Side effects: one candidate commit for table rename, archived version, and child partition keys.
+  Iceberg updates atomically swap the supplied `metadata_location`; Mystack does not implement or
+  parse the Iceberg metadata format.
+- Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
+  JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
+- Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
+  modeled `ConcurrentModificationException`; open-table-format input excluded.
+- Observability: safe Iceberg commit/version/conflict/persistence events, spawned-process CAS tests,
+  and two-container real Spark/Iceberg retry E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
-  `glue/tests/test_persistence.py`
+  `glue/tests/test_iceberg_commit.py`, `docs/protocols/glue-iceberg-commits.md`
 - Confidence: High
 
 <!-- section: uc-007 -->

@@ -164,11 +164,21 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "runtime_profile"],
+      "required": ["listen", "data_root", "state_file", "catalog_lock", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
         "state_file": {"$ref": "#/$defs/non_empty_string"},
+        "catalog_lock": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "acquire_timeout_seconds", "poll_interval_seconds"],
+          "properties": {
+            "file": {"$ref": "#/$defs/non_empty_string"},
+            "acquire_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+            "poll_interval_seconds": {"$ref": "#/$defs/positive_number"}
+          }
+        },
         "catalog_id": {"type": "string", "pattern": "^[0-9]{12}$"},
         "api_page_size": {"type": "integer", "minimum": 1},
         "create_default_database": {"type": "boolean"},
@@ -246,6 +256,7 @@
             "glue_service",
             "glue_spark_submit",
             "glue_catalog_script",
+            "glue_iceberg_contention_script",
             "glue_expected_spark_version_prefix",
             "glue_catalog_endpoint_url",
             "object_store_endpoint_url",
@@ -268,6 +279,7 @@
             "glue_service": {"$ref": "#/$defs/non_empty_string"},
             "glue_spark_submit": {"$ref": "#/$defs/non_empty_string"},
             "glue_catalog_script": {"$ref": "#/$defs/non_empty_string"},
+            "glue_iceberg_contention_script": {"$ref": "#/$defs/non_empty_string"},
             "glue_expected_spark_version_prefix": {"$ref": "#/$defs/non_empty_string"},
             "glue_catalog_endpoint_url": {"$ref": "#/$defs/uri"},
             "object_store_endpoint_url": {"$ref": "#/$defs/uri"},

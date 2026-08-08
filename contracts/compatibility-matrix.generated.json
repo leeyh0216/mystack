@@ -739,7 +739,8 @@
             "partition-repair",
             "table-alter",
             "iceberg-glue-catalog",
-            "schema-evolution"
+            "schema-evolution",
+            "iceberg-concurrent-commit-retry"
           ],
           "client": "spark-glue-catalog",
           "model_fingerprints": {
@@ -773,7 +774,7 @@
           }
         }
       },
-      "evidence_sha256": "a885be16153efcade291b4d390ecad38eb149f23e3f539b015aa2b89136ea10a",
+      "evidence_sha256": "524db84679c2f2caa61c404e3be2ab37320d89c483099a8c0841b10adb219a9e",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -811,7 +812,8 @@
           "hive-partition-pruning",
           "hive-partition-ddl-repair",
           "hive-table-alter",
-          "iceberg-create-append-read-evolve"
+          "iceberg-create-append-read-evolve",
+          "iceberg-multi-container-contention"
         ],
         "test_nodes": [
           "tests/e2e/test_glue_spark_catalog.py"
@@ -874,7 +876,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "a885be16153efcade291b4d390ecad38eb149f23e3f539b015aa2b89136ea10a",
+          "evidence_sha256": "524db84679c2f2caa61c404e3be2ab37320d89c483099a8c0841b10adb219a9e",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -965,5 +967,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "0858d077f7148b501c9e443f36b133d8ad271b700f7a29f2769155e22eda4926"
+  "source_sha256": "4c7203aed7ebb76bd3d1d626d2ceee622f0e11036b0a97d79cd124fde5eda2a6"
 }

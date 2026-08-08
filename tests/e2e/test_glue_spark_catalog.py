@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import time
 import uuid
 from pathlib import Path
 from typing import Any
@@ -81,6 +82,15 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     }
     assert result["iceberg_count"] == 2
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
+    contention = _run_iceberg_contention(
+        s3,
+        e2e_settings,
+        bucket=bucket,
+        database=result["iceberg_database"],
+        table="iceberg_types",
+    )
+    assert {value["writer"] for value in contention} == {"one", "two"}
+    assert max(value["count"] for value in contention) == 4
 
     hive_table = glue.get_table(DatabaseName=result["hive_database"], Name="hive_types")["Table"]
     iceberg_table = glue.get_table(DatabaseName=result["iceberg_database"], Name="iceberg_types")[
@@ -88,6 +98,7 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     ]
     assert hive_table["StorageDescriptor"]["Columns"][2]["Type"] == "array<string>"
     assert iceberg_table["Parameters"]["table_type"].upper() == "ICEBERG"
+    assert int(iceberg_table["VersionId"]) >= 4
 
     altered_table = glue.get_table(
         DatabaseName=result["hive_database"],
@@ -161,3 +172,156 @@ def _write_diagnostics(
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     (artifacts_dir / "glue-spark.stdout.log").write_text(completed.stdout, encoding="utf-8")
     (artifacts_dir / "glue-spark.stderr.log").write_text(completed.stderr, encoding="utf-8")
+
+
+def _run_iceberg_contention(
+    s3,
+    settings: Any,
+    *,
+    bucket: str,
+    database: str,
+    table: str,
+) -> list[dict[str, Any]]:
+    """Release two separate Glue-image Spark JVMs through an S3 barrier.
+
+    Docker Compose `run` creates one-off containers from the reviewed service definition:
+    https://docs.docker.com/reference/cli/docker/compose/run/
+    """
+    barrier_prefix = f"mystack-e2e/contention/{uuid.uuid4().hex}"
+    common = [
+        "docker",
+        "compose",
+        "--file",
+        str(settings.compose_file),
+        "run",
+        "--rm",
+        "--no-deps",
+        "--entrypoint",
+        settings.glue_spark_submit,
+        settings.glue_service,
+        settings.glue_iceberg_contention_script,
+        "--catalog-endpoint",
+        settings.glue_catalog_endpoint_url,
+        "--object-store-endpoint",
+        settings.object_store_endpoint_url,
+        "--region",
+        settings.region,
+        "--catalog-id",
+        settings.catalog_id,
+        "--bucket",
+        bucket,
+        "--database",
+        database,
+        "--table",
+        table,
+        "--catalog-name",
+        "mystack",
+        "--barrier-prefix",
+        barrier_prefix,
+        "--timeout-seconds",
+        str(settings.timeout_seconds),
+        "--poll-interval-seconds",
+        str(settings.poll_interval_seconds),
+    ]
+    processes = {
+        writer: subprocess.Popen(
+            [*common, "--writer", writer, "--row-id", str(row_id)],
+            cwd=settings.compose_file.parent,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for writer, row_id in (("one", 101), ("two", 102))
+    }
+    deadline = time.monotonic() + settings.timeout_seconds
+    completed: dict[str, subprocess.CompletedProcess[str]] = {}
+    try:
+        _wait_for_ready_markers(
+            s3,
+            bucket=bucket,
+            prefix=f"{barrier_prefix}/ready/",
+            expected=2,
+            deadline=deadline,
+            poll_interval_seconds=settings.poll_interval_seconds,
+            processes=processes,
+        )
+        s3.put_object(Bucket=bucket, Key=f"{barrier_prefix}/start", Body=b"start")
+        for writer, process in processes.items():
+            remaining = max(0.1, deadline - time.monotonic())
+            stdout, stderr = process.communicate(timeout=remaining)
+            completed[writer] = subprocess.CompletedProcess(
+                process.args,
+                process.returncode,
+                stdout,
+                stderr,
+            )
+    except subprocess.TimeoutExpired as error:
+        raise AssertionError(
+            "Iceberg contention writers exceeded configured E2E timeout"
+        ) from error
+    finally:
+        for writer, process in processes.items():
+            if process.poll() is None:
+                process.kill()
+            if writer not in completed:
+                stdout, stderr = process.communicate(
+                    timeout=max(1.0, settings.sdk_read_timeout_seconds)
+                )
+                completed[writer] = subprocess.CompletedProcess(
+                    process.args,
+                    process.returncode,
+                    stdout,
+                    stderr,
+                )
+        _write_contention_diagnostics(completed, settings.artifacts_dir)
+
+    assert all(value.returncode == 0 for value in completed.values()), "\n".join(
+        value.stderr[-16000:] for value in completed.values() if value.returncode != 0
+    )
+    return [
+        json.loads(
+            next(
+                line
+                for line in value.stdout.splitlines()
+                if line.startswith("MYSTACK_CONTENTION_RESULT=")
+            ).partition("=")[2]
+        )
+        for value in completed.values()
+    ]
+
+
+def _wait_for_ready_markers(
+    s3,
+    *,
+    bucket: str,
+    prefix: str,
+    expected: int,
+    deadline: float,
+    poll_interval_seconds: float,
+    processes: dict[str, subprocess.Popen[str]],
+) -> None:
+    while time.monotonic() < deadline:
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        if int(response.get("KeyCount", 0)) == expected:
+            return
+        failed = [writer for writer, process in processes.items() if process.poll() is not None]
+        if failed:
+            raise AssertionError(f"Iceberg contention writers exited before barrier: {failed}")
+        time.sleep(poll_interval_seconds)
+    raise AssertionError("Iceberg contention readiness exceeded configured E2E timeout")
+
+
+def _write_contention_diagnostics(
+    completed: dict[str, subprocess.CompletedProcess[str]],
+    artifacts_dir: Path,
+) -> None:
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    for writer, result in completed.items():
+        (artifacts_dir / f"iceberg-contention-{writer}.stdout.log").write_text(
+            result.stdout,
+            encoding="utf-8",
+        )
+        (artifacts_dir / f"iceberg-contention-{writer}.stderr.log").write_text(
+            result.stderr,
+            encoding="utf-8",
+        )
