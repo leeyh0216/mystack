@@ -26,8 +26,6 @@
 - Glue partition 중복은 [CreatePartition](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html)에 따라 `AlreadyExistsException`을 반환해야 합니다.
 - 하나의 boto3 중복 partition 계약에서 `stable`, `application`, `unsafe` context가 같은 관리
   상태를 조회하고 modeled error 변환 하나를 순서대로 합성하는지 확인합니다.
-- 확장 chain 시험은 실행 순서, 완전 교체, 다음 handler 1회 호출, 설정 제한 시간, 시작 권한과
-  버전 실패, 최종 출력 모델 검증을 포함합니다.
 - EMR 테스트는 고정 sleep이 아니라 설정 deadline까지 문서화된 상태를 poll하며 [EMR cluster lifecycle](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-overview.html)을 따릅니다.
 - EMR lifecycle test는 부분 startup과 driver 실패를 주입하고 scheduler를 두 번 닫으며 실제 child
   process를 실행해 역순 cleanup, task/process/lock 무누수, deadline 사용을 검증합니다. 책임 test는

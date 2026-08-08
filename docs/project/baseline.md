@@ -131,4 +131,4 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 
 1. Generate client/runtime compatibility jobs from a versioned manifest.
 2. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
-3. Remove stale SPI-era observability and test documentation.
+3. Keep protocol and client drift repair hints synchronized with the compatibility manifest.

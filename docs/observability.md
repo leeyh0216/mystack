@@ -14,7 +14,7 @@ Mystack emits structured JSON at controllers, component boundaries, state transi
 - `*.completed` after successful work with duration and result metadata
 - `*.failed` on technical failure with exception and actionable `fix_hint`
 - `*.service_error` for modeled AWS behavior without a Python traceback
-- `extension.install.*`, `extension.provider.load.*`, and `extension.invoke.*` at every user-code boundary
+- `protocol.operation_registry.*` while composing reviewed operation families at startup
 - `*.transitioned` for domain state changes with before/after/reason
 
 Repository, S3, process, container, and outbound HTTP adapters must emit all applicable phases.

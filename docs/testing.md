@@ -26,8 +26,6 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Glue partition duplication must return `AlreadyExistsException`, following [CreatePartition](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html).
 - One boto3 duplicate-partition contract proves stable, application, and unsafe contexts inspect
   the same managed state and compose one modeled error translation.
-- Extension chain tests cover ordering, replacement, single-use next, configured timeouts,
-  startup permission/version failures, and final output-model validation.
 - EMR tests poll documented states rather than sleeping fixed durations; lifecycle follows the [EMR cluster model](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-overview.html).
 - EMR lifecycle tests inject partial startup and driver failure, close the scheduler twice, and run a
   real child process to prove reverse-order cleanup, no task/process/lock leaks, and deadline use.

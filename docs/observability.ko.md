@@ -14,7 +14,7 @@ Mystack은 Controller, component 경계, 상태 전이, 모든 외부 side effec
 - 성공 후 duration과 결과 metadata를 가진 `*.completed`
 - 기술 실패 시 exception과 실행 가능한 `fix_hint`를 가진 `*.failed`
 - Python traceback 없이 modeled AWS 동작을 나타내는 `*.service_error`
-- 사용자 코드 경계마다 `extension.install.*`, `extension.provider.load.*`, `extension.invoke.*`
+- 시작 시 검토한 operation family를 조립하는 `protocol.operation_registry.*`
 - before/after/reason을 가진 Domain 상태 `*.transitioned`
 
 Repository, S3, process, container, outbound HTTP adapter는 해당 단계를 모두 기록해야 합니다.

@@ -131,4 +131,4 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 
 1. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
 2. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
-3. 이전 SPI에서 남은 관측·시험 문서를 제거합니다.
+3. Protocol·client 변경 대응 안내를 compatibility manifest와 동기화합니다.
