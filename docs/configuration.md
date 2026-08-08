@@ -65,6 +65,11 @@ adapter, covered by a typed configuration test, and documented in both languages
 and Application modules receive typed policy/value objects and never read files or environment
 variables.
 
+The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
+fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
+Compose service or custom runtime image needs no test-code change. Spark documents JAR and main
+class submission in its official [application submission guide](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
+
 After environment overrides, every process validates the complete document against the packaged
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,
 missing members, invalid URLs/account IDs/ports, and non-positive deadlines fail before startup

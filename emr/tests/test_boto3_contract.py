@@ -117,6 +117,7 @@ def test_boto3_cancel_steps(emr_client, emr_server, test_timeout: float) -> None
     response = emr_client.cancel_steps(ClusterId=cluster_id, StepIds=[step_id])
     assert response["CancelStepsInfoList"] == [{"StepId": step_id, "Status": "SUBMITTED"}]
     wait_for_step_state(emr_client, cluster_id, step_id, {"CANCELLED"}, test_timeout)
+    wait_for_cluster_state(emr_client, cluster_id, {"WAITING"}, test_timeout)
 
 
 @pytest.mark.contract

@@ -109,6 +109,7 @@ class LocalProcessExecutor:
     def __init__(self, settings: EmrSettings) -> None:
         self._settings = settings
         self._processes: dict[tuple[str, str], asyncio.subprocess.Process] = {}
+        self._cancellations: set[tuple[str, str]] = set()
         self._lock = asyncio.Lock()
 
     async def execute(
@@ -149,6 +150,8 @@ class LocalProcessExecutor:
             key = (cluster_id, operation_id)
             async with self._lock:
                 self._processes[key] = process
+                cancellation_requested = key in self._cancellations
+                self._cancellations.discard(key)
             log_event(
                 _LOGGER,
                 logging.INFO,
@@ -158,6 +161,17 @@ class LocalProcessExecutor:
                 pid=process.pid,
                 side_effect=True,
             )
+            if cancellation_requested:
+                log_event(
+                    _LOGGER,
+                    logging.INFO,
+                    "emr.process.cancel.deferred.applied",
+                    cluster_id=cluster_id,
+                    operation_id=operation_id,
+                    pid=process.pid,
+                    side_effect=True,
+                )
+                await self._stop(process)
             try:
                 exit_code = await asyncio.wait_for(process.wait(), timeout=timeout_seconds)
             except TimeoutError:
@@ -179,6 +193,7 @@ class LocalProcessExecutor:
             finally:
                 async with self._lock:
                     self._processes.pop(key, None)
+                    self._cancellations.discard(key)
         log_event(
             _LOGGER,
             logging.INFO if exit_code == 0 else logging.ERROR,
@@ -195,8 +210,22 @@ class LocalProcessExecutor:
 
     async def cancel(self, cluster_id: str, operation_id: str) -> None:
         async with self._lock:
-            process = self._processes.get((cluster_id, operation_id))
+            key = (cluster_id, operation_id)
+            process = self._processes.get(key)
+            if process is None:
+                self._cancellations.add(key)
         if process is None:
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "emr.process.cancel.deferred",
+                cluster_id=cluster_id,
+                operation_id=operation_id,
+                fix_hint=(
+                    "The cancellation will be applied atomically when the process is registered."
+                ),
+                side_effect=True,
+            )
             return
         log_event(
             _LOGGER,

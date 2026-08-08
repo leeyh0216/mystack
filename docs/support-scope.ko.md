@@ -10,7 +10,7 @@
 | AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
-| EMR bootstrap/Spark | Vertical slice 구현: boto3, S3 bootstrap, Spark 3.5.4 local S3A write E2E | 더 많은 EMR step 유형과 runtime 정합성 |
+| EMR bootstrap/Spark | Vertical slice 구현: boto3, S3 bootstrap, Python/JAR Spark 3.5.4 local S3A write와 실행 중 취소 E2E | 더 많은 EMR step 유형과 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
 | Spark + Hive + Glue Catalog | Vertical slice 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | Vertical slice 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
@@ -20,6 +20,10 @@
 `glue.state_file`에 원자적으로 저장됩니다. 현재 partition expression evaluator는 따옴표로
 감싼 동등/부등 조건을 `AND`로 연결한 문법을 지원하며, 지원하지 않는 식은 잘못된 결과를
 조용히 반환하지 않고 `InvalidInputException`을 반환합니다.
+
+현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
+가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
+정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
 
 ## 명시적 제외
 

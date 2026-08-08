@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # Amazon Linux public ECR source: https://gallery.ecr.aws/amazonlinux/amazonlinux
 ARG AMAZON_LINUX_BASE=public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2
-FROM ${AMAZON_LINUX_BASE}
+FROM ${AMAZON_LINUX_BASE} AS runtime-base
 
 ARG SPARK_VERSION=3.5.4
 ARG SPARK_DISTRIBUTION=hadoop3
@@ -55,6 +55,21 @@ RUN case "${TARGETARCH}" in \
     && /tmp/aws/install \
     && rm -rf /tmp/aws /tmp/awscliv2.zip
 
+FROM runtime-base AS jar-builder
+RUN dnf install -y java-17-amazon-corretto-devel \
+    && dnf clean all
+COPY emr/scripts/e2e/SparkS3JarJob.java /tmp/mystack-e2e/SparkS3JarJob.java
+RUN mkdir -p /tmp/mystack-e2e/classes \
+    && javac -cp '/opt/spark/jars/*' \
+      -d /tmp/mystack-e2e/classes /tmp/mystack-e2e/SparkS3JarJob.java \
+    && jar --create \
+      --file /tmp/mystack-e2e/spark-s3-job.jar \
+      --main-class mystack.e2e.SparkS3JarJob \
+      -C /tmp/mystack-e2e/classes .
+
+FROM runtime-base AS final
+ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+
 ENV JAVA_HOME=/usr/lib/jvm/jre-17 \
     SPARK_HOME=/opt/spark \
     PATH=/opt/spark/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin \
@@ -64,6 +79,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-17 \
     MYSTACK_CONFIG_FILE=/etc/mystack/mystack.yaml
 
 WORKDIR /opt/mystack
+COPY --from=jar-builder /tmp/mystack-e2e/spark-s3-job.jar /opt/mystack/spark-s3-job.jar
 COPY requirements/emr.txt /opt/requirements.txt
 RUN python3.11 -m pip install --no-cache-dir --require-hashes -r /opt/requirements.txt
 COPY shared /opt/src/shared

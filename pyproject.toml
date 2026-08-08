@@ -27,6 +27,8 @@ mystack-emr = { workspace = true }
 mystack-glue = { workspace = true }
 
 [tool.pytest.ini_options]
+# Official import-path configuration: https://docs.pytest.org/en/stable/reference/reference.html#confval-pythonpath
+pythonpath = ["."]
 addopts = "-ra --strict-markers --import-mode=importlib"
 testpaths = ["shared/tests", "proxy/tests", "emr/tests", "glue/tests", "tests"]
 asyncio_mode = "auto"

@@ -9,6 +9,7 @@ References:
 from __future__ import annotations
 
 import json
+import subprocess
 import time
 import uuid
 from pathlib import Path
@@ -29,6 +30,8 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     s3.create_bucket(Bucket=bucket)
     s3.upload_file(str(assets / "bootstrap.sh"), bucket, "inputs/bootstrap.sh")
     s3.upload_file(str(assets / "spark_s3_job.py"), bucket, "inputs/spark_s3_job.py")
+    jar_artifact = _copy_jar_fixture(e2e_settings)
+    s3.upload_file(str(jar_artifact), bucket, "inputs/spark-s3-job.jar")
 
     created = emr.run_job_flow(
         Name="mystack-real-spark-e2e",
@@ -54,8 +57,20 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     _wait_for_cluster(emr, cluster_id, {"WAITING"}, e2e_settings)
     marker = s3.get_object(Bucket=bucket, Key="results/bootstrap-marker.txt")["Body"].read()
     assert marker == b"bootstrap-completed\n"
+    assert emr.list_clusters(ClusterStates=["WAITING"])["Clusters"][0]["Id"] == cluster_id
+    assert emr.list_bootstrap_actions(ClusterId=cluster_id)["BootstrapActions"][0]["Name"] == (
+        "write-s3-marker"
+    )
 
-    step_id = emr.add_job_flow_steps(
+    emr.add_tags(ResourceId=cluster_id, Tags=[{"Key": "owner", "Value": "mystack-e2e"}])
+    assert {
+        tag["Key"] for tag in emr.describe_cluster(ClusterId=cluster_id)["Cluster"]["Tags"]
+    } == {"owner"}
+    emr.remove_tags(ResourceId=cluster_id, TagKeys=["owner"])
+    emr.set_visible_to_all_users(JobFlowIds=[cluster_id], VisibleToAllUsers=False)
+    assert emr.describe_cluster(ClusterId=cluster_id)["Cluster"]["VisibleToAllUsers"] is False
+
+    step_ids = emr.add_job_flow_steps(
         JobFlowId=cluster_id,
         Steps=[
             {
@@ -72,11 +87,33 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
                         "7",
                     ],
                 },
-            }
+            },
+            {
+                "Name": "real-spark-jar-s3a-write",
+                "ActionOnFailure": "CONTINUE",
+                "HadoopJarStep": {
+                    "Jar": "command-runner.jar",
+                    "MainClass": "mystack.e2e.SparkS3JarJob",
+                    "Args": [
+                        "spark-submit",
+                        f"s3://{bucket}/inputs/spark-s3-job.jar",
+                        "--output",
+                        f"s3a://{bucket}/results/spark-jar-json",
+                        "--row-count",
+                        "5",
+                    ],
+                },
+            },
         ],
-    )["StepIds"][0]
-    step = _wait_for_step(emr, cluster_id, step_id, {"COMPLETED", "FAILED"}, e2e_settings)
-    assert step["Status"]["State"] == "COMPLETED", step["Status"]
+    )["StepIds"]
+    for step_id in step_ids:
+        step = _wait_for_step(emr, cluster_id, step_id, {"COMPLETED", "FAILED"}, e2e_settings)
+        assert step["Status"]["State"] == "COMPLETED", step["Status"]
+
+    listed_ids = {
+        step["Id"] for step in emr.list_steps(ClusterId=cluster_id, StepIds=step_ids)["Steps"]
+    }
+    assert listed_ids == set(step_ids)
 
     objects = s3.list_objects_v2(Bucket=bucket, Prefix="results/spark-json/")
     keys = {value["Key"] for value in objects.get("Contents", ())}
@@ -87,8 +124,73 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     )
     assert first_row["spark_version"].startswith(e2e_settings.emr_expected_spark_version_prefix)
 
+    jar_row = _first_s3_json_row(s3, bucket, "results/spark-jar-json/")
+    assert jar_row["spark_version"].startswith(e2e_settings.emr_expected_spark_version_prefix)
+
+    cancel_step_id = emr.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[
+            {
+                "Name": "cancel-running-spark",
+                "ActionOnFailure": "CONTINUE",
+                "HadoopJarStep": {
+                    "Jar": "command-runner.jar",
+                    "Args": [
+                        "spark-submit",
+                        f"s3://{bucket}/inputs/spark_s3_job.py",
+                        "--output",
+                        f"s3a://{bucket}/results/should-not-complete",
+                        "--row-count",
+                        "1",
+                        "--sleep-seconds",
+                        "300",
+                    ],
+                },
+            }
+        ],
+    )["StepIds"][0]
+    _wait_for_step(emr, cluster_id, cancel_step_id, {"RUNNING"}, e2e_settings)
+    cancelled = emr.cancel_steps(ClusterId=cluster_id, StepIds=[cancel_step_id])
+    assert cancelled["CancelStepsInfoList"] == [{"StepId": cancel_step_id, "Status": "SUBMITTED"}]
+    _wait_for_step(emr, cluster_id, cancel_step_id, {"CANCELLED"}, e2e_settings)
+
+    emr.set_termination_protection(JobFlowIds=[cluster_id], TerminationProtected=True)
+    emr.terminate_job_flows(JobFlowIds=[cluster_id])
+    _wait_for_cluster(emr, cluster_id, {"WAITING"}, e2e_settings)
+    emr.set_termination_protection(JobFlowIds=[cluster_id], TerminationProtected=False)
     emr.terminate_job_flows(JobFlowIds=[cluster_id])
     _wait_for_cluster(emr, cluster_id, {"TERMINATED"}, e2e_settings)
+
+
+def _copy_jar_fixture(settings: Any) -> Path:
+    destination = settings.artifacts_dir / "spark-s3-job.jar"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    completed = subprocess.run(
+        [
+            "docker",
+            "compose",
+            "--file",
+            str(settings.compose_file),
+            "cp",
+            f"{settings.emr_service}:{settings.emr_jar_fixture_container_path}",
+            str(destination),
+        ],
+        cwd=settings.compose_file.parent,
+        capture_output=True,
+        text=True,
+        timeout=settings.timeout_seconds,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return destination
+
+
+def _first_s3_json_row(client: Any, bucket: str, prefix: str) -> dict[str, Any]:
+    objects = client.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    keys = {value["Key"] for value in objects.get("Contents", ())}
+    assert f"{prefix}_SUCCESS" in keys
+    data_key = next(key for key in keys if key.endswith(".json"))
+    return json.loads(client.get_object(Bucket=bucket, Key=data_key)["Body"].read().splitlines()[0])
 
 
 def _wait_for_cluster(

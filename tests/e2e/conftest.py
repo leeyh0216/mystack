@@ -32,6 +32,8 @@ class E2ESettings:
     sdk_read_timeout_seconds: float
     sdk_max_attempts: int
     compose_file: Path
+    emr_service: str
+    emr_jar_fixture_container_path: str
     emr_release_label: str
     emr_expected_spark_version_prefix: str
     glue_service: str
@@ -67,6 +69,8 @@ class E2ESettings:
             sdk_read_timeout_seconds=float(e2e["sdk_read_timeout_seconds"]),
             sdk_max_attempts=int(e2e["sdk_max_attempts"]),
             compose_file=compose_file,
+            emr_service=str(e2e["emr_service"]),
+            emr_jar_fixture_container_path=str(e2e["emr_jar_fixture_container_path"]),
             emr_release_label=str(e2e["emr_release_label"]),
             emr_expected_spark_version_prefix=str(e2e["emr_expected_spark_version_prefix"]),
             glue_service=str(e2e["glue_service"]),

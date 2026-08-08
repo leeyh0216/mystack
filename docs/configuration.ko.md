@@ -63,6 +63,12 @@ Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 
 mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 Domain/Application module은
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
 
+E2E harness는 `tests.emr_service`에서 EMR route를 찾고
+`tests.emr_jar_fixture_container_path`에서 미리 build된 Java fixture를 복사합니다. 두 값 모두
+설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할
+필요가 없습니다. JAR와 main class 제출 방식은 Spark 공식
+[application submission guide](https://spark.apache.org/docs/3.5.4/submitting-applications.html)를 따릅니다.
+
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.
 Unknown key, 누락 member, 잘못된 URL/account ID/port, 0 이하 deadline은 시작 전에 정확한

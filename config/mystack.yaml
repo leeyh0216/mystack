@@ -133,6 +133,8 @@ tests:
     sdk_read_timeout_seconds: 30
     sdk_max_attempts: 3
     compose_file: compose.yaml
+    emr_service: emr
+    emr_jar_fixture_container_path: /opt/mystack/spark-s3-job.jar
     emr_release_label: emr-7.8.0
     emr_expected_spark_version_prefix: 3.5.4
     glue_service: glue

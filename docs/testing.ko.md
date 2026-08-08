@@ -26,7 +26,11 @@
 - boto3 S3로 LocalStack에 bootstrap/application/input을 업로드합니다.
 - boto3로 EMR 리소스를 생성하고 조회합니다.
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
-- 실제 Spark 3.5.x process 뒤 output object와 Step 상태를 검증합니다.
+- 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 실행 중
+  subprocess 취소를 검증합니다. JAR 제출은 Spark 공식
+  [`spark-submit --class` 계약](https://spark.apache.org/docs/3.5.4/submitting-applications.html)을 따릅니다.
+- 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
+  재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
 - 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
 

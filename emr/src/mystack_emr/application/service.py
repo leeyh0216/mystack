@@ -194,15 +194,6 @@ class EmrApplication:
                 )
                 await self._repository.save(cluster)
                 await self._step_runner.cancel(cluster_id, step_id)
-                cluster = await self._repository.get(cluster_id)
-                step = cluster.step(step_id)
-                if step.state is StepState.CANCEL_PENDING:
-                    self._transition_step(
-                        step,
-                        StepState.CANCELLED,
-                        StateReason("USER_REQUEST", ""),
-                    )
-                    await self._repository.save(cluster)
                 results[step_id] = "SUBMITTED"
             else:
                 results[step_id] = "FAILED"
@@ -332,6 +323,14 @@ class EmrApplication:
                 result = await self._step_runner.run(cluster, pending)
                 cluster = await self._repository.get(cluster_id)
                 step = cluster.step(pending.id)
+                if step.state is StepState.CANCEL_PENDING:
+                    self._transition_step(
+                        step,
+                        StepState.CANCELLED,
+                        StateReason("USER_REQUEST", ""),
+                    )
+                    await self._repository.save(cluster)
+                    continue
                 if step.state is not StepState.RUNNING:
                     continue
                 if result.succeeded:
