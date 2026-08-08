@@ -22,6 +22,11 @@
 <!-- section: verified -->
 ## 검증한 Client
 
+[생성된 정확한 version 근거](client-matrix.ko.generated.md)는 GitHub Actions가 사용하는 기준
+목록입니다. 관리자는 `compatibility/cases.yaml`에 명시적 case 한 개를 추가합니다. compiler는
+시험 시작 전에 알 수 없는 field, 변경 가능한 artifact, 잘못된 runtime 조합과 service model
+변경을 거부합니다.
+
 | Client | 고정 버전 | 상태 | 검증 경로 |
 | --- | --- | --- | --- |
 | boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | EMR 13개와 Glue Catalog 22개 operation, S3 시험 데이터 |

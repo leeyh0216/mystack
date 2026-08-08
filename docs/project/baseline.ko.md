@@ -129,6 +129,6 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
-2. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
-3. Protocol·client 변경 대응 안내를 compatibility manifest와 동기화합니다.
+1. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
+2. Protocol·client 변경 대응 안내를 구현된 compatibility manifest와 동기화합니다.
+3. 새로 검토한 client와 runtime을 명시적인 비전수 조합 case로 추가합니다.

@@ -9,6 +9,10 @@ on:
       - "emr/**"
       - "glue/**"
       - "tests/e2e/**"
+      - "compatibility/**"
+      - "contracts/compatibility-matrix.generated.json"
+      - "scripts/compatibility_matrix.py"
+      - "scripts/run_compatibility_case.py"
       - "requirements/**"
       - "config/**"
       - "compose.yaml"
@@ -28,9 +32,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  boto-spark-catalog-iceberg:
+  prepare-compatibility:
+    name: Resolve required Docker compatibility cases
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 5
+    outputs:
+      contract_matrix: ${{ steps.matrix.outputs.contract_matrix }}
+      e2e_matrix: ${{ steps.matrix.outputs.e2e_matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: matrix
+        name: Read the event-selected non-cross-product matrices
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = schedule ]; then
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-matrix.generated.json)
+          elif [ "$EVENT_NAME" = workflow_dispatch ]; then
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.preview_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-matrix.generated.json)
+          else
+            contract_matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '.github_matrices.required_e2e' contracts/compatibility-matrix.generated.json)
+          fi
+          test "$(jq '.include | length' <<<"$contract_matrix")" -gt 0
+          test "$(jq '.include | length' <<<"$e2e_matrix")" -gt 0
+          {
+            echo "contract_matrix=$contract_matrix"
+            echo "e2e_matrix=$e2e_matrix"
+          } >>"$GITHUB_OUTPUT"
+
+  selected-compatibility-contracts:
+    name: Selected contract ${{ matrix.case_id }}
+    needs: prepare-compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-compatibility.outputs.contract_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python_version }}
+          enable-cache: true
+      - name: Install and validate the locked workspace
+        run: |
+          uv sync --locked --all-packages
+          make compatibility-check
+      - name: Run the selected contract case
+        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+
+  boto-spark-catalog-iceberg:
+    name: Compatibility ${{ matrix.case_id }}
+    needs: prepare-compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-compatibility.outputs.e2e_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -39,21 +101,57 @@ jobs:
           enable-cache: true
       - name: Install E2E client dependencies
         run: uv sync --locked --all-packages
-      - name: Install the browser used by accessibility E2E
-        run: uv run playwright install --with-deps chromium
+      - name: Reject manifest and generated-evidence drift
+        run: make compatibility-check
       - name: Build and start Mystack
         run: make up
-      - name: Run boto3, AWS SDK for pandas, and real runtime E2E tests
-        env:
-          MYSTACK_BROWSER_E2E_REQUIRED: "1"
-        run: make e2e
+      - name: Run the explicit case in an isolated process
+        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
       - name: Collect component logs
         if: always()
         run: docker compose logs --no-color > docker-compose.log
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: e2e-diagnostics
+          name: e2e-${{ matrix.case_id }}-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+      - name: Stop Mystack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  console-accessibility:
+    name: Console accessibility E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install the locked workspace and browser
+        run: |
+          uv sync --locked --all-packages
+          uv run playwright install --with-deps chromium
+      - name: Build and start Mystack
+        run: make up
+      - name: Run the browser contract with the configured timeout
+        env:
+          MYSTACK_BROWSER_E2E_REQUIRED: "1"
+        run: |
+          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          uv run pytest tests/e2e/test_console_browser.py -m e2e \
+            --timeout "$timeout" --timeout-method thread -vv
+      - name: Collect component logs
+        if: always()
+        run: docker compose logs --no-color > docker-compose.log
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: console-e2e-diagnostics
           path: |
             docker-compose.log
             test-artifacts/

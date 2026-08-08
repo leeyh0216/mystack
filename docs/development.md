@@ -98,6 +98,8 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make compatibility-check
+make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
 make test
@@ -111,7 +113,8 @@ make down
 Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible.
 
 `make pre-commit` installs and runs repository-local hooks backed by `uv.lock`. The hooks reject
-lint/format, bilingual documentation, container requirement lock, and botocore model-manifest
+lint/format, bilingual documentation, container requirement lock, botocore model-manifest, and
+generated interoperability evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 
@@ -151,4 +154,7 @@ imported module, violated rule, and suggested repair.
 - `model-drift-report.json` names changed operations and fix locations.
 - `api-coverage-drift-report.json` names unclassified, removed, shape-changed, or
   misclassified operations and the owning boundary to update.
+- A compatibility failure logs the case ID, exact versions, scenario IDs, model fingerprints,
+  evidence hash, and a repair hint. Run `make compatibility-generate` only after reviewing the
+  matching official source and explicit YAML case.
 - E2E failure artifacts include all container logs.

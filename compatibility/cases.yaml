@@ -1,0 +1,277 @@
+# Declarative interoperability evidence. The strict compiler rejects unknown fields and drift.
+# GitHub matrix outputs follow the official shared-matrix pattern:
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations
+schema_version: 1
+
+official_sources:
+  botocore-models:
+    title: botocore AWS service models
+    url: https://github.com/boto/botocore/tree/develop/botocore/data
+  pypi-file-api:
+    title: Python Package Index file API
+    url: https://docs.pypi.org/api/json/
+  emr-7.8.0:
+    title: Amazon EMR 7.8.0 release
+    url: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html
+  glue-5.0:
+    title: AWS Glue 5.0 migration guide
+    url: https://docs.aws.amazon.com/glue/latest/dg/migrating-version-50.html
+  glue-hive:
+    title: AWS Glue Data Catalog as the Spark Hive metastore
+    url: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html
+  glue-iceberg:
+    title: Using Apache Iceberg with AWS Glue
+    url: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html
+  aws-sdk-pandas:
+    title: AWS SDK for pandas API
+    url: https://aws-sdk-pandas.readthedocs.io/en/stable/api.html
+  spark-downloads:
+    title: Apache Spark downloads and release verification
+    url: https://spark.apache.org/downloads.html
+  amazon-linux-image:
+    title: Amazon Linux public ECR image
+    url: https://gallery.ecr.aws/amazonlinux/amazonlinux
+  glue-libs-image:
+    title: AWS Glue libraries public ECR image
+    url: https://gallery.ecr.aws/glue/aws-glue-libs
+  pytest:
+    title: pytest invocation
+    url: https://docs.pytest.org/en/stable/how-to/usage.html
+  docker-compose:
+    title: Docker Compose in CI
+    url: https://docs.docker.com/compose/how-tos/ci-cd/
+  github-matrix:
+    title: GitHub Actions shared matrices
+    url: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations
+
+artifacts:
+  boto3-1.43.66:
+    kind: python-wheel
+    name: boto3
+    version: 1.43.66
+    immutable_uri: https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl
+    digest: sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb
+    source: pypi-file-api
+  botocore-1.43.66:
+    kind: python-wheel
+    name: botocore
+    version: 1.43.66
+    immutable_uri: https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl
+    digest: sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325
+    source: pypi-file-api
+  awswrangler-3.17.0:
+    kind: python-wheel
+    name: awswrangler
+    version: 3.17.0
+    immutable_uri: https://files.pythonhosted.org/packages/1f/c8/200e6dbc5f5bebdc15fe0eaf676c7e6aa9372646d07c7635e5b822be0bbe/awswrangler-3.17.0-py3-none-any.whl
+    digest: sha256:e8093f46159708380d855f9b634e9fe4d6cfd9d0a8719fa6a43c645007e61bb0
+    source: pypi-file-api
+  spark-3.5.4-hadoop3:
+    kind: archive
+    name: apache-spark
+    version: 3.5.4
+    immutable_uri: https://archive.apache.org/dist/spark/spark-3.5.4/spark-3.5.4-bin-hadoop3.tgz
+    digest: sha512:df049be04119d4943f5c048108e511a95d05a7cdcf7f1256384a3a6caa322f7898b6b1b20b0ad45036887f4ae93ce5f17ac97906950b14f07532d94ed7fe1faa
+    source: spark-downloads
+  amazon-linux-2023:
+    kind: oci-image
+    name: amazonlinux
+    version: "2023"
+    immutable_uri: public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2
+    digest: sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2
+    source: amazon-linux-image
+  glue-libs-5:
+    kind: oci-image
+    name: aws-glue-libs
+    version: "5"
+    immutable_uri: public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7
+    digest: sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7
+    source: glue-libs-image
+
+runtime_profiles:
+  python-3.11:
+    kind: python
+    python_version: "3.11"
+    source: pytest
+  emr-7.8.0-spark-3.5.4:
+    kind: emr
+    python_version: "3.11"
+    java_version: "17"
+    spark_version: 3.5.4
+    release_label: emr-7.8.0
+    aws_spark_version: 3.5.4-amzn-0
+    config_profile: spark-3.5.4
+    source: emr-7.8.0
+  glue-5.0-spark-3.5.4:
+    kind: glue
+    python_version: "3.11"
+    java_version: "17"
+    spark_version: 3.5.4
+    glue_version: "5.0"
+    iceberg_version: 1.7.1
+    config_profile: glue-5.0
+    source: glue-5.0
+
+runner_adapters:
+  pytest-contract:
+    kind: pytest
+    command_prefix: [uv, run, pytest]
+    timeout_config_path: tests.contract_timeout_seconds
+    allowed_runtime_kinds: [python]
+    source: pytest
+  docker-e2e:
+    kind: docker-pytest
+    command_prefix: [uv, run, pytest]
+    timeout_config_path: tests.e2e_timeout_seconds
+    allowed_runtime_kinds: [emr, glue]
+    source: docker-compose
+
+compatibility_profiles:
+  boto3-control-plane:
+    client: boto3
+    versions:
+      boto3: 1.43.66
+      botocore: 1.43.66
+    services: [emr, glue]
+    runtime_kinds: [python, emr, glue]
+    capabilities: [aws-json-1.1, sigv4, modeled-errors, pagination]
+    model_fingerprints:
+      emr: 119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad
+      glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
+    operation_ids:
+      emr: [AddJobFlowSteps, AddTags, CancelSteps, DescribeCluster, DescribeStep, ListBootstrapActions, ListClusters, ListSteps, RemoveTags, RunJobFlow, SetTerminationProtection, SetVisibleToAllUsers, TerminateJobFlows]
+      glue: [BatchCreatePartition, BatchDeletePartition, BatchGetPartition, BatchUpdatePartition, CreateDatabase, CreatePartition, CreateTable, DeleteDatabase, DeletePartition, DeleteTable, GetCatalogImportStatus, GetDatabase, GetDatabases, GetPartition, GetPartitions, GetTable, GetTables, GetTableVersion, GetTableVersions, UpdateDatabase, UpdatePartition, UpdateTable]
+    official_sources: [botocore-models]
+  awswrangler-glue-s3:
+    client: awswrangler
+    versions:
+      awswrangler: 3.17.0
+      boto3: 1.43.66
+      botocore: 1.43.66
+    services: [glue, s3]
+    runtime_kinds: [glue]
+    capabilities: [parquet-round-trip, database, table, partition, s3-head]
+    model_fingerprints:
+      glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
+    operation_ids:
+      glue: [CreateDatabase, CreatePartition, CreateTable, GetDatabase, GetPartition, GetTable]
+    official_sources: [aws-sdk-pandas, botocore-models]
+  emr-local-spark:
+    client: boto3-and-spark-submit
+    versions:
+      emr: 7.8.0
+      spark: 3.5.4
+      boto3: 1.43.66
+    services: [emr, s3]
+    runtime_kinds: [emr]
+    capabilities: [bootstrap-action, s3-artifact-download, local-spark-step, step-lifecycle]
+    model_fingerprints:
+      emr: 119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad
+    operation_ids:
+      emr: [AddJobFlowSteps, DescribeCluster, DescribeStep, RunJobFlow, TerminateJobFlows]
+    official_sources: [emr-7.8.0, botocore-models]
+  glue-spark-hive-iceberg:
+    client: spark-glue-catalog
+    versions:
+      glue: "5.0"
+      spark: 3.5.4
+      iceberg: 1.7.1
+    services: [glue, s3]
+    runtime_kinds: [glue]
+    capabilities: [hive-metastore, complex-glue-types, iceberg-glue-catalog, schema-evolution]
+    model_fingerprints:
+      glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
+    operation_ids:
+      glue: [CreateDatabase, CreateTable, GetDatabase, GetTable, UpdateTable]
+    official_sources: [glue-5.0, glue-hive, glue-iceberg]
+
+scenario_sets:
+  boto3-contracts:
+    kind: contract
+    test_nodes: [emr/tests/test_boto3_contract.py, glue/tests/test_boto3_contract.py]
+    scenario_ids: [emr-control-plane, glue-data-catalog, modeled-service-errors]
+  boto3-public-proxy:
+    kind: e2e
+    test_nodes: [tests/e2e/test_public_proxy_contracts.py]
+    scenario_ids: [glue-operations-through-public-proxy]
+  awswrangler-round-trip:
+    kind: e2e
+    test_nodes: [tests/e2e/test_awswrangler.py]
+    scenario_ids: [parquet-glue-s3-round-trip]
+  emr-real-spark:
+    kind: e2e
+    test_nodes: [tests/e2e/test_emr_spark.py]
+    scenario_ids: [bootstrap-s3-spark-step-lifecycle]
+  glue-real-spark-catalogs:
+    kind: e2e
+    test_nodes: [tests/e2e/test_glue_spark_catalog.py]
+    scenario_ids: [hive-complex-types, iceberg-create-append-read-evolve]
+
+lanes:
+  required:
+    release_blocking: true
+    events: [pull_request, push, tag]
+    description_en: Must pass before a release can publish.
+    description_ko: release 게시 전에 반드시 통과해야 함
+  preview:
+    release_blocking: false
+    events: [workflow_dispatch]
+    description_en: Opt-in validation for a proposed client or runtime version.
+    description_ko: 제안한 client 또는 runtime version의 선택 실행 검증
+  nightly:
+    release_blocking: false
+    events: [schedule, workflow_dispatch]
+    description_en: Scheduled evidence for expensive or exploratory combinations.
+    description_ko: 비용이 크거나 탐색적인 조합의 정기 검증
+
+cases:
+  - id: boto3-botocore-1.43.66-contract
+    title_en: boto3 and botocore control-plane contracts
+    title_ko: boto3와 botocore control plane 계약
+    lane: required
+    runtime_profile: python-3.11
+    runner_adapter: pytest-contract
+    compatibility_profiles: [boto3-control-plane]
+    scenario_set: boto3-contracts
+    artifacts: [boto3-1.43.66, botocore-1.43.66]
+    expected_duration_minutes: 15
+  - id: boto3-botocore-1.43.66-public-proxy
+    title_en: boto3 Glue operations through the public Proxy
+    title_ko: 공개 Proxy를 통과하는 boto3 Glue operation
+    lane: required
+    runtime_profile: glue-5.0-spark-3.5.4
+    runner_adapter: docker-e2e
+    compatibility_profiles: [boto3-control-plane]
+    scenario_set: boto3-public-proxy
+    artifacts: [boto3-1.43.66, botocore-1.43.66, glue-libs-5]
+    expected_duration_minutes: 60
+  - id: awswrangler-3.17.0-glue-s3
+    title_en: AWS SDK for pandas Glue and S3 round trip
+    title_ko: AWS SDK for pandas Glue와 S3 왕복
+    lane: required
+    runtime_profile: glue-5.0-spark-3.5.4
+    runner_adapter: docker-e2e
+    compatibility_profiles: [awswrangler-glue-s3]
+    scenario_set: awswrangler-round-trip
+    artifacts: [awswrangler-3.17.0, boto3-1.43.66, botocore-1.43.66, glue-libs-5]
+    expected_duration_minutes: 60
+  - id: emr-7.8.0-spark-3.5.4
+    title_en: EMR bootstrap and real local Spark step
+    title_ko: EMR bootstrap과 실제 local Spark step
+    lane: required
+    runtime_profile: emr-7.8.0-spark-3.5.4
+    runner_adapter: docker-e2e
+    compatibility_profiles: [boto3-control-plane, emr-local-spark]
+    scenario_set: emr-real-spark
+    artifacts: [boto3-1.43.66, botocore-1.43.66, amazon-linux-2023, spark-3.5.4-hadoop3]
+    expected_duration_minutes: 60
+  - id: glue-5.0-spark-3.5.4-hive-iceberg-1.7.1
+    title_en: Glue Spark Hive and Iceberg catalogs
+    title_ko: Glue Spark Hive와 Iceberg catalog
+    lane: required
+    runtime_profile: glue-5.0-spark-3.5.4
+    runner_adapter: docker-e2e
+    compatibility_profiles: [boto3-control-plane, glue-spark-hive-iceberg]
+    scenario_set: glue-real-spark-catalogs
+    artifacts: [boto3-1.43.66, botocore-1.43.66, glue-libs-5]
+    expected_duration_minutes: 60

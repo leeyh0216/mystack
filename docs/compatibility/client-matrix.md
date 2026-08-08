@@ -22,6 +22,11 @@ for that library's entire API.
 <!-- section: verified -->
 ## Verified clients
 
+The [generated exact-version evidence](client-matrix.generated.md) is the authoritative list used by
+GitHub Actions. Maintainers add one explicit case to `compatibility/cases.yaml`; the compiler rejects
+unknown fields, mutable artifacts, invalid runtime combinations, and service-model drift before a
+test starts.
+
 | Client | Pinned version | Status | Verified path |
 | --- | --- | --- | --- |
 | boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | 13 EMR and 22 Glue Catalog operations plus S3 fixtures |

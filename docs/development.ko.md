@@ -97,6 +97,8 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make compatibility-check
+make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
 make test
@@ -110,7 +112,8 @@ make down
 Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap timeout은 별도이며 가능한 경우 바깥 test timeout보다 먼저 adapter가 hung subprocess를 종료합니다.
 
 `make pre-commit`은 `uv.lock`으로 재현되는 repository-local hook을 설치하고 실행합니다.
-Lint/format, 한·영 문서, container requirement lock, botocore model manifest drift를 commit
+Lint/format, 한·영 문서, container requirement lock, botocore model manifest와 생성된
+상호운용성 근거의 변경을 commit
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
 
@@ -148,4 +151,6 @@ import를 바꾼 뒤 `make architecture-check`를 실행하세요. 실패 결과
 - `make threads`, `make tasks`: frame locals 없는 live stack 수집
 - `model-drift-report.json`: 변경 operation과 수정 위치
 - `api-coverage-drift-report.json`: 미분류·삭제·데이터 구조 변경·잘못 분류된 작업과 수정 경계
+- 호환성 실패 log: case ID, 정확한 version, scenario ID, model fingerprint, evidence hash와 수정
+  안내. 공식 출처와 명시적 YAML case를 검토한 뒤에만 `make compatibility-generate` 실행
 - E2E artifact: 모든 container log

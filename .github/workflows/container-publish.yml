@@ -28,6 +28,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  required-compatibility:
+    name: Required compatibility before publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install and validate generated compatibility evidence
+        run: |
+          uv sync --locked --all-packages
+          make compatibility-check
+      - name: Run required contract cases as isolated processes
+        run: |
+          set -euo pipefail
+          jq -r '.github_matrices.required_contract.include[].case_id' \
+            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+              uv run python scripts/run_compatibility_case.py "$case_id"
+            done
+      - name: Build and start Mystack
+        run: make up
+      - name: Run required Docker cases as isolated processes
+        run: |
+          set -euo pipefail
+          jq -r '.github_matrices.required_e2e.include[].case_id' \
+            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+              uv run python scripts/run_compatibility_case.py "$case_id"
+            done
+      - name: Collect component logs
+        if: always()
+        run: docker compose logs --no-color > docker-compose.log
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: required-compatibility-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+      - name: Stop Mystack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -90,7 +135,7 @@ jobs:
           } >>"$GITHUB_OUTPUT"
 
   publish:
-    needs: prepare
+    needs: [prepare, required-compatibility]
     runs-on: ubuntu-latest
     timeout-minutes: ${{ fromJSON(needs.prepare.outputs.workflow_timeout_minutes) }}
     permissions:

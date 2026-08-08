@@ -10,12 +10,18 @@
 
 | Workflow | Trigger | 계약 |
 | --- | --- | --- |
-| `ci.yml` | push, PR, manual | Python 3.11/3.12 계약과 frozen feature lock을 사용한 실제 Dev Container build |
+| `ci.yml` | push, PR, manual | Python 3.11/3.12 계약, 생성된 required case matrix와 frozen feature lock을 사용한 실제 Dev Container build |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
-| `e2e.yml` | 관련 PR, nightly, manual | Docker black-box boto3/AWS SDK for pandas/Spark/Hive/Iceberg와 필수 Chromium console 접근성 E2E, 로그 보존 |
-| `container-publish.yml` | version tag, manual | private GHCR amd64/arm64 게시, SBOM/provenance, OCI·Trivy 증거 |
+| `e2e.yml` | 관련 PR, nightly, manual | 명시적 required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case별 독립 Docker job과 Chromium console 접근성 E2E |
+| `container-publish.yml` | version tag, manual | required contract/E2E 통과 후 private GHCR amd64/arm64 게시, SBOM/provenance, OCI·Trivy 증거 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
+Actions는 `contracts/compatibility-matrix.generated.json`에 생성된 `include` entry만 읽으며
+client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이 구성은 GitHub의 [공유 matrix
+방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
+따릅니다.
+PR과 push는 `required`, manual 실행은 `preview`, 정기·manual E2E는 `nightly`를 추가합니다. 선택
+lane을 비워도 항상 비어 있지 않은 required lane과 합치므로 유효합니다.
 Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의
 `--frozen-lockfile`로 feature digest가 바뀌지 않았는지 확인하고 image를 끝까지 build합니다.
 
@@ -29,7 +35,8 @@ Runtime 경로 변경에는 Python contract matrix와 Docker E2E를 필수로 �
 
 Dependabot은 [공식 설정 방식](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configuring-dependabot-version-updates)으로 Python, GitHub Actions, Docker를 매주 확인합니다. boto3/botocore는 protocol과 client 직렬화를 함께 검토하도록 묶습니다.
 
-AWS SDK 업데이트는 contract manifest, operation coverage, 한·영 문서, boto3 contract가 모두 일치해야 완료됩니다.
+AWS SDK 업데이트는 contract manifest, operation coverage, 정확한 immutable artifact, 생성된 한·영
+근거와 boto3 contract가 모두 일치해야 완료됩니다.
 
 Container dependency는 `uv.lock`에서 hash와 함께 export합니다. `make requirements`가 세
 component file을 갱신하고 CI는 공식 [uv export 방식](https://docs.astral.sh/uv/reference/cli/#uv-export)으로

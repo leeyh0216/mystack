@@ -24,6 +24,22 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 4. Dependabot groups AWS SDK updates so protocol changes are reviewed together.
 5. Runtime upgrades require a matrix entry and boto3/Spark/Hive/Iceberg E2E evidence.
 
+<!-- section: manifest -->
+## Adding a client or runtime version
+
+1. Add its exact artifact URL and content digest to `compatibility/cases.yaml`.
+2. Add or reuse one runtime profile, runner adapter, compatibility profile, and scenario set.
+3. Add one explicit case. Do not add a version axis that creates unreviewed combinations.
+4. Run `make compatibility-generate`, review the JSON and both generated tables, then run
+   `make compatibility-case CASE=<id>`.
+5. Run `make compatibility-check`. CI derives a new job from the generated `include` entry without
+   workflow source changes.
+
+The compiler fails before tests for unknown fields, duplicate IDs, mutable sources, invalid digests,
+unknown adapters, runtime/config mismatches, stale model fingerprints, and missing test nodes. A case
+records exact versions, scenario/operation IDs, model fingerprints, and a deterministic evidence
+hash so logs point maintainers at the broken boundary.
+
 <!-- section: checklist -->
 ## Compatibility change checklist
 

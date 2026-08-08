@@ -15,6 +15,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-compatibility:
+    name: Resolve required compatibility cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: matrix
+        name: Read the event-selected non-cross-product contract matrix
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+          else
+            matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-matrix.generated.json)
+          fi
+          test "$(jq '.include | length' <<<"$matrix")" -gt 0
+          echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
+
+  required-compatibility-contracts:
+    name: Compatibility ${{ matrix.case_id }}
+    needs: prepare-compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare-compatibility.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: ${{ matrix.python_version }}
+          enable-cache: true
+      - name: Install the locked workspace
+        run: uv sync --locked --all-packages
+      - name: Reject manifest and generated-evidence drift
+        run: make compatibility-check
+      - name: Run the explicit case in an isolated process
+        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+
   python-contracts:
     name: Python ${{ matrix.python-version }} contracts
     runs-on: ubuntu-latest
@@ -51,6 +94,8 @@ jobs:
           uv run python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
+      - name: Verify manifest-driven interoperability evidence
+        run: uv run python scripts/compatibility_matrix.py --check
       - name: Verify complete API classification and generated bilingual matrix
         run: >-
           uv run python scripts/api_coverage.py

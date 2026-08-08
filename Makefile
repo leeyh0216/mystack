@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images model-check coverage-check registry-check package-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -53,6 +53,16 @@ coverage-check: ## Verify exhaustive API statuses and bilingual generated matric
 	  --check contracts/api-coverage.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
+
+compatibility-generate: ## Compile YAML cases into deterministic CI and bilingual evidence.
+	@uv run python scripts/compatibility_matrix.py --write
+
+compatibility-check: ## Reject interoperability manifest, runtime, and generated-output drift.
+	@uv run python scripts/compatibility_matrix.py --check
+
+compatibility-case: ## Run CASE=id as one bounded, isolated compatibility process.
+	@test -n "$(CASE)" || (echo "CASE is required; run: make compatibility-case CASE=<id>" >&2; exit 2)
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/run_compatibility_case.py "$(CASE)"
 
 registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
 	@uv run python scripts/registry_release.py check-config

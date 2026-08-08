@@ -129,6 +129,7 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Generate client/runtime compatibility jobs from a versioned manifest.
-2. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
-3. Keep protocol and client drift repair hints synchronized with the compatibility manifest.
+1. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
+2. Keep protocol and client drift repair hints synchronized with the implemented compatibility
+   manifest.
+3. Add newly reviewed clients and runtimes as explicit non-cross-product cases.
