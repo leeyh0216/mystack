@@ -17,6 +17,8 @@ RUN npm run build --workspace @mystack/glue-ui
 
 # AWS Glue 5.0 image/reference:
 # https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html
+# PySpark interpreter selection:
+# https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables
 FROM ${GLUE_BASE} AS final
 
 ARG MYSTACK_VERSION=0.1.0
@@ -35,6 +37,8 @@ USER root
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MYSTACK_CONFIG_FILE=/etc/mystack/mystack.yaml \
+    PYSPARK_PYTHON=/opt/mystack/venv/bin/python \
+    PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python \
     PATH=/opt/mystack/venv/bin:${PATH}
 
 WORKDIR /opt/mystack

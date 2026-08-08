@@ -127,7 +127,10 @@ Fast tests cover nested types, global IDs, all layer boundaries, official boto3 
 modeled errors, deterministic JSON, and failed-publication cleanup with explicit timeouts. The
 existing single Glue 5 Spark E2E process creates through boto3 over the public Proxy, loads/appends
 through Iceberg GlueCatalog, evolves through `UpdateOpenTableFormatInput`, reloads/appends, and then
-checks Glue and LocalStack S3 metadata. This adds no second Spark startup.
+checks Glue and LocalStack S3 metadata. This adds no second Spark startup. The image sets both
+`PYSPARK_PYTHON` and `PYSPARK_DRIVER_PYTHON` to the hash-locked Mystack virtual environment so the
+Spark driver validates the same pinned boto3 model as the service. This follows Spark's official
+[Python interpreter environment-variable contract](https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables).
 
 The profile is Iceberg v2 only. Iceberg REST, PyIceberg, Flink, Trino, encryption-key management,
 managed optimizers, authentication/authorization, Lake Formation, cross-account, and cross-Region
