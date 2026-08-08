@@ -93,8 +93,10 @@ writer를 public Proxy로 실행하고 retry된 append 둘이 모두 보존되�
 따릅니다.
 Partition, schema, sort, identifier evolution도 이 pointer commit을 그대로 사용하며 별도
 [Iceberg evolution 계약](glue-iceberg-evolution.ko.md)으로 검증합니다.
+Row-level COW/MOR commit도 같은 경로를 사용하며 [Iceberg row-level DML
+계약](glue-iceberg-row-level-dml.ko.md)으로 검증합니다.
 
-Row-level DML, snapshot/ref/procedure, rename/drop/purge, managed optimizer,
+Snapshot/ref/procedure, rename/drop/purge, managed optimizer,
 Open Table Format input, Lake Formation, 인증·인가, cross-account/cross-Region, PyIceberg, Flink,
 Trino는 이 계약의 범위가 아닙니다.
 

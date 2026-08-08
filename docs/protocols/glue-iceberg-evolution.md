@@ -91,7 +91,8 @@ logging table bodies or S3 paths. If a Spark or Iceberg upgrade breaks this prof
 <!-- section: limits -->
 ## Limits
 
-This contract does not yet guarantee row-level `UPDATE`, `DELETE`, or `MERGE INTO`; snapshot,
+Row-level writes are covered separately by the [Iceberg row-level DML
+contract](glue-iceberg-row-level-dml.md). This evolution contract does not guarantee snapshot,
 time-travel, rollback, branch, tag, procedure, and metadata-table behavior; rename/drop/purge;
 compaction, orphan cleanup, or snapshot retention. Authentication, authorization, IAM, Lake
 Formation, cross-account/cross-Region behavior, Open Table Format APIs, PyIceberg, Flink, and Trino

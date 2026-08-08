@@ -122,16 +122,17 @@
 - 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit합니다.
   Iceberg update는 전달받은 `metadata_location`을 원자적으로 교체하며 Mystack이 Iceberg metadata
   format을 구현하거나 parse하지 않습니다. 실제 client E2E로 Iceberg가 소유한 partition/schema/
-  sort/identifier evolution이 이 무손실 pointer 경로에서 유지되는지 확인합니다.
+  sort/identifier evolution과 COW/MOR row-level commit이 이 무손실 pointer 경로에서 유지되는지
+  확인합니다.
 - 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작이며 같은
   state file을 공유하는 JSON-backed process는 설정된 상한이 있는 POSIX lock도 공유합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput과 modeled `ConcurrentModificationException`으로
   변환하는 domain version mismatch이며 open-table-format input은 제외합니다.
-- 관측: 안전한 Iceberg commit/version/conflict/persistence event, spawn process CAS test와 두 container
-  실제 Spark/Iceberg retry E2E입니다.
+- 관측: 안전한 Iceberg commit/version/conflict/persistence event, spawn process CAS test, COW/MOR
+  snapshot 근거와 두 container 실제 Spark/Iceberg retry E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/tests/test_iceberg_commit.py`, `glue/tests/test_iceberg_evolution_catalog.py`,
-  `docs/protocols/glue-iceberg-evolution.ko.md`
+  `glue/tests/test_iceberg_row_level_catalog.py`, `docs/protocols/glue-iceberg-row-level-dml.ko.md`
 - 신뢰도: High
 
 <!-- section: uc-007 -->

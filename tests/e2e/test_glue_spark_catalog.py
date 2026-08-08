@@ -19,6 +19,12 @@ import pytest
 
 from test_support.iceberg_metadata import IcebergMetadataDocument
 
+_ROW_LEVEL_MODE_PROPERTIES = (
+    "write.delete.mode",
+    "write.update.mode",
+    "write.merge.mode",
+)
+
 
 @pytest.mark.e2e
 def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
@@ -95,6 +101,23 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         "event",
         "note",
     ]
+    assert result["iceberg_row_cow_after_overwrite"] == [
+        {"id": 1, "category": "north", "amount": 11},
+        {"id": 3, "category": "south", "amount": 30},
+        {"id": 4, "category": "south", "amount": 40},
+        {"id": 5, "category": "north", "amount": 50},
+    ]
+    assert result["iceberg_row_cow_final"] == [
+        {"id": 1, "category": "north", "amount": 111},
+        {"id": 3, "category": "south", "amount": 31},
+        {"id": 6, "category": "south", "amount": 60},
+    ]
+    assert result["iceberg_row_mor_final"] == [
+        {"id": 10, "category": "north", "amount": 101},
+        {"id": 12, "category": "south", "amount": 121},
+        {"id": 13, "category": "south", "amount": 130},
+    ]
+    assert result["iceberg_row_cow_invalid_merge_error"]
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
     contention = _run_iceberg_contention(
         s3,
@@ -124,6 +147,26 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         evolution_table["Parameters"]["metadata_location"],
     )
     _assert_iceberg_evolution_metadata(evolution_metadata)
+    _assert_iceberg_row_level_table(
+        glue,
+        s3,
+        database=result["iceberg_database"],
+        table=result["iceberg_row_cow_table"],
+        expected_mode="copy-on-write",
+        expected_version=6,
+        expected_snapshots=6,
+        expect_delete_files=False,
+    )
+    _assert_iceberg_row_level_table(
+        glue,
+        s3,
+        database=result["iceberg_database"],
+        table=result["iceberg_row_mor_table"],
+        expected_mode="merge-on-read",
+        expected_version=4,
+        expected_snapshots=4,
+        expect_delete_files=True,
+    )
 
     altered_table = glue.get_table(
         DatabaseName=result["hive_database"],
@@ -252,6 +295,34 @@ def _assert_iceberg_evolution_metadata(metadata: IcebergMetadataDocument) -> Non
             "null_order": "nulls-first",
         },
     ]
+
+
+def _assert_iceberg_row_level_table(
+    glue,
+    s3,
+    *,
+    database: str,
+    table: str,
+    expected_mode: str,
+    expected_version: int,
+    expected_snapshots: int,
+    expect_delete_files: bool,
+) -> None:
+    catalog_table = glue.get_table(DatabaseName=database, Name=table)["Table"]
+    assert catalog_table["VersionId"] == str(expected_version)
+    assert catalog_table["Parameters"]["table_type"].upper() == "ICEBERG"
+    assert not catalog_table.get("PartitionKeys")
+    metadata = IcebergMetadataDocument.load_from_s3(
+        s3,
+        catalog_table["Parameters"]["metadata_location"],
+    )
+    assert metadata.format_version() == 2
+    assert metadata.snapshot_count() == expected_snapshots
+    assert metadata.current_snapshot_id() > 0
+    properties = metadata.properties()
+    assert {properties[name] for name in _ROW_LEVEL_MODE_PROPERTIES} == {expected_mode}
+    delete_file_count = int(metadata.current_snapshot_summary().get("total-delete-files", "0"))
+    assert (delete_file_count > 0) is expect_delete_files
 
 
 def _run_iceberg_contention(

@@ -91,6 +91,26 @@ class IcebergMetadataDocument:
             for field in order["fields"]
         ]
 
+    def properties(self) -> dict[str, str]:
+        return {str(key): str(value) for key, value in self.document["properties"].items()}
+
+    def format_version(self) -> int:
+        return int(self.document["format-version"])
+
+    def snapshot_count(self) -> int:
+        return len(self.document.get("snapshots", ()))
+
+    def current_snapshot_id(self) -> int:
+        return int(self.document["current-snapshot-id"])
+
+    def current_snapshot_summary(self) -> dict[str, str]:
+        snapshot = self._by_id(
+            "snapshots",
+            "snapshot-id",
+            self.current_snapshot_id(),
+        )
+        return {str(key): str(value) for key, value in snapshot["summary"].items()}
+
     def _field(self, dotted_name: str) -> dict[str, Any]:
         fields = self.current_schema()["fields"]
         field: dict[str, Any] | None = None

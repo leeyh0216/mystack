@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass
 
 from iceberg_evolution import exercise_iceberg_evolution
+from iceberg_row_level import exercise_iceberg_row_level_writes
 from pyspark.sql import SparkSession
 from spark_catalog_session import GlueSparkCatalogSettings
 
@@ -151,6 +152,11 @@ def main() -> None:
             catalog_name=args.catalog_name,
             database=iceberg_database,
         )
+        iceberg_row_level = exercise_iceberg_row_level_writes(
+            spark,
+            catalog_name=args.catalog_name,
+            database=iceberg_database,
+        )
         print(
             "MYSTACK_E2E_RESULT="
             + json.dumps(
@@ -168,6 +174,7 @@ def main() -> None:
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
                     **iceberg_evolution,
+                    **iceberg_row_level,
                 },
                 sort_keys=True,
             )
@@ -182,8 +189,28 @@ def main() -> None:
             or iceberg_count != 2
             or iceberg_evolution["iceberg_evolution_count"] != 2
             or iceberg_evolution["iceberg_evolution_filtered_count"] != 1
+            or iceberg_row_level["iceberg_row_cow_after_overwrite"]
+            != [
+                {"id": 1, "category": "north", "amount": 11},
+                {"id": 3, "category": "south", "amount": 30},
+                {"id": 4, "category": "south", "amount": 40},
+                {"id": 5, "category": "north", "amount": 50},
+            ]
+            or iceberg_row_level["iceberg_row_cow_final"]
+            != [
+                {"id": 1, "category": "north", "amount": 111},
+                {"id": 3, "category": "south", "amount": 31},
+                {"id": 6, "category": "south", "amount": 60},
+            ]
+            or iceberg_row_level["iceberg_row_mor_final"]
+            != [
+                {"id": 10, "category": "north", "amount": 101},
+                {"id": 12, "category": "south", "amount": 121},
+                {"id": 13, "category": "south", "amount": 130},
+            ]
+            or not iceberg_row_level["iceberg_row_cow_invalid_merge_error"]
         ):
-            raise RuntimeError("Unexpected catalog row counts")
+            raise RuntimeError("Unexpected Glue Spark catalog E2E result")
     finally:
         spark.stop()
 

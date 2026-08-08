@@ -96,8 +96,10 @@ remain visible. Docker Compose defines the one-off container behavior in its
 [`run` reference](https://docs.docker.com/reference/cli/docker/compose/run/).
 Partition, schema, sort, and identifier evolution reuse this exact pointer commit and are verified
 by the separate [Iceberg evolution contract](glue-iceberg-evolution.md).
+Row-level COW/MOR commits reuse it as verified by the
+[Iceberg row-level DML contract](glue-iceberg-row-level-dml.md).
 
-This contract does not cover row-level DML, snapshots/refs/procedures,
+This contract does not cover snapshots/refs/procedures,
 rename/drop/purge, managed optimizers, Open Table Format inputs, Lake Formation, authentication,
 cross-account/cross-Region behavior, PyIceberg, Flink, or Trino.
 

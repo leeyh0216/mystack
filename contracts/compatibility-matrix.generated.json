@@ -744,6 +744,10 @@
             "iceberg-partition-evolution",
             "iceberg-sort-evolution",
             "iceberg-identifier-fields",
+            "iceberg-row-level-dml",
+            "iceberg-dynamic-overwrite",
+            "iceberg-copy-on-write",
+            "iceberg-merge-on-read",
             "iceberg-concurrent-commit-retry"
           ],
           "client": "spark-glue-catalog",
@@ -754,7 +758,9 @@
             "glue-5.0",
             "glue-hive",
             "glue-iceberg",
-            "iceberg-evolution"
+            "iceberg-evolution",
+            "iceberg-spark-writes",
+            "iceberg-configuration"
           ],
           "operation_ids": {
             "glue": [
@@ -779,7 +785,7 @@
           }
         }
       },
-      "evidence_sha256": "ba7519b7de48da679998e0ddd699624c3f4f570f8012866af064a81bba3db316",
+      "evidence_sha256": "d11caac707b607fcd63a16c8ce3b00fbcfa44d6ac7eab8172ff19998c26fabd3",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -819,6 +825,7 @@
           "hive-table-alter",
           "iceberg-create-append-read-evolve",
           "iceberg-partition-schema-sort-evolution",
+          "iceberg-row-level-dml",
           "iceberg-multi-container-contention"
         ],
         "test_nodes": [
@@ -882,7 +889,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "ba7519b7de48da679998e0ddd699624c3f4f570f8012866af064a81bba3db316",
+          "evidence_sha256": "d11caac707b607fcd63a16c8ce3b00fbcfa44d6ac7eab8172ff19998c26fabd3",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -959,9 +966,17 @@
       "title": "AWS Glue libraries public ECR image",
       "url": "https://gallery.ecr.aws/glue/aws-glue-libs"
     },
+    "iceberg-configuration": {
+      "title": "Apache Iceberg 1.7.1 configuration",
+      "url": "https://iceberg.apache.org/docs/1.7.1/configuration/"
+    },
     "iceberg-evolution": {
       "title": "Apache Iceberg 1.7.1 evolution",
       "url": "https://iceberg.apache.org/docs/1.7.1/evolution/"
+    },
+    "iceberg-spark-writes": {
+      "title": "Apache Iceberg 1.7.1 Spark writes",
+      "url": "https://iceberg.apache.org/docs/1.7.1/spark-writes/"
     },
     "pypi-file-api": {
       "title": "Python Package Index file API",
@@ -977,5 +992,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "41e7fcd161d698ed32991ebc710e9e2c6d30cda34d2fc73d2dc4a5481fe24a3d"
+  "source_sha256": "104b635fdf689aab59b33fc478e92f166aca4cc2b16afd43097d2fca0d635f46"
 }

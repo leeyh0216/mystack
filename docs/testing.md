@@ -84,10 +84,12 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   official [`compose restart` contract](https://docs.docker.com/reference/cli/docker/compose/restart/)
   defines the injected lifecycle event.
 - The current Iceberg scenario covers create, append, read, hidden partition evolution with every
-  reviewed transform, top-level/nested schema evolution, sort/identifier evolution, and two
+  reviewed transform, top-level/nested schema evolution, sort/identifier evolution, dynamic
+  overwrite, COW/MOR `UPDATE`/`DELETE`/`MERGE`, failed-merge snapshot preservation, and two
   barrier-synchronized Spark writers in separate Glue-image containers. The client must
-  refresh/retry the stale `VersionId` commit and retain both appends. Row-level DML, snapshots,
-  refs, procedures, and lifecycle operations remain separate target scope. See the
+  refresh/retry the stale `VersionId` commit and retain both appends. Snapshots, refs, procedures,
+  and lifecycle operations remain separate target scope. See the
+  [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md),
   [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md),
   [Iceberg commit protocol](protocols/glue-iceberg-commits.md), and
   [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).

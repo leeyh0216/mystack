@@ -19,7 +19,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial API inventory: 22 boto3-tested operations with complete deterministic database/table/version/partition/batch errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
 | Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, supported Hive V1 table ALTER metadata semantics, and deterministic errors for every implemented operation | Broader Spark/Hive client variants |
-| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read, hidden partition/schema/sort/identifier evolution, atomic `VersionId` pointer commit, and concurrent-writer retry E2E | Row-level DML, snapshots/refs/procedures, lifecycle operations, and broader Iceberg APIs |
+| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read, dynamic overwrite, COW/MOR row-level DML, hidden partition/schema/sort/identifier evolution, atomic `VersionId` pointer commit, and concurrent-writer retry E2E | Snapshots/refs/procedures, lifecycle operations, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
@@ -34,6 +34,8 @@ and an atomic `VersionId`/`metadata_location` compare-and-swap. Iceberg still ow
 metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
 The fixed partition, schema, sort, and identifier behavior is recorded separately in the
 [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md).
+The fixed `INSERT`/`UPDATE`/`DELETE`/`MERGE` behavior and COW/MOR evidence are in the
+[Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md).
 `GetPartitions` supports the documented comparison, logical, `IN`,
 `BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.

@@ -25,6 +25,12 @@ official_sources:
   iceberg-evolution:
     title: Apache Iceberg 1.7.1 evolution
     url: https://iceberg.apache.org/docs/1.7.1/evolution/
+  iceberg-spark-writes:
+    title: Apache Iceberg 1.7.1 Spark writes
+    url: https://iceberg.apache.org/docs/1.7.1/spark-writes/
+  iceberg-configuration:
+    title: Apache Iceberg 1.7.1 configuration
+    url: https://iceberg.apache.org/docs/1.7.1/configuration/
   aws-sdk-pandas:
     title: AWS SDK for pandas API
     url: https://aws-sdk-pandas.readthedocs.io/en/stable/api.html
@@ -181,12 +187,12 @@ compatibility_profiles:
       iceberg: 1.7.1
     services: [glue, s3]
     runtime_kinds: [glue]
-    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution, iceberg-hidden-partitioning, iceberg-partition-evolution, iceberg-sort-evolution, iceberg-identifier-fields, iceberg-concurrent-commit-retry]
+    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution, iceberg-hidden-partitioning, iceberg-partition-evolution, iceberg-sort-evolution, iceberg-identifier-fields, iceberg-row-level-dml, iceberg-dynamic-overwrite, iceberg-copy-on-write, iceberg-merge-on-read, iceberg-concurrent-commit-retry]
     model_fingerprints:
       glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
     operation_ids:
       glue: [CreateDatabase, CreateTable, GetDatabase, GetTable, UpdateTable]
-    official_sources: [glue-5.0, glue-hive, glue-iceberg, iceberg-evolution]
+    official_sources: [glue-5.0, glue-hive, glue-iceberg, iceberg-evolution, iceberg-spark-writes, iceberg-configuration]
 
 scenario_sets:
   boto3-contracts:
@@ -216,7 +222,7 @@ scenario_sets:
   glue-real-spark-catalogs:
     kind: e2e
     test_nodes: [tests/e2e/test_glue_spark_catalog.py]
-    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve, iceberg-partition-schema-sort-evolution, iceberg-multi-container-contention]
+    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve, iceberg-partition-schema-sort-evolution, iceberg-row-level-dml, iceberg-multi-container-contention]
 
 lanes:
   required:
