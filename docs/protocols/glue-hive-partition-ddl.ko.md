@@ -35,7 +35,10 @@ DDL 형식과 type이 있는 partition literal은 공식 [Spark 3.5 `ALTER TABLE
 
 Partition identity는 table `PartitionKeys` 순서의 tuple입니다. `/`, `=`, 공백, Unicode를 포함한
 value를 string 그대로 보존합니다. Rename은 이 tuple을 변경하고 목적지가 이미 있으면 거부합니다.
-`SET LOCATION`은 Hive client가 전달한 partition input으로 교체하면서 creation time을 유지합니다.
+이때 model에 있는 `InvalidInputException`을 반환합니다. Rename은 AWS가 관리하는 Glue Hive client의
+`UpdatePartition` 호출을 따릅니다. API 문서와 client code 차이, 정확한 첫 오류 순서는
+[partition/batch 오류 계약](glue-partition-batch-errors.ko.md)에 기록했습니다. `SET LOCATION`은 Hive
+client가 전달한 partition input으로 교체하면서 creation time을 유지합니다.
 Partition mutation은 새 table version을 만들지 않습니다.
 
 Glue batch API는 결정적 partial-success operation입니다. Entry를 request 순서로 실행하고 성공한
@@ -75,5 +78,6 @@ cross-account, cross-Region 의미론도 프로젝트 범위 밖입니다.
 
 - [AWS Glue Data Catalog의 Spark SQL job 지원](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [AWS Glue Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
+- [Apache Hive Metastore용 AWS Glue Data Catalog client](https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore)
 - [Spark 3.5 ALTER TABLE](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html)
 - [Spark REPAIR TABLE](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html)

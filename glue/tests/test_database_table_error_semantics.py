@@ -9,18 +9,11 @@ Official references:
 
 from __future__ import annotations
 
-import copy
 from dataclasses import dataclass
 
 import pytest
-from fastapi import FastAPI, Request
-from fastapi.testclient import TestClient
-from mystack.aws_protocol import AwsJsonRpcEndpoint, AwsServiceModel
-from mystack.glue.adapters.inbound.aws import GlueAwsAdapter
-from mystack.glue.adapters.outbound import CatalogStateStore, TransactionalCatalogRepository
-from mystack.glue.application import CatalogApplication, CatalogPolicy
-from mystack.glue.application.partition_expression import PartitionExpressionPolicy
-from mystack.glue.domain import CatalogState
+
+from test_support.glue_error_harness import GlueCatalogHarness, ToggleFailureStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,125 +22,6 @@ class ErrorScenario:
     operation: str
     payload: dict
     error_code: str
-
-
-class IncrementingClock:
-    def __init__(self) -> None:
-        self._value = 0.0
-
-    def now(self) -> float:
-        self._value += 1.0
-        return self._value
-
-
-class ToggleFailureStore(CatalogStateStore):
-    def __init__(self) -> None:
-        self._committed = CatalogState()
-        self.fail = False
-
-    def load(self) -> CatalogState:
-        return copy.deepcopy(self._committed)
-
-    async def save(self, candidate: CatalogState) -> None:
-        if self.fail:
-            raise OSError("deterministic test persistence failure")
-        self._committed = copy.deepcopy(candidate)
-
-
-class GlueCatalogHarness:
-    """Compose real application/repository objects behind the shared wire controller."""
-
-    def __init__(self, store: ToggleFailureStore | None = None) -> None:
-        self.store = store or ToggleFailureStore()
-        repository = TransactionalCatalogRepository(self.store)
-        application = CatalogApplication(
-            repository,
-            IncrementingClock(),
-            CatalogPolicy(
-                default_catalog_id="000000000000",
-                api_page_size=100,
-                create_default_database=False,
-                partition_expressions=PartitionExpressionPolicy(
-                    max_length=2048,
-                    max_tokens=512,
-                    supported_key_types=(
-                        "string",
-                        "date",
-                        "timestamp",
-                        "int",
-                        "bigint",
-                        "long",
-                        "tinyint",
-                        "smallint",
-                        "decimal",
-                    ),
-                ),
-            ),
-        )
-        endpoint = AwsJsonRpcEndpoint(
-            AwsServiceModel("glue"),
-            GlueAwsAdapter(application, "000000000000").dispatcher(),
-            default_region="us-east-1",
-            account_id="000000000000",
-        )
-        app = FastAPI()
-
-        @app.post("/")
-        async def aws(request: Request):
-            return await endpoint(request)
-
-        self._client = TestClient(app)
-
-    def close(self) -> None:
-        self._client.close()
-
-    def call(self, operation: str, payload: dict):
-        return self._client.post(
-            "/",
-            headers={"X-Amz-Target": f"AWSGlue.{operation}"},
-            json=payload,
-        )
-
-    def require_success(self, operation: str, payload: dict) -> dict:
-        response = self.call(operation, payload)
-        assert response.status_code == 200, response.text
-        return response.json()
-
-    def arrange(self, name: str) -> None:
-        if name == "empty":
-            return
-        self.require_success("CreateDatabase", {"DatabaseInput": {"Name": "source"}})
-        if name == "database":
-            return
-        if name == "two_databases":
-            self.require_success("CreateDatabase", {"DatabaseInput": {"Name": "target"}})
-            return
-        self.require_success(
-            "CreateTable",
-            {
-                "DatabaseName": "source",
-                "TableInput": {
-                    "Name": "events",
-                    "StorageDescriptor": {"Columns": []},
-                    "PartitionKeys": [{"Name": "day", "Type": "string"}],
-                },
-            },
-        )
-        if name == "table":
-            return
-        if name == "two_tables":
-            self.require_success(
-                "CreateTable",
-                {
-                    "DatabaseName": "source",
-                    "TableInput": {"Name": "target", "StorageDescriptor": {"Columns": []}},
-                },
-            )
-            return
-        raise AssertionError(f"Unknown test arrangement {name}")
-
-    def durable_state(self) -> CatalogState:
-        return self.store.load()
 
 
 @pytest.fixture
@@ -403,7 +277,11 @@ def test_projection_archive_rename_and_cascade_semantics(catalog: GlueCatalogHar
         {
             "DatabaseName": "warehouse",
             "Name": "events",
-            "TableInput": {"Name": "events", "Parameters": {"revision": "one"}},
+            "TableInput": {
+                "Name": "events",
+                "Parameters": {"revision": "one"},
+                "PartitionKeys": [{"Name": "day", "Type": "string"}],
+            },
             "VersionId": "0",
         },
     )
@@ -412,7 +290,11 @@ def test_projection_archive_rename_and_cascade_semantics(catalog: GlueCatalogHar
         {
             "DatabaseName": "warehouse",
             "Name": "events",
-            "TableInput": {"Name": "renamed", "Parameters": {"revision": "two"}},
+            "TableInput": {
+                "Name": "renamed",
+                "Parameters": {"revision": "two"},
+                "PartitionKeys": [{"Name": "day", "Type": "string"}],
+            },
             "VersionId": "1",
             "SkipArchive": True,
         },

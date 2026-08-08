@@ -76,15 +76,27 @@ class PartitionValues:
     items: tuple[str, ...]
 
     @classmethod
+    def from_items(
+        cls,
+        values: tuple[str, ...] | list[str],
+        *,
+        expected_count: int,
+    ) -> PartitionValues:
+        value = cls(tuple(map(str, values)))
+        value.validate_count(expected_count)
+        return value
+
+    @classmethod
     def from_document(
         cls,
         document: CatalogDocument,
         *,
         expected_count: int,
     ) -> PartitionValues:
-        values = cls(tuple(map(str, document.get("Values", ()))))
-        values.validate_count(expected_count)
-        return values
+        return cls.from_items(
+            document.get("Values", ()),
+            expected_count=expected_count,
+        )
 
     def validate_count(self, expected_count: int) -> None:
         if len(self.items) != expected_count:
@@ -385,11 +397,15 @@ class CatalogPartition:
         now: float,
     ) -> CatalogPartition:
         document = CatalogDocument(definition)
-        values = PartitionValues.from_document(
-            document,
-            expected_count=expected_value_count,
-        )
         normalized = document.to_dict()
+        values = self._values
+        if "Values" in normalized:
+            values = PartitionValues.from_document(
+                document,
+                expected_count=expected_value_count,
+            )
+        else:
+            values.validate_count(expected_value_count)
         normalized["Values"] = list(values.items)
         return CatalogPartition(
             self.catalog_id,

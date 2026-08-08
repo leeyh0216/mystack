@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from dataclasses import dataclass
 
 from mystack.aws_protocol.observability import log_event
 from mystack.glue.application.pagination import Paginator
@@ -18,10 +19,62 @@ from mystack.glue.application.partition_expression import (
 )
 from mystack.glue.application.ports import Clock
 from mystack.glue.application.state import name, partition, partition_key, table
-from mystack.glue.domain import AlreadyExistsError, CatalogPartition, InvalidInputError
+from mystack.glue.domain import (
+    AlreadyExistsError,
+    CatalogPartition,
+    InvalidInputError,
+    PartitionValues,
+)
 from mystack.glue.domain.repositories import CatalogRepository
 
 _LOGGER = logging.getLogger(__name__)
+_MAX_PARTITION_SEGMENTS = 10
+
+
+@dataclass(frozen=True, slots=True)
+class PartitionTarget:
+    """Resolved parent facts needed by batch orchestration without exposing repository state."""
+
+    expected_value_count: int
+
+
+class PartitionTargetResolver:
+    def __init__(self, repository: CatalogRepository) -> None:
+        self._repository = repository
+
+    async def require(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: str,
+    ) -> PartitionTarget:
+        normalized_database = name(database_name)
+        normalized_table = name(table_name)
+        state = await self._repository.snapshot()
+        parent = table(state, catalog_id, normalized_database, normalized_table)
+        return PartitionTarget(parent.partition_key_count())
+
+
+@dataclass(frozen=True, slots=True)
+class PartitionSegment:
+    number: int
+    total: int
+
+    @classmethod
+    def from_request(cls, value: tuple[int, int] | None) -> PartitionSegment | None:
+        if value is None:
+            return None
+        number, total = value
+        if total <= 0 or total > _MAX_PARTITION_SEGMENTS:
+            raise InvalidInputError(
+                f"TotalSegments must be between 1 and {_MAX_PARTITION_SEGMENTS}"
+            )
+        if not 0 <= number < total:
+            raise InvalidInputError("SegmentNumber must be in [0, TotalSegments)")
+        return cls(number, total)
+
+    def includes(self, values: tuple[str, ...]) -> bool:
+        return _stable_segment(values, self.total) == self.number
 
 
 class PartitionCommands:
@@ -73,14 +126,24 @@ class PartitionCommands:
             operation="update-partition",
             resource_key=old_key,
         ) as state:
+            parent = table(state, catalog_id, normalized_database, normalized_table)
+            normalized_old_values = PartitionValues.from_items(
+                old_values,
+                expected_count=parent.partition_key_count(),
+            ).items
+            old_key = (
+                catalog_id,
+                normalized_database,
+                normalized_table,
+                normalized_old_values,
+            )
             current = partition(
                 state,
                 catalog_id,
                 normalized_database,
                 normalized_table,
-                old_values,
+                normalized_old_values,
             )
-            parent = table(state, catalog_id, normalized_database, normalized_table)
             revised = current.revise(
                 definition,
                 expected_value_count=parent.partition_key_count(),
@@ -88,7 +151,9 @@ class PartitionCommands:
             )
             new_key = partition_key(revised)
             if new_key != old_key and new_key in state.partitions:
-                raise AlreadyExistsError(f"Partition {list(revised.values)!r} already exists")
+                raise InvalidInputError(
+                    f"Partition destination {list(revised.values)!r} already exists"
+                )
             state.partitions.pop(old_key)
             state.partitions[new_key] = revised
 
@@ -106,12 +171,18 @@ class PartitionCommands:
             operation="delete-partition",
             resource_key=key,
         ) as state:
+            parent = table(state, catalog_id, normalized_database, normalized_table)
+            normalized_values = PartitionValues.from_items(
+                values,
+                expected_count=parent.partition_key_count(),
+            ).items
+            key = (catalog_id, normalized_database, normalized_table, normalized_values)
             partition(
                 state,
                 catalog_id,
                 normalized_database,
                 normalized_table,
-                values,
+                normalized_values,
             )
             state.partitions.pop(key)
 
@@ -137,13 +208,17 @@ class PartitionQueries:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
         state = await self._repository.snapshot()
-        table(state, catalog_id, normalized_database, normalized_table)
+        parent = table(state, catalog_id, normalized_database, normalized_table)
+        normalized_values = PartitionValues.from_items(
+            values,
+            expected_count=parent.partition_key_count(),
+        ).items
         return partition(
             state,
             catalog_id,
             normalized_database,
             normalized_table,
-            values,
+            normalized_values,
         )
 
     async def list(
@@ -159,6 +234,9 @@ class PartitionQueries:
     ) -> tuple[list[CatalogPartition], str | None]:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
+        page_request = self._paginator.prepare(next_token, max_results)
+        selected_segment = PartitionSegment.from_request(segment)
+        parsed_expression = self._expression_compiler.parse(expression)
         state = await self._repository.snapshot()
         parent = table(state, catalog_id, normalized_database, normalized_table)
         partition_keys = tuple(
@@ -168,7 +246,7 @@ class PartitionQueries:
             )
             for value in parent.definition.get("PartitionKeys", ())
         )
-        predicate = self._expression_compiler.compile(expression, partition_keys)
+        predicate = self._expression_compiler.bind(parsed_expression, partition_keys)
         prefix = (catalog_id, normalized_database, normalized_table)
         values = sorted(
             [value for key, value in state.partitions.items() if key[:3] == prefix],
@@ -181,8 +259,8 @@ class PartitionQueries:
             "glue.partition_expression.evaluate.before",
             expression_fingerprint=predicate.fingerprint,
             candidate_count=candidate_count,
-            segment_number=segment[0] if segment is not None else None,
-            total_segments=segment[1] if segment is not None else None,
+            segment_number=selected_segment.number if selected_segment is not None else None,
+            total_segments=selected_segment.total if selected_segment is not None else None,
             fix_hint=(
                 "If a client upgrade changes matched_count, inspect the parse event and update "
                 "the isolated grammar, parser, evaluator, or configured type policy."
@@ -208,25 +286,18 @@ class PartitionQueries:
             candidate_count=candidate_count,
             matched_count=len(values),
         )
-        if segment is not None:
-            segment_number, total_segments = segment
-            if total_segments <= 0 or not 0 <= segment_number < total_segments:
-                raise InvalidInputError("SegmentNumber must be in [0, TotalSegments)")
-            values = [
-                value
-                for value in values
-                if _stable_segment(value.values, total_segments) == segment_number
-            ]
+        if selected_segment is not None:
+            values = [value for value in values if selected_segment.includes(value.values)]
             log_event(
                 _LOGGER,
                 logging.INFO,
                 "glue.partition_expression.segment.after",
                 expression_fingerprint=predicate.fingerprint,
                 matched_count=len(values),
-                segment_number=segment_number,
-                total_segments=total_segments,
+                segment_number=selected_segment.number,
+                total_segments=selected_segment.total,
             )
-        return self._paginator.page(values, next_token, max_results)
+        return page_request.apply(values)
 
 
 def _stable_segment(values: tuple[str, ...], total_segments: int) -> int:

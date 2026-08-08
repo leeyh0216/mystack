@@ -163,5 +163,5 @@ operations:
   GetTableVersion: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
   GetTableVersions: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
   UpdateDatabase: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  UpdatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  UpdatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
   UpdateTable: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, version.mismatch, adapter.mapping_failure, persistence.side_effect_failed]

@@ -103,5 +103,7 @@ botocore model이 operation, 데이터 구조, 제약, 선언된 오류를 정�
 Parameterized local contract가 Catalog 상태 오류를 모두 재현하고, 자연스러운 상태 조건이 없는
 문서화된 internal/timeout 실패는 설정 기반 fault injection으로 재현합니다. 인증·인가 오류는
 프로젝트 범위 밖입니다.
+[Partition/batch 오류 계약](protocols/glue-partition-batch-errors.ko.md)은 Docker를 시작하지 않고
+model 최댓값, 검증 순서, 안정적인 부분 성공, `UnprocessedKeys`, persistence rollback을 검증합니다.
 
 AWS의 [Hexagonal architecture 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)는 독립 core test와 E2E 자동화를 권장합니다.

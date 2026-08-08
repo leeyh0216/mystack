@@ -105,5 +105,8 @@ documents do not define which of several invalid conditions wins, a reviewed int
 order defines the first failure. Parameterized local contracts make every catalog-state error
 reproducible; configured fault injection covers documented internal and timeout failures that have
 no natural state trigger. Authentication and authorization errors are outside the project scope.
+The focused [partition/batch error contract](protocols/glue-partition-batch-errors.md) covers modeled
+maximum constraints, validation order, stable partial success, `UnprocessedKeys`, and persistence
+rollback without starting Docker.
 
 AWS recommends automated independent core and E2E behavior tests for hexagonal systems in its [best-practices guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html).

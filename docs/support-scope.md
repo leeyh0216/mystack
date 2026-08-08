@@ -17,8 +17,8 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
 | EMR control plane | Partial: 13 boto3-tested operations plus versioned startup-file provisioning through the same use case | Broad public EMR API compatibility |
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
-| Glue Data Catalog | Partial: 22 boto3-tested operations, enforced error pipeline, complete database/table/version natural errors, and opt-in timeout/internal injection | Resource-specific partition/batch errors and broader API inventory |
-| Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, and supported Hive V1 table ALTER metadata semantics | Deterministic documented error coverage for every implemented Glue operation |
+| Glue Data Catalog | Partial API inventory: 22 boto3-tested operations with complete deterministic database/table/version/partition/batch errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
+| Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, supported Hive V1 table ALTER metadata semantics, and deterministic errors for every implemented operation | Broader Spark/Hive client variants |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
@@ -42,6 +42,8 @@ matrix](compatibility/glue-errors.generated.md); precedence, safe logging, and f
 injection are defined by the [error decision protocol](protocols/glue-error-decisions.md).
 Database/table/version validation, conflict, version, archive, rename, cascade, and rollback behavior
 is fixed by the [resource error contract](protocols/glue-database-table-errors.md).
+Partition value, list, update, batch order, item error, `UnprocessedKeys`, and rollback behavior is
+fixed by the [partition/batch error contract](protocols/glue-partition-batch-errors.md).
 
 Every currently implemented control-plane operation (EMR 13, Glue 22) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations

@@ -29,12 +29,13 @@ AWS 계정을 조회하지 않습니다. Source of truth는 `contracts/glue-erro
 Protocol 검증은 Glue dispatcher 전의 공통 AWS endpoint에서 수행합니다. 유효한 요청은
 `GlueErrorBoundary`로 들어가 선택적 fault를 적용하고 framework를 모르는 domain failure를
 변환합니다. Repository는 durable save가 성공한 뒤에만 candidate를 공개합니다. Batch item
-실패는 response member이므로 앞에서 성공한 item과 함께 존재할 수 있으며, 전체 operation별
-의미론은 #63에서 완성합니다.
+실패는 response member이므로 앞에서 성공한 item과 함께 존재할 수 있습니다. Operation별 의미론은
+[partition/batch 계약](glue-partition-batch-errors.ko.md)에 고정했습니다.
 
 이는 문서화되지 않은 AWS 평가 순서에 대한 주장이 아니라 Mystack 내부의 결정적인 순서입니다.
-[Database/table/version 계약](glue-database-table-errors.ko.md)이 해당 resource별 조건을 고정하며
-#63은 pipeline을 바꾸지 않고 partition과 batch 조건을 구체화합니다.
+[Database/table/version 계약](glue-database-table-errors.ko.md)과
+[partition/batch 계약](glue-partition-batch-errors.ko.md)이 pipeline을 바꾸지 않고 resource별
+조건을 고정합니다.
 
 <!-- section: taxonomy -->
 ## 분류와 wire response

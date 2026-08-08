@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from mystack.glue.application.batch import PartitionBatchFailure
+from mystack.glue.application.batch import PartitionBatchFailure, PartitionBatchGetResult
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
@@ -157,7 +157,7 @@ class GlueCatalogUseCases(Protocol):
         database: str,
         table: str,
         value_groups: list[tuple[str, ...]],
-    ) -> list[CatalogPartition]: ...
+    ) -> PartitionBatchGetResult: ...
 
     async def batch_update_partitions(
         self,

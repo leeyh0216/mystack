@@ -227,6 +227,7 @@ def _constraint_errors(value: Any, shape: Any, path: str = "input") -> list[str]
 
     errors: list[str] = []
     if shape.type_name == "string" and isinstance(value, str):
+        errors.extend(_maximum_errors(len(value), shape, path, "length"))
         allowed = shape.metadata.get("enum")
         if allowed and value not in allowed:
             errors.append(
@@ -240,13 +241,35 @@ def _constraint_errors(value: Any, shape: Any, path: str = "input") -> list[str]
             if name in value:
                 errors.extend(_constraint_errors(value[name], member, f"{path}.{name}"))
     elif shape.type_name == "list" and isinstance(value, list | tuple):
+        errors.extend(_maximum_errors(len(value), shape, path, "member count"))
         for index, member in enumerate(value):
             errors.extend(_constraint_errors(member, shape.member, f"{path}[{index}]"))
     elif shape.type_name == "map" and isinstance(value, dict):
+        errors.extend(_maximum_errors(len(value), shape, path, "entry count"))
         for key, member in value.items():
             errors.extend(_constraint_errors(key, shape.key, f"{path} (key)"))
             errors.extend(_constraint_errors(member, shape.value, f"{path}.{key}"))
+    elif (
+        shape.type_name in {"integer", "long", "float", "double"}
+        and isinstance(value, int | float)
+        and not isinstance(value, bool)
+    ):
+        errors.extend(_maximum_errors(value, shape, path, "value"))
     return errors
+
+
+def _maximum_errors(
+    actual: int | float,
+    shape: Any,
+    path: str,
+    measurement: str,
+) -> list[str]:
+    """Enforce modeled maxima that botocore deliberately omits client-side."""
+
+    maximum = shape.metadata.get("max")
+    if maximum is None or actual <= maximum:
+        return []
+    return [f"Invalid {measurement} for parameter {path}; must be less than or equal to {maximum}"]
 
 
 def _matches_pattern(value: str, pattern: str) -> bool:

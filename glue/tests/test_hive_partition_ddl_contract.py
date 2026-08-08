@@ -85,7 +85,7 @@ def test_hive_partition_ddl_operation_sequence_is_deterministic(glue_client) -> 
                 "s3://warehouse/hive_ddl/events/collision",
             ),
         )
-    assert collision.value.response["Error"]["Code"] == "AlreadyExistsException"
+    assert collision.value.response["Error"]["Code"] == "InvalidInputException"
 
     deleted = glue_client.batch_delete_partition(
         DatabaseName=database,

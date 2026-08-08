@@ -4,6 +4,7 @@ import json
 import logging
 from typing import Any
 
+import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from mystack.aws_protocol import AwsJsonRpcEndpoint, AwsServiceError, AwsServiceModel
@@ -114,6 +115,57 @@ def test_rejects_official_enum_and_pattern_constraints() -> None:
     assert "must be one of" in enum_response.json()["Message"]
     assert pattern_response.status_code == 400
     assert "must satisfy modeled pattern" in pattern_response.json()["Message"]
+
+
+@pytest.mark.parametrize(
+    ("operation", "payload", "path"),
+    (
+        (
+            "GetPartitions",
+            {"DatabaseName": "analytics", "TableName": "events", "Expression": "x" * 2049},
+            "input.Expression",
+        ),
+        (
+            "GetPartitions",
+            {"DatabaseName": "analytics", "TableName": "events", "MaxResults": 1001},
+            "input.MaxResults",
+        ),
+        (
+            "GetPartitions",
+            {
+                "DatabaseName": "analytics",
+                "TableName": "events",
+                "Segment": {"SegmentNumber": 0, "TotalSegments": 11},
+            },
+            "input.Segment.TotalSegments",
+        ),
+        (
+            "BatchCreatePartition",
+            {
+                "DatabaseName": "analytics",
+                "TableName": "events",
+                "PartitionInputList": [{"Values": [str(index)]} for index in range(101)],
+            },
+            "input.PartitionInputList",
+        ),
+    ),
+)
+def test_rejects_official_modeled_maximum_constraints(
+    operation: str,
+    payload: dict,
+    path: str,
+) -> None:
+    client = TestClient(app_for(OperationDispatcher()))
+
+    response = client.post(
+        "/",
+        headers={"X-Amz-Target": f"AWSGlue.{operation}"},
+        json=payload,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["__type"] == "InvalidInputException"
+    assert path in response.json()["Message"]
 
 
 def test_validation_logs_never_include_payload_values(caplog) -> None:

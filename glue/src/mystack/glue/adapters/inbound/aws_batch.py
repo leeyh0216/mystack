@@ -48,15 +48,15 @@ class BatchOperationFamily:
             tuple(map(str, mapping(key, "PartitionsToGet[]")["Values"]))
             for key in payload["PartitionsToGet"]
         ]
-        partitions = await self._context.application.batch_get_partitions(
+        result = await self._context.application.batch_get_partitions(
             self._context.catalog(payload),
             str(payload["DatabaseName"]),
             str(payload["TableName"]),
             value_groups,
         )
         return {
-            "Partitions": [partition_document(value) for value in partitions],
-            "UnprocessedKeys": [],
+            "Partitions": [partition_document(value) for value in result.partitions],
+            "UnprocessedKeys": [{"Values": list(values)} for values in result.unprocessed_keys],
         }
 
     async def batch_update_partition(self, payload, context):

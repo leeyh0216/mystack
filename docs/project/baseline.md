@@ -10,7 +10,7 @@
 
 - Status: approved
 - Owner: leeyh0216
-- Updated: 2026-08-08
+- Updated: 2026-08-09
 - Repository: public `leeyh0216/mystack`
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 
@@ -52,7 +52,8 @@ contracts.
   and queue-driver components sit behind minimal inbound Protocols. A typed Build/Start/Close runtime
   cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
   closes artifacts, and releases driver locks.
-- Glue: 22 operations covering database, table/version, and partition/batch behavior. Serialized
+- Glue: 22 operations covering database, table/version, and partition/batch behavior with
+  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. Serialized
   candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
   schema 1, and keep rename/cascade/version checks atomic; documented domain errors translate at the
   inbound adapter.

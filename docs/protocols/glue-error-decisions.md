@@ -29,12 +29,13 @@ The first failing condition stops evaluation in this order:
 Protocol validation occurs in the shared AWS endpoint before the Glue dispatcher. A valid request
 then enters `GlueErrorBoundary`, which applies an optional fault and translates framework-free
 domain failures. The repository publishes a candidate only after its durable save succeeds. Batch
-item failures are response members and may coexist with earlier successful items; #63 owns their
-complete per-operation semantics.
+item failures are response members and may coexist with earlier successful items; the
+[partition/batch contract](glue-partition-batch-errors.md) fixes their complete per-operation semantics.
 
 This is a deterministic Mystack order, not a claim about undocumented AWS evaluation order. The
-[database/table/version contract](glue-database-table-errors.md) fixes those resource-specific
-conditions; #63 refines partition and batch conditions without changing the pipeline.
+[database/table/version contract](glue-database-table-errors.md) and
+[partition/batch contract](glue-partition-batch-errors.md) fix the resource-specific conditions
+without changing the pipeline.
 
 <!-- section: taxonomy -->
 ## Taxonomy and wire response

@@ -10,7 +10,7 @@
 
 - 상태: approved
 - 소유자: leeyh0216
-- 갱신일: 2026-08-08
+- 갱신일: 2026-08-09
 - 저장소: public `leeyh0216/mystack`
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 
@@ -49,7 +49,8 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   failure-policy, queue-driver component로 분리했습니다. Typed Build/Start/Close runtime은 파일로
   설정한 shutdown deadline 안에서 scheduler task와 child process를 cancel/await하고 artifact를
   닫으며 driver lock을 해제합니다.
-- Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. 직렬화한 candidate
+- Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. Model 최댓값,
+  자연 오류, batch 항목 순서와 rollback을 결정적으로 처리합니다. 직렬화한 candidate
   transaction이 visible publish 전에 schema-2 JSON을 persist/fsync/replace하고 schema 1을
   migration하며 rename/cascade/version check를 한 commit으로 처리합니다. Inbound adapter는 domain
   error를 문서화된 오류로 변환합니다.

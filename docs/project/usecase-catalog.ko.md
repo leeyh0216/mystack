@@ -9,7 +9,7 @@
 ## Metadata와 범위
 
 - 상태: approved
-- 갱신일: 2026-08-08
+- 갱신일: 2026-08-09
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 - 포함: HTTP endpoint, application operation, runtime process, management UI, release CLI/workflow
 - 제외: process 내부 사용자 plugin, Glue Job/JobRun/Crawler
@@ -134,16 +134,22 @@
 - 목적/actor/trigger: boto3/CLI가 Create/Get/List/Update/DeletePartition 또는 batch 4개 operation을
   호출합니다.
 - 입력: Catalog/database/table, partition value/input, expression, segment, pagination/schema flag.
-- 출력: partition/list/batch document이며 batch error는 전체 실패가 아닌 entry별 결과입니다.
+- 출력: Partition/list/batch document입니다. Mutation batch error는 항목별 결과입니다. 상위
+  resource 부재와 `BatchGetPartition` value 수 오류는 전체 호출을 실패시킵니다. 찾지 못한 유효한
+  get key는 `UnprocessedKeys`로 반환합니다.
 - 저장/변경: catalog/database/table/value tuple key의 partition record입니다.
 - 책임: `CatalogPartition`이 immutable value와 cardinality를 소유하고 command, query,
   부분 성공 batch handler를 분리합니다.
 - 부수효과: 각 성공 entry mutation 뒤 candidate를 원자적으로 persist하고 publish합니다.
-- 선행조건/규칙: table 존재, value 수와 partition key 수 일치, 지원 predicate/segment.
+- 선행조건/규칙: 상위 table 사전 확인, value와 partition key 수 일치, 지원 predicate/segment,
+  입력 순서 처리입니다. Spark Hive rename은 AWS 유지보수 Glue client의 `UpdatePartition` 경로를
+  사용합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.
-- 관측: operation/error log와 Glue 22개 전체 public Proxy E2E.
+- 관측: 값을 제외한 batch 전·항목·후와 expression 단계 log, 결정적 wire contract, Glue 22개 전체
+  public Proxy E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
-  `glue/src/mystack/glue/adapters/inbound/aws.py`
+  `glue/src/mystack/glue/adapters/inbound/aws.py`,
+  `docs/protocols/glue-partition-batch-errors.ko.md`
 - 신뢰도: High
 
 <!-- section: uc-008 -->

@@ -34,7 +34,10 @@ reference](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.
 
 Partition identity is the ordered tuple from the table's `PartitionKeys`; values are preserved as
 strings, including `/`, `=`, spaces, and Unicode. Rename changes that tuple and rejects a destination
-that already exists. `SET LOCATION` replaces the partition input supplied by the Hive client while
+that already exists with the modeled `InvalidInputException`. This rename path follows the
+AWS-maintained Glue Hive client's `UpdatePartition` call; the API/document discrepancy and exact
+first-failure rules are recorded in the [partition/batch error contract](glue-partition-batch-errors.md).
+`SET LOCATION` replaces the partition input supplied by the Hive client while
 preserving creation time. Partition mutations do not create a new table version.
 
 Glue batch APIs are deterministic partial-success operations: entries execute in request order,
@@ -76,5 +79,6 @@ scope.
 
 - [AWS Glue Data Catalog support for Spark SQL jobs](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [AWS Glue Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
+- [AWS Glue Data Catalog client for Apache Hive Metastore](https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore)
 - [Spark 3.5 ALTER TABLE](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html)
 - [Spark REPAIR TABLE](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html)

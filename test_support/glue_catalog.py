@@ -168,19 +168,16 @@ def exercise_all_glue_catalog_operations(client: Any, namespace: str) -> None:
     )["Partitions"]
     assert [value["Values"] for value in selected] == [["2026-08-09", "us-east-1"]]
     assert "Columns" not in selected[0].get("StorageDescriptor", {})
-    assert (
-        len(
-            client.batch_get_partition(
-                DatabaseName=partitioned,
-                TableName="events",
-                PartitionsToGet=[
-                    {"Values": ["2026-08-08", "ap-northeast-2"]},
-                    {"Values": ["missing", "missing"]},
-                ],
-            )["Partitions"]
-        )
-        == 1
+    batch_get = client.batch_get_partition(
+        DatabaseName=partitioned,
+        TableName="events",
+        PartitionsToGet=[
+            {"Values": ["2026-08-08", "ap-northeast-2"]},
+            {"Values": ["missing", "missing"]},
+        ],
     )
+    assert len(batch_get["Partitions"]) == 1
+    assert batch_get["UnprocessedKeys"] == [{"Values": ["missing", "missing"]}]
     assert client.get_partition(
         DatabaseName=partitioned,
         TableName="events",

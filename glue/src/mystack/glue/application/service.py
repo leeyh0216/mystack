@@ -7,11 +7,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from mystack.glue.application.batch import PartitionBatchFailure, PartitionBatchHandler
+from mystack.glue.application.batch import (
+    PartitionBatchFailure,
+    PartitionBatchGetResult,
+    PartitionBatchHandler,
+)
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.initialization import CatalogInitializer
 from mystack.glue.application.pagination import Paginator
-from mystack.glue.application.partition import PartitionCommands, PartitionQueries
+from mystack.glue.application.partition import (
+    PartitionCommands,
+    PartitionQueries,
+    PartitionTargetResolver,
+)
 from mystack.glue.application.partition_expression import (
     PartitionExpressionCompiler,
     PartitionExpressionPolicy,
@@ -59,6 +67,7 @@ class CatalogApplication:
         self._partition_batches = PartitionBatchHandler(
             self._partition_commands,
             self._partition_queries,
+            PartitionTargetResolver(repository),
         )
         self._initializer = CatalogInitializer(
             self._database_commands,
@@ -280,7 +289,7 @@ class CatalogApplication:
         database: str,
         table: str,
         value_groups: list[tuple[str, ...]],
-    ) -> list[CatalogPartition]:
+    ) -> PartitionBatchGetResult:
         return await self._partition_batches.get(
             catalog_id,
             database,

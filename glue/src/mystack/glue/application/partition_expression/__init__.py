@@ -7,6 +7,14 @@ from mystack.glue.application.partition_expression.model import (
     PartitionExpressionPolicy,
     PartitionKey,
 )
-from mystack.glue.application.partition_expression.service import PartitionExpressionCompiler
+from mystack.glue.application.partition_expression.service import (
+    ParsedPartitionExpression,
+    PartitionExpressionCompiler,
+)
 
-__all__ = ["PartitionExpressionCompiler", "PartitionExpressionPolicy", "PartitionKey"]
+__all__ = [
+    "ParsedPartitionExpression",
+    "PartitionExpressionCompiler",
+    "PartitionExpressionPolicy",
+    "PartitionKey",
+]

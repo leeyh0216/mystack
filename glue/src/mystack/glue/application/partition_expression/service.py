@@ -44,6 +44,14 @@ class CompiledPartitionExpression:
         return self.evaluator.matches(self.expression, PartitionRow.create(self.keys, values))
 
 
+@dataclass(frozen=True, slots=True)
+class ParsedPartitionExpression:
+    """Syntax-checked expression that can be bound after the table schema is resolved."""
+
+    expression: Expression | None
+    fingerprint: str | None
+
+
 class PartitionExpressionCompiler:
     """Own bounded parsing and schema validation, with no storage dependency."""
 
@@ -56,8 +64,13 @@ class PartitionExpressionCompiler:
         source: str | None,
         keys: tuple[PartitionKey, ...],
     ) -> CompiledPartitionExpression:
+        return self.bind(self.parse(source), keys)
+
+    def parse(self, source: str | None) -> ParsedPartitionExpression:
+        """Validate client-controlled syntax without reading catalog state."""
+
         if source is None or not source.strip():
-            return CompiledPartitionExpression(None, keys, self._evaluator, None)
+            return ParsedPartitionExpression(None, None)
         fingerprint = hashlib.sha256(source.encode()).hexdigest()[:16]
         log_event(
             _LOGGER,
@@ -65,8 +78,6 @@ class PartitionExpressionCompiler:
             "glue.partition_expression.parse.before",
             expression_length=len(source),
             expression_fingerprint=fingerprint,
-            partition_key_count=len(keys),
-            partition_key_types=[key.type_name for key in keys],
             fix_hint=(
                 "Compare the caller dialect with GluePartitionExpression.g4, parser.py, "
                 "and evaluator.py; do not add repository parsing."
@@ -74,7 +85,6 @@ class PartitionExpressionCompiler:
         )
         try:
             expression = self._parser.parse(source)
-            self._evaluator.validate(expression, keys)
         except Exception:
             log_event(
                 _LOGGER,
@@ -93,7 +103,43 @@ class PartitionExpressionCompiler:
             ast_type=type(expression).__name__,
             ast_shape=_expression_shape(expression),
         )
-        return CompiledPartitionExpression(expression, keys, self._evaluator, fingerprint)
+        return ParsedPartitionExpression(expression, fingerprint)
+
+    def bind(
+        self,
+        parsed: ParsedPartitionExpression,
+        keys: tuple[PartitionKey, ...],
+    ) -> CompiledPartitionExpression:
+        """Validate parsed fields/types against one resolved table schema."""
+
+        if parsed.expression is not None:
+            try:
+                self._evaluator.validate(parsed.expression, keys)
+            except Exception:
+                log_event(
+                    _LOGGER,
+                    logging.WARNING,
+                    "glue.partition_expression.bind.failed",
+                    expression_fingerprint=parsed.fingerprint,
+                    partition_key_count=len(keys),
+                    partition_key_types=[key.type_name for key in keys],
+                    exc_info=True,
+                )
+                raise
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "glue.partition_expression.bind.after",
+            expression_fingerprint=parsed.fingerprint,
+            partition_key_count=len(keys),
+            partition_key_types=[key.type_name for key in keys],
+        )
+        return CompiledPartitionExpression(
+            parsed.expression,
+            keys,
+            self._evaluator,
+            parsed.fingerprint,
+        )
 
 
 def _expression_shape(expression: Expression) -> str:

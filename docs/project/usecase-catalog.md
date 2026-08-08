@@ -9,7 +9,7 @@
 ## Metadata and scope
 
 - Status: approved
-- Updated: 2026-08-08
+- Updated: 2026-08-09
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 - Included: HTTP endpoints, application operations, runtime processes, management UI, release CLI/workflow
 - Excluded: in-process user plugins and Glue Jobs/JobRuns/Crawlers
@@ -133,16 +133,22 @@
 
 - Purpose/actor/trigger: boto3/CLI calls Create/Get/List/Update/DeletePartition or four batch operations.
 - Input: Catalog/database/table, partition values/input, expression, segment, pagination and schema flags.
-- Output: partition/list/batch documents; batch errors are per-entry rather than whole-call failure.
+- Output: partition/list/batch documents; mutation batch errors are per-entry while missing parents
+  and invalid `BatchGetPartition` cardinality fail the whole call. Missing valid get keys are returned
+  through `UnprocessedKeys`.
 - Stored/changed data: partition records keyed by catalog/database/table/value tuple.
 - Responsibility: `CatalogPartition` owns immutable values and cardinality; command, query, and
   partial-success batch handlers are independent.
 - Side effects: atomic candidate persistence and publication after each successful entry mutation.
-- Preconditions/rules: table exists; value count equals partition-key count; supported predicate/segment.
+- Preconditions/rules: table preflight; value count equals partition-key count; supported
+  predicate/segment; stable input-order processing; Spark Hive rename uses the AWS-maintained Glue
+  client `UpdatePartition` path.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and per-item ErrorDetail.
-- Observability: operation/error logs and all 22 Glue operations through public Proxy E2E.
+- Observability: safe batch before/item/after and expression phase logs, focused deterministic wire
+  contracts, and all 22 Glue operations through public Proxy E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
-  `glue/src/mystack/glue/adapters/inbound/aws.py`
+  `glue/src/mystack/glue/adapters/inbound/aws.py`,
+  `docs/protocols/glue-partition-batch-errors.md`
 - Confidence: High
 
 <!-- section: uc-008 -->
