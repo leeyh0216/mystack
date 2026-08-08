@@ -61,21 +61,23 @@ class IcebergLifecycleScenario:
         keys_before = self._keys(prefix)
         self._sql(
             "rename-within-namespace",
-            f"ALTER TABLE {source_qualified} RENAME TO {renamed_qualified}",
+            f"ALTER TABLE {source_qualified} RENAME TO "
+            f"{self._rename_target(self.database, renamed)}",
         )
         same_name_error = self._expect_failure(
             "rename-same-name",
-            f"ALTER TABLE {renamed_qualified} RENAME TO {renamed_qualified}",
+            f"ALTER TABLE {renamed_qualified} RENAME TO "
+            f"{self._rename_target(self.database, renamed)}",
         )
         case_only_error = self._expect_failure(
             "rename-case-only",
             f"ALTER TABLE {renamed_qualified} RENAME TO "
-            f"{self.catalog_name}.`{self.database}`.`ICEBERG_RENAMED`",
+            f"{self._rename_target(self.database, 'ICEBERG_RENAMED')}",
         )
         missing_namespace_error = self._expect_failure(
             "rename-missing-namespace",
             f"ALTER TABLE {renamed_qualified} RENAME TO "
-            f"{self.catalog_name}.`{self.database}_missing`.`unreachable`",
+            f"{self._rename_target(f'{self.database}_missing', 'unreachable')}",
         )
 
         collision_source = self._qualified(self.database, "iceberg_collision_source")
@@ -90,17 +92,19 @@ class IcebergLifecycleScenario:
         )
         collision_error = self._expect_failure(
             "rename-existing-target",
-            f"ALTER TABLE {collision_source} RENAME TO {collision_target}",
+            f"ALTER TABLE {collision_source} RENAME TO "
+            f"{self._rename_target(self.database, 'iceberg_collision_target')}",
         )
         missing_source_error = self._expect_failure(
             "rename-missing-source",
             f"ALTER TABLE {self._qualified(self.database, 'iceberg_missing_source')} "
-            f"RENAME TO {self._qualified(self.database, 'iceberg_missing_target')}",
+            f"RENAME TO {self._rename_target(self.database, 'iceberg_missing_target')}",
         )
 
         self._sql(
             "rename-across-namespace",
-            f"ALTER TABLE {renamed_qualified} RENAME TO {cross_qualified}",
+            f"ALTER TABLE {renamed_qualified} RENAME TO "
+            f"{self._rename_target(self.target_database, cross_database)}",
         )
         keys_after = self._keys(prefix)
         return {
@@ -187,6 +191,18 @@ class IcebergLifecycleScenario:
 
     def _qualified(self, database: str, table: str) -> str:
         return f"{self.catalog_name}.`{database}`.`{table}`"
+
+    @staticmethod
+    def _rename_target(database: str, table: str) -> str:
+        """Keep the target relative to the source catalog.
+
+        Spark resolves the source catalog first. Repeating it in the target is interpreted as a
+        namespace segment by Iceberg's RenameTableExec path.
+
+        Source: https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html
+        """
+
+        return f"`{database}`.`{table}`"
 
     def _create_table(self, qualified: str, prefix: str) -> None:
         self._sql(
