@@ -14,24 +14,62 @@ import asyncio
 import logging
 import os
 import shutil
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 from urllib.parse import urlparse
 
 import boto3
 from botocore.config import Config
 from mystack.aws_protocol.observability import log_event, payload_fingerprint
 from mystack.emr.application.ports import RuntimeResult
-from mystack.emr.config import EmrSettings, ObjectStoreSettings
 from mystack.emr.domain import BootstrapAction, Cluster, Step
 
 _LOGGER = logging.getLogger(__name__)
 
 
+class ObjectStoreConfiguration(Protocol):
+    endpoint_url: str
+    region: str
+    access_key_id: str
+    secret_access_key: str
+    s3_path_style: bool
+
+
+class SparkRuntimeConfiguration(Protocol):
+    spark_submit: str
+    master: str
+    packages: tuple[str, ...]
+    conf: tuple[tuple[str, str], ...]
+    submit_aliases: tuple[str, ...]
+    option_value_names: frozenset[str]
+
+
+class ReleaseRuntimeConfiguration(Protocol):
+    runtime_profile: str
+
+
+class RuntimePolicyConfiguration(Protocol):
+    release_profiles: Mapping[str, ReleaseRuntimeConfiguration]
+
+
+class EmrRuntimeConfiguration(Protocol):
+    work_root: Path
+    process_timeout_seconds: float
+    bootstrap_timeout_seconds: float
+    bootstrap_shell: str
+    terminate_grace_seconds: float
+    command_runner_jars: frozenset[str]
+    object_store: ObjectStoreConfiguration
+    runtimes: Mapping[str, SparkRuntimeConfiguration]
+    policy: RuntimePolicyConfiguration
+
+
 class S3ArtifactStore:
     """Resolve s3:// and local artifacts into an explicit work directory."""
 
-    def __init__(self, settings: ObjectStoreSettings) -> None:
+    def __init__(self, settings: ObjectStoreConfiguration) -> None:
         self._settings = settings
         self._client = boto3.client(
             "s3",
@@ -105,7 +143,7 @@ class _ProcessOutcome:
 
 
 class LocalProcessExecutor:
-    def __init__(self, settings: EmrSettings) -> None:
+    def __init__(self, settings: EmrRuntimeConfiguration) -> None:
         self._settings = settings
         self._processes: dict[tuple[str, str], asyncio.subprocess.Process] = {}
         self._cancellations: set[tuple[str, str]] = set()
@@ -270,7 +308,7 @@ class LocalProcessExecutor:
 class LocalBootstrapRunner:
     def __init__(
         self,
-        settings: EmrSettings,
+        settings: EmrRuntimeConfiguration,
         artifacts: S3ArtifactStore,
         executor: LocalProcessExecutor,
     ) -> None:
@@ -314,7 +352,7 @@ class LocalBootstrapRunner:
 class LocalSparkStepRunner:
     def __init__(
         self,
-        settings: EmrSettings,
+        settings: EmrRuntimeConfiguration,
         artifacts: S3ArtifactStore,
         executor: LocalProcessExecutor,
     ) -> None:
@@ -410,7 +448,7 @@ def _application_index(arguments: list[str], value_options: frozenset[str]) -> i
     raise ValueError("spark-submit application resource is missing")
 
 
-def _aws_environment(settings: ObjectStoreSettings) -> dict[str, str]:
+def _aws_environment(settings: ObjectStoreConfiguration) -> dict[str, str]:
     return {
         "AWS_ACCESS_KEY_ID": settings.access_key_id,
         "AWS_SECRET_ACCESS_KEY": settings.secret_access_key,
@@ -421,7 +459,7 @@ def _aws_environment(settings: ObjectStoreSettings) -> dict[str, str]:
     }
 
 
-def _s3_conf(settings: ObjectStoreSettings) -> tuple[tuple[str, str], ...]:
+def _s3_conf(settings: ObjectStoreConfiguration) -> tuple[tuple[str, str], ...]:
     return (
         ("spark.hadoop.fs.s3a.endpoint", settings.endpoint_url),
         ("spark.hadoop.fs.s3a.path.style.access", str(settings.s3_path_style).lower()),

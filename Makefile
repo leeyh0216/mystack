@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs devcontainer-check devcontainer-verify-images model-check coverage-check registry-check package-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images model-check coverage-check registry-check package-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -31,6 +31,12 @@ format: ## Format source and apply safe lint fixes.
 
 docs: ## Validate bilingual identity, section order, links, sources, and Korean style.
 	@uv run python scripts/check_docs.py
+
+architecture-check: ## Enforce dependency directions, composition roots, and import cycles.
+	@uv run python scripts/architecture_contract.py --root .
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \
+	uv run pytest tests/architecture/test_dependencies.py \
+	  --timeout "$$timeout" --timeout-method thread -vv
 
 devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycle setup.
 	@uv run python scripts/check_devcontainer.py

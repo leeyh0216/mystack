@@ -52,6 +52,35 @@ bootstrap / FastAPI app
 
 Architecture tests reject imports from an inner layer to an outer layer.
 
+<!-- section: enforcement -->
+## Executable architecture contract
+
+`make architecture-check` resolves absolute and relative Python imports, builds the internal module
+graph, and rejects the following dependency changes before they reach runtime:
+
+| Rule | Rejected dependency |
+| --- | --- |
+| `shared-service-dependency` | Shared wire code imports an emulator service |
+| `proxy-service-dependency` | Proxy imports EMR or Glue instead of using its route registry |
+| `cross-service-dependency` | EMR and Glue import each other |
+| `outward-dependency` | Domain/Application/Adapter imports a more outward layer |
+| `inner-transport-dependency` | Domain or Application imports FastAPI, boto, or another transport |
+| `composition-only-adapter` | A non-composition module imports a concrete adapter |
+| `adapter-sibling-dependency` | An inbound adapter imports an outbound adapter, or the reverse |
+| `inbound-concrete-facade` | An inbound adapter imports a concrete Application facade |
+| `service-import-cycle` | Internal modules form a direct or indirect import cycle |
+
+Inbound adapters depend on the minimal Protocols in `application/use_cases.py` and immutable values
+in `application/commands.py`. Concrete adapters may be imported and constructed only by
+`mystack.emr.app` or `mystack.glue.app`. Imports inside one inbound or outbound adapter package are
+allowed; crossing between the two sides is not. Generated JSON and Markdown are outside Python
+source roots, and no generated Python file is excluded.
+
+Every prohibited direction has a mutation test that injects a violating source file and proves that
+the checker rejects it. A failure reports the source path and line, imported module, rule identifier,
+and a repair instruction. The implementation follows Python's [documented relative-import
+semantics](https://docs.python.org/3/reference/import.html#package-relative-imports).
+
 <!-- section: topology -->
 ## Runtime topology
 
@@ -120,3 +149,4 @@ Glue's JSON persistence adapter uses Python's atomic
 - [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 - [AWS Prescriptive Guidance: Best practices and CI testing](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+- [Python language reference: package relative imports](https://docs.python.org/3/reference/import.html#package-relative-imports)

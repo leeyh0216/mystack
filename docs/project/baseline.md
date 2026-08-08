@@ -34,8 +34,9 @@ contracts.
   development root.
 - Composition roots: `proxy/src/mystack/proxy/app.py`, `emr/src/mystack/emr/app.py`, and
   `glue/src/mystack/glue/app.py`.
-- Dependency direction: Domain → Application ports/use cases → Adapters → composition root. Automated
-  architecture tests reject inward imports of outer modules.
+- Dependency direction: Domain → Application ports/use cases → Adapters → composition root. The
+  executable contract resolves relative imports, rejects outward/cross-service/sibling dependencies
+  and cycles, and proves each prohibited direction with mutation tests.
 - Protocol boundary: pinned botocore models, AWS JSON 1.1 input validation, modeled responses/errors,
   explicit operation dispatch, and model/API fingerprints.
 - Proxy boundary: YAML route registry detects target/signing/host evidence; unknown services fall back
@@ -50,7 +51,7 @@ contracts.
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 58 collected. The fast suite selects 53, passes 51, and skips two real-AWS
+- Final test inventory: 67 collected. The fast suite selects 62, passes 60, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 
@@ -60,7 +61,8 @@ contracts.
 - Executables: `mystack-proxy`, `mystack-emr`, and `mystack-glue`
 - Configuration: `config/mystack.yaml`; release configuration: `config/registry-release.json`
 - Setup: `./scripts/bootstrap.sh`, `direnv allow`, or the provided Dev Container
-- Fast verification: `make test`, `make contract`, `make registry-check`, `make pre-commit`
+- Fast verification: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
+  `make pre-commit`
 - Runtime verification: `make up`, `make e2e`, `make down`
 - CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `container-publish.yml`
 - Implemented use cases: [implementation-derived catalog](usecase-catalog.md)
@@ -113,6 +115,6 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Enforce architecture boundaries, including relative imports, in automated tests.
-2. Move Glue state updates behind a transactional repository boundary.
+1. Move Glue state updates behind a transactional repository boundary.
+2. Split Glue aggregates and use cases around explicit responsibilities.
 3. Drive client and runtime compatibility from a versioned manifest.

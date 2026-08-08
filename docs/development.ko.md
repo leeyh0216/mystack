@@ -98,6 +98,7 @@ make pre-commit
 make requirements
 make coverage-check
 make package-check
+make architecture-check
 make test
 make contract
 make e2e
@@ -120,6 +121,7 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - Proxy route 동작: `proxy/src/mystack/proxy`; 새 서비스는 YAML 우선
 - EMR 상태/동작: `emr/src/mystack/emr/domain`, `application`
 - Glue Catalog 동작: `glue/src/mystack/glue/domain`, `application`
+- Inbound use case의 최소 Protocol: 각 service의 `application/use_cases.py`
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만
 
@@ -127,7 +129,9 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 `mystack.emr`, `mystack.glue`를 각각 제공합니다. Module을 옮기거나 build backend를 바꾸면
 `make package-check`를 실행합니다.
 
-의존 방향은 [AWS Hexagonal architecture 모델](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에 맞춰 CI가 검사합니다.
+의존 방향은 [AWS Hexagonal architecture 모델](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에 맞춰 CI가 검사합니다. Module을 옮기거나
+import를 바꾼 뒤 `make architecture-check`를 실행하세요. 실패 결과에서 source, imported module,
+위반 rule, 수정 안내를 확인할 수 있습니다.
 
 <!-- section: troubleshooting -->
 ## 문제 해결

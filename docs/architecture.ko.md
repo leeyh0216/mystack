@@ -43,6 +43,35 @@ domain <- application <- adapters <- bootstrap / FastAPI app
 
 CI의 architecture test가 안쪽 계층에서 바깥 계층으로 향하는 import를 거부합니다. 이는 AWS의 [Hexagonal architecture 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)을 적용한 것입니다.
 
+<!-- section: enforcement -->
+## 실행 가능한 아키텍처 계약
+
+`make architecture-check`는 Python의 absolute import와 relative import를 해석하고 내부 module
+graph를 구성한 다음 다음 의존성 변경을 실행 전에 거부합니다.
+
+| 규칙 | 거부하는 의존성 |
+| --- | --- |
+| `shared-service-dependency` | 공통 wire 코드가 emulator service를 import |
+| `proxy-service-dependency` | Proxy가 route registry 대신 EMR 또는 Glue를 import |
+| `cross-service-dependency` | EMR과 Glue가 서로를 import |
+| `outward-dependency` | Domain/Application/Adapter가 더 바깥 layer를 import |
+| `inner-transport-dependency` | Domain 또는 Application이 FastAPI, boto 등의 transport를 import |
+| `composition-only-adapter` | Composition module이 아닌 곳에서 concrete adapter를 import |
+| `adapter-sibling-dependency` | Inbound adapter와 outbound adapter가 서로를 import |
+| `inbound-concrete-facade` | Inbound adapter가 concrete Application facade를 import |
+| `service-import-cycle` | 내부 module 사이에 직간접 import cycle이 발생 |
+
+Inbound adapter는 `application/use_cases.py`의 최소 Protocol과
+`application/commands.py`의 immutable value에 의존합니다. Concrete adapter의 import와 생성은
+`mystack.emr.app` 또는 `mystack.glue.app`에서만 허용합니다. 하나의 inbound 또는 outbound
+adapter package 안의 import는 허용하지만 두 방향을 가로지르는 import는 거부합니다. 생성한
+JSON과 Markdown은 Python source root 밖에 있으며 검사에서 제외하는 생성 Python file은 없습니다.
+
+각 금지 방향에는 위반 source file을 주입하고 검사가 이를 거부하는지 확인하는 mutation test가
+있습니다. 실패 결과는 source path와 line, imported module, rule 식별자, 수정 안내를 함께
+기록합니다. 구현은 Python의 [공식 relative import
+규칙](https://docs.python.org/3/reference/import.html#package-relative-imports)을 따릅니다.
+
 <!-- section: topology -->
 ## 실행 토폴로지
 
@@ -102,3 +131,4 @@ container 경계 안에서만 실행합니다. Python의 원자적 교체는 [os
 - [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 - [AWS Prescriptive Guidance: 테스트와 CI 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
 - [AWS SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+- [Python 언어 참고서: package relative import](https://docs.python.org/3/reference/import.html#package-relative-imports)

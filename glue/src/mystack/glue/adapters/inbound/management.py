@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from mystack.aws_protocol.observability import log_event
-from mystack.glue.application import CatalogApplication
+from mystack.glue.application.use_cases import GlueManagementQueries
 from mystack.glue.domain import CatalogDatabase, CatalogPartition, CatalogTable
 
 _LOGGER = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ _Item = TypeVar("_Item")
 class GlueManagementAdapter:
     def __init__(
         self,
-        application: CatalogApplication,
+        application: GlueManagementQueries,
         *,
         catalog_id: str,
         api_page_size: int,

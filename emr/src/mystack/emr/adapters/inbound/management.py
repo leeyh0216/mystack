@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from mystack.aws_protocol.observability import log_event
-from mystack.emr.application import EmrApplication
+from mystack.emr.application.use_cases import EmrManagementQueries
 from mystack.emr.domain import Cluster, Step
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 class EmrManagementAdapter:
     def __init__(
         self,
-        application: EmrApplication,
+        application: EmrManagementQueries,
         *,
         work_root: Path,
         output_tail_bytes: int,

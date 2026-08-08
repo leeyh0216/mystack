@@ -18,7 +18,7 @@ from mystack.aws_protocol import (
     AwsServiceError,
     OperationDispatcher,
 )
-from mystack.glue.application import CatalogApplication
+from mystack.glue.application.use_cases import GlueCatalogUseCases
 from mystack.glue.domain import (
     AlreadyExistsError,
     CatalogDatabase,
@@ -35,7 +35,7 @@ Handler = Callable[[Mapping[str, Any], AwsRequestContext], Awaitable[Mapping[str
 
 
 class GlueAwsAdapter:
-    def __init__(self, application: CatalogApplication, default_catalog_id: str) -> None:
+    def __init__(self, application: GlueCatalogUseCases, default_catalog_id: str) -> None:
         self._application = application
         self._default_catalog_id = default_catalog_id
 

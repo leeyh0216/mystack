@@ -32,8 +32,9 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - Workspace module은 `shared`, `proxy`, `emr`, `glue`이며 개발 root를 제외하고 독립 package입니다.
 - Composition root는 `proxy/src/mystack/proxy/app.py`, `emr/src/mystack/emr/app.py`,
   `glue/src/mystack/glue/app.py`입니다.
-- 의존 방향은 Domain → Application port/use case → Adapter → composition root입니다. Architecture
-  test가 내부 layer의 외부 module import를 거부합니다.
+- 의존 방향은 Domain → Application port/use case → Adapter → composition root입니다. 실행 가능한
+  계약이 relative import를 해석하고 바깥 방향·service 사이·adapter 방향 사이의 의존성과 cycle을
+  거부하며 mutation test로 각 금지 방향을 확인합니다.
 - Protocol 경계는 pinned botocore model, AWS JSON 1.1 입력 검증, modeled response/error, 명시적
   operation dispatch, model/API fingerprint를 제공합니다.
 - Proxy는 YAML route registry의 target/signing/host 근거로 service를 찾고 service별 branch 없이
@@ -48,7 +49,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 58개입니다. Fast suite는 53개를 선택해 51개가 통과하고 real-AWS
+- 최종 test inventory는 67개입니다. Fast suite는 62개를 선택해 60개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
@@ -58,7 +59,8 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 실행 파일: `mystack-proxy`, `mystack-emr`, `mystack-glue`
 - 설정: `config/mystack.yaml`; release 설정: `config/registry-release.json`
 - 설정 시작: `./scripts/bootstrap.sh`, `direnv allow`, 또는 제공된 Dev Container
-- Fast 검증: `make test`, `make contract`, `make registry-check`, `make pre-commit`
+- Fast 검증: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
+  `make pre-commit`
 - Runtime 검증: `make up`, `make e2e`, `make down`
 - CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `container-publish.yml`
 - 구현 UseCase: [구현 기반 catalog](usecase-catalog.ko.md)
@@ -114,6 +116,6 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. Relative import를 포함한 architecture boundary를 자동 test로 강제합니다.
-2. Glue state 변경을 transactional repository 경계 뒤로 옮깁니다.
+1. Glue state 변경을 transactional repository 경계 뒤로 옮깁니다.
+2. Glue aggregate와 use case를 명시적인 책임 단위로 분리합니다.
 3. Client와 runtime 호환성 검증을 versioned manifest에서 생성합니다.

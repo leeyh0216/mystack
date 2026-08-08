@@ -13,8 +13,8 @@ from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
 from mystack.aws_protocol import AwsRequestContext, AwsServiceError, OperationDispatcher
-from mystack.emr.application import EmrApplication
 from mystack.emr.application.commands import AddSteps, CreateCluster
+from mystack.emr.application.use_cases import EmrControlPlaneUseCases
 from mystack.emr.domain import (
     ActionOnFailure,
     BootstrapAction,
@@ -33,7 +33,7 @@ Handler = Callable[[Mapping[str, Any], AwsRequestContext], Awaitable[Mapping[str
 class EmrAwsAdapter:
     """Explicit operation mapping; this is the sole AWS-to-domain translation boundary."""
 
-    def __init__(self, application: EmrApplication) -> None:
+    def __init__(self, application: EmrControlPlaneUseCases) -> None:
         self._application = application
 
     def dispatcher(self) -> OperationDispatcher:

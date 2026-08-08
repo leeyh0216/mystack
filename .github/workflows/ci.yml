@@ -36,6 +36,8 @@ jobs:
         run: uv run ruff check .
       - name: Check formatting
         run: uv run ruff format --check .
+      - name: Enforce architecture boundaries and mutation contracts
+        run: make architecture-check
       - name: Validate bilingual documentation contracts
         run: uv run python scripts/check_docs.py
       - name: Verify hash-locked container requirements
