@@ -25,8 +25,8 @@ metastore](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-g
 | `MSCK REPAIR ... DROP` | Spark가 S3와 Glue를 비교한 뒤 없는 Glue partition 삭제 |
 | `MSCK REPAIR ... SYNC` | 한 Spark command에서 위 ADD와 DROP 경로 결합 |
 
-DDL 형식과 type이 있는 partition literal은 공식 [Spark 3.5.4 `ALTER TABLE`
-문서](https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html)를 따릅니다. Repair mode
+DDL 형식과 type이 있는 partition literal은 공식 [Spark 3.5 `ALTER TABLE`
+문서](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html)를 따릅니다. Repair mode
 동작은 공식 [Spark `REPAIR TABLE`
 문서](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html)를 따릅니다.
 
@@ -75,5 +75,5 @@ cross-account, cross-Region 의미론도 프로젝트 범위 밖입니다.
 
 - [AWS Glue Data Catalog의 Spark SQL job 지원](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [AWS Glue Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
-- [Spark 3.5.4 ALTER TABLE](https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html)
+- [Spark 3.5 ALTER TABLE](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html)
 - [Spark REPAIR TABLE](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html)

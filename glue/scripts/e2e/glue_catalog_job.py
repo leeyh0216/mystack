@@ -41,6 +41,7 @@ def main() -> None:
     hive_partition_table = "hive_partition_pruning"
     hive_ddl_table = "hive_partition_ddl"
     hive_repair_table = "hive_partition_repair"
+    hive_alter_table = "hive_table_alter"
     iceberg_table = "iceberg_types"
     warehouse = f"s3://{args.bucket}/warehouse"
     builder = (
@@ -149,6 +150,12 @@ def main() -> None:
             table=hive_repair_table,
             bucket=args.bucket,
         )
+        hive_alter_failures = _exercise_hive_table_alter(
+            spark,
+            database=hive_database,
+            table=hive_alter_table,
+            bucket=args.bucket,
+        )
 
         qualified_namespace = f"{args.catalog_name}.`{iceberg_database}`"
         qualified_table = f"{qualified_namespace}.`{iceberg_table}`"
@@ -184,6 +191,8 @@ def main() -> None:
                     "hive_ddl_partitions": sorted(hive_ddl_partitions),
                     "hive_repair_table": hive_repair_table,
                     "hive_repair_partitions": sorted(hive_repair_partitions),
+                    "hive_alter_table": hive_alter_table,
+                    "hive_alter_failures": hive_alter_failures,
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
                 },
@@ -195,6 +204,8 @@ def main() -> None:
             or hive_pruned_count != 2
             or len(hive_ddl_partitions) != 2
             or len(hive_repair_partitions) != 2
+            or set(hive_alter_failures)
+            != {"drop-column", "rename-column", "change-column-type", "rename-table"}
             or iceberg_count != 2
         ):
             raise RuntimeError("Unexpected catalog row counts")
@@ -211,7 +222,7 @@ def _exercise_hive_partition_ddl(
 ) -> set[str]:
     """Run Spark 3.5 ALTER PARTITION forms through the Glue Hive client.
 
-    Source: https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html
+    Source: https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html
     """
     qualified = f"`{database}`.`{table}`"
     base = f"s3a://{bucket}/hive/{table}"
@@ -337,11 +348,137 @@ def _exercise_hive_partition_repair(
     return _show_partitions(spark, qualified)
 
 
+def _exercise_hive_table_alter(
+    spark: SparkSession,
+    *,
+    database: str,
+    table: str,
+    bucket: str,
+) -> dict[str, str]:
+    """Exercise table-level Hive V1 ALTER boundaries without inventing SQL semantics.
+
+    Spark documents DROP/RENAME COLUMN and REPLACE COLUMNS as V2-only. Its V1 command permits
+    column-comment changes but rejects column name and type changes. The official Glue Hive client
+    rejects table rename before calling UpdateTable.
+
+    Sources:
+    - https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html
+    - https://github.com/apache/spark/blob/v3.5.4/sql/core/src/main/scala/org/apache/spark/sql/execution/command/ddl.scala
+    - https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore/blob/branch-3.4.0/aws-glue-datacatalog-client-common/src/main/java/com/amazonaws/glue/catalog/metastore/GlueMetastoreClientDelegate.java
+    """
+    qualified = f"`{database}`.`{table}`"
+    base = f"s3a://{bucket}/hive/{table}"
+    _run_scenarios(
+        spark,
+        (
+            SqlScenario(
+                "create-hive-alter-table",
+                f"""
+                CREATE EXTERNAL TABLE {qualified} (
+                    id INT,
+                    payload STRUCT<kind:STRING,tags:ARRAY<STRING>>
+                ) PARTITIONED BY (day STRING)
+                STORED AS PARQUET
+                LOCATION '{base}/original'
+                TBLPROPERTIES (
+                    'mystack.contract.keep'='before',
+                    'mystack.contract.remove'='remove-me'
+                )
+                """,
+            ),
+            SqlScenario(
+                "add-hive-alter-partition",
+                f"""
+                ALTER TABLE {qualified} ADD PARTITION (day='2026-08-09')
+                LOCATION '{base}/partition'
+                """,
+            ),
+            SqlScenario(
+                "add-complex-column",
+                f"""
+                ALTER TABLE {qualified} ADD COLUMNS (
+                    note ARRAY<STRUCT<source:STRING,weight:DECIMAL(10,2)>> COMMENT 'added'
+                )
+                """,
+            ),
+            SqlScenario(
+                "change-column-comment",
+                f"ALTER TABLE {qualified} ALTER COLUMN payload COMMENT 'payload comment'",
+            ),
+            SqlScenario(
+                "set-table-properties",
+                f"""
+                ALTER TABLE {qualified} SET TBLPROPERTIES (
+                    'mystack.contract.keep'='after',
+                    'mystack.contract.added'='true'
+                )
+                """,
+            ),
+            SqlScenario(
+                "unset-table-properties",
+                f"""
+                ALTER TABLE {qualified} UNSET TBLPROPERTIES (
+                    'mystack.contract.remove'
+                )
+                """,
+            ),
+            SqlScenario(
+                "set-serde-properties",
+                f"""
+                ALTER TABLE {qualified} SET SERDEPROPERTIES (
+                    'serialization.format'='1',
+                    'mystack.contract.serde'='true'
+                )
+                """,
+            ),
+            SqlScenario(
+                "set-table-location",
+                f"ALTER TABLE {qualified} SET LOCATION '{base}/relocated'",
+            ),
+        ),
+    )
+    return {
+        name: _expect_sql_failure(spark, name, statement)
+        for name, statement in (
+            ("drop-column", f"ALTER TABLE {qualified} DROP COLUMN payload"),
+            (
+                "rename-column",
+                f"ALTER TABLE {qualified} RENAME COLUMN payload TO renamed_payload",
+            ),
+            (
+                "change-column-type",
+                f"ALTER TABLE {qualified} CHANGE COLUMN id id BIGINT",
+            ),
+            (
+                "rename-table",
+                f"ALTER TABLE {qualified} RENAME TO `{database}`.`{table}_renamed`",
+            ),
+        )
+    }
+
+
 def _run_scenarios(spark: SparkSession, scenarios: tuple[SqlScenario, ...]) -> None:
     for scenario in scenarios:
         print("MYSTACK_E2E_SCENARIO=" + json.dumps({"name": scenario.name, "phase": "before"}))
         spark.sql(scenario.statement).collect()
         print("MYSTACK_E2E_SCENARIO=" + json.dumps({"name": scenario.name, "phase": "after"}))
+
+
+def _expect_sql_failure(spark: SparkSession, name: str, statement: str) -> str:
+    print("MYSTACK_E2E_SCENARIO=" + json.dumps({"name": name, "phase": "before"}))
+    try:
+        spark.sql(statement).collect()
+    except Exception as error:
+        error_name = type(error).__name__
+        print(
+            "MYSTACK_E2E_SCENARIO="
+            + json.dumps(
+                {"name": name, "phase": "expected-failure", "error_type": error_name},
+                sort_keys=True,
+            )
+        )
+        return error_name
+    raise RuntimeError(f"Expected Spark SQL scenario {name!r} to fail")
 
 
 def _write_physical_partition(

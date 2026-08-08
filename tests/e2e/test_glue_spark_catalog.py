@@ -73,6 +73,12 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     assert result["hive_pruned_count"] == 2
     assert len(result["hive_ddl_partitions"]) == 2
     assert len(result["hive_repair_partitions"]) == 2
+    assert set(result["hive_alter_failures"]) == {
+        "drop-column",
+        "rename-column",
+        "change-column-type",
+        "rename-table",
+    }
     assert result["iceberg_count"] == 2
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
 
@@ -82,6 +88,36 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     ]
     assert hive_table["StorageDescriptor"]["Columns"][2]["Type"] == "array<string>"
     assert iceberg_table["Parameters"]["table_type"].upper() == "ICEBERG"
+
+    altered_table = glue.get_table(
+        DatabaseName=result["hive_database"],
+        Name=result["hive_alter_table"],
+    )["Table"]
+    altered_columns = altered_table["StorageDescriptor"]["Columns"]
+    assert [(value["Name"], value["Type"]) for value in altered_columns] == [
+        ("id", "int"),
+        ("payload", "struct<kind:string,tags:array<string>>"),
+        ("note", "array<struct<source:string,weight:decimal(10,2)>>"),
+    ]
+    assert altered_columns[1]["Comment"] == "payload comment"
+    assert altered_table["StorageDescriptor"]["Location"].endswith("/relocated")
+    serde_parameters = altered_table["StorageDescriptor"]["SerdeInfo"]["Parameters"]
+    assert serde_parameters["mystack.contract.serde"] == "true"
+    assert serde_parameters["serialization.format"] == "1"
+    assert altered_table["Parameters"]["mystack.contract.keep"] == "after"
+    assert altered_table["Parameters"]["mystack.contract.added"] == "true"
+    assert "mystack.contract.remove" not in altered_table["Parameters"]
+    assert int(altered_table["VersionId"]) >= 6
+    assert glue.get_partition(
+        DatabaseName=result["hive_database"],
+        TableName=result["hive_alter_table"],
+        PartitionValues=["2026-08-09"],
+    )["Partition"]["Values"] == ["2026-08-09"]
+    with pytest.raises(glue.exceptions.EntityNotFoundException):
+        glue.get_table(
+            DatabaseName=result["hive_database"],
+            Name=f"{result['hive_alter_table']}_renamed",
+        )
 
     ddl_table = glue.get_table(
         DatabaseName=result["hive_database"],

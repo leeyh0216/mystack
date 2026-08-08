@@ -2,7 +2,7 @@
 
 Official references:
 - https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html
-- https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html
+- https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html
 """
 
 from __future__ import annotations

@@ -227,7 +227,7 @@
           }
         }
       },
-      "evidence_sha256": "5dff9e79480a4709e0893c4b6955a009195db8831b775759a240c7093a01071b",
+      "evidence_sha256": "e0fc5c4c730c98ad3fde7d6cc7f075ba84775a12682a0166dac67b7447aad67e",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -266,7 +266,8 @@
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-          "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic"
+          "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
+          "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
         ]
       },
       "scenario_set_id": "boto3-contracts",
@@ -736,6 +737,7 @@
             "partition-pruning",
             "partition-ddl",
             "partition-repair",
+            "table-alter",
             "iceberg-glue-catalog",
             "schema-evolution"
           ],
@@ -771,7 +773,7 @@
           }
         }
       },
-      "evidence_sha256": "650c4a6441d214ef5f35d7271e0327c525a8e3b41360be6ac84cd7824f8cc1a1",
+      "evidence_sha256": "a885be16153efcade291b4d390ecad38eb149f23e3f539b015aa2b89136ea10a",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -808,6 +810,7 @@
           "hive-complex-types",
           "hive-partition-pruning",
           "hive-partition-ddl-repair",
+          "hive-table-alter",
           "iceberg-create-append-read-evolve"
         ],
         "test_nodes": [
@@ -843,7 +846,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "5dff9e79480a4709e0893c4b6955a009195db8831b775759a240c7093a01071b",
+          "evidence_sha256": "e0fc5c4c730c98ad3fde7d6cc7f075ba84775a12682a0166dac67b7447aad67e",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -871,7 +874,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "650c4a6441d214ef5f35d7271e0327c525a8e3b41360be6ac84cd7824f8cc1a1",
+          "evidence_sha256": "a885be16153efcade291b4d390ecad38eb149f23e3f539b015aa2b89136ea10a",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -962,5 +965,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "1f32c2f9bdcbb8324c00c62cb2a0f5cf1fbad5d677462e23ab7c30eb740d17f2"
+  "source_sha256": "0858d077f7148b501c9e443f36b133d8ad271b700f7a29f2769155e22eda4926"
 }

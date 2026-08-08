@@ -146,6 +146,44 @@ async def test_persistence_failure_keeps_visible_and_durable_state_unchanged() -
     assert store.committed == committed_before
 
 
+async def test_table_rename_persistence_failure_rolls_back_table_and_partitions() -> None:
+    """The UpdateTable candidate is invisible unless its durable save succeeds.
+
+    Reference: https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTable.html
+    """
+    store = ToggleFailureStore()
+    application = _application(TransactionalCatalogRepository(store))
+    await _catalog_tree(application)
+    committed_before = copy.deepcopy(store.committed)
+    store.fail = True
+
+    with pytest.raises(OSError, match="injected persistence failure"):
+        await application.update_table(
+            "account",
+            "db",
+            "table",
+            {
+                "Name": "renamed",
+                "PartitionKeys": [{"Name": "day", "Type": "string"}],
+            },
+            version_id="0",
+            skip_archive=False,
+        )
+
+    assert (await application.get_table("account", "db", "table")).version_id == "0"
+    assert (
+        await application.get_partition(
+            "account",
+            "db",
+            "table",
+            ("2026-08-08",),
+        )
+    ).table_name == "table"
+    with pytest.raises(EntityNotFoundError):
+        await application.get_table("account", "db", "renamed")
+    assert store.committed == committed_before
+
+
 async def test_atomic_replace_failure_preserves_file_and_visible_state(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

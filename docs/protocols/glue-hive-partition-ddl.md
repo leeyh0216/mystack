@@ -24,8 +24,8 @@ metastore](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-g
 | `MSCK REPAIR ... DROP` | Spark compares S3 with Glue, then deletes missing Glue partitions |
 | `MSCK REPAIR ... SYNC` | The ADD and DROP paths above in one Spark command |
 
-The DDL forms and typed partition literals are defined by the official [Spark 3.5.4 `ALTER
-TABLE` reference](https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html). Repair
+The DDL forms and typed partition literals are defined by the official [Spark 3.5 `ALTER
+TABLE` reference](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html). Repair
 mode behavior follows the official [Spark `REPAIR TABLE`
 reference](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html).
 
@@ -76,5 +76,5 @@ scope.
 
 - [AWS Glue Data Catalog support for Spark SQL jobs](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [AWS Glue Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
-- [Spark 3.5.4 ALTER TABLE](https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html)
+- [Spark 3.5 ALTER TABLE](https://spark.apache.org/docs/3.5.7/sql-ref-syntax-ddl-alter-table.html)
 - [Spark REPAIR TABLE](https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html)

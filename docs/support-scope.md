@@ -18,7 +18,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | EMR control plane | Partial: 13 boto3-tested operations plus versioned startup-file provisioning through the same use case | Broad public EMR API compatibility |
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Deterministic documented errors and catalog inputs required by the supported clients |
-| Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL and repair against S3 | Broader non-partition ALTER TABLE semantics |
+| Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, and supported Hive V1 table ALTER metadata semantics | Deterministic documented error coverage for every implemented Glue operation |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
@@ -35,6 +35,8 @@ target in the matrix. `GetPartitions` supports the documented comparison, logica
 [partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.
 Spark Hive partition add/drop/rename/location and repair mappings are documented in the
 [Hive partition DDL protocol](protocols/glue-hive-partition-ddl.md).
+Supported table-level column/property/SerDe/location changes and client-owned unsupported variants
+are documented in the [Hive table ALTER protocol](protocols/glue-hive-table-alter.md).
 
 Every currently implemented control-plane operation (EMR 13, Glue 22) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations

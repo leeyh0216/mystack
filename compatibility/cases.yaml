@@ -178,7 +178,7 @@ compatibility_profiles:
       iceberg: 1.7.1
     services: [glue, s3]
     runtime_kinds: [glue]
-    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, iceberg-glue-catalog, schema-evolution]
+    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution]
     model_fingerprints:
       glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
     operation_ids:
@@ -196,6 +196,7 @@ scenario_sets:
       - glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree
       - glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments
       - glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic
+      - glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions
     scenario_ids: [emr-control-plane, glue-data-catalog, modeled-service-errors]
   boto3-public-proxy:
     kind: e2e
@@ -212,7 +213,7 @@ scenario_sets:
   glue-real-spark-catalogs:
     kind: e2e
     test_nodes: [tests/e2e/test_glue_spark_catalog.py]
-    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, iceberg-create-append-read-evolve]
+    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve]
 
 lanes:
   required:
