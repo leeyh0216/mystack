@@ -227,7 +227,7 @@
           }
         }
       },
-      "evidence_sha256": "7450f34c7c0ac8c40edd7f50bd8cd55eb44fe5535afd768f7d6c9a9fc570661f",
+      "evidence_sha256": "5dff9e79480a4709e0893c4b6955a009195db8831b775759a240c7093a01071b",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -260,8 +260,13 @@
           "modeled-service-errors"
         ],
         "test_nodes": [
-          "emr/tests/test_boto3_contract.py",
-          "glue/tests/test_boto3_contract.py"
+          "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+          "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
+          "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
+          "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
+          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+          "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
+          "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic"
         ]
       },
       "scenario_set_id": "boto3-contracts",
@@ -838,7 +843,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "7450f34c7c0ac8c40edd7f50bd8cd55eb44fe5535afd768f7d6c9a9fc570661f",
+          "evidence_sha256": "5dff9e79480a4709e0893c4b6955a009195db8831b775759a240c7093a01071b",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -957,5 +962,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "5ff1efdbfb2ee9d04b85b7aae555ae840e6736fbcc131ef4da92ca5ff5fda062"
+  "source_sha256": "1f32c2f9bdcbb8324c00c62cb2a0f5cf1fbad5d677462e23ab7c30eb740d17f2"
 }

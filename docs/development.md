@@ -126,6 +126,13 @@ generated interoperability evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 
+Compatibility scenarios select explicit SDK/protocol pytest node IDs. They do not select tests that
+require generated React assets. The ordinary Python CI job downloads both frontend build artifacts
+before running the full contract modules, while the browser E2E job owns rendered UI behavior. This
+keeps SDK matrix failures attributable to protocol code without reducing UI coverage. The artifact
+lifecycle follows the official [GitHub Actions artifact
+contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
+
 <!-- section: locations -->
 ## Where to make changes
 

@@ -188,7 +188,14 @@ compatibility_profiles:
 scenario_sets:
   boto3-contracts:
     kind: contract
-    test_nodes: [emr/tests/test_boto3_contract.py, glue/tests/test_boto3_contract.py]
+    test_nodes:
+      - emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations
+      - emr/tests/test_boto3_contract.py::test_boto3_cancel_steps
+      - emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request
+      - glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary
+      - glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree
+      - glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments
+      - glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic
     scenario_ids: [emr-control-plane, glue-data-catalog, modeled-service-errors]
   boto3-public-proxy:
     kind: e2e

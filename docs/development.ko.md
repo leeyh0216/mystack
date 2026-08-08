@@ -126,6 +126,13 @@ Python과 React/TypeScript lint/format, 한·영 문서, container requirement l
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
 
+Compatibility scenario는 SDK/protocol pytest node ID를 명시적으로 선택하며 생성된 React asset이
+필요한 test는 선택하지 않습니다. 일반 Python CI job은 전체 contract module을 실행하기 전에 두
+frontend build artifact를 내려받고, browser E2E job은 rendering된 UI 동작을 소유합니다. 따라서 UI
+coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정할 수 있습니다. Artifact
+lifecycle은 공식 [GitHub Actions artifact
+계약](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts)을 따릅니다.
+
 <!-- section: locations -->
 ## 변경 위치
 
