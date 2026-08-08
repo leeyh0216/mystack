@@ -13,6 +13,7 @@
 - `.node-version`의 Node.js 24.6.0과 npm(Dev Container 사용 시 별도 설치 불필요)
 - [Docker Desktop 또는 Docker Engine과 Compose](https://docs.docker.com/compose/install/)
 - 자동 환경 로딩을 위한 선택적 [direnv](https://direnv.net/)
+- Glue partition expression ANTLR grammar를 변경할 때만 JDK 17 필요(CI에서 생성 결과 검증)
 - Spark/Glue 호환 이미지와 테스트 데이터를 위한 12GB 이상 여유 공간
 
 <!-- section: setup -->
@@ -102,6 +103,7 @@ make requirements
 make coverage-check
 make ghcr-compose-check
 make compatibility-check
+make antlr-check
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check

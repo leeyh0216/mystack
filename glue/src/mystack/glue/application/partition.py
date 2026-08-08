@@ -8,13 +8,20 @@ References:
 from __future__ import annotations
 
 import hashlib
+import logging
 
-from mystack.glue.application.expression import matches_partition
+from mystack.aws_protocol.observability import log_event
 from mystack.glue.application.pagination import Paginator
+from mystack.glue.application.partition_expression import (
+    PartitionExpressionCompiler,
+    PartitionKey,
+)
 from mystack.glue.application.ports import Clock
 from mystack.glue.application.state import name, partition, partition_key, table
 from mystack.glue.domain import AlreadyExistsError, CatalogPartition, InvalidInputError
 from mystack.glue.domain.repositories import CatalogRepository
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class PartitionCommands:
@@ -110,9 +117,15 @@ class PartitionCommands:
 
 
 class PartitionQueries:
-    def __init__(self, repository: CatalogRepository, paginator: Paginator) -> None:
+    def __init__(
+        self,
+        repository: CatalogRepository,
+        paginator: Paginator,
+        expression_compiler: PartitionExpressionCompiler,
+    ) -> None:
         self._repository = repository
         self._paginator = paginator
+        self._expression_compiler = expression_compiler
 
     async def get(
         self,
@@ -148,22 +161,47 @@ class PartitionQueries:
         normalized_table = name(table_name)
         state = await self._repository.snapshot()
         parent = table(state, catalog_id, normalized_database, normalized_table)
-        partition_keys = [
-            str(value.get("Name", "")) for value in parent.definition.get("PartitionKeys", ())
-        ]
+        partition_keys = tuple(
+            PartitionKey(
+                name=str(value.get("Name", "")),
+                type_name=str(value.get("Type", "string")),
+            )
+            for value in parent.definition.get("PartitionKeys", ())
+        )
+        predicate = self._expression_compiler.compile(expression, partition_keys)
         prefix = (catalog_id, normalized_database, normalized_table)
         values = sorted(
             [value for key, value in state.partitions.items() if key[:3] == prefix],
             key=lambda item: item.values,
         )
-        values = [
-            value
-            for value in values
-            if matches_partition(
-                expression,
-                dict(zip(partition_keys, value.values, strict=True)),
+        candidate_count = len(values)
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.partition_expression.evaluate.before",
+            expression_fingerprint=predicate.fingerprint,
+            candidate_count=candidate_count,
+        )
+        try:
+            values = [value for value in values if predicate.matches(value.values)]
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.WARNING,
+                "glue.partition_expression.evaluate.failed",
+                expression_fingerprint=predicate.fingerprint,
+                candidate_count=candidate_count,
+                exc_info=True,
             )
-        ]
+            raise
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.partition_expression.evaluate.after",
+            expression_fingerprint=predicate.fingerprint,
+            candidate_count=candidate_count,
+            matched_count=len(values),
+        )
         if segment is not None:
             segment_number, total_segments = segment
             if total_segments <= 0 or not 0 <= segment_number < total_segments:

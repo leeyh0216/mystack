@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,6 +34,12 @@ format: ## Format source and apply safe lint fixes.
 
 docs: ## Validate bilingual identity, section order, links, sources, and Korean style.
 	@uv run python scripts/check_docs.py
+
+antlr-generate: ## Regenerate the pinned Glue partition-expression parser from its G4 grammar.
+	@uv run python scripts/generate_glue_expression_parser.py --write
+
+antlr-check: ## Reject ANTLR version, grammar, or committed generated-parser drift.
+	@uv run python scripts/generate_glue_expression_parser.py --check
 
 architecture-check: ## Enforce dependency directions, composition roots, and import cycles.
 	@uv run python scripts/architecture_contract.py --root .

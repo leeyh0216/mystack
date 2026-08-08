@@ -29,6 +29,7 @@ def main() -> None:
     hive_database = f"{args.database}_hive"
     iceberg_database = f"{args.database}_iceberg"
     hive_table = "hive_types"
+    hive_partition_table = "hive_partition_pruning"
     iceberg_table = "iceberg_types"
     warehouse = f"s3://{args.bucket}/warehouse"
     builder = (
@@ -99,6 +100,32 @@ def main() -> None:
             """
         )
         hive_count = spark.table(f"`{hive_database}`.`{hive_table}`").count()
+        spark.sql(
+            f"""
+            CREATE TABLE `{hive_database}`.`{hive_partition_table}` (
+                id BIGINT,
+                event_date DATE,
+                region STRING
+            ) USING PARQUET
+            PARTITIONED BY (event_date, region)
+            LOCATION 's3a://{args.bucket}/hive/{hive_partition_table}'
+            """
+        )
+        spark.sql(
+            f"""
+            INSERT INTO `{hive_database}`.`{hive_partition_table}` VALUES
+              (1, DATE'2026-08-08', 'ap-northeast-2'),
+              (2, DATE'2026-08-09', 'ap-southeast-1'),
+              (3, DATE'2025-01-01', 'us-east-1')
+            """
+        )
+        hive_pruned_count = spark.sql(
+            f"""
+            SELECT * FROM `{hive_database}`.`{hive_partition_table}`
+            WHERE event_date BETWEEN DATE'2026-08-08' AND DATE'2026-08-31'
+              AND region LIKE 'ap-%'
+            """
+        ).count()
 
         qualified_namespace = f"{args.catalog_name}.`{iceberg_database}`"
         qualified_table = f"{qualified_namespace}.`{iceberg_table}`"
@@ -129,13 +156,14 @@ def main() -> None:
                     "spark_version": spark.version,
                     "hive_database": hive_database,
                     "hive_count": hive_count,
+                    "hive_pruned_count": hive_pruned_count,
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
                 },
                 sort_keys=True,
             )
         )
-        if hive_count != 1 or iceberg_count != 2:
+        if hive_count != 1 or hive_pruned_count != 2 or iceberg_count != 2:
             raise RuntimeError("Unexpected catalog row counts")
     finally:
         spark.stop()

@@ -69,13 +69,18 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
-| `glue` | durable catalog state, catalog ID, paging, runtime profile |
+| `glue` | durable catalog state, catalog ID, paging, partition expression 정책, runtime profile |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
 새 설정은 YAML에 추가하고 해당 composition-root configuration adapter에서 typed value로
 mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 Domain/Application module은
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
+
+`glue.partition_expressions`는 제한이 있는 `GetPartitions.Expression` compiler를 설정합니다.
+`max_length` 기본값은 공식 API의 2,048자 제한이고, `max_tokens`는 parser 작업량을 제한하며,
+`supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
+protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
 
 `management.console.refresh_interval_seconds`는 선택한 EMR 또는 Glue workspace의 선택 상태를
 유지하는 polling 주기이며 최소 0.5초입니다. 각 emulator가 service 소유 UI 설정 endpoint에서

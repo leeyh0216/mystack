@@ -30,6 +30,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: glue-expression-grammar
+        name: Glue ANTLR grammar generated-source drift
+        entry: make antlr-check
+        language: system
+        pass_filenames: false
+        files: ^(glue/grammar/|glue/src/mystack/glue/application/partition_expression/generated/|tools/antlr/|scripts/generate_glue_expression_parser\.py$)
       - id: devcontainer-contract
         name: Reproducible Dev Container contract
         entry: make devcontainer-check

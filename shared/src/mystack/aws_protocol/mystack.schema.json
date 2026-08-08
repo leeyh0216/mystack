@@ -164,7 +164,7 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "runtime_profile"],
+      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
@@ -172,6 +172,16 @@
         "catalog_id": {"type": "string", "pattern": "^[0-9]{12}$"},
         "api_page_size": {"type": "integer", "minimum": 1},
         "create_default_database": {"type": "boolean"},
+        "partition_expressions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_length", "max_tokens", "supported_key_types"],
+          "properties": {
+            "max_length": {"type": "integer", "minimum": 1},
+            "max_tokens": {"type": "integer", "minimum": 1},
+            "supported_key_types": {"$ref": "#/$defs/non_empty_string_array"}
+          }
+        },
         "runtime_profile": {"$ref": "#/$defs/non_empty_string"}
       }
     },

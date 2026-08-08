@@ -728,6 +728,7 @@
           "capabilities": [
             "hive-metastore",
             "complex-glue-types",
+            "partition-pruning",
             "iceberg-glue-catalog",
             "schema-evolution"
           ],
@@ -763,7 +764,7 @@
           }
         }
       },
-      "evidence_sha256": "5cab33e294aac4fd629a33227a36c1fff88ac3cb1da15cba4c02c2bcfe92b756",
+      "evidence_sha256": "95cb26671b1b64f584340e610a5af57b9bd42ad1574547401449104efd309027",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -798,6 +799,7 @@
         "kind": "e2e",
         "scenario_ids": [
           "hive-complex-types",
+          "hive-partition-pruning",
           "iceberg-create-append-read-evolve"
         ],
         "test_nodes": [
@@ -861,7 +863,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "5cab33e294aac4fd629a33227a36c1fff88ac3cb1da15cba4c02c2bcfe92b756",
+          "evidence_sha256": "95cb26671b1b64f584340e610a5af57b9bd42ad1574547401449104efd309027",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -952,5 +954,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "9483c5c6b5b3d976db2a02d6e84eae1b518e275d0b8aca4a9fbe5a44fff36917"
+  "source_sha256": "0bef1b782c3031ba493a0f055941b65e42b8ad9130412e00736d0eeb09ebde2d"
 }

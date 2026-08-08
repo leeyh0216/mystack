@@ -13,6 +13,7 @@
 - Node.js 24.6.0 from `.node-version` and npm (not required when using the Dev Container)
 - [Docker Desktop or Docker Engine with Compose](https://docs.docker.com/compose/install/)
 - Optional [direnv](https://direnv.net/) for automatic local environment loading
+- JDK 17 only when changing the Glue partition-expression ANTLR grammar (CI verifies generation)
 - At least 12 GB free disk space for Spark/Glue-compatible images and test data
 
 <!-- section: setup -->
@@ -102,6 +103,7 @@ make requirements
 make coverage-check
 make ghcr-compose-check
 make compatibility-check
+make antlr-check
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check

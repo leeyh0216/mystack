@@ -30,9 +30,9 @@ candidate-state transactions: persistence failure leaves visible and durable sta
 database/table rename or deletion includes child tables and partitions in one commit. The versioned
 JSON document is stored at `glue.state_file`; schema version 1 is migrated on the next mutation.
 This is Glue Data Catalog metadata transaction behavior, distinct from the Iceberg table-transaction
-target in the matrix. The current partition expression evaluator
-supports quoted equality and inequality predicates joined by `AND`; unsupported expressions
-return `InvalidInputException` instead of silently producing an incorrect result.
+target in the matrix. `GetPartitions` supports the documented comparison, logical, `IN`,
+`BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
+[partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.
 
 Every currently implemented control-plane operation (EMR 13, Glue 22) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations

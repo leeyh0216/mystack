@@ -21,6 +21,7 @@ from mystack.glue.adapters.outbound import (
     TransactionalCatalogRepository,
 )
 from mystack.glue.application import CatalogApplication, CatalogPolicy
+from mystack.glue.application.partition_expression import PartitionExpressionPolicy
 from mystack.glue.domain import (
     CatalogState,
     EntityNotFoundError,
@@ -73,6 +74,21 @@ def _application(repository) -> CatalogApplication:
             default_catalog_id="account",
             api_page_size=100,
             create_default_database=False,
+            partition_expressions=PartitionExpressionPolicy(
+                max_length=2048,
+                max_tokens=512,
+                supported_key_types=(
+                    "string",
+                    "date",
+                    "timestamp",
+                    "int",
+                    "bigint",
+                    "long",
+                    "tinyint",
+                    "smallint",
+                    "decimal",
+                ),
+            ),
         ),
     )
 

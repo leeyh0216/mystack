@@ -12,6 +12,10 @@ from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.initialization import CatalogInitializer
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition import PartitionCommands, PartitionQueries
+from mystack.glue.application.partition_expression import (
+    PartitionExpressionCompiler,
+    PartitionExpressionPolicy,
+)
 from mystack.glue.application.ports import Clock
 from mystack.glue.application.table import TableCommands, TableQueries, TableVersionQueries
 from mystack.glue.domain import (
@@ -28,6 +32,7 @@ class CatalogPolicy:
     default_catalog_id: str
     api_page_size: int
     create_default_database: bool
+    partition_expressions: PartitionExpressionPolicy
 
 
 class CatalogApplication:
@@ -46,7 +51,11 @@ class CatalogApplication:
         self._table_queries = TableQueries(repository, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
         self._partition_commands = PartitionCommands(repository, clock)
-        self._partition_queries = PartitionQueries(repository, paginator)
+        self._partition_queries = PartitionQueries(
+            repository,
+            paginator,
+            PartitionExpressionCompiler(policy.partition_expressions),
+        )
         self._partition_batches = PartitionBatchHandler(
             self._partition_commands,
             self._partition_queries,

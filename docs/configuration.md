@@ -71,7 +71,7 @@ and is not required for image consumers.
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
-| `glue` | Durable catalog state, catalog ID, paging, and runtime profile |
+| `glue` | Durable catalog state, catalog ID, paging, partition-expression policy, and runtime profile |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -79,6 +79,11 @@ New settings must be added to the YAML, mapped by the relevant composition-root 
 adapter, covered by a typed configuration test, and documented in both languages. Inner Domain
 and Application modules receive typed policy/value objects and never read files or environment
 variables.
+
+`glue.partition_expressions` configures the bounded `GetPartitions.Expression` compiler.
+`max_length` defaults to the official 2,048-character API limit, `max_tokens` bounds parser work,
+and `supported_key_types` defines the typed compatibility profile. See the
+[partition-expression protocol](protocols/glue-partition-expressions.md).
 
 `management.console.refresh_interval_seconds` controls state-preserving polling for the selected
 EMR or Glue workspace. It must be at least 0.5 seconds. Each emulator exposes the value through its

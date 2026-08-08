@@ -16,6 +16,7 @@ from mystack.aws_protocol.configuration import (
     require_mapping,
 )
 from mystack.glue.application import CatalogPolicy
+from mystack.glue.application.partition_expression import PartitionExpressionPolicy
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +47,7 @@ class GlueSettings:
         listen = require_mapping(glue, "listen")
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
+        expression = require_mapping(glue, "partition_expressions")
         try:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
@@ -74,6 +76,13 @@ class GlueSettings:
                     default_catalog_id=str(glue["catalog_id"]),
                     api_page_size=int(glue["api_page_size"]),
                     create_default_database=bool(glue["create_default_database"]),
+                    partition_expressions=PartitionExpressionPolicy(
+                        max_length=int(expression["max_length"]),
+                        max_tokens=int(expression["max_tokens"]),
+                        supported_key_types=tuple(
+                            str(value) for value in expression["supported_key_types"]
+                        ),
+                    ),
                 ),
                 config_source=loaded.source,
                 config_fingerprint=loaded.fingerprint,

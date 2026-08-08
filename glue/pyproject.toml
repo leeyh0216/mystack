@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Protocol-compatible AWS Glue Data Catalog emulator for Mystack"
 requires-python = ">=3.11,<3.13"
 dependencies = [
+  "antlr4-python3-runtime==4.13.2",
   "fastapi>=0.116,<1",
   "mystack-aws-protocol",
   "uvicorn[standard]>=0.35,<1",

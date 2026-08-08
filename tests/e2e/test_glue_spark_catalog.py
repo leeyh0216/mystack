@@ -70,6 +70,7 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     )
     result = json.loads(result_line.partition("=")[2])
     assert result["hive_count"] == 1
+    assert result["hive_pruned_count"] == 2
     assert result["iceberg_count"] == 2
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
 

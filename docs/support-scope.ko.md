@@ -30,9 +30,10 @@ candidate-state transaction을 사용합니다. Persistence 실패 시 visible s
 모두 유지하고 database/table rename 또는 delete는 하위 table과 partition을 한 commit에
 포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema version 1은 다음
 mutation에서 migration합니다. 이는 표에 남은 Iceberg table transaction 목표와 구분되는 Glue
-Data Catalog metadata transaction 동작입니다. 현재 partition expression evaluator는 따옴표로
-감싼 동등/부등 조건을 `AND`로 연결한 문법을 지원하며, 지원하지 않는 식은 잘못된 결과를
-조용히 반환하지 않고 `InvalidInputException`을 반환합니다.
+Data Catalog metadata transaction 동작입니다. `GetPartitions`는 type이 있는 key, 우선순위,
+pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIKE`·null predicate를
+지원합니다. 문법과 limit은 [partition expression
+protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
 
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.

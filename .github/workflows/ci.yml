@@ -112,6 +112,11 @@ jobs:
         run: uv run ruff check .
       - name: Check formatting
         run: uv run ruff format --check .
+      - name: Verify the pinned Glue ANTLR grammar output
+        if: matrix.python-version == '3.11'
+        run: |
+          java -version
+          make antlr-check
       - name: Enforce architecture boundaries and mutation contracts
         run: make architecture-check
       - name: Validate bilingual documentation contracts

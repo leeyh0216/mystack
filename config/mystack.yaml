@@ -87,6 +87,21 @@ glue:
   catalog_id: "000000000000"
   api_page_size: 100
   create_default_database: true
+  # GetPartitions Expression is limited to 2048 characters by the Glue API model.
+  # Source: https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html
+  partition_expressions:
+    max_length: 2048
+    max_tokens: 512
+    supported_key_types:
+      - string
+      - date
+      - timestamp
+      - int
+      - bigint
+      - long
+      - tinyint
+      - smallint
+      - decimal
   runtime_profile: glue-5.0
 
 runtime_profiles:
