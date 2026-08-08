@@ -31,6 +31,7 @@
     ]
   },
   "workflow_timeout_minutes": 120,
+  "preflight_timeout_minutes": 60,
   "tags": {
     "release_pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
     "manual_prefix": "manual"

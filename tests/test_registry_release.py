@@ -10,9 +10,11 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 
 from scripts.registry_release import (
     ReleaseContractError,
+    ReleaseGate,
     check_config,
     evaluate_scans,
     load_config,
@@ -124,3 +126,162 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
     serialized = json.dumps(config)
     assert "docs.github.com" in serialized
     assert "opencontainers/image-spec" in serialized
+    assert config["preflight_timeout_minutes"] == 60
+
+
+def _write_complete_preflight(
+    root: Path,
+    config: dict,
+    *,
+    source_sha: str = "a" * 40,
+    version: str = "v1.2.3",
+) -> None:
+    gate = ReleaseGate(config)
+    for index, component in enumerate(config["components"]):
+        for platform_index, platform in enumerate(config["platforms"]):
+            report = gate.record(
+                component=component["name"],
+                platform=platform,
+                image_id=f"sha256:{index * 10 + platform_index:064x}",
+                source_sha=source_sha,
+                version=version,
+                scan_report={"Results": []},
+            )
+            destination = (
+                root
+                / "preflight"
+                / component["name"]
+                / platform.replace("/", "-")
+                / "preflight.json"
+            )
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(json.dumps(report), encoding="utf-8")
+
+
+def test_aggregate_gate_requires_and_authorizes_every_local_build_scan(tmp_path: Path) -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    _write_complete_preflight(tmp_path, config)
+    gate = ReleaseGate(config)
+
+    report = gate.verify(
+        evidence_root=tmp_path,
+        selection="all",
+        source_sha="a" * 40,
+        version="v1.2.3",
+    )
+    authorization = gate.authorize(
+        report,
+        selection="all",
+        source_sha="a" * 40,
+        version="v1.2.3",
+    )
+
+    assert report["authorized"] is True
+    assert len(report["records"]) == 6
+    assert len(report["authorization_sha256"]) == 64
+    assert authorization["components"] == ["proxy", "emr", "glue"]
+
+
+def test_aggregate_gate_rejects_missing_tampered_and_replayed_evidence(tmp_path: Path) -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    _write_complete_preflight(tmp_path, config)
+    gate = ReleaseGate(config)
+    missing = tmp_path / "preflight/glue/linux-arm64/preflight.json"
+    missing.unlink()
+    with pytest.raises(ReleaseContractError, match="missing or invalid preflight"):
+        gate.verify(
+            evidence_root=tmp_path,
+            selection="all",
+            source_sha="a" * 40,
+            version="v1.2.3",
+        )
+
+    _write_complete_preflight(tmp_path, config)
+    tampered_path = tmp_path / "preflight/proxy/linux-amd64/preflight.json"
+    tampered = json.loads(tampered_path.read_text(encoding="utf-8"))
+    tampered["scan"]["passed"] = False
+    tampered_path.write_text(json.dumps(tampered), encoding="utf-8")
+    with pytest.raises(ReleaseContractError, match="context mismatch"):
+        gate.verify(
+            evidence_root=tmp_path,
+            selection="all",
+            source_sha="a" * 40,
+            version="v1.2.3",
+        )
+
+    _write_complete_preflight(tmp_path, config)
+    valid = gate.verify(
+        evidence_root=tmp_path,
+        selection="all",
+        source_sha="a" * 40,
+        version="v1.2.3",
+    )
+    with pytest.raises(ReleaseContractError, match="authorization context mismatch"):
+        gate.authorize(
+            valid,
+            selection="all",
+            source_sha="b" * 40,
+            version="v1.2.3",
+        )
+
+
+def test_preflight_policy_failure_cannot_create_evidence() -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    gate = ReleaseGate(config)
+    with pytest.raises(ReleaseContractError, match="CRITICAL=1"):
+        gate.record(
+            component="proxy",
+            platform="linux/amd64",
+            image_id="sha256:" + "1" * 64,
+            source_sha="a" * 40,
+            version="v1.2.3",
+            scan_report={"Results": [{"Vulnerabilities": [{"Severity": "CRITICAL"}]}]},
+        )
+
+
+def _workflow(path: str) -> dict:
+    return yaml.load((ROOT / path).read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+
+
+def test_publication_workflow_is_reusable_only_and_write_permission_is_final() -> None:
+    workflow = _workflow(".github/workflows/container-publish.yml")
+    assert set(workflow["on"]) == {"workflow_call"}
+    assert workflow["permissions"] == {"contents": "read"}
+
+    jobs = workflow["jobs"]
+    package_writers = [
+        name for name, job in jobs.items() if job.get("permissions", {}).get("packages") == "write"
+    ]
+    assert package_writers == ["publish"]
+    assert set(jobs["aggregate-gate"]["needs"]) == {
+        "prepare",
+        "required-validation",
+        "local-build-scan",
+    }
+    assert set(jobs["publish"]["needs"]) == {"prepare", "aggregate-gate"}
+    assert jobs["aggregate-gate"]["if"] == "${{ success() }}"
+    assert jobs["publish"]["if"] == "${{ success() }}"
+
+
+def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
+    jobs = _workflow(".github/workflows/container-publish.yml")["jobs"]
+    preflight = json.dumps(jobs["local-build-scan"], sort_keys=True)
+    publish = json.dumps(jobs["publish"], sort_keys=True)
+
+    assert "docker/login-action" not in preflight
+    assert '"push": "false"' in preflight
+    assert '"load": "true"' in preflight
+    assert "record-preflight" in preflight
+    assert "docker/login-action" in publish
+    assert '"push": "true"' in publish
+    assert "authorize-publication" in publish
+    assert publish.index("authorize-publication") < publish.index("docker/login-action")
+
+
+def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
+    workflow = _workflow(".github/workflows/release.yml")
+    assert set(workflow["on"]) == {"push", "workflow_dispatch"}
+    assert set(workflow["jobs"]) == {"release"}
+    release = workflow["jobs"]["release"]
+    assert release["uses"] == "./.github/workflows/container-publish.yml"
+    assert release["permissions"] == {"contents": "read", "packages": "write"}

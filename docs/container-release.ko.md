@@ -22,10 +22,13 @@ workflow repository와 연결된 package를 `GITHUB_TOKEN`으로 게시할 수 �
 
 Owner는 실행 시 `github.repository_owner`를 소문자로 변환해 결정하며 표는 현재 repository를
 나타냅니다. Component package name, Dockerfile, platform, Trivy version, severity 정책, timeout은
-[`config/registry-release.json`](../config/registry-release.json)에 있습니다. Workflow orchestration은
-[`container-publish.yml`](../.github/workflows/container-publish.yml)에 있습니다.
+[`config/registry-release.json`](../config/registry-release.json)에 있습니다. Event를 받는 orchestration은
+[`release.yml`](../.github/workflows/release.yml)에 있고, 호출되는
+[`container-publish.yml`](../.github/workflows/container-publish.yml)은 `workflow_call`만 받습니다.
 
-게시 job에는 `contents: read`, `packages: write`만 부여합니다. GitHub 공식
+GitHub는 호출된 workflow가 caller token 권한을 높이지 못하게 하므로 caller가
+`packages: write` 상한을 제공합니다. 호출된 모든 job은 최종 `publish`를 제외하고 명시적으로
+`contents: read`로 낮춥니다. 최종 job만 GitHub 공식
 [Docker image 게시 예제](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images)에
 따라 일회성 `GITHUB_TOKEN`으로 `ghcr.io`에 로그인합니다. Registry credential은 log나 secret으로
 별도 저장하지 않습니다.
@@ -38,20 +41,27 @@ Owner는 실행 시 `github.repository_owner`를 소문자로 변환해 결정�
   `manual-RUN_ID-ATTEMPT` tag를 생성합니다.
 - `latest`는 게시하지 않습니다. Production과 재현 가능한 개발 환경은 보고된 digest를
   사용합니다.
-- 기존 tag는 build 전에 거부합니다. GHCR에는 repository 수준 immutable tag 기능이 없으므로
-  모든 게시 job을 직렬화해 repository 내부 race를 방지합니다.
-- Buildx는 하나의 OCI image index에 `linux/amd64`, `linux/arm64`를 게시합니다.
+- Repository 검사와 생성된 모든 required compatibility contract/E2E case를 실행합니다.
+- 그 다음 Buildx가 component/platform별 image를 local Docker engine에 `push: false`로 build합니다.
+  고정 Trivy가 각 local image를 검사하고 content hash가 있는 record를 만듭니다.
+- Aggregate job은 누락·추가·변조·잘못된 commit/version·실패 record를 거부합니다. 필수 job이
+  실패·취소·skip되면 aggregate authorization과 최종 job에 도달하지 않습니다.
+- 기존 tag는 authorization 뒤 registry를 변경하는 build 전에 거부합니다. GHCR에는 repository
+  수준 immutable tag 기능이 없으므로 entrypoint가 release를 직렬화해 race를 방지합니다.
+- Authorization 뒤에만 Buildx가 `linux/amd64`, `linux/arm64`를 한 OCI image index로 게시합니다.
+  Docker local exporter가 multi-platform index를 직접 게시할 수 없으므로 같은 commit,
+  digest-pinned base, hash-locked dependency에서 최종 image를 다시 build합니다.
 - BuildKit이 최대 provenance와 SBOM을 연결합니다. GitHub 문서상 private repository에서 GitHub
   artifact attestation은 Enterprise Cloud가 필요하므로 해당 서비스는 사용하지 않습니다.
 - 게시한 index를 digest로 다시 받아 공식
   [OCI Image Index 명세](https://github.com/opencontainers/image-spec/blob/main/image-index.md)에 맞춰
   검증합니다.
-- 고정된 Trivy version으로 두 platform manifest를 검사하고, 설정에 따라 unfixed finding을
-  제외한 뒤 파일 정책 severity를 차단합니다. 공식 Trivy CLI가
-  [`--platform` 계약](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/)을
-  정의합니다.
-- 모든 job과 scan은 명시적 timeout을 사용합니다. Release, raw index, platform별 scan, 정책 요약
-  증거는 이후 step이 실패해도 upload합니다.
+- 고정 Trivy version으로 local build한 두 platform image를 검사하고, 설정에 따라 unfixed finding을
+  제외한 뒤 파일 정책 severity를 차단합니다. 공식 Trivy
+  [image 명령](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/)은 registry보다
+  local Docker engine을 먼저 찾습니다.
+- 모든 job과 scan은 명시적 timeout을 사용합니다. Local raw scan, content-hashed preflight record,
+  aggregate authorization, 게시 index와 release 증거를 artifact로 보존합니다.
 
 BuildKit provenance/SBOM descriptor는 `unknown/unknown`일 수 있습니다. Validator는 이
 attestation을 제외하고 설정된 runtime platform 둘을 반드시 요구합니다. Mystack은 OCI 출력을
@@ -70,7 +80,7 @@ git push origin v0.1.0
 한 component pre-release는 다음과 같습니다.
 
 ```bash
-gh workflow run container-publish.yml \
+gh workflow run release.yml \
   --repo leeyh0216/mystack \
   --ref main \
   -f component=proxy \
@@ -94,10 +104,10 @@ Local private pull에는 `read:packages`만 가진 classic PAT를 사용하고 a
 <!-- section: vulnerability -->
 ## 취약점 결과와 rollback 의미
 
-GHCR에는 ECR 같은 scan-on-push API가 없습니다. 따라서 Trivy는 Buildx가 index를 게시한 직후
-검사합니다. 정책이 실패하면 workflow는 red지만 고유 tag image는 이미 존재합니다. 실패 tag를
-덮어쓰지 말고 base/runtime을 보완해 새 version을 게시합니다. Artifact에는 두 platform report가
-모두 남습니다.
+GHCR에는 ECR 같은 scan-on-push API가 없습니다. Mystack은 인증이나 registry 변경 전에 local
+image를 검사합니다. 검증, build, timeout, 근거 누락, 취약점 정책 중 하나라도 실패하면 최종 GHCR
+tag를 만들지 않습니다. 진단용 raw report는 `preflight-*` artifact에 남습니다. Base/runtime을
+보완하고 새 version으로 다시 실행하며 실패 실행의 근거를 약화하거나 덮어쓰지 않습니다.
 
 Rollback에는 registry 변경이 필요하지 않습니다. Consumer를 이전에 검증된
 `image@sha256:...` identity로 되돌립니다. Tag는 사람이 읽는 release label이고 digest가 배포
@@ -108,6 +118,9 @@ identity입니다.
 
 | Event 또는 실패 | 의미 | 변경 지점 |
 | --- | --- | --- |
+| `registry.preflight.record.*` | Local component/platform build 검사 완료 | Dockerfile, platform 또는 scan 정책 |
+| `registry.gate.verify.*` | Content hash가 있는 전체 근거 set 검증 | 누락/추가 artifact, source SHA, version 또는 scan 결과 |
+| `registry.publication.authorize.*` | 최종 job context와 authorization 재결합 | 판정 근거를 복사하지 말고 전체 release 재실행 |
 | `registry.tag.check.failed` | 요청 tag가 이미 존재 | 새 semantic/manual tag 선택 |
 | package permission denied | Workflow/package 연결 또는 `packages: write` 불일치 | Package access와 workflow permission |
 | `registry.index.verify.failed` | Architecture 누락 | Dockerfile base manifest 또는 `platforms` 설정 |
@@ -124,7 +137,7 @@ environment 값은 기록하지 않습니다.
 ```bash
 make registry-check
 go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 \
-  .github/workflows/container-publish.yml
+  .github/workflows/release.yml .github/workflows/container-publish.yml
 ```
 
 Local 검사는 push하지 않습니다. Version tag 또는 명시적 수동 workflow만 GHCR을 변경합니다.

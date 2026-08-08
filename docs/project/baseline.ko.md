@@ -75,7 +75,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - Fast 검증: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
   `make pre-commit`
 - Runtime 검증: `make up`, `make e2e`, `make down`
-- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `container-publish.yml`
+- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`, `container-publish.yml`
 - 구현 UseCase: [구현 기반 catalog](usecase-catalog.ko.md)
 
 <!-- section: decisions -->

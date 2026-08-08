@@ -78,7 +78,7 @@ contracts.
 - Fast verification: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
   `make pre-commit`
 - Runtime verification: `make up`, `make e2e`, `make down`
-- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `container-publish.yml`
+- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`, `container-publish.yml`
 - Implemented use cases: [implementation-derived catalog](usecase-catalog.md)
 
 <!-- section: decisions -->

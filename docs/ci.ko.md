@@ -13,7 +13,7 @@
 | `ci.yml` | push, PR, manual | Python 3.11/3.12 계약, 생성된 required case matrix와 frozen feature lock을 사용한 실제 Dev Container build |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | 명시적 required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case별 독립 Docker job과 Chromium console 접근성 E2E |
-| `container-publish.yml` | version tag, manual | required contract/E2E 통과 후 private GHCR amd64/arm64 게시, SBOM/provenance, OCI·Trivy 증거 |
+| `release.yml` → reusable `container-publish.yml` | version tag, manual | required 검증과 local platform별 scan, aggregate authorization 뒤 private GHCR 게시와 SBOM/provenance·OCI 근거 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
 Actions는 `contracts/compatibility-matrix.generated.json`에 생성된 `include` entry만 읽으며

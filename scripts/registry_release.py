@@ -8,11 +8,13 @@ https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from collections import Counter
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +24,25 @@ INDEX_MEDIA_TYPES = frozenset(
         "application/vnd.oci.image.index.v1+json",
     }
 )
+SHA256_PATTERN = re.compile(r"sha256:[0-9a-f]{64}")
+SOURCE_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+TAG_PATTERN = re.compile(r"[0-9A-Za-z][0-9A-Za-z._-]{0,127}")
+CONFIG_FIELDS = frozenset(
+    {
+        "schema_version",
+        "registry",
+        "platforms",
+        "components",
+        "scan",
+        "workflow_timeout_minutes",
+        "preflight_timeout_minutes",
+        "tags",
+        "official_sources",
+    }
+)
+COMPONENT_FIELDS = frozenset({"name", "package", "dockerfile"})
+SCAN_FIELDS = frozenset({"trivy_version", "timeout", "ignore_unfixed", "fail_severities"})
+TAG_FIELDS = frozenset({"release_pattern", "manual_prefix"})
 
 
 class ReleaseContractError(RuntimeError):
@@ -40,11 +61,21 @@ def load_config(path: Path) -> dict[str, Any]:
         raise ReleaseContractError(
             f"unsupported registry release schema: {config.get('schema_version')}"
         )
+    unknown = sorted(set(config) - CONFIG_FIELDS)
+    missing = sorted(CONFIG_FIELDS - set(config))
+    if unknown or missing:
+        raise ReleaseContractError(
+            f"registry config schema mismatch: unknown={unknown} missing={missing}"
+        )
     components = config.get("components", [])
     if not components or len({item["name"] for item in components}) != len(components):
         raise ReleaseContractError("release components must be non-empty and uniquely named")
     if len(config.get("platforms", [])) != len(set(config.get("platforms", []))):
         raise ReleaseContractError("release platforms must be unique")
+    for index, component in enumerate(components):
+        _require_exact_fields(component, COMPONENT_FIELDS, f"components[{index}]")
+    _require_exact_fields(config.get("scan"), SCAN_FIELDS, "scan")
+    _require_exact_fields(config.get("tags"), TAG_FIELDS, "tags")
     emit(
         "registry.config.read.after",
         registry=config.get("registry"),
@@ -134,9 +165,291 @@ def evaluate_scans(
 
 
 def write_report(path: Path, report: dict[str, Any]) -> None:
+    emit("registry.report.write.before", path=str(path))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     emit("registry.report.write.after", path=str(path))
+
+
+def canonical_sha256(value: Any) -> str:
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def platform_slug(platform: str) -> str:
+    return platform.replace("/", "-")
+
+
+@dataclass(frozen=True)
+class PreflightEvidence:
+    """One locally built and scanned component/platform pair."""
+
+    component: str
+    package: str
+    dockerfile: str
+    platform: str
+    image_id: str
+    source_sha: str
+    version: str
+    scan: dict[str, Any]
+
+    def report(self) -> dict[str, Any]:
+        body = {
+            "schema_version": 1,
+            "component": self.component,
+            "package": self.package,
+            "dockerfile": self.dockerfile,
+            "platform": self.platform,
+            "image_id": self.image_id,
+            "source_sha": self.source_sha,
+            "version": self.version,
+            "scan": self.scan,
+        }
+        return {**body, "evidence_sha256": canonical_sha256(body)}
+
+
+class ReleaseGate:
+    """Verify complete preflight evidence without knowing GitHub Actions or a registry client."""
+
+    RECORD_FIELDS = frozenset(
+        {
+            "schema_version",
+            "component",
+            "package",
+            "dockerfile",
+            "platform",
+            "image_id",
+            "source_sha",
+            "version",
+            "scan",
+            "evidence_sha256",
+        }
+    )
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        self._config = config
+
+    def selected_components(self, selection: str) -> list[dict[str, str]]:
+        if selection == "all":
+            return list(self._config["components"])
+        return [component_config(self._config, selection)]
+
+    def record(
+        self,
+        *,
+        component: str,
+        platform: str,
+        image_id: str,
+        source_sha: str,
+        version: str,
+        scan_report: dict[str, Any],
+    ) -> dict[str, Any]:
+        emit(
+            "registry.preflight.record.before",
+            component=component,
+            platform=platform,
+            source_sha=source_sha,
+            version=version,
+        )
+        selected = component_config(self._config, component)
+        self._validate_identity(platform, image_id, source_sha, version)
+        scan = evaluate_scans([(platform, scan_report)], self._config["scan"]["fail_severities"])
+        report = PreflightEvidence(
+            component=component,
+            package=selected["package"],
+            dockerfile=selected["dockerfile"],
+            platform=platform,
+            image_id=image_id,
+            source_sha=source_sha,
+            version=version,
+            scan=scan,
+        ).report()
+        emit(
+            "registry.preflight.record.after",
+            component=component,
+            platform=platform,
+            evidence_sha256=report["evidence_sha256"],
+        )
+        return report
+
+    def verify(
+        self,
+        *,
+        evidence_root: Path,
+        selection: str,
+        source_sha: str,
+        version: str,
+    ) -> dict[str, Any]:
+        components = self.selected_components(selection)
+        expected = [
+            (component, platform)
+            for component in components
+            for platform in self._config["platforms"]
+        ]
+        emit(
+            "registry.gate.verify.before",
+            selection=selection,
+            source_sha=source_sha,
+            version=version,
+            expected=len(expected),
+        )
+        records: list[dict[str, Any]] = []
+        expected_paths: set[Path] = set()
+        for component, platform in expected:
+            path = (
+                evidence_root
+                / "preflight"
+                / component["name"]
+                / platform_slug(platform)
+                / "preflight.json"
+            )
+            expected_paths.add(path.resolve())
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise ReleaseContractError(
+                    f"missing or invalid preflight evidence: {path}"
+                ) from error
+            self._validate_record(
+                record,
+                component=component,
+                platform=platform,
+                source_sha=source_sha,
+                version=version,
+            )
+            records.append(record)
+        actual_paths = {path.resolve() for path in evidence_root.rglob("preflight.json")}
+        if actual_paths != expected_paths:
+            unexpected = sorted(str(path) for path in actual_paths - expected_paths)
+            missing = sorted(str(path) for path in expected_paths - actual_paths)
+            raise ReleaseContractError(
+                f"preflight evidence set mismatch: missing={missing} unexpected={unexpected}"
+            )
+        body = {
+            "schema_version": 1,
+            "authorized": True,
+            "selection": selection,
+            "components": [component["name"] for component in components],
+            "platforms": self._config["platforms"],
+            "source_sha": source_sha,
+            "version": version,
+            "records": sorted(records, key=lambda item: (item["component"], item["platform"])),
+        }
+        report = {**body, "authorization_sha256": canonical_sha256(body)}
+        emit(
+            "registry.gate.verify.after",
+            authorization_sha256=report["authorization_sha256"],
+            records=len(records),
+        )
+        return report
+
+    def authorize(
+        self,
+        report: dict[str, Any],
+        *,
+        selection: str,
+        source_sha: str,
+        version: str,
+    ) -> dict[str, Any]:
+        emit(
+            "registry.publication.authorize.before",
+            selection=selection,
+            source_sha=source_sha,
+            version=version,
+        )
+        required = {
+            "schema_version",
+            "authorized",
+            "selection",
+            "components",
+            "platforms",
+            "source_sha",
+            "version",
+            "records",
+            "authorization_sha256",
+        }
+        _require_exact_fields(report, frozenset(required), "gate-report")
+        expected_components = [item["name"] for item in self.selected_components(selection)]
+        if (
+            report["schema_version"] != 1
+            or report["authorized"] is not True
+            or report["selection"] != selection
+            or report["components"] != expected_components
+            or report["platforms"] != self._config["platforms"]
+            or report["source_sha"] != source_sha
+            or report["version"] != version
+        ):
+            raise ReleaseContractError(
+                "publication authorization context mismatch; fix_hint=rerun-complete-release"
+            )
+        body = {name: value for name, value in report.items() if name != "authorization_sha256"}
+        if canonical_sha256(body) != report["authorization_sha256"]:
+            raise ReleaseContractError("publication authorization digest mismatch")
+        expected_records = len(expected_components) * len(self._config["platforms"])
+        if len(report["records"]) != expected_records:
+            raise ReleaseContractError("publication authorization record count mismatch")
+        emit(
+            "registry.publication.authorize.after",
+            authorization_sha256=report["authorization_sha256"],
+        )
+        return {
+            "authorized": True,
+            "authorization_sha256": report["authorization_sha256"],
+            "components": expected_components,
+        }
+
+    def _validate_record(
+        self,
+        record: dict[str, Any],
+        *,
+        component: dict[str, str],
+        platform: str,
+        source_sha: str,
+        version: str,
+    ) -> None:
+        _require_exact_fields(record, self.RECORD_FIELDS, "preflight-record")
+        if (
+            record["schema_version"] != 1
+            or record["component"] != component["name"]
+            or record["package"] != component["package"]
+            or record["dockerfile"] != component["dockerfile"]
+            or record["platform"] != platform
+            or record["source_sha"] != source_sha
+            or record["version"] != version
+            or record.get("scan", {}).get("passed") is not True
+        ):
+            raise ReleaseContractError(
+                f"preflight evidence context mismatch: {component['name']} {platform}"
+            )
+        self._validate_identity(platform, record["image_id"], source_sha, version)
+        body = {name: value for name, value in record.items() if name != "evidence_sha256"}
+        if canonical_sha256(body) != record["evidence_sha256"]:
+            raise ReleaseContractError(
+                f"preflight evidence digest mismatch: {component['name']} {platform}"
+            )
+
+    def _validate_identity(
+        self, platform: str, image_id: str, source_sha: str, version: str
+    ) -> None:
+        if platform not in self._config["platforms"]:
+            raise ReleaseContractError(f"unknown preflight platform: {platform}")
+        if not SHA256_PATTERN.fullmatch(image_id):
+            raise ReleaseContractError("local image ID must be a complete lowercase sha256")
+        if not SOURCE_SHA_PATTERN.fullmatch(source_sha):
+            raise ReleaseContractError("source SHA must be a complete lowercase Git SHA-1")
+        if not TAG_PATTERN.fullmatch(version):
+            raise ReleaseContractError("version must be a valid OCI tag")
+
+
+def _require_exact_fields(value: Any, expected: frozenset[str], path: str) -> None:
+    if not isinstance(value, dict):
+        raise ReleaseContractError(f"expected mapping at {path}")
+    unknown = sorted(set(value) - expected)
+    missing = sorted(expected - set(value))
+    if unknown or missing:
+        raise ReleaseContractError(
+            f"schema mismatch at {path}: unknown={unknown} missing={missing}"
+        )
 
 
 def parser() -> argparse.ArgumentParser:
@@ -164,6 +477,28 @@ def parser() -> argparse.ArgumentParser:
         help="Repeat for each configured platform",
     )
     scans.add_argument("--report", type=Path, required=True)
+
+    preflight = commands.add_parser("record-preflight")
+    preflight.add_argument("--component", required=True)
+    preflight.add_argument("--platform", required=True)
+    preflight.add_argument("--image-id", required=True)
+    preflight.add_argument("--source-sha", required=True)
+    preflight.add_argument("--version", required=True)
+    preflight.add_argument("--scan", type=Path, required=True)
+    preflight.add_argument("--report", type=Path, required=True)
+
+    gate = commands.add_parser("verify-gate")
+    gate.add_argument("--evidence-root", type=Path, required=True)
+    gate.add_argument("--selection", required=True)
+    gate.add_argument("--source-sha", required=True)
+    gate.add_argument("--version", required=True)
+    gate.add_argument("--report", type=Path, required=True)
+
+    authorization = commands.add_parser("authorize-publication")
+    authorization.add_argument("--gate", type=Path, required=True)
+    authorization.add_argument("--selection", required=True)
+    authorization.add_argument("--source-sha", required=True)
+    authorization.add_argument("--version", required=True)
     return result
 
 
@@ -176,6 +511,18 @@ def check_config(config: dict[str, Any], root: Path) -> dict[str, Any]:
             errors.append(f"invalid package name: {component['package']!r}")
         if not (root / component["dockerfile"]).is_file():
             errors.append(f"missing Dockerfile: {component['dockerfile']}")
+    if not config["platforms"] or any(
+        not re.fullmatch(r"linux/(amd64|arm64)", platform) for platform in config["platforms"]
+    ):
+        errors.append("platforms must be explicit supported Linux architecture strings")
+    for timeout_name in ("workflow_timeout_minutes", "preflight_timeout_minutes"):
+        timeout = config.get(timeout_name)
+        if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
+            errors.append(f"{timeout_name} must be a positive integer")
+    try:
+        re.compile(config["tags"]["release_pattern"])
+    except re.error:
+        errors.append("tags.release_pattern must be a valid regular expression")
     if not config.get("official_sources") or not all(
         source.startswith("https://") for source in config["official_sources"]
     ):
@@ -224,7 +571,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "platforms": verify_index(manifest, config["platforms"]),
             }
             write_report(args.report, report)
-        else:
+        elif args.command == "evaluate-scans":
             scans = parse_scans(args.scan)
             expected = config["platforms"]
             actual = [platform for platform, _ in scans]
@@ -235,6 +582,33 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             report = evaluate_scans(scans, config["scan"]["fail_severities"])
             write_report(args.report, report)
+        elif args.command == "record-preflight":
+            scan_report = json.loads(args.scan.read_text(encoding="utf-8"))
+            report = ReleaseGate(config).record(
+                component=args.component,
+                platform=args.platform,
+                image_id=args.image_id,
+                source_sha=args.source_sha,
+                version=args.version,
+                scan_report=scan_report,
+            )
+            write_report(args.report, report)
+        elif args.command == "verify-gate":
+            report = ReleaseGate(config).verify(
+                evidence_root=args.evidence_root,
+                selection=args.selection,
+                source_sha=args.source_sha,
+                version=args.version,
+            )
+            write_report(args.report, report)
+        else:
+            gate_report = json.loads(args.gate.read_text(encoding="utf-8"))
+            report = ReleaseGate(config).authorize(
+                gate_report,
+                selection=args.selection,
+                source_sha=args.source_sha,
+                version=args.version,
+            )
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0
     except (OSError, json.JSONDecodeError, ReleaseContractError) as error:

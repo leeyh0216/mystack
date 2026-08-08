@@ -1,117 +1,84 @@
-# File-driven contract and runbook:
-# config/registry-release.json and docs/container-release.md
-# Official GHCR publication contract:
-# https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images
-name: Publish GHCR images
+# Reusable-only publication pipeline. Trigger ownership lives in release.yml.
+# Official reusable-workflow and permission contracts:
+# https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#permissions
+name: Reusable GHCR publication
 
 on:
-  push:
-    tags: ["v*"]
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      component:
-        description: Component to publish
+      event_name:
+        description: Original caller event name
         required: true
-        type: choice
-        options: [all, proxy, emr, glue]
-        default: all
-      version:
-        description: Optional new tag; blank generates a unique manual tag
+        type: string
+      component:
+        description: all, proxy, emr, or glue
+        required: true
+        type: string
+      requested_version:
+        description: Optional manual OCI tag
         required: false
+        default: ""
+        type: string
+      ref_name:
+        description: Original caller Git ref name
+        required: true
         type: string
 
 permissions:
   contents: read
 
-concurrency:
-  group: ghcr-publish-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
-  required-compatibility:
-    name: Required compatibility before publication
-    runs-on: ubuntu-latest
-    timeout-minutes: 75
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          python-version: "3.11"
-          enable-cache: true
-      - name: Install and validate generated compatibility evidence
-        run: |
-          uv sync --locked --all-packages
-          make compatibility-check
-      - name: Run required contract cases as isolated processes
-        run: |
-          set -euo pipefail
-          jq -r '.github_matrices.required_contract.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
-              uv run python scripts/run_compatibility_case.py "$case_id"
-            done
-      - name: Build and start Mystack
-        run: make up
-      - name: Run required Docker cases as isolated processes
-        run: |
-          set -euo pipefail
-          jq -r '.github_matrices.required_e2e.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
-              uv run python scripts/run_compatibility_case.py "$case_id"
-            done
-      - name: Collect component logs
-        if: always()
-        run: docker compose logs --no-color > docker-compose.log
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: required-compatibility-diagnostics
-          path: |
-            docker-compose.log
-            test-artifacts/
-          if-no-files-found: ignore
-      - name: Stop Mystack
-        if: always()
-        run: docker compose down --volumes --remove-orphans
-
   prepare:
+    name: Validate and resolve the release plan
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
-      matrix: ${{ steps.release.outputs.matrix }}
+      component_matrix: ${{ steps.release.outputs.component_matrix }}
+      preflight_matrix: ${{ steps.release.outputs.preflight_matrix }}
       platforms: ${{ steps.release.outputs.platforms }}
       registry: ${{ steps.release.outputs.registry }}
+      selection: ${{ steps.release.outputs.selection }}
       version: ${{ steps.release.outputs.version }}
       trivy_version: ${{ steps.release.outputs.trivy_version }}
       scan_timeout: ${{ steps.release.outputs.scan_timeout }}
-      scan_severities: ${{ steps.release.outputs.scan_severities }}
       ignore_unfixed: ${{ steps.release.outputs.ignore_unfixed }}
       workflow_timeout_minutes: ${{ steps.release.outputs.workflow_timeout_minutes }}
+      preflight_timeout_minutes: ${{ steps.release.outputs.preflight_timeout_minutes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: release
-        name: Validate file-driven publication request
+        name: Resolve a file-driven, non-mutating release plan
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          REQUESTED_COMPONENT: ${{ github.event_name == 'workflow_dispatch' && inputs.component || 'all' }}
-          REQUESTED_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ inputs.event_name }}
+          REF_NAME: ${{ inputs.ref_name }}
+          REQUESTED_COMPONENT: ${{ inputs.component }}
+          REQUESTED_VERSION: ${{ inputs.requested_version }}
         run: |
           set -euo pipefail
           config=config/registry-release.json
           python3 scripts/registry_release.py --config "$config" check-config
-          if [ "$REQUESTED_COMPONENT" = all ]; then
-            matrix=$(jq -c '{include: .components}' "$config")
-          else
-            matrix=$(jq -c --arg name "$REQUESTED_COMPONENT" \
-              '{include: [.components[] | select(.name == $name)]}' "$config")
-            test "$(jq '.include | length' <<<"$matrix")" -eq 1
-          fi
+          component_matrix=$(jq -c --arg selection "$REQUESTED_COMPONENT" \
+            '{include: [.components[] | select($selection == "all" or .name == $selection)]}' \
+            "$config")
+          test "$(jq '.include | length' <<<"$component_matrix")" -gt 0
+          preflight_matrix=$(jq -c --arg selection "$REQUESTED_COMPONENT" \
+            '.components as $components | .platforms as $platforms | \
+             {include: [$components[] | select($selection == "all" or .name == $selection) as $component | \
+             $platforms[] as $platform | $component + {platform: $platform, platform_slug: ($platform | gsub("/"; "-"))}]}' \
+            "$config")
+          expected=$(($(jq '.include | length' <<<"$component_matrix") * $(jq '.platforms | length' "$config")))
+          test "$(jq '.include | length' <<<"$preflight_matrix")" -eq "$expected"
+
           version="$REQUESTED_VERSION"
           if [ "$EVENT_NAME" = push ]; then
-            version="$GITHUB_REF_NAME"
+            version="$REF_NAME"
             release_pattern=$(jq -r '.tags.release_pattern' "$config")
             if ! jq -en --arg value "$version" --arg pattern "$release_pattern" \
               '$value | test($pattern)' >/dev/null; then
-              echo "Tag release does not match configured pattern: $version" >&2
+              echo "Release tag does not match configured pattern: $version" >&2
               exit 2
             fi
           elif [ -z "$version" ]; then
@@ -123,19 +90,180 @@ jobs:
             exit 2
           fi
           {
-            echo "matrix=$matrix"
+            echo "component_matrix=$component_matrix"
+            echo "preflight_matrix=$preflight_matrix"
             echo "platforms=$(jq -r '.platforms | join(",")' "$config")"
             echo "registry=$(jq -r '.registry' "$config")"
+            echo "selection=$REQUESTED_COMPONENT"
             echo "version=$version"
             echo "trivy_version=$(jq -r '.scan.trivy_version' "$config")"
             echo "scan_timeout=$(jq -r '.scan.timeout' "$config")"
-            echo "scan_severities=$(jq -r '.scan.fail_severities | join(",")' "$config")"
             echo "ignore_unfixed=$(jq -r '.scan.ignore_unfixed' "$config")"
             echo "workflow_timeout_minutes=$(jq -r '.workflow_timeout_minutes' "$config")"
+            echo "preflight_timeout_minutes=$(jq -r '.preflight_timeout_minutes' "$config")"
           } >>"$GITHUB_OUTPUT"
 
+  required-validation:
+    name: Required repository and interoperability validation
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install and run repository-local required checks
+        run: |
+          uv sync --locked --all-packages
+          uv run pre-commit run --all-files
+          make test package-check compatibility-check
+      - name: Run required contract cases as isolated processes
+        run: |
+          set -euo pipefail
+          jq -r '.github_matrices.required_contract.include[].case_id' \
+            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+              uv run python scripts/run_compatibility_case.py "$case_id"
+            done
+      - name: Build and start Mystack for required Docker cases
+        run: make up
+      - name: Run required Docker cases as isolated processes
+        run: |
+          set -euo pipefail
+          jq -r '.github_matrices.required_e2e.include[].case_id' \
+            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+              uv run python scripts/run_compatibility_case.py "$case_id"
+            done
+      - name: Collect component logs
+        if: always()
+        run: docker compose logs --no-color > docker-compose.log || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: required-validation-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+      - name: Stop Mystack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  local-build-scan:
+    name: Preflight ${{ matrix.name }} ${{ matrix.platform }}
+    needs: [prepare, required-validation]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ fromJSON(needs.prepare.outputs.preflight_timeout_minutes) }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.preflight_matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - id: build
+        name: Build one platform into the local Docker engine without registry mutation
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          pull: true
+          load: true
+          push: false
+          tags: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            io.mystack.preflight.platform=${{ matrix.platform }}
+          cache-from: type=gha,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
+          cache-to: type=gha,mode=max,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
+          provenance: false
+          sbom: false
+      - name: Install the pinned vulnerability scanner
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: ${{ needs.prepare.outputs.trivy_version }}
+          cache: true
+      - name: Scan the local image and enforce the configured policy
+        env:
+          IGNORE_UNFIXED: ${{ needs.prepare.outputs.ignore_unfixed }}
+          IMAGE_ID: ${{ steps.build.outputs.imageid }}
+          IMAGE_NAME: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ github.sha }}
+          SCAN_TIMEOUT: ${{ needs.prepare.outputs.scan_timeout }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          directory="release-artifacts/preflight/${{ matrix.name }}/${{ matrix.platform_slug }}"
+          mkdir -p "$directory"
+          command=(trivy image --scanners vuln --format json --output "$directory/trivy.json" \
+            --timeout "$SCAN_TIMEOUT" --exit-code 0)
+          if [ "$IGNORE_UNFIXED" = true ]; then
+            command+=(--ignore-unfixed)
+          fi
+          echo "event=registry.preflight.scan.before component=${{ matrix.name }} platform=${{ matrix.platform }} image_id=$IMAGE_ID"
+          "${command[@]}" "$IMAGE_NAME"
+          python3 scripts/registry_release.py record-preflight \
+            --component "${{ matrix.name }}" \
+            --platform "${{ matrix.platform }}" \
+            --image-id "$IMAGE_ID" \
+            --source-sha "$GITHUB_SHA" \
+            --version "$VERSION" \
+            --scan "$directory/trivy.json" \
+            --report "$directory/preflight.json"
+          echo "event=registry.preflight.scan.after component=${{ matrix.name }} platform=${{ matrix.platform }} image_id=$IMAGE_ID"
+      - name: Upload local build and scan evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
+          path: release-artifacts/
+          if-no-files-found: warn
+
+  aggregate-gate:
+    name: Authorize registry publication
+    needs: [prepare, required-validation, local-build-scan]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download every successful preflight record
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: preflight-*
+          path: preflight-evidence
+          merge-multiple: true
+      - name: Reject missing, extra, mismatched, or modified evidence
+        env:
+          SELECTION: ${{ needs.prepare.outputs.selection }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          python3 scripts/registry_release.py verify-gate \
+            --evidence-root preflight-evidence \
+            --selection "$SELECTION" \
+            --source-sha "$GITHUB_SHA" \
+            --version "$VERSION" \
+            --report release-gate/gate.json
+      - name: Upload the publication authorization
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publication-authorization
+          path: release-gate/gate.json
+          if-no-files-found: error
+
   publish:
-    needs: [prepare, required-compatibility]
+    name: Publish ${{ matrix.name }} only after authorization
+    needs: [prepare, aggregate-gate]
+    if: ${{ success() }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ fromJSON(needs.prepare.outputs.workflow_timeout_minutes) }}
     permissions:
@@ -143,10 +271,27 @@ jobs:
       packages: write
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.prepare.outputs.component_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Official GHCR login pattern: https://github.com/docker/login-action#github-container-registry
+      - name: Download the aggregate authorization only
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: publication-authorization
+          path: release-gate
+      - id: authorization
+        name: Bind authorization to this source, version, and component selection
+        env:
+          SELECTION: ${{ needs.prepare.outputs.selection }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          result=$(python3 scripts/registry_release.py authorize-publication \
+            --gate release-gate/gate.json \
+            --selection "$SELECTION" \
+            --source-sha "$GITHUB_SHA" \
+            --version "$VERSION")
+          echo "sha256=$(jq -r '.authorization_sha256' <<<"$result")" >>"$GITHUB_OUTPUT"
       - name: Authenticate to GHCR with the ephemeral workflow token
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -172,7 +317,7 @@ jobs:
           echo "image=$image" >>"$GITHUB_OUTPUT"
           echo "event=registry.tag.check.after image=$image tag=$VERSION available=true"
       - id: build
-        name: Build and publish the multi-platform image
+        name: Build and publish the authorized multi-platform image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
@@ -185,6 +330,7 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
+            io.mystack.authorization.sha256=${{ steps.authorization.outputs.sha256 }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
           provenance: mode=max
@@ -207,40 +353,12 @@ jobs:
             --digest "$DIGEST" \
             --manifest release-artifacts/index.json \
             --report release-artifacts/release.json
-      - name: Install the pinned vulnerability scanner
-        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
-        with:
-          version: ${{ needs.prepare.outputs.trivy_version }}
-          cache: true
-      - name: Scan every runtime platform and enforce the file policy
-        env:
-          DIGEST: ${{ steps.build.outputs.digest }}
-          IMAGE: ${{ steps.identity.outputs.image }}
-          IGNORE_UNFIXED: ${{ needs.prepare.outputs.ignore_unfixed }}
-          SCAN_TIMEOUT: ${{ needs.prepare.outputs.scan_timeout }}
-        run: |
-          set -euo pipefail
-          scan_args=()
-          while IFS= read -r platform; do
-            safe_platform=${platform//\//-}
-            report="release-artifacts/trivy-${safe_platform}.json"
-            command=(trivy image --scanners vuln --format json --output "$report" \
-              --platform "$platform" --timeout "$SCAN_TIMEOUT" --exit-code 0)
-            if [ "$IGNORE_UNFIXED" = true ]; then
-              command+=(--ignore-unfixed)
-            fi
-            echo "event=registry.scan.before image=$IMAGE digest=$DIGEST platform=$platform"
-            "${command[@]}" "$IMAGE@$DIGEST"
-            echo "event=registry.scan.after image=$IMAGE digest=$DIGEST platform=$platform"
-            scan_args+=(--scan "$platform=$report")
-          done < <(jq -r '.platforms[]' config/registry-release.json)
-          python3 scripts/registry_release.py evaluate-scans \
-            "${scan_args[@]}" \
-            --report release-artifacts/scan-summary.json
-      - name: Upload digest, manifest, SBOM/provenance context, and scan evidence
+      - name: Upload digest, OCI index, SBOM/provenance context, and authorization
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ghcr-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
-          path: release-artifacts/
+          path: |
+            release-artifacts/
+            release-gate/gate.json
           if-no-files-found: warn

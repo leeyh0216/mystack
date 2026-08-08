@@ -13,7 +13,7 @@
 | `ci.yml` | push, pull request, manual | Python 3.11/3.12 contracts, generated required-case matrix, and an actual Dev Container build with the frozen feature lock |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | One isolated Docker job per explicit required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case, plus Chromium console accessibility E2E |
-| `container-publish.yml` | version tag, manual | Required contract/E2E cases before private GHCR amd64/arm64 publish, SBOM/provenance, OCI and Trivy evidence |
+| `release.yml` → reusable `container-publish.yml` | version tag, manual | Required validation and local per-platform scans, aggregate authorization, then private GHCR publish with SBOM/provenance and OCI evidence |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 Actions reads only the `include` entries compiled into
