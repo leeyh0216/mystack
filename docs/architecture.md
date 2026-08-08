@@ -24,6 +24,8 @@ Business abstractions are not placed in `shared`. Sharing is limited to the wire
 Mystack does not expose an in-process user plugin API. Service behavior changes remain inside the
 owning bounded context, while new AWS service emulators join through Proxy's configuration-driven
 route registry.
+The independently built distributions share the implicit `mystack` namespace described in
+[ADR-0003](adr/0003-pep420-namespace-packages.md); none owns the namespace root.
 
 <!-- section: dependencies -->
 ## Dependency rule

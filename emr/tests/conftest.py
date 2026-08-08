@@ -20,17 +20,17 @@ import boto3
 import pytest
 import uvicorn
 from botocore.config import Config
-from mystack_aws_protocol import LoadedConfiguration, load_configuration
-from mystack_emr.adapters.outbound import (
+from mystack.aws_protocol import LoadedConfiguration, load_configuration
+from mystack.emr.adapters.outbound import (
     AsyncioTaskScheduler,
     InMemoryClusterRepository,
     RandomAwsIds,
     SystemClock,
 )
-from mystack_emr.app import create_app
-from mystack_emr.application import EmrApplication
-from mystack_emr.application.ports import RuntimeResult
-from mystack_emr.config import EmrSettings
+from mystack.emr.app import create_app
+from mystack.emr.application import EmrApplication
+from mystack.emr.application.ports import RuntimeResult
+from mystack.emr.config import EmrSettings
 
 
 @dataclass(slots=True)

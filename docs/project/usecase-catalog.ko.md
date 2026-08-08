@@ -28,8 +28,8 @@
   재직렬화하지 않습니다.
 - 실패: 시작 시 중복/잘못된 route, 실행 중 연결/명시적 request timeout.
 - 관측: route 이유, backend, body size/hash, status, duration; authorization/body는 제외합니다.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/routing.py:32`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py:57`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/routing.py:32`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py:57`
 - 신뢰도: High
 
 <!-- section: uc-002 -->
@@ -43,8 +43,8 @@
 - 선행조건/규칙: 공식 recognized operation이며 recognized 미지원 operation은 501입니다.
 - 실패: unknown operation, serialization/validation, domain error, 보호된 internal error.
 - 관측: service/operation/model fingerprint, input/output member, request ID, duration.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/endpoint.py:49`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/dispatcher.py:38`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/endpoint.py:49`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/dispatcher.py:38`
 - 신뢰도: High
 
 <!-- section: uc-003 -->
@@ -59,8 +59,8 @@
 - 선행조건/규칙: 문서화된 state transition, failure action, cluster별 queue 정책.
 - 실패: validation, not found, invalid state, termination protection, bad marker.
 - 관측: transition, scheduling, process lifecycle, public boto3 contract/E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/inbound/aws.py:40`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/application/service.py:65`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/inbound/aws.py:40`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/application/service.py:65`
 - 신뢰도: High
 
 <!-- section: uc-004 -->
@@ -75,9 +75,9 @@
 - 선행조건/규칙: 허용 URI/scheme과 runner, 시작 전을 포함한 idempotent cancel.
 - 실패: artifact 없음, bootstrap 실패, process timeout/exit, cancel, 잘못된 application args.
 - 관측: S3/process 전/후/실패 event, Python/JAR Spark S3A/cancel E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:46`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:282`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:326`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:46`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:282`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:326`
 - 신뢰도: High
 
 <!-- section: uc-005 -->
@@ -92,8 +92,8 @@
 - 선행조건/규칙: case-normalized key, uniqueness, child constraint, 최대 크기가 정해진 pagination.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, 잘못된 pagination token.
 - 관측: repository read/write/persistence event, direct/public boto3 test.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:60`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/adapters/outbound/repository.py:300`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:60`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/outbound/repository.py:300`
 - 신뢰도: High
 
 <!-- section: uc-006 -->
@@ -108,8 +108,8 @@
 - 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작.
 - 실패: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input 제외.
 - 관측: mapped domain error/version/persistence test, Spark Hive/Iceberg E2E가 API 사용.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:101`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:149`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:101`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:149`
 - 신뢰도: High
 
 <!-- section: uc-007 -->
@@ -124,8 +124,8 @@
 - 선행조건/규칙: table 존재, value 수와 partition key 수 일치, 지원 predicate/segment.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.
 - 관측: operation/error log와 Glue 22개 전체 public Proxy E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:213`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/adapters/inbound/aws.py:201`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:213`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/inbound/aws.py:201`
 - 신뢰도: High
 
 <!-- section: uc-008 -->
@@ -139,9 +139,9 @@
 - 선행조건/규칙: 알려진 component, management 활성/token 유효, application API pagination.
 - 실패: unauthorized/disabled, unknown component/resource, internal timeout.
 - 관측: management forwarding/component adapter log와 UI E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/app.py:122`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/app.py:134`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/app.py:120`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/app.py:122`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/app.py:134`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/app.py:120`
 - 신뢰도: High
 
 <!-- section: uc-009 -->
@@ -154,7 +154,7 @@
 - 선행조건/규칙: diagnostics 활성화, 설정 시 token 유효.
 - 실패: disabled 또는 unauthorized.
 - 관측: token 내용 없는 access result/client.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/diagnostics.py:55`
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/diagnostics.py:55`
 - 신뢰도: High
 
 <!-- section: uc-010 -->
@@ -167,7 +167,7 @@
 - 선행조건/규칙: packaged static asset/public Proxy, keyboard/ARIA tab 계약.
 - 실패: unavailable component/endpoint/token은 secret 없는 오류 상태로 표시합니다.
 - 관측: Playwright keyboard/resource/log/browser E2E와 screenshot.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/console.py:12`,
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
 - 신뢰도: High
 
@@ -203,5 +203,5 @@
 - 검증: partition 두 개의 write/read, Glue table type과 partition, S3
   [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)를 확인합니다.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py`
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py`
 - 신뢰도: High

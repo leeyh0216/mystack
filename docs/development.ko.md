@@ -97,6 +97,7 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make package-check
 make test
 make contract
 make e2e
@@ -115,12 +116,16 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 <!-- section: locations -->
 ## 변경 위치
 
-- Wire metadata/공통 JSON 직렬화: `shared/src/mystack_aws_protocol`
-- Proxy route 동작: `proxy/src/mystack_proxy`; 새 서비스는 YAML 우선
-- EMR 상태/동작: `emr/src/mystack_emr/domain`, `application`
-- Glue Catalog 동작: `glue/src/mystack_glue/domain`, `application`
+- Wire metadata/공통 JSON 직렬화: `shared/src/mystack/aws_protocol`
+- Proxy route 동작: `proxy/src/mystack/proxy`; 새 서비스는 YAML 우선
+- EMR 상태/동작: `emr/src/mystack/emr/domain`, `application`
+- Glue Catalog 동작: `glue/src/mystack/glue/domain`, `application`
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만
+
+네 distribution은 `mystack/__init__.py` 없이 `mystack.aws_protocol`, `mystack.proxy`,
+`mystack.emr`, `mystack.glue`를 각각 제공합니다. Module을 옮기거나 build backend를 바꾸면
+`make package-check`를 실행합니다.
 
 의존 방향은 [AWS Hexagonal architecture 모델](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에 맞춰 CI가 검사합니다.
 

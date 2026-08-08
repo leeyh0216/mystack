@@ -32,8 +32,8 @@ contracts.
 
 - Workspace modules: `shared`, `proxy`, `emr`, and `glue`, each independently packaged except the
   development root.
-- Composition roots: `proxy/src/mystack_proxy/app.py`, `emr/src/mystack_emr/app.py`, and
-  `glue/src/mystack_glue/app.py`.
+- Composition roots: `proxy/src/mystack/proxy/app.py`, `emr/src/mystack/emr/app.py`, and
+  `glue/src/mystack/glue/app.py`.
 - Dependency direction: Domain → Application ports/use cases → Adapters → composition root. Automated
   architecture tests reject inward imports of outer modules.
 - Protocol boundary: pinned botocore models, AWS JSON 1.1 input validation, modeled responses/errors,
@@ -50,7 +50,7 @@ contracts.
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 55 collected. The fast suite selects 50, passes 48, and skips two real-AWS
+- Final test inventory: 58 collected. The fast suite selects 53, passes 51, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 

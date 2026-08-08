@@ -23,6 +23,7 @@
 - 전체 component와 dependency 방향: [Architecture](architecture.ko.md)
 - 하위 module이 상위 module을 모르게 하는 결정: [ADR-0001](adr/0001-hexagonal-service-boundaries.ko.md)
 - Version이 고정된 upstream adapter: [ADR-0002](adr/0002-versioned-upstream-adapters.ko.md)
+- 공통 PEP 420 import namespace: [ADR-0003](adr/0003-pep420-namespace-packages.ko.md)
 - 새 service를 Proxy에 등록: [Proxy 확장 안내](extending-proxy.ko.md)
 
 <!-- section: protocol -->

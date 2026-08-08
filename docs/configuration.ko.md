@@ -77,9 +77,10 @@ E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
+격리된 wheel 동시 설치 제한 시간은 `tests.package_smoke_timeout_seconds`로 설정합니다.
 
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
-[`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.
+[`mystack.schema.json`](../shared/src/mystack/aws_protocol/mystack.schema.json)으로 검증합니다.
 Unknown key, 누락 member, 잘못된 URL/account ID/port, 0 이하 deadline은 시작 전에 정확한
 dotted path와 함께 실패합니다. Schema는 공식
 [JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core)을

@@ -23,6 +23,7 @@ Mystack from an application, start with the [user guide](index.md).
 - Components and dependency direction: [architecture](architecture.md)
 - Keeping lower modules unaware of upper modules: [ADR-0001](adr/0001-hexagonal-service-boundaries.md)
 - Versioned upstream adapters: [ADR-0002](adr/0002-versioned-upstream-adapters.md)
+- Shared PEP 420 import namespace: [ADR-0003](adr/0003-pep420-namespace-packages.md)
 - Registering another service in Proxy: [Proxy extension guide](extending-proxy.md)
 
 <!-- section: protocol -->

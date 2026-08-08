@@ -13,3 +13,8 @@ dependencies = [
 [build-system]
 requires = ["uv_build==0.11.8"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Namespace package configuration:
+# https://docs.astral.sh/uv/concepts/build-backend/#namespace-packages
+module-name = "mystack.aws_protocol"

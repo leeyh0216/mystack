@@ -10,7 +10,7 @@ Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container
 <!-- section: isolation -->
 ## 변경 격리
 
-- wire metadata/serialization 변경은 `shared/src/mystack_aws_protocol`에서 처리합니다.
+- wire metadata/serialization 변경은 `shared/src/mystack/aws_protocol`에서 처리합니다.
 - EMR/Glue 작업의 요청·응답 구조나 의미 변경은 해당 서비스 입력 adapter와 사용 사례에서 처리합니다.
 - Spark/Hive/Iceberg 변경은 versioned runtime profile과 adapter에서 처리합니다.
 - 새 Proxy 서비스는 선언형 route 설정으로 추가하며 분기 코드를 하드코딩하지 않습니다.

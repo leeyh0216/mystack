@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs devcontainer-check devcontainer-verify-images model-check coverage-check registry-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs devcontainer-check devcontainer-verify-images model-check coverage-check registry-check package-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -52,6 +52,11 @@ registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
 	@uv run python scripts/registry_release.py check-config
 	@uv run ruff check scripts/registry_release.py tests/test_registry_release.py
 	@uv run pytest tests/test_registry_release.py --timeout 60 --timeout-method thread -vv
+
+package-check: ## Build and co-install all wheels under the implicit Mystack namespace.
+	@uv build --all-packages
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.package_smoke_timeout_seconds); \
+	uv run python scripts/check_namespace_packages.py --dist-dir dist --timeout-seconds "$$timeout"
 
 test: ## Run unit, architecture, and protocol tests with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \

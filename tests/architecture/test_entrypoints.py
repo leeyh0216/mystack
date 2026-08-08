@@ -15,12 +15,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from mystack_aws_protocol import load_configuration
+from mystack.aws_protocol import load_configuration
 
 _ENTRYPOINTS = (
-    ("mystack_proxy.main", "proxy"),
-    ("mystack_emr.main", "emr"),
-    ("mystack_glue.main", "glue"),
+    ("mystack.proxy.main", "proxy"),
+    ("mystack.emr.main", "emr"),
+    ("mystack.glue.main", "glue"),
 )
 
 

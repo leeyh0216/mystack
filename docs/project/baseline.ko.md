@@ -30,8 +30,8 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 ## 코드 기준 확정 사실
 
 - Workspace module은 `shared`, `proxy`, `emr`, `glue`이며 개발 root를 제외하고 독립 package입니다.
-- Composition root는 `proxy/src/mystack_proxy/app.py`, `emr/src/mystack_emr/app.py`,
-  `glue/src/mystack_glue/app.py`입니다.
+- Composition root는 `proxy/src/mystack/proxy/app.py`, `emr/src/mystack/emr/app.py`,
+  `glue/src/mystack/glue/app.py`입니다.
 - 의존 방향은 Domain → Application port/use case → Adapter → composition root입니다. Architecture
   test가 내부 layer의 외부 module import를 거부합니다.
 - Protocol 경계는 pinned botocore model, AWS JSON 1.1 입력 검증, modeled response/error, 명시적
@@ -48,7 +48,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 55개입니다. Fast suite는 50개를 선택해 48개가 통과하고 real-AWS
+- 최종 test inventory는 58개입니다. Fast suite는 53개를 선택해 51개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 

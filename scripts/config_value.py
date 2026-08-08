@@ -9,7 +9,7 @@ import argparse
 import json
 from typing import Any
 
-from mystack_aws_protocol import load_configuration
+from mystack.aws_protocol import load_configuration
 
 
 def main() -> None:

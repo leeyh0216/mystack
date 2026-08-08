@@ -24,6 +24,8 @@ Proxy route registry는 설정 기반입니다. 새 emulator는 target prefix, S
 
 Mystack은 process 내부 사용자 plugin API를 공개하지 않습니다. Service 동작 변경은 담당 영역
 안에서 관리하고 새 AWS service emulator는 Proxy의 설정 기반 route registry로 연결합니다.
+독립적으로 build한 distribution은 [ADR-0003](adr/0003-pep420-namespace-packages.ko.md)의 implicit
+`mystack` namespace를 공유하며 어떤 distribution도 namespace root를 소유하지 않습니다.
 
 <!-- section: dependencies -->
 ## 의존성 규칙

@@ -11,11 +11,16 @@ dependencies = [
 ]
 
 [project.scripts]
-mystack-proxy = "mystack_proxy.main:run"
+mystack-proxy = "mystack.proxy.main:run"
 
 [build-system]
 requires = ["uv_build==0.11.8"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Namespace package configuration:
+# https://docs.astral.sh/uv/concepts/build-backend/#namespace-packages
+module-name = "mystack.proxy"
 
 [tool.uv.sources]
 mystack-aws-protocol = { workspace = true }

@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import httpx
 from fastapi.testclient import TestClient
-from mystack_aws_protocol import DiagnosticsSettings
-from mystack_proxy.app import create_app
-from mystack_proxy.config import ProxySettings, ServiceRoute
+from mystack.aws_protocol import DiagnosticsSettings
+from mystack.proxy.app import create_app
+from mystack.proxy.config import ProxySettings, ServiceRoute
 
 _DIAGNOSTICS = DiagnosticsSettings(enabled=True, management_token=None, stack_limit=20)
 

@@ -16,7 +16,7 @@ from typing import Any
 import boto3
 import pytest
 from botocore.config import Config
-from mystack_aws_protocol import LoadedConfiguration, load_configuration
+from mystack.aws_protocol import LoadedConfiguration, load_configuration
 
 
 @dataclass(frozen=True, slots=True)

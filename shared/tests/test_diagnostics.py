@@ -5,7 +5,7 @@ Reference: https://docs.python.org/3/library/sys.html#sys._current_frames
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from mystack_aws_protocol import DiagnosticsSettings, create_diagnostics_router
+from mystack.aws_protocol import DiagnosticsSettings, create_diagnostics_router
 
 
 def test_thread_diagnostics_expose_stack_without_locals() -> None:

@@ -11,9 +11,9 @@ import sys
 from pathlib import Path
 
 import pytest
-from mystack_aws_protocol import load_configuration
-from mystack_emr.adapters.outbound import LocalProcessExecutor
-from mystack_emr.config import EmrSettings
+from mystack.aws_protocol import load_configuration
+from mystack.emr.adapters.outbound import LocalProcessExecutor
+from mystack.emr.config import EmrSettings
 
 
 @pytest.mark.asyncio

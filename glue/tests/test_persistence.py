@@ -6,8 +6,8 @@ https://docs.aws.amazon.com/glue/latest/dg/tables-described.html
 
 from pathlib import Path
 
-from mystack_glue.adapters.outbound import JsonCatalogRepository
-from mystack_glue.domain import CatalogDatabase, CatalogTable
+from mystack.glue.adapters.outbound import JsonCatalogRepository
+from mystack.glue.domain import CatalogDatabase, CatalogTable
 
 
 async def test_catalog_state_survives_repository_restart(tmp_path: Path) -> None:

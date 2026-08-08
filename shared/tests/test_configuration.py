@@ -6,7 +6,7 @@ Docker configs reference: https://docs.docker.com/reference/compose-file/configs
 from pathlib import Path
 
 import pytest
-from mystack_aws_protocol import ConfigurationError, load_configuration
+from mystack.aws_protocol import ConfigurationError, load_configuration
 
 
 def test_nested_environment_override_is_typed(monkeypatch) -> None:

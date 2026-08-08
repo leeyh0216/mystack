@@ -6,8 +6,8 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from mystack_aws_protocol import AwsJsonRpcEndpoint, AwsServiceError, AwsServiceModel
-from mystack_aws_protocol.dispatcher import OperationDispatcher
+from mystack.aws_protocol import AwsJsonRpcEndpoint, AwsServiceError, AwsServiceModel
+from mystack.aws_protocol.dispatcher import OperationDispatcher
 
 
 def app_for(dispatcher: OperationDispatcher) -> FastAPI:

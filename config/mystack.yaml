@@ -124,6 +124,7 @@ runtime_profiles:
 tests:
   unit_timeout_seconds: 60
   contract_timeout_seconds: 120
+  package_smoke_timeout_seconds: 120
   e2e_timeout_seconds: 1200
   compose_wait_timeout_seconds: 300
   e2e:

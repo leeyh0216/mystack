@@ -5,8 +5,8 @@ References:
 - https://github.com/boto/botocore/tree/develop/botocore/data
 """
 
-from mystack_proxy.config import ServiceRoute
-from mystack_proxy.routing import AwsServiceDetector
+from mystack.proxy.config import ServiceRoute
+from mystack.proxy.routing import AwsServiceDetector
 
 
 def detector() -> AwsServiceDetector:

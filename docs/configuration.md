@@ -78,9 +78,10 @@ class submission in its official [application submission guide](https://spark.ap
 Browser interaction deadlines and whether missing Chromium is fatal are configured by
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
+The isolated wheel co-installation deadline is `tests.package_smoke_timeout_seconds`.
 
 After environment overrides, every process validates the complete document against the packaged
-[`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,
+[`mystack.schema.json`](../shared/src/mystack/aws_protocol/mystack.schema.json). Unknown keys,
 missing members, invalid URLs/account IDs/ports, and non-positive deadlines fail before startup
 with the exact dotted path. The schema uses the official
 [JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core).

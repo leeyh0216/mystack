@@ -10,11 +10,16 @@ dependencies = [
 ]
 
 [project.scripts]
-mystack-glue = "mystack_glue.main:run"
+mystack-glue = "mystack.glue.main:run"
 
 [build-system]
 requires = ["uv_build==0.11.8"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Namespace package configuration:
+# https://docs.astral.sh/uv/concepts/build-backend/#namespace-packages
+module-name = "mystack.glue"
 
 [tool.uv.sources]
 mystack-aws-protocol = { workspace = true }

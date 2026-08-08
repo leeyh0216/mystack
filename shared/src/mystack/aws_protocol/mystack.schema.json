@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/leeyh0216/mystack/blob/main/shared/src/mystack/aws_protocol/mystack.schema.json",
+  "title": "Mystack configuration",
+  "description": "Runtime configuration contract. Docker config reference: https://docs.docker.com/reference/compose-file/configs/",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "logging",
+    "management",
+    "proxy",
+    "localstack",
+    "emr",
+    "glue",
+    "runtime_profiles",
+    "tests"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "format"],
+      "properties": {
+        "level": {"enum": ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]},
+        "format": {"const": "json"}
+      }
+    },
+    "management": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["diagnostics"],
+      "properties": {
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "stack_limit", "token"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "stack_limit": {"type": "integer", "minimum": 1},
+            "token": {"type": ["string", "null"], "minLength": 1}
+          }
+        }
+      }
+    },
+    "proxy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["listen", "fallback_url", "request_timeout_seconds", "routes"],
+      "properties": {
+        "listen": {"$ref": "#/$defs/listen"},
+        "fallback_url": {"$ref": "#/$defs/uri"},
+        "request_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "backend_url", "target_prefixes", "signing_names", "host_prefixes"],
+            "properties": {
+              "name": {"$ref": "#/$defs/non_empty_string"},
+              "backend_url": {"$ref": "#/$defs/uri"},
+              "target_prefixes": {"$ref": "#/$defs/string_array"},
+              "signing_names": {"$ref": "#/$defs/string_array"},
+              "host_prefixes": {"$ref": "#/$defs/string_array"}
+            }
+          }
+        }
+      }
+    },
+    "localstack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint_url", "region", "account_id", "access_key_id", "secret_access_key", "s3_path_style"],
+      "properties": {
+        "endpoint_url": {"$ref": "#/$defs/uri"},
+        "region": {"$ref": "#/$defs/non_empty_string"},
+        "account_id": {"type": "string", "pattern": "^[0-9]{12}$"},
+        "access_key_id": {"$ref": "#/$defs/non_empty_string"},
+        "secret_access_key": {"$ref": "#/$defs/non_empty_string"},
+        "s3_path_style": {"type": "boolean"}
+      }
+    },
+    "emr": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "listen",
+        "work_root",
+        "process_timeout_seconds",
+        "bootstrap_timeout_seconds",
+        "bootstrap_shell",
+        "terminate_grace_seconds",
+        "output_tail_bytes",
+        "command_runner_jars",
+        "api_page_size",
+        "max_active_steps",
+        "default_release_label",
+        "release_profiles"
+      ],
+      "properties": {
+        "listen": {"$ref": "#/$defs/listen"},
+        "work_root": {"$ref": "#/$defs/non_empty_string"},
+        "process_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "bootstrap_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "bootstrap_shell": {"$ref": "#/$defs/non_empty_string"},
+        "terminate_grace_seconds": {"$ref": "#/$defs/positive_number"},
+        "output_tail_bytes": {"type": "integer", "minimum": 1},
+        "command_runner_jars": {"$ref": "#/$defs/non_empty_string_array"},
+        "api_page_size": {"type": "integer", "minimum": 1},
+        "max_active_steps": {"type": "integer", "minimum": 1},
+        "default_release_label": {"$ref": "#/$defs/non_empty_string"},
+        "release_profiles": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["runtime_profile", "aws_spark_version", "source"],
+            "properties": {
+              "runtime_profile": {"$ref": "#/$defs/non_empty_string"},
+              "aws_spark_version": {"$ref": "#/$defs/non_empty_string"},
+              "source": {"$ref": "#/$defs/uri"}
+            }
+          }
+        }
+      }
+    },
+    "glue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "runtime_profile"],
+      "properties": {
+        "listen": {"$ref": "#/$defs/listen"},
+        "data_root": {"$ref": "#/$defs/non_empty_string"},
+        "state_file": {"$ref": "#/$defs/non_empty_string"},
+        "catalog_id": {"type": "string", "pattern": "^[0-9]{12}$"},
+        "api_page_size": {"type": "integer", "minimum": 1},
+        "create_default_database": {"type": "boolean"},
+        "runtime_profile": {"$ref": "#/$defs/non_empty_string"}
+      }
+    },
+    "runtime_profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {"$ref": "#/$defs/spark_runtime"},
+          {"$ref": "#/$defs/glue_runtime"}
+        ]
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_timeout_seconds", "contract_timeout_seconds", "package_smoke_timeout_seconds", "e2e_timeout_seconds", "compose_wait_timeout_seconds", "e2e"],
+      "properties": {
+        "unit_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "contract_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "package_smoke_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "e2e_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "compose_wait_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "e2e": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "endpoint_url",
+            "poll_interval_seconds",
+            "sdk_connect_timeout_seconds",
+            "sdk_read_timeout_seconds",
+            "sdk_max_attempts",
+            "browser_action_timeout_seconds",
+            "browser_required_environment_variable",
+            "compose_file",
+            "emr_service",
+            "emr_jar_fixture_container_path",
+            "emr_release_label",
+            "emr_expected_spark_version_prefix",
+            "glue_service",
+            "glue_spark_submit",
+            "glue_catalog_script",
+            "glue_expected_spark_version_prefix",
+            "glue_catalog_endpoint_url",
+            "object_store_endpoint_url",
+            "sts_endpoint_url",
+            "artifacts_dir"
+          ],
+          "properties": {
+            "endpoint_url": {"$ref": "#/$defs/uri"},
+            "poll_interval_seconds": {"$ref": "#/$defs/positive_number"},
+            "sdk_connect_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+            "sdk_read_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+            "sdk_max_attempts": {"type": "integer", "minimum": 0},
+            "browser_action_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+            "browser_required_environment_variable": {"$ref": "#/$defs/non_empty_string"},
+            "compose_file": {"$ref": "#/$defs/non_empty_string"},
+            "emr_service": {"$ref": "#/$defs/non_empty_string"},
+            "emr_jar_fixture_container_path": {"$ref": "#/$defs/non_empty_string"},
+            "emr_release_label": {"$ref": "#/$defs/non_empty_string"},
+            "emr_expected_spark_version_prefix": {"$ref": "#/$defs/non_empty_string"},
+            "glue_service": {"$ref": "#/$defs/non_empty_string"},
+            "glue_spark_submit": {"$ref": "#/$defs/non_empty_string"},
+            "glue_catalog_script": {"$ref": "#/$defs/non_empty_string"},
+            "glue_expected_spark_version_prefix": {"$ref": "#/$defs/non_empty_string"},
+            "glue_catalog_endpoint_url": {"$ref": "#/$defs/uri"},
+            "object_store_endpoint_url": {"$ref": "#/$defs/uri"},
+            "sts_endpoint_url": {"$ref": "#/$defs/uri"},
+            "artifacts_dir": {"$ref": "#/$defs/non_empty_string"}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "non_empty_string": {"type": "string", "minLength": 1},
+    "positive_number": {"type": "number", "exclusiveMinimum": 0},
+    "uri": {"type": "string", "format": "uri"},
+    "listen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port"],
+      "properties": {
+        "host": {"$ref": "#/$defs/non_empty_string"},
+        "port": {"type": "integer", "minimum": 1, "maximum": 65535}
+      }
+    },
+    "string_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/non_empty_string"},
+      "uniqueItems": true
+    },
+    "non_empty_string_array": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/non_empty_string"},
+      "uniqueItems": true
+    },
+    "spark_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spark_version", "python_version", "java_version", "master", "spark_submit", "submit_aliases", "spark_packages", "spark_conf", "option_value_names"],
+      "properties": {
+        "spark_version": {"$ref": "#/$defs/non_empty_string"},
+        "python_version": {"$ref": "#/$defs/non_empty_string"},
+        "java_version": {"$ref": "#/$defs/non_empty_string"},
+        "master": {"$ref": "#/$defs/non_empty_string"},
+        "spark_submit": {"$ref": "#/$defs/non_empty_string"},
+        "submit_aliases": {"$ref": "#/$defs/non_empty_string_array"},
+        "spark_packages": {"$ref": "#/$defs/string_array"},
+        "spark_conf": {
+          "type": "object",
+          "additionalProperties": {"type": ["string", "number", "boolean"]}
+        },
+        "option_value_names": {"$ref": "#/$defs/non_empty_string_array"}
+      }
+    },
+    "glue_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_image", "spark_version", "python_version", "java_version", "iceberg_version"],
+      "properties": {
+        "base_image": {"$ref": "#/$defs/non_empty_string"},
+        "spark_version": {"$ref": "#/$defs/non_empty_string"},
+        "python_version": {"$ref": "#/$defs/non_empty_string"},
+        "java_version": {"$ref": "#/$defs/non_empty_string"},
+        "iceberg_version": {"$ref": "#/$defs/non_empty_string"}
+      }
+    }
+  }
+}

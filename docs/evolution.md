@@ -10,7 +10,7 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 <!-- section: isolation -->
 ## Change isolation
 
-- Wire metadata/serialization changes belong in `shared/src/mystack_aws_protocol`.
+- Wire metadata/serialization changes belong in `shared/src/mystack/aws_protocol`.
 - An EMR or Glue operation shape/semantic change belongs in that service's inbound adapter and use case.
 - Spark/Hive/Iceberg changes belong in a versioned runtime profile and its adapter.
 - Proxy service additions belong in declarative route configuration, never hardcoded branches.

@@ -88,7 +88,7 @@ def compare(expected: dict[str, Any], actual: dict[str, Any]) -> dict[str, Any]:
         "actual_botocore_version": actual["botocore_version"],
         "services": {},
         "fix_hints": [
-            "Protocol metadata changes: update shared/src/mystack_aws_protocol/model.py "
+            "Protocol metadata changes: update shared/src/mystack/aws_protocol/model.py "
             "and endpoint.py.",
             "Operation changes: update the owning EMR/Glue inbound mapper and semantic "
             "contract tests.",

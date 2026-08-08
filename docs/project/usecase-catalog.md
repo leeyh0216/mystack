@@ -28,8 +28,8 @@
   not reserialized.
 - Failures: duplicate/invalid routes at startup; connection/explicit request timeout at runtime.
 - Observability: route reason, backend origin, body size/hash, status, duration; never authorization/body.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/routing.py:32`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py:57`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/routing.py:32`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py:57`
 - Confidence: High
 
 <!-- section: uc-002 -->
@@ -43,8 +43,8 @@
 - Preconditions/rules: recognized official operation; unsupported recognized operations return 501.
 - Failures: unknown operation, serialization/validation error, domain error, protected internal error.
 - Observability: service/operation/model fingerprint, input/output member names, request ID, duration.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/endpoint.py:49`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/dispatcher.py:38`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/endpoint.py:49`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/dispatcher.py:38`
 - Confidence: High
 
 <!-- section: uc-003 -->
@@ -60,8 +60,8 @@
 - Preconditions/rules: documented cluster/step transitions, failure actions, single-cluster queue policy.
 - Failures: validation, not found, invalid state, termination protection, bad marker.
 - Observability: transitions, scheduling, process lifecycle, public boto3 contract and E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/inbound/aws.py:40`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/application/service.py:65`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/inbound/aws.py:40`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/application/service.py:65`
 - Confidence: High
 
 <!-- section: uc-004 -->
@@ -76,9 +76,9 @@
 - Preconditions/rules: allowed URI/scheme and step runner; cancellation is idempotent, including pre-start.
 - Failures: missing artifact, bootstrap failure, process timeout/exit, cancellation, invalid application args.
 - Observability: S3/process before/after/failure events; Python and JAR Spark S3A/cancel E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:46`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:282`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/adapters/outbound/runtime.py:326`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:46`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:282`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:326`
 - Confidence: High
 
 <!-- section: uc-005 -->
@@ -93,8 +93,8 @@
 - Preconditions/rules: case-normalized keys, uniqueness, child constraints, bounded pagination.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and invalid pagination token.
 - Observability: repository read/write and persistence boundary events; direct/public boto3 tests.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:60`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/adapters/outbound/repository.py:300`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:60`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/outbound/repository.py:300`
 - Confidence: High
 
 <!-- section: uc-006 -->
@@ -108,8 +108,8 @@
 - Preconditions/rules: database exists, unique normalized name, optimistic version and archive behavior.
 - Failures: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input excluded.
 - Observability: mapped domain errors and version/persistence tests; Spark Hive/Iceberg E2E consumes API.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:101`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:149`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:101`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:149`
 - Confidence: High
 
 <!-- section: uc-007 -->
@@ -123,8 +123,8 @@
 - Preconditions/rules: table exists; value count equals partition-key count; supported predicate/segment.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and per-item ErrorDetail.
 - Observability: operation/error logs and all 22 Glue operations through public Proxy E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/application/service.py:213`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/adapters/inbound/aws.py:201`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:213`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/inbound/aws.py:201`
 - Confidence: High
 
 <!-- section: uc-008 -->
@@ -138,9 +138,9 @@
 - Preconditions/rules: known component, management enabled/token valid, application API pagination.
 - Failures: unauthorized/disabled, unknown component/resource, internal service timeout.
 - Observability: management forwarding and component adapter boundary logs plus UI E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/app.py:122`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack_emr/app.py:134`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/app.py:120`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/app.py:122`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/app.py:134`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/app.py:120`
 - Confidence: High
 
 <!-- section: uc-009 -->
@@ -153,7 +153,7 @@
 - Preconditions/rules: diagnostics enabled and token valid if configured.
 - Failures: disabled or unauthorized.
 - Observability: access result/client without token contents.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/diagnostics.py:55`
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/diagnostics.py:55`
 - Confidence: High
 
 <!-- section: uc-010 -->
@@ -166,7 +166,7 @@
 - Preconditions/rules: packaged static asset and public Proxy; keyboard/ARIA tab contract.
 - Failures: unavailable component/endpoint/token displays non-secret error state.
 - Observability: Playwright keyboard/resource/log/browser E2E and captured screenshot.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/console.py:12`,
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
 - Confidence: High
 
@@ -204,5 +204,5 @@
 - Verification: writes and reads two partitions, then checks Glue table types and partitions plus S3
   [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html).
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py`
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py`
 - Confidence: High

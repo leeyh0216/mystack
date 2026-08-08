@@ -6,9 +6,9 @@ References:
 """
 
 import pytest
-from mystack_emr.domain import StateReason, Step, StepState
-from mystack_emr.domain.errors import InvalidStateTransitionError
-from mystack_emr.domain.model import ActionOnFailure, SparkStepConfig, StepTimeline
+from mystack.emr.domain import StateReason, Step, StepState
+from mystack.emr.domain.errors import InvalidStateTransitionError
+from mystack.emr.domain.model import ActionOnFailure, SparkStepConfig, StepTimeline
 
 
 def test_terminal_step_rejects_further_transitions() -> None:

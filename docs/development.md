@@ -98,6 +98,7 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make package-check
 make test
 make contract
 make e2e
@@ -116,12 +117,16 @@ contract](https://pre-commit.com/#install).
 <!-- section: locations -->
 ## Where to make changes
 
-- Wire metadata or generic JSON serialization: `shared/src/mystack_aws_protocol`
-- Proxy route behavior: `proxy/src/mystack_proxy`; add services through YAML first
-- EMR state/behavior: `emr/src/mystack_emr/domain` and `application`
-- Glue Catalog behavior: `glue/src/mystack_glue/domain` and `application`
+- Wire metadata or generic JSON serialization: `shared/src/mystack/aws_protocol`
+- Proxy route behavior: `proxy/src/mystack/proxy`; add services through YAML first
+- EMR state/behavior: `emr/src/mystack/emr/domain` and `application`
+- Glue Catalog behavior: `glue/src/mystack/glue/domain` and `application`
 - S3, process, database, FastAPI: service `adapters`
 - Dependency wiring only: service composition root
+
+The four distributions contribute `mystack.aws_protocol`, `mystack.proxy`, `mystack.emr`, and
+`mystack.glue` without a `mystack/__init__.py`. Run `make package-check` after moving modules or
+changing a build backend.
 
 The dependency direction is enforced using the [AWS hexagonal architecture model](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html).
 

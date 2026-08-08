@@ -4,8 +4,8 @@ Reference: https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html
 """
 
 import pytest
-from mystack_glue.application.expression import matches_partition
-from mystack_glue.domain import InvalidInputError
+from mystack.glue.application.expression import matches_partition
+from mystack.glue.domain import InvalidInputError
 
 
 def test_and_equality_expression() -> None:

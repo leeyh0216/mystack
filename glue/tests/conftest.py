@@ -19,8 +19,8 @@ import boto3
 import pytest
 import uvicorn
 from botocore.config import Config
-from mystack_aws_protocol import LoadedConfiguration, load_configuration
-from mystack_glue.app import create_app
+from mystack.aws_protocol import LoadedConfiguration, load_configuration
+from mystack.glue.app import create_app
 
 
 @pytest.fixture

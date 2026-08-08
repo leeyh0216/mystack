@@ -29,8 +29,8 @@ def internal_imports(source: Path, package_name: str) -> set[str]:
 
 def test_service_modules_only_depend_inward() -> None:
     violations: list[str] = []
-    for service, package_name in (("emr", "mystack_emr"), ("glue", "mystack_glue")):
-        package_root = ROOT / service / "src" / package_name
+    for service, package_name in (("emr", "mystack.emr"), ("glue", "mystack.glue")):
+        package_root = ROOT / service / "src" / Path(*package_name.split("."))
         if not package_root.exists():
             continue
         for source in package_root.rglob("*.py"):
@@ -39,10 +39,10 @@ def test_service_modules_only_depend_inward() -> None:
             if source_layer not in LAYERS:
                 continue
             for imported in internal_imports(source, package_name):
-                parts = imported.split(".")
-                if len(parts) < 2 or parts[1] not in LAYERS:
+                relative_import = imported.removeprefix(package_name).lstrip(".")
+                target_layer = relative_import.split(".", maxsplit=1)[0]
+                if target_layer not in LAYERS:
                     continue
-                target_layer = parts[1]
                 if LAYERS[target_layer] > LAYERS[source_layer]:
                     violations.append(
                         f"{source.relative_to(ROOT)}: {source_layer} imports outer {target_layer}"
@@ -52,8 +52,8 @@ def test_service_modules_only_depend_inward() -> None:
 
 def test_inner_layers_do_not_import_composition_modules() -> None:
     violations: list[str] = []
-    for service, package_name in (("emr", "mystack_emr"), ("glue", "mystack_glue")):
-        package_root = ROOT / service / "src" / package_name
+    for service, package_name in (("emr", "mystack.emr"), ("glue", "mystack.glue")):
+        package_root = ROOT / service / "src" / Path(*package_name.split("."))
         for layer in ("domain", "application"):
             for source in (package_root / layer).rglob("*.py"):
                 for imported in internal_imports(source, package_name):
@@ -63,7 +63,7 @@ def test_inner_layers_do_not_import_composition_modules() -> None:
 
 
 def test_shared_protocol_package_does_not_import_service_packages() -> None:
-    package_root = ROOT / "shared" / "src" / "mystack_aws_protocol"
+    package_root = ROOT / "shared" / "src" / "mystack" / "aws_protocol"
     violations: list[str] = []
     for source in package_root.rglob("*.py"):
         tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
@@ -75,6 +75,6 @@ def test_shared_protocol_package_does_not_import_service_packages() -> None:
             else:
                 continue
             for name in names:
-                if name.startswith(("mystack_glue", "mystack_emr", "mystack_proxy")):
+                if name.startswith(("mystack.glue", "mystack.emr", "mystack.proxy")):
                     violations.append(f"{source.relative_to(ROOT)} imports {name}")
     assert not violations, "Shared service dependency violations:\n" + "\n".join(violations)
