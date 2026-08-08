@@ -87,6 +87,22 @@ acceptance criteria, exclusions, dependencies, and official sources in parity.
 Titles may remain English. See the [GitHub Issues
 documentation](https://docs.github.com/issues/tracking-your-work-with-issues/using-issues/creating-an-issue).
 
+<!-- section: workflow -->
+## Issue-sized changes and publication
+
+- Create a bilingual issue with a milestone and classification labels before implementation.
+- Complete implementation, tests, user documentation, and maintainer documentation for that issue
+  together.
+- Do not accumulate completed changes in the working tree. After gates pass, create one logical commit
+  referencing the issue number.
+- Push the commit immediately and inspect the GitHub CI result.
+- Close the issue only after its acceptance criteria and CI pass. Split the next concern into a new
+  issue and commit.
+
+Use GitHub's [issue-closing commit
+mechanism](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
+when appropriate.
+
 <!-- section: change-description -->
 ## Change description
 

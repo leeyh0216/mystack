@@ -45,7 +45,27 @@ Host에 Docker와 VS Code Dev Containers extension이 있다면 별도 Python·u
 `.devcontainer/devcontainer.json`은 workspace를 Host와 같은 절대 경로에 mount하고 Host Docker
 daemon을 사용합니다. 생성이 끝나면 `make up`과 `make test`를 그대로 실행할 수 있습니다.
 
-상세 endpoint, bind mount 제약, 검증 명령은 [사용 안내](getting-started.ko.md)에 있습니다. 이
+Container에는 Python 3.11, digest로 고정한 uv, Docker CLI/Compose, AWS CLI, GitHub CLI,
+locked workspace dependency, pre-commit과 editor extension이 준비됩니다. `devcontainer.json`의
+feature 버전과 `devcontainer-lock.json`의 resolved digest를 함께 commit합니다. CI는
+[공식 Dev Container CLI](https://github.com/devcontainers/cli)의 `--frozen-lockfile`로 같은 image를
+build합니다.
+
+`postCreateCommand`가 끝난 다음 다음 명령으로 환경을 검증합니다.
+
+```bash
+make test
+make up
+curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
+aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
+make extension-e2e
+```
+
+Dev Container는 [Docker-outside-of-Docker
+feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)를 사용합니다.
+`Clone Repository in Container Volume` 대신 Host의 local clone을 `Reopen in Container`로 여세요.
+Compose의 설정·extension bind mount를 Host daemon이 해석하므로 Host와 container의 workspace
+절대 경로가 같아야 합니다. Apple Silicon에서는 두 환경의 architecture도 같게 유지합니다. 이
 구성은 공식 [Dev Container 생성
 안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)를 따릅니다.
 

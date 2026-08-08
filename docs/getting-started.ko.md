@@ -5,8 +5,8 @@
 
 # Mystack 사용 안내
 
-이 문서는 Mystack을 처음 실행하고 AWS CLI, boto3, Docker Compose application, Dev Container에서
-사용하는 과정을 설명합니다. Emulator가 제공하는 API 범위는 [지원 범위](support-scope.ko.md),
+이 문서는 Mystack을 처음 실행하고 AWS CLI, boto3, AWS SDK for pandas, Docker Compose
+application에서 사용하는 과정을 설명합니다. Emulator가 제공하는 API 범위는 [지원 범위](support-scope.ko.md),
 Glue 동작을 수정하는 방법은 [확장 SPI 안내](extensions.ko.md)를 참고하세요.
 
 <!-- section: choose -->
@@ -15,7 +15,6 @@ Glue 동작을 수정하는 방법은 [확장 SPI 안내](extensions.ko.md)를 �
 | 환경 | 권장 대상 | AWS endpoint |
 | --- | --- | --- |
 | Host의 Docker Compose | Mystack을 사용하는 application 개발자 | `http://localhost:4566` |
-| 제공된 Dev Container | Mystack code와 extension 개발자 | `http://host.docker.internal:4566` |
 | 같은 Compose network의 container | Mystack과 함께 실행하는 service | `http://proxy:8080` |
 
 Mystack의 공개 endpoint는 Proxy 하나입니다. 요청의 `X-Amz-Target`, SigV4 signing service,
@@ -154,43 +153,6 @@ Compose는 뒤에 지정한 file을 앞의 설정과 병합합니다. 정확한 
 문서](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)를 참고하세요. 전체
 YAML key와 환경변수 우선순위는 [설정 안내](configuration.ko.md)에 있습니다.
 
-<!-- section: devcontainer -->
-## Dev Container로 개발하기
-
-Repository에는 `.devcontainer/devcontainer.json`이 있습니다. Host에 Docker와 VS Code의 Dev
-Containers extension을 설치한 뒤 local clone을 엽니다. Command Palette에서 `Dev Containers:
-Reopen in Container`를 실행하세요. 공식 [Dev Container 생성
-안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)와 같은 흐름입니다.
-
-Dev Container는 다음 도구를 준비합니다.
-
-- Python 3.11과 digest로 고정한 uv 0.11.8
-- Host Docker daemon을 사용하는 Docker CLI와 Compose
-- AWS CLI와 GitHub CLI
-- locked workspace dependency와 pre-commit hook
-- Python, Ruff, TOML, YAML editor extension
-
-`devcontainer.json`의 feature 버전과 `devcontainer-lock.json`의 resolved digest를 함께
-commit합니다. CI는 [공식 Dev Container CLI](https://github.com/devcontainers/cli)의
-`--frozen-lockfile`로 실제 image를 build하므로, 개발자는 같은 도구 조합을 받습니다.
-
-`postCreateCommand`가 끝난 다음 Dev Container terminal에서 실행합니다.
-
-```bash
-make test
-make up
-curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
-aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
-make extension-e2e
-```
-
-Dev Container는 [Docker-outside-of-Docker
-feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)를 사용합니다.
-Host와 container의 workspace 절대 경로를 같게 mount하므로 Compose의 설정·extension bind mount도
-Host daemon에서 해석할 수 있습니다. `Clone Repository in Container Volume` 대신 Host의 local
-clone을 `Reopen in Container`로 여세요. Apple Silicon에서는 Host와 Dev Container architecture를
-같게 유지해야 합니다.
-
 <!-- section: verify -->
 ## 동작 확인과 문제 해결
 
@@ -219,6 +181,4 @@ open http://localhost:4566/_mystack/console
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint 구성](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
-- [Dev Container 생성 안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)
-- [Docker-outside-of-Docker feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)
 - [uv Docker 안내](https://docs.astral.sh/uv/guides/integration/docker/)

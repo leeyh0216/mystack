@@ -45,8 +45,27 @@ uv, or AWS CLI installation is required. Open a local clone and run `Dev Contain
 Container`. `.devcontainer/devcontainer.json` mounts the workspace at the same absolute host path and
 uses the host Docker daemon. Run `make up` and `make test` after creation completes.
 
-The [usage guide](getting-started.md) documents endpoints, bind-mount constraints, and verification
-commands. This setup follows the official [Dev Container creation
+The container provides Python 3.11, digest-pinned uv, Docker CLI/Compose, AWS CLI, GitHub CLI, locked
+workspace dependencies, pre-commit, and editor extensions. Commit feature versions in
+`devcontainer.json` with resolved digests in `devcontainer-lock.json`. CI builds the same image with
+the [official Dev Container CLI](https://github.com/devcontainers/cli) and `--frozen-lockfile`.
+
+After `postCreateCommand` completes, verify the environment:
+
+```bash
+make test
+make up
+curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
+aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
+make extension-e2e
+```
+
+The Dev Container uses the [Docker-outside-of-Docker
+feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker). Reopen a
+host-local clone; do not use `Clone Repository in Container Volume`. The host daemon resolves Compose
+configuration and extension bind mounts, so the workspace must have the same absolute path on the
+host and in the container. Keep both architectures equal on Apple Silicon. This setup follows the
+official [Dev Container creation
 guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container).
 
 <!-- section: precedence -->

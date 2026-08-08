@@ -3,31 +3,59 @@
 
 [한국어](index.ko.md) | [English](index.md)
 
-# Documentation portal
+# User guide
 
-<!-- section: guides -->
-## Guides
+This guide is for people using Mystack to develop applications and data pipelines. If you implement
+the repository, protocol, CI, or releases, go to the [maintainer guide](maintainers.md).
 
-Start here when maintaining Mystack:
+<!-- section: start -->
+## Start here
 
-1. [Docker Compose and Dev Container usage](getting-started.md)
-2. [Development and ten-minute setup](development.md)
-3. [Configuration and reproducible containers](configuration.md)
-4. [Support scope](support-scope.md)
-5. [Architecture](architecture.md), [service-boundary ADR](adr/0001-hexagonal-service-boundaries.md),
-   and [extension SPI ADR](adr/0003-tiered-extension-spis.md)
-6. [AWS JSON protocol analysis](protocols/aws-json-1.1.md)
-7. [Testing strategy](testing.md)
-8. [Client and library compatibility](compatibility/client-matrix.md)
-9. [Contributing guide](../CONTRIBUTING.md)
-10. [Korean technical writing standard](korean-writing-style.md)
-11. [Glue extension SPIs](extensions.md)
-12. [Observability and thread diagnostics](observability.md)
-13. [Management console and resource API](console.md)
-14. [CI and release automation](ci.md)
-15. [Private GHCR image publication](container-release.md)
-16. [Upstream evolution policy](evolution.md)
-17. [Adding another emulator route](extending-proxy.md)
-18. [Implementation-derived UseCases](project/usecase-catalog.md)
+1. Follow the [detailed usage guide](getting-started.md) to start Docker Compose and verify the public endpoint.
+2. Choose ports, timeouts, data paths, and file overrides in the [configuration guide](configuration.md).
+3. Check the exact API and library evidence in the [support scope](support-scope.md) and [client
+   compatibility matrix](compatibility/client-matrix.md).
 
-Architecture and automated-test policy follows [AWS Prescriptive Guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html). Every behavior document must link a direct official AWS, SDK, Python, Docker, or GitHub source.
+<!-- section: clients -->
+## Paths by client
+
+| Client or task | Current evidence | Start with |
+| --- | --- | --- |
+| AWS CLI and boto3 | 13 EMR and 22 Glue operations through the same public Proxy | [Detailed usage guide](getting-started.md) |
+| AWS SDK for pandas 3.17.0 | Partitioned Parquet S3 write/read and Glue table/partitions | [Detailed usage guide](getting-started.md) |
+| Spark 3.5.4 Glue Hive client | Complex-type Parquet create/insert/read | [Client compatibility matrix](compatibility/client-matrix.md) |
+| Apache Iceberg 1.7.1 GlueCatalog | Namespace/table create, append, read, and schema evolution | [Client compatibility matrix](compatibility/client-matrix.md) |
+| EMR Spark step | S3 bootstrap, Python/JAR local Spark, S3A output, and cancellation | [Support scope](support-scope.md) |
+
+An unlisted library or function is not implicitly supported. See [API coverage](compatibility/api-coverage.md)
+for operation-by-operation status from the pinned botocore models.
+
+<!-- section: operate -->
+## Configure and diagnose usage
+
+- YAML, environment overrides, and Docker mounts: [configuration guide](configuration.md)
+- Resource, EMR log, route, and thread/task UI: [management console guide](console.md)
+- Structured logs and management endpoints: [observability guide](observability.md)
+- Replacing selected Glue behavior with extension wheels: [Glue extension SPI guide](extensions.md)
+
+<!-- section: limits -->
+## Know the limits first
+
+Glue Jobs, JobRuns, Crawlers, and Athena query execution are out of scope. Spark/Iceberg and AWS SDK
+for pandas are verified only along the paths listed in the compatibility matrix. Mystack does not
+reproduce production IAM, EC2/YARN/HDFS distributed environments, or undocumented AWS bugs.
+
+<!-- section: maintainers -->
+## When changing the repository
+
+Development setup, architecture, protocol analysis, testing, CI, release, and upstream evolution are
+classified only in the [maintainer guide](maintainers.md). User-facing material should be linked here
+first; implementation details belong in the maintainer guide.
+
+<!-- section: sources -->
+## Official sources
+
+- [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+- [Amazon EMR API](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)
+- [AWS Glue API](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)
+- [Docker Compose](https://docs.docker.com/reference/compose-file/)

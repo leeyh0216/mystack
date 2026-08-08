@@ -83,6 +83,21 @@ AWS CLI로 확인합니다. Spark 연동은 실제 Spark, Glue Catalog, Hive, Ic
 Issues 문서](https://docs.github.com/issues/tracking-your-work-with-issues/using-issues/creating-an-issue)를
 참고합니다.
 
+<!-- section: workflow -->
+## 이슈 단위 변경과 게시
+
+- 구현 전에 이중 언어 이슈를 만들고 milestone과 분류 label을 지정합니다.
+- 한 이슈의 구현, 시험, 사용자 문서와 유지보수 문서를 함께 완료합니다.
+- 완료한 변경을 working tree에 누적하지 않습니다. 확인 절차를 통과하면 이슈 번호를 참조하는
+  하나의 논리적 commit을 만듭니다.
+- Commit을 원격 저장소에 바로 push하고 GitHub CI 결과를 확인합니다.
+- 완료 조건과 CI를 모두 확인한 뒤 이슈를 닫습니다. 다음 관심사는 새 이슈와 commit으로
+  분리합니다.
+
+GitHub의 [commit으로 이슈 닫기
+기능](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)을
+사용할 수 있습니다.
+
 <!-- section: change-description -->
 ## 변경 설명
 

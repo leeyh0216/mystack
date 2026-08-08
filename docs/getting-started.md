@@ -5,8 +5,8 @@
 
 # Using Mystack
 
-This guide takes a new user from startup through AWS CLI, boto3, Docker Compose application, and Dev
-Container integration. See the [support scope](support-scope.md) for implemented APIs and the [Glue
+This guide takes a new user from startup through AWS CLI, boto3, AWS SDK for pandas, and Docker
+Compose application integration. See the [support scope](support-scope.md) for implemented APIs and the [Glue
 extension SPI guide](extensions.md) for behavior customization.
 
 <!-- section: choose -->
@@ -15,7 +15,6 @@ extension SPI guide](extensions.md) for behavior customization.
 | Environment | Best for | AWS endpoint |
 | --- | --- | --- |
 | Docker Compose on the host | Application developers consuming Mystack | `http://localhost:4566` |
-| Provided Dev Container | Mystack code and extension developers | `http://host.docker.internal:4566` |
 | Container on the same Compose network | A service running beside Mystack | `http://proxy:8080` |
 
 Proxy is Mystack's single public endpoint. It routes by `X-Amz-Target`, SigV4 signing service, and
@@ -151,44 +150,6 @@ Compose merges later files into the earlier configuration. See the [Compose file
 documentation](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) for exact rules
 and the [configuration guide](configuration.md) for every YAML key and override precedence.
 
-<!-- section: devcontainer -->
-## Develop in the Dev Container
-
-The repository includes `.devcontainer/devcontainer.json`. Install Docker and the VS Code Dev
-Containers extension on the host, open a local clone, and run `Dev Containers: Reopen in Container`
-from the Command Palette. This is the workflow in the official [Dev Container creation
-guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container).
-
-The Dev Container provides:
-
-- Python 3.11 and digest-pinned uv 0.11.8
-- Docker CLI and Compose using the host Docker daemon
-- AWS CLI and GitHub CLI
-- locked workspace dependencies and the pre-commit hook
-- Python, Ruff, TOML, and YAML editor extensions
-
-The repository commits both feature versions in `devcontainer.json` and resolved digests in
-`devcontainer-lock.json`. CI builds the actual image with the [official Dev Container
-CLI](https://github.com/devcontainers/cli) and `--frozen-lockfile`, so contributors receive the same
-tool set.
-
-After `postCreateCommand` finishes, run these commands in its terminal:
-
-```bash
-make test
-make up
-curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
-aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
-make extension-e2e
-```
-
-The environment uses the [Docker-outside-of-Docker
-feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker). It mounts
-the workspace at the same absolute path on the host and in the container, allowing the host daemon to
-resolve Compose configuration and extension bind mounts. Open a host-local clone with `Reopen in
-Container`; do not use `Clone Repository in Container Volume`. Keep host and Dev Container
-architectures equal on Apple Silicon.
-
 <!-- section: verify -->
 ## Verify and troubleshoot
 
@@ -216,6 +177,4 @@ See the [observability guide](observability.md) for management endpoints and str
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
-- [Dev Container creation guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container)
-- [Docker-outside-of-Docker feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)
 - [uv Docker guide](https://docs.astral.sh/uv/guides/integration/docker/)
