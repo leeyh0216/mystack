@@ -29,7 +29,7 @@ The Dev Container job uses the [official CLI](https://github.com/devcontainers/c
 <!-- section: branch-protection -->
 ## Branch protection expectations
 
-Require the Python contract matrix and Docker E2E for changes to runtime paths. Require reviewed pull requests, resolved conversations, and linear history. Direct real-AWS credentials are never required for normal CI.
+Require the Python contract matrix and Docker E2E for changes to runtime paths. Require reviewed pull requests, resolved conversations, and linear history. CI never calls a real AWS account and requires no cloud credentials.
 
 <!-- section: dependencies -->
 ## Dependency updates

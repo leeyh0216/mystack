@@ -28,7 +28,7 @@ Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의
 <!-- section: branch-protection -->
 ## Branch protection 기대값
 
-Runtime 경로 변경에는 Python contract matrix와 Docker E2E를 필수로 합니다. Review된 PR, 해결된 대화, linear history를 요구합니다. 일반 CI에 real AWS credential은 필요하지 않습니다.
+Runtime 경로 변경에는 Python contract matrix와 Docker E2E를 필수로 합니다. Review된 PR, 해결된 대화, linear history를 요구합니다. CI는 실 AWS 계정을 호출하지 않으며 cloud credential을 요구하지 않습니다.
 
 <!-- section: dependencies -->
 ## Dependency update

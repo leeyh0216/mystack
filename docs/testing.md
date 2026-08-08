@@ -96,12 +96,14 @@ The frontend gate runs ESLint, `tsc` project references, Vitest, and both Vite b
 contract proves both applications consume the same semantic CSS variables, while the Docker E2E
 proves each final service image serves its own built assets and Proxy preserves the stable paths.
 
-<!-- section: differential -->
-## Optional differential layer
+<!-- section: local-contracts -->
+## Local compatibility authority
 
-Real-AWS comparisons are read-only, normalized, file-configured, and disabled by default. Run
-`MYSTACK_REAL_AWS_DIFFERENTIAL=1 uv run pytest -m differential --timeout 60` only in an explicitly
-authorized AWS environment. SDK and pytest deadlines remain configurable; ordinary local and CI
-contracts collect these cases as skips and require no cloud credentials.
+Mystack never calls a real AWS account to compare behavior. Official AWS API documentation and the
+pinned botocore models define operations, shapes, constraints, and declared errors. When the
+documents do not define which of several invalid conditions wins, a reviewed internal validation
+order defines the first failure. Parameterized local contracts make every catalog-state error
+reproducible; configured fault injection covers documented internal and timeout failures that have
+no natural state trigger. Authentication and authorization errors are outside the project scope.
 
 AWS recommends automated independent core and E2E behavior tests for hexagonal systems in its [best-practices guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html).

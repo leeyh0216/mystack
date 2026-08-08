@@ -94,12 +94,14 @@ Frontend 확인 절차는 ESLint, `tsc` project reference, Vitest, 두 Vite buil
 확인 절차는 두 application이 같은 semantic CSS variable을 사용함을 검증하고 Docker E2E는 각 최종
 service image가 자기 build asset을 직접 제공하며 Proxy가 안정적인 path를 보존함을 검증합니다.
 
-<!-- section: differential -->
-## 선택적 differential 계층
+<!-- section: local-contracts -->
+## Local 호환성 기준
 
-Real AWS 비교는 read-only·정규화·파일 설정 방식이며 기본 비활성화입니다. 명시적으로
-허가된 AWS 환경에서만 `MYSTACK_REAL_AWS_DIFFERENTIAL=1 uv run pytest -m differential
---timeout 60`을 실행하세요. SDK와 pytest deadline은 모두 설정 가능하며 일반 local/CI
-계약에서는 skip되어 cloud credential이 필요 없습니다.
+Mystack은 동작 비교를 위해 실 AWS 계정을 호출하지 않습니다. 공식 AWS API 문서와 고정
+botocore model이 operation, 데이터 구조, 제약, 선언된 오류를 정의합니다. 여러 잘못된 조건 중 무엇을
+먼저 반환할지 문서가 정하지 않으면 검토한 내부 validation 순서로 최초 실패를 결정합니다.
+Parameterized local contract가 Catalog 상태 오류를 모두 재현하고, 자연스러운 상태 조건이 없는
+문서화된 internal/timeout 실패는 설정 기반 fault injection으로 재현합니다. 인증·인가 오류는
+프로젝트 범위 밖입니다.
 
 AWS의 [Hexagonal architecture 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)는 독립 core test와 E2E 자동화를 권장합니다.

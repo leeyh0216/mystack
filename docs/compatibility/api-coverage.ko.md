@@ -53,14 +53,13 @@
 기본 상태를 자동 부여하지 않고 미분류로 보고해 CI를 실패시킵니다. 데이터 구조 변경과 삭제도
 adapter, test, 문서 수정 안내와 별도로 보고합니다.
 
-<!-- section: differential -->
-## 선택적 real-AWS differential 계약
+<!-- section: local-errors -->
+## 결정적 local 오류 계약
 
-`contracts/differential-cases.json`이 read-only 호출, 정규화 규칙, region, endpoint, SDK
-timeout을 정의합니다. 기본적으로 skip하며 `MYSTACK_REAL_AWS_DIFFERENTIAL=1`일 때만
-활성화하므로 local contributor에게 AWS credential을 요구하지 않습니다. Real client는
-boto3 공식 [credential provider chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)을
-사용하고 emulator client는 별도 local credential을 사용합니다. 현재 EMR `ListClusters`와
-Glue `GetCatalogImportStatus`의 정규화된 성공 envelope를 비교합니다.
+Mystack은 실 AWS 계정의 응답과 비교하지 않습니다. 구현된 operation마다 공식 API 문서와 고정
+botocore model에서 문서화된 오류 조건, status, 응답 구조를 기록합니다. 최초 실패 순서가
+모호하면 검토한 내부 contract로 정합니다. 상태로 유발되는 오류는 parameterized test data로,
+문서화된 service/internal 실패는 설정 기반 fault injection으로 재현합니다. IAM, Lake Formation,
+인증, 인가 오류는 호환 목표로 분류하지 않습니다.
 
 공식 작업과 데이터 구조 목록은 [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data), Glue 동작은 [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)를 기준으로 합니다.

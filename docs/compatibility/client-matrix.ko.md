@@ -40,20 +40,11 @@ AWS SDK for pandas 시험은 `AWS_ENDPOINT_URL_GLUE`와 `AWS_ENDPOINT_URL_S3`를
 Redshift, Lake Formation API를 사용하는 함수까지 지원한다는 뜻은 아닙니다.
 
 <!-- section: candidates -->
-## 다음 검증 후보
+## 닫힌 Client 집합
 
-| 우선순위 | Client | 가치 | 권장 실행 계층 |
-| --- | --- | --- | --- |
-| P0 | s3fs/fsspec | Python 생태계의 HEAD, Range GET, ListObjectsV2, multipart 경계를 가볍게 검증 | 일반 Docker E2E |
-| P1 | PyIceberg GlueCatalog | Spark와 독립적인 Python Iceberg catalog/file I/O와 Glue 의미를 검증 | 일반 Docker E2E |
-| P2 | Trino Hive/Iceberg connector | 독립 JVM SQL engine으로 Glue metastore, partition, statistics 호환성 압박 | nightly Docker E2E |
-| P2 | DuckDB httpfs/Parquet | HEAD, Range GET, glob, multipart S3 fallback을 독립 native client로 검증 | 일반 Docker E2E |
-| P3 | Flink Iceberg Glue sink | streaming write, schema propagation과 장시간 실행 경계를 검증 | 선택적 nightly E2E |
-
-PyIceberg는 Glue를 native catalog type으로 제공하므로 다음 Glue 호환성 확장에 가장 직접적인
-후보입니다. Trino는 image와 초기화 비용이 크고 statistics API 같은 현재 미구현 범위를 호출할 수
-있으므로 별도 profile이 적합합니다. DuckDB와 s3fs는 Glue보다 Proxy의 S3 투명성을 빠르게
-회귀 검증하는 데 유용합니다.
+호환성 matrix는 의도적으로 boto3/botocore, AWS SDK for pandas, Spark Hive client, Apache
+Iceberg Java GlueCatalog로 제한합니다. 다른 client 추가는 이후 별도 범위 결정이 필요하며 암묵적인
+backlog 항목이 아닙니다.
 
 <!-- section: exclusions -->
 ## 현재 제외
@@ -61,6 +52,8 @@ PyIceberg는 Glue를 native catalog type으로 제공하므로 다음 Glue 호�
 `wr.athena.*`, PyAthena, dbt-athena는 Athena control plane과 query execution이 필요하므로 현재
 호환성 주장이 아닙니다. AWS SDK for pandas의 Glue/S3 E2E 성공도 이 함수들을 포함하지 않습니다.
 Glue Job, JobRun, Crawler를 사용하는 library 경로도 지원 범위에서 제외합니다.
+PyIceberg, Flink, Trino, Glue Iceberg REST endpoint, cross-account/cross-Region 동작, IAM, Lake
+Formation, 인증, 인가는 호환성 claim에서 명시적으로 제외합니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료
@@ -68,8 +61,3 @@ Glue Job, JobRun, Crawler를 사용하는 library 경로도 지원 범위에서 
 - [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
 - [Amazon S3 HeadObject API](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)
 - [AWS Glue API](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)
-- [PyIceberg configuration](https://py.iceberg.apache.org/configuration/)
-- [Trino metastore configuration](https://trino.io/docs/current/object-storage/metastores.html)
-- [DuckDB S3 API support](https://duckdb.org/docs/current/core_extensions/httpfs/s3api)
-- [s3fs documentation](https://s3fs.readthedocs.io/en/latest/)
-- [Flink CDC Iceberg Glue example](https://nightlies.apache.org/flink/flink-cdc-docs-release-3.6/docs/connectors/pipeline-connectors/iceberg/)

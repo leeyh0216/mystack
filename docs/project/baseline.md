@@ -67,9 +67,9 @@ contracts.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, anonymously
   consumable public GHCR multi-platform publication, SBOM/provenance, OCI index validation, and
   Trivy policy.
-- Final test inventory: 154 collected. The fast suite selects 146, passes 144, and skips two real-AWS
-  opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
-  five. Both commands apply explicit configured timeouts.
+- Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate
+  Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
+  explicit configured timeouts.
 
 <!-- section: entry-points -->
 ## Entry points and commands

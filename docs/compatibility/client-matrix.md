@@ -40,20 +40,11 @@ public Proxy. One scenario covers `wr.catalog.create_database`, `wr.catalog.get_
 support for functions backed by Athena, Redshift, or Lake Formation APIs.
 
 <!-- section: candidates -->
-## Next verification candidates
+## Closed client set
 
-| Priority | Client | Value | Recommended layer |
-| --- | --- | --- | --- |
-| P0 | s3fs/fsspec | lightweight Python coverage of HEAD, Range GET, ListObjectsV2, and multipart boundaries | regular Docker E2E |
-| P1 | PyIceberg GlueCatalog | Spark-independent Python Iceberg catalog/file I/O and Glue semantics | regular Docker E2E |
-| P2 | Trino Hive/Iceberg connector | independent JVM SQL pressure on Glue metastore, partitions, and statistics | nightly Docker E2E |
-| P2 | DuckDB httpfs/Parquet | independent native-client coverage of HEAD, Range GET, glob, and multipart S3 fallback | regular Docker E2E |
-| P3 | Flink Iceberg Glue sink | streaming writes, schema propagation, and long-running boundaries | optional nightly E2E |
-
-PyIceberg is the most direct next Glue expansion because it provides Glue as a native catalog type.
-Trino deserves a separate profile because its image and startup are heavier and it can call currently
-unimplemented surfaces such as statistics APIs. DuckDB and s3fs provide fast regression pressure on
-transparent S3 forwarding rather than Glue itself.
+The compatibility matrix is intentionally limited to boto3/botocore, AWS SDK for pandas, the Spark
+Hive client, and the Apache Iceberg Java GlueCatalog. Adding another client requires a future scope
+decision; it is not an implied backlog item.
 
 <!-- section: exclusions -->
 ## Current exclusions
@@ -61,6 +52,8 @@ transparent S3 forwarding rather than Glue itself.
 `wr.athena.*`, PyAthena, and dbt-athena require an Athena control plane and query execution, so they
 have no current compatibility claim. Passing the AWS SDK for pandas Glue/S3 E2E does not include
 these functions. Library paths that require Glue Jobs, JobRuns, or Crawlers are also out of scope.
+PyIceberg, Flink, Trino, the Glue Iceberg REST endpoint, cross-account/cross-Region behavior, IAM,
+Lake Formation, authentication, and authorization are explicitly outside the compatibility claim.
 
 <!-- section: sources -->
 ## Official sources
@@ -68,8 +61,3 @@ these functions. Library paths that require Glue Jobs, JobRuns, or Crawlers are 
 - [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
 - [Amazon S3 HeadObject API](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)
 - [AWS Glue API](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)
-- [PyIceberg configuration](https://py.iceberg.apache.org/configuration/)
-- [Trino metastore configuration](https://trino.io/docs/current/object-storage/metastores.html)
-- [DuckDB S3 API support](https://duckdb.org/docs/current/core_extensions/httpfs/s3api)
-- [s3fs documentation](https://s3fs.readthedocs.io/en/latest/)
-- [Flink CDC Iceberg Glue example](https://nightlies.apache.org/flink/flink-cdc-docs-release-3.6/docs/connectors/pipeline-connectors/iceberg/)

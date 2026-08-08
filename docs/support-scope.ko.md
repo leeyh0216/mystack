@@ -17,10 +17,10 @@
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
-| Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
+| Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | 지원 client가 요구하는 Catalog input과 문서화된 오류의 결정적 동작 |
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
-| AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
+| AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
 | Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
 
 EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다. Proxy의 공개 경로는
@@ -51,7 +51,10 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 - AWS Glue Crawler
 - Process 내부 사용자 extension 또는 plugin API
 - 미문서화된 AWS 버그 재현
-- 기본 local mode의 production IAM authorization 의미론
+- 인증, 인가, IAM, Lake Formation 의미론
+- Cross-account와 cross-Region 의미론
+- 실 AWS 비교 test와 cloud credential
+- PyIceberg, Flink, Trino, Glue Iceberg REST endpoint
 - EC2/YARN/HDFS 물리적 분산 환경 재현
 - Spark History Server
 

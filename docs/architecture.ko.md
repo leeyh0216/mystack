@@ -141,8 +141,9 @@ client 안내](https://www.python-httpx.org/advanced/clients/#opening-and-closin
 2. 전체 model과 operation별 fingerprint를 contract manifest에 기록합니다.
 3. boto3/AWS CLI로 실제 endpoint 직렬화 계약을 테스트합니다.
 4. 상태와 오류 의미론을 별도 contract test로 검증합니다.
-5. 최신 botocore와의 차이를 매주 검사하고 변경 operation과 수정 위치를 이슈로 보고합니다.
-6. Spark/Hive/Iceberg 조합은 runtime profile별 E2E matrix로 검증합니다.
+5. AWS가 문서화하지 않은 validation 우선순위는 검토한 local contract로 정의해 결정적으로 유지하며 실 AWS 계정과 비교하지 않습니다.
+6. 최신 botocore와의 차이를 매주 검사하고 변경 operation과 수정 위치를 이슈로 보고합니다.
+7. Spark/Hive/Iceberg 조합은 runtime profile별 E2E matrix로 검증합니다.
 
 호환 오류란 문서화된 exception type, HTTP status, error code, 관련 message field, side effect 유무가 일치함을 뜻하며 AWS의 미문서화 버그를 재현한다는 뜻이 아닙니다.
 
@@ -186,7 +187,9 @@ interface는 service 의존성 graph에 들어가지 않습니다. [Pre-start
 - Glue Job과 JobRun
 - Glue Crawler
 - 초기 runtime에서 분산 EC2/YARN/HDFS의 물리적 재현
-- Production IAM policy 평가 또는 management endpoint 인증
+- 인증, 인가, IAM 또는 Lake Formation policy 평가
+- Cross-account 또는 cross-Region 권한·routing 의미론
+- 실 AWS 비교 test 또는 cloud credential 요구
 - 미문서화된 AWS 버그 재현
 
 <!-- section: sources -->

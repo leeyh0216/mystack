@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -89,11 +89,6 @@ test: ## Run unit, architecture, and protocol tests with configured timeout.
 contract: ## Run boto3 and wire protocol contracts with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.contract_timeout_seconds); \
 	uv run pytest -m contract --timeout "$$timeout" --timeout-method thread -vv
-
-differential: ## Opt in to read-only normalized real-AWS comparisons.
-	@timeout=$$(uv run python -c 'import json; print(json.load(open("contracts/differential-cases.json"))["timeout_seconds"])'); \
-	MYSTACK_REAL_AWS_DIFFERENTIAL=1 uv run pytest -m differential \
-	  --timeout "$$timeout" --timeout-method thread -vv
 
 up: ## Build and start the Docker stack with the selected YAML config.
 	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.compose_wait_timeout_seconds); \

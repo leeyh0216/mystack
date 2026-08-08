@@ -53,14 +53,14 @@ stores a status and operation-shape fingerprint for each entry. A new upstream o
 assigned a default during `--check`; it is reported as unclassified and fails CI. Shape changes and
 removals are reported separately with adapter, test, and documentation fix hints.
 
-<!-- section: differential -->
-## Optional real-AWS differential contracts
+<!-- section: local-errors -->
+## Deterministic local error contracts
 
-`contracts/differential-cases.json` defines read-only calls, normalization rules, region, endpoint,
-and SDK timeout. Tests are skipped by default and enabled only with
-`MYSTACK_REAL_AWS_DIFFERENTIAL=1`; local contributors never need AWS credentials. boto3 resolves
-real credentials through its official [credential provider chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html),
-while the emulator client receives separate local credentials. Current cases compare the
-normalized success envelope of EMR `ListClusters` and Glue `GetCatalogImportStatus`.
+Mystack does not compare responses with a real AWS account. Each implemented operation records its
+documented error conditions, status and response shape from the official API reference and pinned
+botocore model. Ambiguous first-failure precedence is an internal reviewed contract. State-triggered
+errors use parameterized fixtures; documented service/internal failures use configured fault
+injection. IAM, Lake Formation, authentication and authorization errors are not classified as
+compatibility targets.
 
 Official operation and shape inventory: [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data). Glue behavior: [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html).

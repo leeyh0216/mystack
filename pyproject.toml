@@ -39,7 +39,6 @@ timeout_method = "thread"
 markers = [
   "browser: browser-driven console and accessibility contract",
   "contract: boto3 or wire-level protocol contract test",
-  "differential: opt-in normalized comparison against read-only real AWS APIs",
   "e2e: Docker and real runtime end-to-end test",
 ]
 

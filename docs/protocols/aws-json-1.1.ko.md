@@ -92,12 +92,10 @@ dialect audit에서 해석할 수 없는 새 model pattern을 발견하면 실�
 <!-- section: sigv4 -->
 ## SigV4 동작
 
-개발 모드는 SDK가 서명한 요청을 받지만 키를 검증하지 않습니다. 엄격 모드는 SigV4
-구조와 설정된 시험용 인증 정보를 검증합니다. 두 모드 모두 라우팅과 요청 문맥을
-만들기 위해 자격 증명 범위에서 서비스와 리전을 읽습니다.
-
-Proxy는 서명을 검증한 뒤 서명 대상 값을 변경하지 않습니다. Backend에는 원래 요청
-본문과 서명 metadata를 전달합니다. 인증 정책은 대상 adapter가 소유합니다.
+Mystack은 SDK가 서명한 요청을 받지만 key를 검증하거나 caller를 인가하지 않습니다. Credential
+scope의 service와 region은 routing metadata로만 읽을 수 있습니다. Proxy는 원래 본문과 서명
+header를 보존해 전달하지만 어떤 adapter도 여기에 인증·인가 의미를 부여하면 안 됩니다. Stack은
+신뢰하는 local network에서만 실행합니다.
 
 <!-- section: emr -->
 ## EMR 실행 mapping

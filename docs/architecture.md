@@ -151,7 +151,7 @@ HTTPX's [official client guidance](https://www.python-httpx.org/advanced/clients
 2. Generate an operation coverage manifest from that model.
 3. Test serialization with boto3/AWS CLI against the emulator endpoint.
 4. Add semantic contract tests for documented state and error behavior.
-5. Where credentials to a real AWS test account are explicitly supplied, run opt-in differential tests with normalized request IDs/timestamps.
+5. Define validation precedence that AWS does not document as a reviewed local contract and keep it deterministic; Mystack never queries a real AWS account for comparison.
 
 “Compatible error” means the documented exception type, HTTP status, error code, relevant message fields, and absence/presence of side effects match. It does not mean reproducing AWS implementation bugs.
 
@@ -204,7 +204,9 @@ Glue's JSON persistence adapter uses Python's atomic
 - Glue Jobs and JobRuns
 - Glue Crawlers
 - distributed EC2/YARN/HDFS fidelity in the initial runtime
-- production IAM policy evaluation or management-endpoint authentication
+- authentication, authorization, IAM or Lake Formation policy evaluation
+- cross-account or cross-Region permission and routing semantics
+- real-AWS comparison tests or required cloud credentials
 - reproduction of undocumented AWS bugs
 
 <!-- section: sources -->

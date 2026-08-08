@@ -63,9 +63,9 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, 익명으로 소비할 수
   있는 public GHCR multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 154개입니다. Fast suite는 146개를 선택해 144개가 통과하고 real-AWS
-  opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
-  5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
+- Test 정책상 fast suite는 실 AWS 비교 없이 전부 local에서 실행합니다. 별도
+  Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane은 CI가 소유합니다. 두 계층 모두
+  설정된 명시적 timeout을 적용합니다.
 
 <!-- section: entry-points -->
 ## Entry point와 명령

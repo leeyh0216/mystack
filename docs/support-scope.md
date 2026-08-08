@@ -17,10 +17,10 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
 | EMR control plane | Partial: 13 boto3-tested operations plus versioned startup-file provisioning through the same use case | Broad public EMR API compatibility |
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
-| Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
+| Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Deterministic documented errors and catalog inputs required by the supported clients |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
-| AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions and additional clients |
+| AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
 EMR and Glue serve their UIs directly at `/_mystack/ui/`; Proxy exposes them at
@@ -49,7 +49,10 @@ EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract
 - AWS Glue Crawlers
 - In-process user extension or plugin APIs
 - undocumented AWS bug reproduction
-- production IAM authorization semantics in default local mode
+- authentication, authorization, IAM and Lake Formation semantics
+- cross-account and cross-Region semantics
+- real-AWS comparison tests and cloud credentials
+- PyIceberg, Flink, Trino and the Glue Iceberg REST endpoint
 - physical EC2/YARN/HDFS distribution fidelity
 - Spark History Server
 

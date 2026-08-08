@@ -13,7 +13,7 @@ The implementation uses these sources in descending order:
 1. AWS EMR and Glue API References for operation semantics, limits, states and errors.
 2. The pinned official botocore service models for protocol metadata, operation/shape names, required members, enums and exception declarations.
 3. AWS Signature Version 4 and SDK endpoint configuration documentation.
-4. Contract observations from AWS CLI and boto3. Optional real-AWS differential tests may refine message text, but cannot override documented behavior.
+4. Local contract observations from AWS CLI and boto3 pointed at Mystack. The emulator never queries a real AWS account for comparison.
 
 Relevant official references:
 
@@ -118,9 +118,10 @@ This follows the [CreatePartition API errors](https://docs.aws.amazon.com/glue/l
 <!-- section: sigv4 -->
 ## SigV4 behavior
 
-Development mode accepts SDK-signed requests without validating the key, matching common local AWS tooling. Strict mode validates the SigV4 structure and configured test credentials. Regardless of mode, service and region are extracted from the credential scope for routing and request context.
-
-The proxy must not validate a signature and then mutate a signed component. Backends receive the original body and signature metadata; authentication policy belongs to the target adapter.
+Mystack accepts SDK-signed requests without validating the key or authorizing the caller. Service and
+region may be extracted from the credential scope only as routing metadata. The proxy preserves the
+original body and signature headers while forwarding, but no adapter may attach authentication or
+authorization meaning to them. Keep the stack on a trusted local network.
 
 <!-- section: emr -->
 ## EMR execution mapping
