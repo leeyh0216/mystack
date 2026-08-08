@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass
 
 from iceberg_evolution import exercise_iceberg_evolution
+from iceberg_lifecycle import exercise_iceberg_lifecycle
 from iceberg_row_level import exercise_iceberg_row_level_writes
 from iceberg_snapshot_refs import exercise_iceberg_snapshots_and_procedures
 from pyspark.sql import SparkSession
@@ -165,6 +166,13 @@ def main() -> None:
             bucket=args.bucket,
             object_store_endpoint=args.object_store_endpoint,
         )
+        iceberg_lifecycle = exercise_iceberg_lifecycle(
+            spark,
+            catalog_name=args.catalog_name,
+            database=iceberg_database,
+            bucket=args.bucket,
+            object_store_endpoint=args.object_store_endpoint,
+        )
         print(
             "MYSTACK_E2E_RESULT="
             + json.dumps(
@@ -184,6 +192,7 @@ def main() -> None:
                     **iceberg_evolution,
                     **iceberg_row_level,
                     **iceberg_snapshots,
+                    **iceberg_lifecycle,
                 },
                 sort_keys=True,
             )
@@ -228,6 +237,13 @@ def main() -> None:
             != iceberg_snapshots["iceberg_snapshot_rows_after_maintenance"]
             or not iceberg_snapshots["iceberg_snapshot_orphan_exists_after_dry_run"]
             or iceberg_snapshots["iceberg_snapshot_orphan_exists_after_remove"]
+            or not iceberg_lifecycle["iceberg_lifecycle_rename_keys_unchanged"]
+            or iceberg_lifecycle["iceberg_lifecycle_renamed_rows"]
+            != [{"id": 1, "payload": "rename"}]
+            or not iceberg_lifecycle["iceberg_lifecycle_drop_keep_objects_unchanged"]
+            or iceberg_lifecycle["iceberg_lifecycle_drop_purge_after_keys"]
+            != [iceberg_lifecycle["iceberg_lifecycle_drop_purge_sentinel"]]
+            or not iceberg_lifecycle["iceberg_lifecycle_unrelated_sentinel_exists"]
         ):
             raise RuntimeError("Unexpected Glue Spark catalog E2E result")
     finally:

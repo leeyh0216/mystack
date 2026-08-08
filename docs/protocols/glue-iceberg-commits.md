@@ -100,8 +100,10 @@ Row-level COW/MOR commits reuse it as verified by the
 [Iceberg row-level DML contract](glue-iceberg-row-level-dml.md).
 Snapshot/reference/procedure commits reuse it as verified by the
 [Iceberg snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md).
+Rename/drop/purge uses it as described by the
+[Iceberg lifecycle contract](glue-iceberg-lifecycle.md).
 
-This contract does not itself define Iceberg SQL semantics. Rename/drop/purge, managed optimizers,
+This contract does not itself define Iceberg SQL semantics. Managed optimizers,
 Open Table Format inputs, Lake Formation, authentication, cross-account/cross-Region behavior,
 PyIceberg, Flink, and Trino are excluded.
 

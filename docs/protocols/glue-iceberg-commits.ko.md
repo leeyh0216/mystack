@@ -97,8 +97,10 @@ Row-level COW/MOR commit도 같은 경로를 사용하며 [Iceberg row-level DML
 계약](glue-iceberg-row-level-dml.ko.md)으로 검증합니다.
 Snapshot/reference/procedure commit도 같은 경로를 사용하며 [Iceberg snapshot/reference/procedure
 계약](glue-iceberg-snapshots-refs-procedures.ko.md)으로 검증합니다.
+Rename/drop/purge는 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)에 정리한 순서를
+사용합니다.
 
-이 계약 자체는 Iceberg SQL 의미론을 정의하지 않습니다. Rename/drop/purge, managed optimizer,
+이 계약 자체는 Iceberg SQL 의미론을 정의하지 않습니다. Managed optimizer,
 Open Table Format input, Lake Formation, 인증·인가, cross-account/cross-Region, PyIceberg, Flink,
 Trino는 범위가 아닙니다.
 

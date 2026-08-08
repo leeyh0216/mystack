@@ -84,12 +84,13 @@
 - 현재 Iceberg scenario는 create, append, read, 검토한 모든 transform의 hidden partition
   evolution, top-level/nested schema evolution, sort/identifier evolution, dynamic overwrite,
   COW/MOR `UPDATE`/`DELETE`/`MERGE`, 실패한 merge의 snapshot 보존, time travel, branch/tag write,
-  주요 metadata table, snapshot/maintenance procedure, 범위가 제한된 orphan cleanup과 서로 다른
-  Glue-image container의 barrier 동기화 Spark writer 두 개를 검증합니다. Client가 stale
-  `VersionId` commit을 refresh/retry하고 append 둘을 모두 보존해야 합니다. Rename/drop/purge
-  lifecycle operation은 별도 목표 범위입니다. [Iceberg snapshot/reference/procedure
+  주요 metadata table, snapshot/maintenance procedure, 범위가 제한된 orphan cleanup, namespace 간
+  rename, catalog-only drop, 추적 file purge와 서로 다른 Glue-image container의 barrier 동기화
+  Spark writer 두 개를 검증합니다. Client가 stale `VersionId` commit을 refresh/retry하고 append
+  둘을 모두 보존해야 합니다. [Iceberg snapshot/reference/procedure
   protocol](protocols/glue-iceberg-snapshots-refs-procedures.ko.md), [Iceberg row-level DML
-  protocol](protocols/glue-iceberg-row-level-dml.ko.md), [Iceberg evolution
+  protocol](protocols/glue-iceberg-row-level-dml.ko.md), [Iceberg lifecycle
+  protocol](protocols/glue-iceberg-lifecycle.ko.md), [Iceberg evolution
   protocol](protocols/glue-iceberg-evolution.ko.md), [Iceberg commit
   protocol](protocols/glue-iceberg-commits.ko.md), [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
   참고하세요.

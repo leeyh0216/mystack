@@ -87,10 +87,11 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   reviewed transform, top-level/nested schema evolution, sort/identifier evolution, dynamic
   overwrite, COW/MOR `UPDATE`/`DELETE`/`MERGE`, failed-merge snapshot preservation, time travel,
   branch/tag writes, principal metadata tables, snapshot/maintenance procedures, bounded orphan
-  cleanup, and two barrier-synchronized Spark writers in separate Glue-image containers. The client
-  must refresh/retry the stale `VersionId` commit and retain both appends. Rename/drop/purge
-  lifecycle operations remain separate target scope. See the
+  cleanup, rename across namespaces, catalog-only drop, tracked-file purge, and two
+  barrier-synchronized Spark writers in separate Glue-image containers. The client must
+  refresh/retry the stale `VersionId` commit and retain both appends. See the
   [Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.md),
+  [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md),
   [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md),
   [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md),
   [Iceberg commit protocol](protocols/glue-iceberg-commits.md), and

@@ -90,7 +90,8 @@ If an upgraded client breaks this profile, inspect:
 
 Snapshot time travel, branch/tag writes, metadata tables, and procedures are covered by the
 [snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md). This row-level
-contract does not guarantee rename/drop/purge. It also excludes authentication, authorization, IAM,
+contract delegates rename/drop/purge to the [Iceberg lifecycle contract](glue-iceberg-lifecycle.md).
+It also excludes authentication, authorization, IAM,
 Lake Formation, cross-account/cross-Region, Open Table Format APIs, PyIceberg, Flink, and Trino.
 
 <!-- section: sources -->

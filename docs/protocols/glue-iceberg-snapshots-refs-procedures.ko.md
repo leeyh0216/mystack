@@ -77,8 +77,9 @@ Iceberg나 Spark upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 <!-- section: limits -->
 ## 한계
 
-이 계약은 아직 rename/drop/purge lifecycle, 예약 optimizer service, 모든 procedure option, 모든
-metadata table을 보장하지 않습니다. 인증, 인가, IAM, Lake Formation, cross-account/cross-Region,
+Rename/drop/purge는 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)이 다룹니다.
+이 계약은 예약 optimizer service, 모든 procedure option, 모든 metadata table을 보장하지 않습니다.
+인증, 인가, IAM, Lake Formation, cross-account/cross-Region,
 Open Table Format API, PyIceberg, Flink, Trino는 명시적으로 제외합니다.
 
 <!-- section: sources -->

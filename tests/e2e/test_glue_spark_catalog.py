@@ -120,6 +120,12 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     ]
     assert result["iceberg_row_cow_invalid_merge_error"]
     _assert_iceberg_snapshot_result(result)
+    _assert_iceberg_lifecycle_result(
+        result,
+        glue=glue,
+        s3=s3,
+        bucket=bucket,
+    )
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
     contention = _run_iceberg_contention(
         s3,
@@ -370,6 +376,93 @@ def _assert_iceberg_snapshot_result(result: dict[str, Any]) -> None:
     )
     assert result["iceberg_snapshot_orphan_exists_after_dry_run"] is True
     assert result["iceberg_snapshot_orphan_exists_after_remove"] is False
+
+
+def _assert_iceberg_lifecycle_result(
+    result: dict[str, Any],
+    *,
+    glue,
+    s3,
+    bucket: str,
+) -> None:
+    """Verify Glue pointers and S3 effects outside the Spark process.
+
+    Source: https://github.com/apache/iceberg/blob/apache-iceberg-1.7.1/aws/src/main/java/org/apache/iceberg/aws/glue/GlueCatalog.java#L311-L416
+    """
+    assert result["iceberg_lifecycle_rename_keys_unchanged"] is True
+    assert result["iceberg_lifecycle_renamed_rows"] == [{"id": 1, "payload": "rename"}]
+    assert result["iceberg_lifecycle_collision_source_rows"] == []
+    assert result["iceberg_lifecycle_collision_target_rows"] == []
+    for error_key in (
+        "iceberg_lifecycle_same_name_error",
+        "iceberg_lifecycle_case_only_error",
+        "iceberg_lifecycle_missing_namespace_error",
+        "iceberg_lifecycle_collision_error",
+        "iceberg_lifecycle_missing_source_error",
+    ):
+        assert result[error_key]
+
+    target_database = result["iceberg_lifecycle_target_database"]
+    target_table = glue.get_table(
+        DatabaseName=target_database,
+        Name=result["iceberg_lifecycle_renamed_table"],
+    )["Table"]
+    rename_uri = f"s3://{bucket}/{result['iceberg_lifecycle_rename_prefix']}"
+    assert target_table["VersionId"] == "0"
+    assert target_table["Parameters"]["table_type"].upper() == "ICEBERG"
+    assert target_table["StorageDescriptor"]["Location"] == rename_uri
+    assert target_table["Parameters"]["metadata_location"].startswith(f"{rename_uri}/metadata/")
+    for missing_name in (
+        result["iceberg_lifecycle_original_table"],
+        result["iceberg_lifecycle_intermediate_table"],
+    ):
+        with pytest.raises(glue.exceptions.EntityNotFoundException):
+            glue.get_table(DatabaseName=result["iceberg_database"], Name=missing_name)
+
+    for collision_name in ("iceberg_collision_source", "iceberg_collision_target"):
+        collision_table = glue.get_table(
+            DatabaseName=result["iceberg_database"],
+            Name=collision_name,
+        )["Table"]
+        assert collision_table["Parameters"]["table_type"].upper() == "ICEBERG"
+
+    for deleted_name in (
+        result["iceberg_lifecycle_drop_keep_table"],
+        result["iceberg_lifecycle_drop_purge_table"],
+    ):
+        with pytest.raises(glue.exceptions.EntityNotFoundException):
+            glue.get_table(DatabaseName=result["iceberg_database"], Name=deleted_name)
+
+    kept_keys = _s3_keys(
+        s3,
+        bucket=bucket,
+        prefix=result["iceberg_lifecycle_drop_keep_prefix"],
+    )
+    assert len(kept_keys) == result["iceberg_lifecycle_drop_keep_before_count"]
+    assert len(kept_keys) == result["iceberg_lifecycle_drop_keep_after_count"]
+    assert result["iceberg_lifecycle_drop_keep_sentinel"] in kept_keys
+    assert len(kept_keys) > 1
+
+    purged_keys = _s3_keys(
+        s3,
+        bucket=bucket,
+        prefix=result["iceberg_lifecycle_drop_purge_prefix"],
+    )
+    assert result["iceberg_lifecycle_drop_purge_before_count"] > 1
+    assert purged_keys == [result["iceberg_lifecycle_drop_purge_sentinel"]]
+    s3.head_object(Bucket=bucket, Key=result["iceberg_lifecycle_unrelated_sentinel"])
+
+    rename_keys = _s3_keys(
+        s3,
+        bucket=bucket,
+        prefix=result["iceberg_lifecycle_rename_prefix"],
+    )
+    assert rename_keys
+
+
+def _s3_keys(s3, *, bucket: str, prefix: str) -> list[str]:
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    return sorted(str(value["Key"]) for value in response.get("Contents", ()))
 
 
 def _assert_iceberg_row_level_table(

@@ -754,7 +754,10 @@
             "iceberg-metadata-tables",
             "iceberg-snapshot-procedures",
             "iceberg-maintenance-procedures",
-            "iceberg-orphan-s3-cleanup"
+            "iceberg-orphan-s3-cleanup",
+            "iceberg-rename",
+            "iceberg-catalog-drop",
+            "iceberg-purge"
           ],
           "client": "spark-glue-catalog",
           "model_fingerprints": {
@@ -770,7 +773,8 @@
             "iceberg-spark-queries",
             "iceberg-spark-ddl",
             "iceberg-spark-procedures",
-            "iceberg-branching"
+            "iceberg-branching",
+            "iceberg-glue-catalog-source"
           ],
           "operation_ids": {
             "glue": [
@@ -795,7 +799,7 @@
           }
         }
       },
-      "evidence_sha256": "7337a8e6ba2142ee70321724bf0ce994e305e00f844f870da99bb5e207101b2e",
+      "evidence_sha256": "126e36c97447d321587d97f1516d5baf19204310124eda31781b24abd52f9819",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -837,6 +841,7 @@
           "iceberg-partition-schema-sort-evolution",
           "iceberg-row-level-dml",
           "iceberg-snapshots-refs-procedures",
+          "iceberg-rename-drop-purge",
           "iceberg-multi-container-contention"
         ],
         "test_nodes": [
@@ -900,7 +905,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "7337a8e6ba2142ee70321724bf0ce994e305e00f844f870da99bb5e207101b2e",
+          "evidence_sha256": "126e36c97447d321587d97f1516d5baf19204310124eda31781b24abd52f9819",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -989,6 +994,10 @@
       "title": "Apache Iceberg 1.7.1 evolution",
       "url": "https://iceberg.apache.org/docs/1.7.1/evolution/"
     },
+    "iceberg-glue-catalog-source": {
+      "title": "Apache Iceberg 1.7.1 GlueCatalog implementation",
+      "url": "https://github.com/apache/iceberg/blob/apache-iceberg-1.7.1/aws/src/main/java/org/apache/iceberg/aws/glue/GlueCatalog.java#L311-L416"
+    },
     "iceberg-spark-ddl": {
       "title": "Apache Iceberg 1.7.1 Spark DDL",
       "url": "https://iceberg.apache.org/docs/1.7.1/spark-ddl/"
@@ -1019,5 +1028,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "ae2304608de39265baed6e6318e7a022f209637fc9961fb7450d08682382c1a2"
+  "source_sha256": "01a14339bbd4c023b6ad3f8abfcea69d253e7dee4d458f589597318d75a2d842"
 }

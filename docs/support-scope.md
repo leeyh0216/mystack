@@ -19,7 +19,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial API inventory: 22 boto3-tested operations with complete deterministic database/table/version/partition/batch errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
 | Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, supported Hive V1 table ALTER metadata semantics, and deterministic errors for every implemented operation | Broader Spark/Hive client variants |
-| Spark + Iceberg + Glue Catalog | Implemented vertical slice: create/read/write/evolution, COW/MOR DML, time travel, branch/tag writes, principal metadata tables, snapshot/maintenance procedures, S3 orphan cleanup, atomic `VersionId` commits, and concurrent retry | Rename/drop/purge lifecycle, managed optimizers, remaining options/tables, and broader Iceberg APIs |
+| Spark + Iceberg + Glue Catalog | Implemented vertical slice: create/read/write/evolution, COW/MOR DML, time travel, branch/tag writes, principal metadata tables, snapshot/maintenance procedures, rename/drop/tracked-file purge, S3 orphan cleanup, atomic `VersionId` commits, and concurrent retry | Managed optimizers, remaining options/tables, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
@@ -38,6 +38,8 @@ The fixed `INSERT`/`UPDATE`/`DELETE`/`MERGE` behavior and COW/MOR evidence are i
 [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md).
 Time travel, references, metadata tables, snapshot/maintenance procedures, and S3 cleanup are in
 the [Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.md).
+Rename, catalog-only drop, tracked-file purge, compensation, and cross-Glue/S3 failure boundaries are
+in the [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md).
 `GetPartitions` supports the documented comparison, logical, `IN`,
 `BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.

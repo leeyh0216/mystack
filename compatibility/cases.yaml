@@ -43,6 +43,9 @@ official_sources:
   iceberg-branching:
     title: Apache Iceberg 1.7.1 branching and tagging
     url: https://iceberg.apache.org/docs/1.7.1/branching/
+  iceberg-glue-catalog-source:
+    title: Apache Iceberg 1.7.1 GlueCatalog implementation
+    url: https://github.com/apache/iceberg/blob/apache-iceberg-1.7.1/aws/src/main/java/org/apache/iceberg/aws/glue/GlueCatalog.java#L311-L416
   aws-sdk-pandas:
     title: AWS SDK for pandas API
     url: https://aws-sdk-pandas.readthedocs.io/en/stable/api.html
@@ -199,12 +202,12 @@ compatibility_profiles:
       iceberg: 1.7.1
     services: [glue, s3]
     runtime_kinds: [glue]
-    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution, iceberg-hidden-partitioning, iceberg-partition-evolution, iceberg-sort-evolution, iceberg-identifier-fields, iceberg-row-level-dml, iceberg-dynamic-overwrite, iceberg-copy-on-write, iceberg-merge-on-read, iceberg-concurrent-commit-retry, iceberg-time-travel, iceberg-branches-tags, iceberg-metadata-tables, iceberg-snapshot-procedures, iceberg-maintenance-procedures, iceberg-orphan-s3-cleanup]
+    capabilities: [hive-metastore, complex-glue-types, partition-pruning, partition-ddl, partition-repair, table-alter, iceberg-glue-catalog, schema-evolution, iceberg-hidden-partitioning, iceberg-partition-evolution, iceberg-sort-evolution, iceberg-identifier-fields, iceberg-row-level-dml, iceberg-dynamic-overwrite, iceberg-copy-on-write, iceberg-merge-on-read, iceberg-concurrent-commit-retry, iceberg-time-travel, iceberg-branches-tags, iceberg-metadata-tables, iceberg-snapshot-procedures, iceberg-maintenance-procedures, iceberg-orphan-s3-cleanup, iceberg-rename, iceberg-catalog-drop, iceberg-purge]
     model_fingerprints:
       glue: b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d
     operation_ids:
       glue: [CreateDatabase, CreateTable, GetDatabase, GetTable, UpdateTable]
-    official_sources: [glue-5.0, glue-hive, glue-iceberg, iceberg-evolution, iceberg-spark-writes, iceberg-configuration, iceberg-spark-queries, iceberg-spark-ddl, iceberg-spark-procedures, iceberg-branching]
+    official_sources: [glue-5.0, glue-hive, glue-iceberg, iceberg-evolution, iceberg-spark-writes, iceberg-configuration, iceberg-spark-queries, iceberg-spark-ddl, iceberg-spark-procedures, iceberg-branching, iceberg-glue-catalog-source]
 
 scenario_sets:
   boto3-contracts:
@@ -234,7 +237,7 @@ scenario_sets:
   glue-real-spark-catalogs:
     kind: e2e
     test_nodes: [tests/e2e/test_glue_spark_catalog.py]
-    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve, iceberg-partition-schema-sort-evolution, iceberg-row-level-dml, iceberg-snapshots-refs-procedures, iceberg-multi-container-contention]
+    scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter, iceberg-create-append-read-evolve, iceberg-partition-schema-sort-evolution, iceberg-row-level-dml, iceberg-snapshots-refs-procedures, iceberg-rename-drop-purge, iceberg-multi-container-contention]
 
 lanes:
   required:
