@@ -23,6 +23,7 @@ RUN dnf install -y \
       python3.11 \
       python3.11-pip \
       shadow-utils \
+      sudo \
       tar \
       unzip \
     && dnf clean all
@@ -85,13 +86,17 @@ RUN python3.11 -m pip install --no-cache-dir --require-hashes -r /opt/requiremen
 COPY shared /opt/src/shared
 COPY emr /opt/src/emr
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
+# EMR bootstrap actions run as hadoop and use sudo for privileged work:
+# https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html
 RUN python3.11 -m pip install --no-cache-dir --no-deps /opt/src/shared /opt/src/emr \
     && rm -rf /opt/src /opt/requirements.txt \
-    && useradd --create-home --uid 10001 mystack \
-    && mkdir -p /var/lib/mystack/emr /home/mystack/.ivy2 \
-    && chown -R mystack:mystack /var/lib/mystack /home/mystack
+    && useradd --create-home --uid 10001 hadoop \
+    && mkdir -p /var/lib/mystack/emr /home/hadoop/.ivy2 /etc/sudoers.d \
+    && printf 'hadoop ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/hadoop \
+    && chmod 0440 /etc/sudoers.d/hadoop \
+    && chown -R hadoop:hadoop /var/lib/mystack /home/hadoop
 
-USER mystack
+USER hadoop
 EXPOSE 8080
 ENTRYPOINT ["mystack-emr"]
 CMD ["--config", "/etc/mystack/mystack.yaml"]

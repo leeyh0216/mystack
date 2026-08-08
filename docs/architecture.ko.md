@@ -151,9 +151,12 @@ document를 원자적으로 교체하며, 성공한 뒤에만 candidate를 reade
 실패는 candidate를 취소합니다. Durable commit 중 cancellation은 visible publish를 끝낸 다음
 cancellation을 반환합니다. Schema version 1은 읽을 수 있고 다음 mutation에서 migration합니다.
 Persistence는 repository transaction 뒤에 합성하며 JSON repository가 memory mutation 동작을
-상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Spark는 shell 없이 명시적
-argument vector로 실행하며 bootstrap script는 Proxy가 아닌 EMR container 경계 안에서만
-실행합니다. Python의 [os.replace](https://docs.python.org/3/library/os.html#os.replace)와
+상속하지 않습니다. EMR cluster state는 현재 process-local입니다. S3 주 application과 Spark
+dependency option은 path-style LocalStack용 object-store adapter가 materialize합니다. Spark는
+shell 없이 명시적 argument vector로 실행합니다. Bootstrap script는 `hadoop`과 선택적 `sudo`로
+Proxy가 아닌 EMR container 경계 안에서만 실행합니다. File은 뒤 Step까지 남지만 shell activation
+상태는 subprocess 사이에 전달되지 않습니다. Python의
+[os.replace](https://docs.python.org/3/library/os.html#os.replace)와
 [os.fsync](https://docs.python.org/3/library/os.html#os.fsync)를 사용합니다.
 
 <!-- section: non-goals -->

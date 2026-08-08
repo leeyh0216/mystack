@@ -56,7 +56,7 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     cluster_id = created["JobFlowId"]
     _wait_for_cluster(emr, cluster_id, {"WAITING"}, e2e_settings)
     marker = s3.get_object(Bucket=bucket, Key="results/bootstrap-marker.txt")["Body"].read()
-    assert marker == b"bootstrap-completed\n"
+    assert marker == (b"runtime_user=hadoop\nsudo_user=root\nvenv=/home/hadoop/mystack-e2e-venv\n")
     assert emr.list_clusters(ClusterStates=["WAITING"])["Clusters"][0]["Id"] == cluster_id
     assert emr.list_bootstrap_actions(ClusterId=cluster_id)["BootstrapActions"][0]["Name"] == (
         "write-s3-marker"
@@ -78,6 +78,16 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
                 "ActionOnFailure": "CONTINUE",
                 "HadoopJarStep": {
                     "Jar": "command-runner.jar",
+                    "Properties": [
+                        {
+                            "Key": "spark.pyspark.python",
+                            "Value": "/home/hadoop/mystack-e2e-venv/bin/python",
+                        },
+                        {
+                            "Key": "spark.pyspark.driver.python",
+                            "Value": "/home/hadoop/mystack-e2e-venv/bin/python",
+                        },
+                    ],
                     "Args": [
                         "spark-submit",
                         f"s3://{bucket}/inputs/spark_s3_job.py",
@@ -123,6 +133,9 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
         s3.get_object(Bucket=bucket, Key=data_key)["Body"].read().splitlines()[0]
     )
     assert first_row["spark_version"].startswith(e2e_settings.emr_expected_spark_version_prefix)
+    assert first_row["runtime_user"] == "hadoop"
+    assert first_row["python_executable"] == "/home/hadoop/mystack-e2e-venv/bin/python"
+    assert first_row["bootstrap_dependency"] == "installed-by-bootstrap"
 
     jar_row = _first_s3_json_row(s3, bucket, "results/spark-jar-json/")
     assert jar_row["spark_version"].startswith(e2e_settings.emr_expected_spark_version_prefix)
@@ -135,6 +148,16 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
                 "ActionOnFailure": "CONTINUE",
                 "HadoopJarStep": {
                     "Jar": "command-runner.jar",
+                    "Properties": [
+                        {
+                            "Key": "spark.pyspark.python",
+                            "Value": "/home/hadoop/mystack-e2e-venv/bin/python",
+                        },
+                        {
+                            "Key": "spark.pyspark.driver.python",
+                            "Value": "/home/hadoop/mystack-e2e-venv/bin/python",
+                        },
+                    ],
                     "Args": [
                         "spark-submit",
                         f"s3://{bucket}/inputs/spark_s3_job.py",

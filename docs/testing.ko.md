@@ -38,11 +38,13 @@
 <!-- section: e2e -->
 ## 실제 runtime E2E
 
-- boto3 S3로 LocalStack에 bootstrap/application/input을 업로드합니다.
+- boto3 S3로 LocalStack에 bootstrap/application/input을 업로드하고 bootstrap이 `hadoop`으로
+  실행되어 `sudo`를 사용할 수 있는지, virtualenv를 만들고 뒤 PySpark Step이 그 interpreter를
+  선택하는지 검증합니다.
 - boto3로 EMR 리소스를 생성하고 조회합니다.
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
-- 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 실행 중
-  subprocess 취소를 검증합니다. JAR 제출은 Spark 공식
+- 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 주/dependency
+  artifact materialize, 실행 중 subprocess 취소를 검증합니다. JAR 제출은 Spark 공식
   [`spark-submit --class` 계약](https://spark.apache.org/docs/3.5.4/submitting-applications.html)을 따릅니다.
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.

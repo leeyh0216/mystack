@@ -83,6 +83,14 @@ using `emr.terminate_grace_seconds`, and closes the artifact client. It is disti
 per-bootstrap and per-Step execution deadlines. Python documents the underlying behavior in
 [`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for).
 
+The EMR image always runs bootstrap and Spark processes as `hadoop`; the persistent Ivy mount is
+`/home/hadoop/.ivy2`. A bootstrap-created virtualenv must live in a path readable by that user and a
+later Step must select it through `spark.pyspark.python` and `spark.pyspark.driver.python`. The
+runtime profile controls the allowed submit aliases and options; the artifact adapter materializes
+the primary application and `--py-files`, `--files`, `--jars`, and `--archives` remote resources.
+Amazon EMR documents the [Hadoop bootstrap identity](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html)
+and Spark documents these [submission options](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
+
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
 Compose service or custom runtime image needs no test-code change. Spark documents JAR and main

@@ -46,7 +46,7 @@ services:
         MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.0}
     volumes:
       - emr-data:/var/lib/mystack/emr
-      - ivy-cache:/home/mystack/.ivy2
+      - ivy-cache:/home/hadoop/.ivy2
     healthcheck:
       test: [CMD, python3.11, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
       interval: 5s

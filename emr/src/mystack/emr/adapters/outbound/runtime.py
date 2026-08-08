@@ -27,6 +27,8 @@ from mystack.emr.application.ports import RuntimeResult
 from mystack.emr.domain import BootstrapAction, Cluster, Step
 
 _LOGGER = logging.getLogger(__name__)
+_S3_SCHEMES = frozenset({"s3", "s3a", "s3n"})
+_SPARK_RESOURCE_OPTIONS = frozenset({"--archives", "--files", "--jars", "--py-files"})
 
 
 class ObjectStoreConfiguration(Protocol):
@@ -67,6 +69,12 @@ class EmrRuntimeConfiguration(Protocol):
     policy: RuntimePolicyConfiguration
 
 
+class ArtifactResolver(Protocol):
+    """Materialize a runtime artifact without exposing storage-client details."""
+
+    async def materialize(self, uri: str, destination: Path) -> Path: ...
+
+
 class S3ArtifactStore:
     """Resolve s3:// and local artifacts into an explicit work directory."""
 
@@ -100,7 +108,7 @@ class S3ArtifactStore:
             side_effect=True,
         )
         try:
-            if parsed.scheme == "s3":
+            if parsed.scheme in _S3_SCHEMES:
                 if not parsed.netloc or not parsed.path.lstrip("/"):
                     raise ValueError(f"Invalid S3 URI: {uri!r}")
                 await asyncio.to_thread(
@@ -405,7 +413,7 @@ class LocalBootstrapRunner:
     def __init__(
         self,
         settings: EmrRuntimeConfiguration,
-        artifacts: S3ArtifactStore,
+        artifacts: ArtifactResolver,
         executor: LocalProcessExecutor,
     ) -> None:
         self._settings = settings
@@ -445,16 +453,75 @@ class LocalBootstrapRunner:
         return RuntimeResult(True, exit_code=0)
 
 
+class SparkSubmitArtifactMaterializer:
+    """Materialize primary and dependency resources without understanding Spark execution."""
+
+    def __init__(self, artifacts: ArtifactResolver) -> None:
+        self._artifacts = artifacts
+
+    async def materialize(
+        self,
+        arguments: list[str],
+        *,
+        work_dir: Path,
+        option_value_names: frozenset[str],
+    ) -> list[str]:
+        result = list(arguments)
+        await self._dependencies(result, work_dir)
+        application_index = _application_index(result, option_value_names)
+        result[application_index] = await self._resource(
+            result[application_index], work_dir / "application"
+        )
+        return result
+
+    async def _dependencies(self, arguments: list[str], work_dir: Path) -> None:
+        index = 0
+        while index < len(arguments):
+            raw = arguments[index]
+            option, separator, inline_value = raw.partition("=")
+            if option not in _SPARK_RESOURCE_OPTIONS:
+                index += 1
+                continue
+            if separator:
+                resources = await self._resource_list(inline_value, work_dir, option)
+                arguments[index] = f"{option}={resources}"
+                index += 1
+                continue
+            if index + 1 >= len(arguments):
+                raise ValueError(f"Spark submit option {option} requires a value")
+            arguments[index + 1] = await self._resource_list(arguments[index + 1], work_dir, option)
+            index += 2
+
+    async def _resource_list(self, value: str, work_dir: Path, option: str) -> str:
+        resources = value.split(",")
+        materialized = [
+            await self._resource(
+                resource,
+                work_dir / "dependencies" / option.removeprefix("--") / str(index),
+            )
+            for index, resource in enumerate(resources)
+        ]
+        return ",".join(materialized)
+
+    async def _resource(self, value: str, destination: Path) -> str:
+        parsed = urlparse(value)
+        if parsed.scheme not in {*_S3_SCHEMES, "file"}:
+            return value
+        path = await self._artifacts.materialize(value, destination)
+        return f"{path}#{parsed.fragment}" if parsed.fragment else str(path)
+
+
 class LocalSparkStepRunner:
     def __init__(
         self,
         settings: EmrRuntimeConfiguration,
-        artifacts: S3ArtifactStore,
+        artifacts: ArtifactResolver,
         executor: LocalProcessExecutor,
     ) -> None:
         self._settings = settings
         self._artifacts = artifacts
         self._executor = executor
+        self._materializer = SparkSubmitArtifactMaterializer(artifacts)
 
     async def run(self, cluster: Cluster, step: Step) -> RuntimeResult:
         work_dir = self._settings.work_root / cluster.id / step.id
@@ -507,13 +574,11 @@ class LocalSparkStepRunner:
         runtime = self._settings.runtimes[release.runtime_profile]
         if step.config.args[0] not in runtime.submit_aliases:
             raise ValueError(f"Unsupported command runner command {step.config.args[0]!r}")
-        submit_args = list(step.config.args[1:])
-        application_index = _application_index(submit_args, runtime.option_value_names)
-        application = submit_args[application_index]
-        if urlparse(application).scheme in {"s3", "file"}:
-            submit_args[application_index] = str(
-                await self._artifacts.materialize(application, work_dir / "application")
-            )
+        submit_args = await self._materializer.materialize(
+            list(step.config.args[1:]),
+            work_dir=work_dir,
+            option_value_names=runtime.option_value_names,
+        )
         command = [runtime.spark_submit]
         if "--master" not in submit_args:
             command.extend(("--master", runtime.master))

@@ -138,6 +138,41 @@ print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
 See the [client compatibility matrix](compatibility/client-matrix.md) for the verified functions and
 excluded services. In particular, `wr.athena.*` is currently out of scope.
 
+<!-- section: emr-runtime -->
+## Run EMR bootstrap and Spark applications
+
+The EMR container, bootstrap scripts, and Spark subprocesses run as `hadoop` with home
+`/home/hadoop`. This follows Amazon EMR, where [bootstrap actions run as Hadoop and use `sudo` for
+root work](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html). The
+isolated emulator container grants passwordless `sudo` to that user.
+
+Bootstrap actions are downloaded from LocalStack S3 and run sequentially before the cluster accepts
+Steps. Files and virtual environments they create remain visible to later Steps in the same
+container. Shell state does not cross process boundaries: activating a virtualenv with `source`
+inside a bootstrap script does not activate it for a later Spark process. Configure the interpreter
+explicitly in the Step instead:
+
+```python
+step = {
+    "Name": "pyspark-with-bootstrap-venv",
+    "HadoopJarStep": {
+        "Jar": "command-runner.jar",
+        "Properties": [
+            {"Key": "spark.pyspark.python", "Value": "/home/hadoop/venv/bin/python"},
+            {"Key": "spark.pyspark.driver.python", "Value": "/home/hadoop/venv/bin/python"},
+        ],
+        "Args": ["spark-submit", "s3://my-bucket/jobs/main.py"],
+    },
+}
+```
+
+The primary Python/JAR application is copied from `s3://`, `s3a://`, `s3n://`, or `file://` into the
+Step work directory before `spark-submit`. Remote comma-separated resources supplied through
+`--py-files`, `--files`, `--jars`, and `--archives` are also materialized locally; archive/file URI
+fragments are preserved. Other Spark options pass through unchanged. This implements the documented
+[S3 application-location contract](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)
+without relying on Spark to resolve the main entrypoint remotely.
+
 <!-- section: overlays -->
 ## Compose overlays and configuration
 

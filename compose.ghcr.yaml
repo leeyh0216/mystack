@@ -30,7 +30,7 @@ services:
     image: ${MYSTACK_EMR_IMAGE:-ghcr.io/leeyh0216/mystack-emr:${MYSTACK_IMAGE_TAG:?Set MYSTACK_IMAGE_TAG to a published explicit version}}
     volumes:
       - emr-data:/var/lib/mystack/emr
-      - ivy-cache:/home/mystack/.ivy2
+      - ivy-cache:/home/hadoop/.ivy2
     healthcheck:
       test: [CMD, python3.11, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
       interval: 5s

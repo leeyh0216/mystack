@@ -142,6 +142,41 @@ print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
 현재 검증한 함수와 제외한 service는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
 있습니다. 특히 `wr.athena.*`는 현재 지원 범위가 아닙니다.
 
+<!-- section: emr-runtime -->
+## EMR bootstrap과 Spark application 실행
+
+EMR container, bootstrap script와 Spark subprocess는 `/home/hadoop`을 home으로 사용하는
+`hadoop` 사용자로 실행합니다. 이는 [bootstrap action이 Hadoop 사용자로 실행되고 root 작업에는
+`sudo`를 사용](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html)하는
+Amazon EMR 동작을 따릅니다. 격리된 emulator container에서는 이 사용자에게 passwordless
+`sudo`를 제공합니다.
+
+Bootstrap action은 LocalStack S3에서 내려받아 순서대로 실행하며 모두 끝난 뒤 cluster가 Step을
+받습니다. Bootstrap에서 만든 file과 virtualenv는 같은 container의 뒤 Step에서 볼 수 있습니다.
+다만 process 사이에는 shell 상태가 전달되지 않습니다. Bootstrap script 안에서 `source`로
+virtualenv를 활성화해도 뒤 Spark process에는 활성화되지 않으므로 Step에 interpreter를 명시합니다.
+
+```python
+step = {
+    "Name": "pyspark-with-bootstrap-venv",
+    "HadoopJarStep": {
+        "Jar": "command-runner.jar",
+        "Properties": [
+            {"Key": "spark.pyspark.python", "Value": "/home/hadoop/venv/bin/python"},
+            {"Key": "spark.pyspark.driver.python", "Value": "/home/hadoop/venv/bin/python"},
+        ],
+        "Args": ["spark-submit", "s3://my-bucket/jobs/main.py"],
+    },
+}
+```
+
+주 Python/JAR application은 `spark-submit` 전에 `s3://`, `s3a://`, `s3n://`, `file://`에서 Step
+work directory로 복사합니다. `--py-files`, `--files`, `--jars`, `--archives`에 쉼표로 지정한
+remote resource도 local로 materialize하며 archive/file URI fragment는 보존합니다. 그 밖의 Spark
+option은 그대로 전달합니다. 이는 Spark가 주 entrypoint를 remote에서 해석하는 데 기대지 않고 공식
+[S3 application location 계약](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)을
+구현합니다.
+
 <!-- section: overlays -->
 ## Compose 조합과 설정
 

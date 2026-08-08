@@ -81,6 +81,14 @@ deadline 안에서 EMR은 소유한 driver task를 cancel/await하고,
 [`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for) 문서를
 따릅니다.
 
+EMR image는 bootstrap과 Spark process를 항상 `hadoop`으로 실행하며 영속 Ivy mount는
+`/home/hadoop/.ivy2`입니다. Bootstrap에서 만든 virtualenv는 이 사용자가 읽을 수 있는 경로에
+있어야 하고 뒤 Step이 `spark.pyspark.python`, `spark.pyspark.driver.python`으로 선택해야 합니다.
+Runtime profile이 허용 submit alias와 option을 제어하고 artifact adapter가 주 application과
+`--py-files`, `--files`, `--jars`, `--archives` remote resource를 materialize합니다. Amazon EMR은
+[Hadoop bootstrap identity](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html)를,
+Spark는 [제출 option](https://spark.apache.org/docs/3.5.4/submitting-applications.html)을 문서화합니다.
+
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할

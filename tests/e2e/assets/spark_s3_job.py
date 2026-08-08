@@ -4,8 +4,11 @@ Spark submission reference: https://spark.apache.org/docs/3.5.4/submitting-appli
 """
 
 import argparse
+import getpass
+import sys
 import time
 
+import mystack_bootstrap_dependency
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import lit
 
@@ -23,6 +26,12 @@ def main() -> None:
         (
             spark.range(args.row_count)
             .withColumn("spark_version", lit(spark.version))
+            .withColumn("runtime_user", lit(getpass.getuser()))
+            .withColumn("python_executable", lit(sys.executable))
+            .withColumn(
+                "bootstrap_dependency",
+                lit(mystack_bootstrap_dependency.VALUE),
+            )
             .coalesce(1)
             .write.mode("overwrite")
             .json(args.output)

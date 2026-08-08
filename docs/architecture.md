@@ -167,9 +167,12 @@ change.
 - Persistence is composed behind the repository transaction; the JSON repository does not inherit
   in-memory mutation behavior. EMR cluster state remains process-local.
 - Work directories and logs are stored on named Docker volumes.
-- S3 artifacts are resolved through an object-store port configured for path-style LocalStack access.
+- S3 primary applications and Spark dependency options are materialized through an object-store
+  adapter configured for path-style LocalStack access.
 - Spark is launched without a shell and receives an explicit argument vector.
-- User bootstrap scripts are intentionally executable code and run inside the EMR container boundary, never in the proxy process.
+- User bootstrap scripts are intentionally executable code and run as `hadoop` with optional `sudo`
+  inside the EMR container boundary, never in the proxy process. Files persist across later Steps,
+  while shell activation state does not cross subprocess boundaries.
 
 Glue's JSON persistence adapter uses Python's atomic
 [`os.replace`](https://docs.python.org/3/library/os.html#os.replace) and durable

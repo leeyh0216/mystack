@@ -38,11 +38,13 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 <!-- section: e2e -->
 ## Real-runtime E2E
 
-- Upload bootstrap/application/input data through boto3 S3 to LocalStack.
+- Upload bootstrap/application/input data through boto3 S3 to LocalStack; prove the bootstrap runs
+  as `hadoop`, can use `sudo`, creates a virtualenv, and a later PySpark Step selects that interpreter.
 - Create and inspect EMR resources through boto3.
 - Wait with a configured deadline and preserve logs on all failures.
 - Verify S3A output and step state for real Python and Java JAR Spark 3.5.x applications, including
-  cancellation while the subprocess is running. JAR submission follows Spark's official
+  primary/dependency artifact materialization and cancellation while the subprocess is running. JAR
+  submission follows Spark's official
   [`spark-submit --class` contract](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
