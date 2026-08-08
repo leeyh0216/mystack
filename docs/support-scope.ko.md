@@ -18,7 +18,7 @@
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | 지원 client가 요구하는 Catalog input과 문서화된 오류의 결정적 동작 |
-| Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
+| Spark + Hive + Glue Catalog | 구현: 공식 Glue 5 image, complex type, type 기반 pruning, S3 대상 partition DDL과 repair | Partition 외 ALTER TABLE 의미론 확장 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
 | Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
@@ -34,6 +34,8 @@ Data Catalog metadata transaction 동작입니다. `GetPartitions`는 type이 �
 pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIKE`·null predicate를
 지원합니다. 문법과 limit은 [partition expression
 protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+Spark Hive partition add/drop/rename/location과 repair mapping은 [Hive partition DDL
+protocol](protocols/glue-hive-partition-ddl.ko.md)에 정리했습니다.
 
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.

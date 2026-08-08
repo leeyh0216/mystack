@@ -71,6 +71,8 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     result = json.loads(result_line.partition("=")[2])
     assert result["hive_count"] == 1
     assert result["hive_pruned_count"] == 2
+    assert len(result["hive_ddl_partitions"]) == 2
+    assert len(result["hive_repair_partitions"]) == 2
     assert result["iceberg_count"] == 2
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
 
@@ -80,6 +82,40 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     ]
     assert hive_table["StorageDescriptor"]["Columns"][2]["Type"] == "array<string>"
     assert iceberg_table["Parameters"]["table_type"].upper() == "ICEBERG"
+
+    ddl_table = glue.get_table(
+        DatabaseName=result["hive_database"],
+        Name=result["hive_ddl_table"],
+    )["Table"]
+    ddl_partitions = glue.get_partitions(
+        DatabaseName=result["hive_database"],
+        TableName=result["hive_ddl_table"],
+    )["Partitions"]
+    ddl_by_values = {tuple(value["Values"]): value for value in ddl_partitions}
+    assert set(ddl_by_values) == {
+        ("2026-08-01", "ap/northeast=2"),
+        ("2026-08-20", "west"),
+    }
+    assert ddl_by_values[("2026-08-20", "west")]["StorageDescriptor"]["Location"].endswith(
+        "/location-updated"
+    )
+    assert ddl_table["VersionId"] == "0"
+    assert (
+        s3.list_objects_v2(Bucket=bucket, Prefix="hive/hive_partition_ddl/drop-preserved").get(
+            "KeyCount",
+            0,
+        )
+        > 0
+    )
+
+    repair_partitions = glue.get_partitions(
+        DatabaseName=result["hive_database"],
+        TableName=result["hive_repair_table"],
+    )["Partitions"]
+    assert {tuple(value["Values"]) for value in repair_partitions} == {
+        ("2026-09-03", "west"),
+        ("2026-09-04", "east"),
+    }
 
 
 def _write_diagnostics(

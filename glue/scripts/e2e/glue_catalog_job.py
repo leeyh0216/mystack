@@ -11,8 +11,17 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import dataclass
 
 from pyspark.sql import SparkSession
+
+
+@dataclass(frozen=True, slots=True)
+class SqlScenario:
+    """One diagnosable Spark SQL boundary derived from the official DDL syntax."""
+
+    name: str
+    statement: str
 
 
 def main() -> None:
@@ -30,6 +39,8 @@ def main() -> None:
     iceberg_database = f"{args.database}_iceberg"
     hive_table = "hive_types"
     hive_partition_table = "hive_partition_pruning"
+    hive_ddl_table = "hive_partition_ddl"
+    hive_repair_table = "hive_partition_repair"
     iceberg_table = "iceberg_types"
     warehouse = f"s3://{args.bucket}/warehouse"
     builder = (
@@ -126,6 +137,18 @@ def main() -> None:
               AND region LIKE 'ap-%'
             """
         ).count()
+        hive_ddl_partitions = _exercise_hive_partition_ddl(
+            spark,
+            database=hive_database,
+            table=hive_ddl_table,
+            bucket=args.bucket,
+        )
+        hive_repair_partitions = _exercise_hive_partition_repair(
+            spark,
+            database=hive_database,
+            table=hive_repair_table,
+            bucket=args.bucket,
+        )
 
         qualified_namespace = f"{args.catalog_name}.`{iceberg_database}`"
         qualified_table = f"{qualified_namespace}.`{iceberg_table}`"
@@ -157,16 +180,199 @@ def main() -> None:
                     "hive_database": hive_database,
                     "hive_count": hive_count,
                     "hive_pruned_count": hive_pruned_count,
+                    "hive_ddl_table": hive_ddl_table,
+                    "hive_ddl_partitions": sorted(hive_ddl_partitions),
+                    "hive_repair_table": hive_repair_table,
+                    "hive_repair_partitions": sorted(hive_repair_partitions),
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
                 },
                 sort_keys=True,
             )
         )
-        if hive_count != 1 or hive_pruned_count != 2 or iceberg_count != 2:
+        if (
+            hive_count != 1
+            or hive_pruned_count != 2
+            or len(hive_ddl_partitions) != 2
+            or len(hive_repair_partitions) != 2
+            or iceberg_count != 2
+        ):
             raise RuntimeError("Unexpected catalog row counts")
     finally:
         spark.stop()
+
+
+def _exercise_hive_partition_ddl(
+    spark: SparkSession,
+    *,
+    database: str,
+    table: str,
+    bucket: str,
+) -> set[str]:
+    """Run Spark 3.5 ALTER PARTITION forms through the Glue Hive client.
+
+    Source: https://spark.apache.org/docs/3.5.4/sql-ref-syntax-ddl-alter-table.html
+    """
+    qualified = f"`{database}`.`{table}`"
+    base = f"s3a://{bucket}/hive/{table}"
+    preserved_drop_path = f"{base}/drop-preserved"
+    spark.range(1).write.mode("overwrite").parquet(preserved_drop_path)
+    _run_scenarios(
+        spark,
+        (
+            SqlScenario(
+                "create-ddl-table",
+                f"""
+                CREATE TABLE {qualified} (id BIGINT, day DATE, region STRING)
+                USING PARQUET PARTITIONED BY (day, region) LOCATION '{base}/table'
+                """,
+            ),
+            SqlScenario(
+                "add-single-complex-value",
+                f"""
+                ALTER TABLE {qualified} ADD
+                PARTITION (day=DATE'2026-08-01', region='ap/northeast=2')
+                LOCATION '{base}/complex'
+                """,
+            ),
+            SqlScenario(
+                "add-if-not-exists",
+                f"""
+                ALTER TABLE {qualified} ADD IF NOT EXISTS
+                PARTITION (day=DATE'2026-08-01', region='ap/northeast=2')
+                LOCATION '{base}/ignored-duplicate'
+                """,
+            ),
+            SqlScenario(
+                "add-multiple",
+                f"""
+                ALTER TABLE {qualified} ADD IF NOT EXISTS
+                PARTITION (day=DATE'2026-08-02', region='west') LOCATION '{base}/rename-source'
+                PARTITION (day=DATE'2026-08-03', region='drop') LOCATION '{preserved_drop_path}'
+                """,
+            ),
+            SqlScenario(
+                "rename-partition",
+                f"""
+                ALTER TABLE {qualified}
+                PARTITION (day=DATE'2026-08-02', region='west')
+                RENAME TO PARTITION (day=DATE'2026-08-20', region='west')
+                """,
+            ),
+            SqlScenario(
+                "set-partition-location",
+                f"""
+                ALTER TABLE {qualified}
+                PARTITION (day=DATE'2026-08-20', region='west')
+                SET LOCATION '{base}/location-updated'
+                """,
+            ),
+            SqlScenario(
+                "drop-partition",
+                f"""
+                ALTER TABLE {qualified} DROP
+                PARTITION (day=DATE'2026-08-03', region='drop')
+                """,
+            ),
+            SqlScenario(
+                "drop-if-exists",
+                f"""
+                ALTER TABLE {qualified} DROP IF EXISTS
+                PARTITION (day=DATE'1900-01-01', region='missing')
+                """,
+            ),
+        ),
+    )
+    return _show_partitions(spark, qualified)
+
+
+def _exercise_hive_partition_repair(
+    spark: SparkSession,
+    *,
+    database: str,
+    table: str,
+    bucket: str,
+) -> set[str]:
+    """Cover default/ADD/DROP/SYNC repair plus ALTER RECOVER PARTITIONS.
+
+    Source: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html
+    """
+    qualified = f"`{database}`.`{table}`"
+    location = f"s3a://{bucket}/hive/{table}"
+    _write_physical_partition(spark, location, 1, "2026-09-01", "north", "overwrite")
+    _run_scenarios(
+        spark,
+        (
+            SqlScenario(
+                "create-repair-table",
+                f"""
+                CREATE TABLE {qualified} (id BIGINT, day STRING, region STRING)
+                USING PARQUET PARTITIONED BY (day, region) LOCATION '{location}'
+                """,
+            ),
+            SqlScenario("repair-default-add", f"MSCK REPAIR TABLE {qualified}"),
+        ),
+    )
+    _write_physical_partition(spark, location, 2, "2026-09-02", "south", "append")
+    _run_scenarios(
+        spark,
+        (SqlScenario("repair-explicit-add", f"MSCK REPAIR TABLE {qualified} ADD PARTITIONS"),),
+    )
+    _write_physical_partition(spark, location, 3, "2026-09-03", "west", "append")
+    _run_scenarios(
+        spark,
+        (SqlScenario("alter-recover", f"ALTER TABLE {qualified} RECOVER PARTITIONS"),),
+    )
+    _delete_physical_partition(spark, location, "2026-09-01", "north")
+    _run_scenarios(
+        spark,
+        (SqlScenario("repair-drop", f"MSCK REPAIR TABLE {qualified} DROP PARTITIONS"),),
+    )
+    _write_physical_partition(spark, location, 4, "2026-09-04", "east", "append")
+    _delete_physical_partition(spark, location, "2026-09-02", "south")
+    _run_scenarios(
+        spark,
+        (SqlScenario("repair-sync", f"MSCK REPAIR TABLE {qualified} SYNC PARTITIONS"),),
+    )
+    return _show_partitions(spark, qualified)
+
+
+def _run_scenarios(spark: SparkSession, scenarios: tuple[SqlScenario, ...]) -> None:
+    for scenario in scenarios:
+        print("MYSTACK_E2E_SCENARIO=" + json.dumps({"name": scenario.name, "phase": "before"}))
+        spark.sql(scenario.statement).collect()
+        print("MYSTACK_E2E_SCENARIO=" + json.dumps({"name": scenario.name, "phase": "after"}))
+
+
+def _write_physical_partition(
+    spark: SparkSession,
+    location: str,
+    identifier: int,
+    day: str,
+    region: str,
+    mode: str,
+) -> None:
+    frame = spark.createDataFrame(
+        [(identifier, day, region)],
+        "id long, day string, region string",
+    )
+    frame.write.mode(mode).partitionBy("day", "region").parquet(location)
+
+
+def _delete_physical_partition(
+    spark: SparkSession,
+    location: str,
+    day: str,
+    region: str,
+) -> None:
+    path = spark._jvm.org.apache.hadoop.fs.Path(f"{location}/day={day}/region={region}")
+    filesystem = path.getFileSystem(spark.sparkContext._jsc.hadoopConfiguration())
+    if not filesystem.delete(path, True):
+        raise RuntimeError(f"Physical partition path was not deleted: day={day}, region={region}")
+
+
+def _show_partitions(spark: SparkSession, qualified_table: str) -> set[str]:
+    return {str(row[0]) for row in spark.sql(f"SHOW PARTITIONS {qualified_table}").collect()}
 
 
 if __name__ == "__main__":
