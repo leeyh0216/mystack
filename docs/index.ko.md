@@ -13,8 +13,9 @@ Mystack을 유지보수할 때 다음 순서로 시작하세요.
 7. [관찰성과 thread 진단](observability.ko.md)
 8. [관리 Console과 Resource API](console.ko.md)
 9. [CI와 release 자동화](ci.ko.md)
-10. [Upstream 변경 대응 정책](evolution.ko.md)
-11. [새 emulator route 추가](extending-proxy.ko.md)
-12. [구현 기반 UseCase](project/usecase-catalog.ko.md)
+10. [Private ECR 릴리스와 rollback](ecr-release.ko.md)
+11. [Upstream 변경 대응 정책](evolution.ko.md)
+12. [새 emulator route 추가](extending-proxy.ko.md)
+13. [구현 기반 UseCase](project/usecase-catalog.ko.md)
 
 아키텍처와 자동 테스트 정책은 [AWS Prescriptive Guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)를 따릅니다. 모든 동작 문서는 직접적인 공식 AWS, SDK, Python, Docker, GitHub 출처를 포함해야 합니다.

@@ -42,3 +42,15 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: ecr-release-contract
+        name: File-driven ECR release and rollback contract
+        entry: uv run pytest tests/test_ecr_release.py --timeout 60 --timeout-method thread -q
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ecr-cloudformation
+        name: Private ECR CloudFormation contract
+        entry: uvx --from cfn-lint==1.54.0 cfn-lint infra/ecr/template.yaml
+        language: system
+        pass_filenames: false
+        always_run: true

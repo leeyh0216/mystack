@@ -1,44 +1,244 @@
-# Amazon ECR OIDC guidance:
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
-name: Publish ECR images
+# Config and runbook: config/ecr-release.json and docs/ecr-release.md
+# Official multi-platform and OIDC contracts:
+# https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-multi-architecture-image.html
+# https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws
+name: Publish or roll back ECR images
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      action:
+        description: Publish new images or add a rollback tag to an existing digest
+        required: true
+        type: choice
+        options: [publish, rollback]
+        default: publish
+      component:
+        description: Component; rollback requires one concrete component
+        required: true
+        type: choice
+        options: [all, proxy, emr, glue]
+        default: all
+      version:
+        description: Optional immutable publish tag; blank generates a unique manual tag
+        required: false
+        type: string
+      source_digest:
+        description: Required rollback multi-platform sha256 digest
+        required: false
+        type: string
+      rollback_tag:
+        description: Optional new rollback tag; blank generates a unique tag
+        required: false
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: ecr-release-${{ github.ref }}-${{ inputs.component || 'all' }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    if: vars.AWS_ROLE_ARN != '' && vars.AWS_REGION != '' && vars.ECR_REGISTRY != ''
+  prepare:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        component: [proxy, emr, glue]
+    timeout-minutes: 5
+    outputs:
+      action: ${{ steps.release.outputs.action }}
+      environment: ${{ steps.release.outputs.environment }}
+      matrix: ${{ steps.release.outputs.matrix }}
+      platforms: ${{ steps.release.outputs.platforms }}
+      version: ${{ steps.release.outputs.version }}
+      source_digest: ${{ steps.release.outputs.source_digest }}
+      rollback_tag: ${{ steps.release.outputs.rollback_tag }}
     steps:
-      - uses: actions/checkout@v4
-      # Official AWS credentials action: https://github.com/aws-actions/configure-aws-credentials
-      - uses: aws-actions/configure-aws-credentials@v4
+      # Pinned action source: https://github.com/actions/checkout
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: release
+        name: Validate file-driven release request
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'publish' }}
+          REQUESTED_COMPONENT: ${{ github.event_name == 'workflow_dispatch' && inputs.component || 'all' }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          REQUESTED_DIGEST: ${{ inputs.source_digest }}
+          REQUESTED_ROLLBACK_TAG: ${{ inputs.rollback_tag }}
+        run: |
+          set -euo pipefail
+          config=config/ecr-release.json
+          jq -e '.schema_version == 1' "$config" >/dev/null
+          if [ "$REQUESTED_COMPONENT" = all ]; then
+            matrix=$(jq -c '{include: .components}' "$config")
+          else
+            matrix=$(jq -c --arg name "$REQUESTED_COMPONENT" \
+              '{include: [.components[] | select(.name == $name)]}' "$config")
+            test "$(jq '.include | length' <<<"$matrix")" -eq 1
+          fi
+          version="$REQUESTED_VERSION"
+          rollback_tag="$REQUESTED_ROLLBACK_TAG"
+          if [ "$REQUESTED_ACTION" = publish ]; then
+            if [ "$EVENT_NAME" = push ]; then
+              version="$GITHUB_REF_NAME"
+              release_pattern=$(jq -r '.tags.release_pattern' "$config")
+              if ! jq -en --arg value "$version" --arg pattern "$release_pattern" \
+                '$value | test($pattern)' >/dev/null; then
+                echo "Tag release does not match configured pattern: $version" >&2
+                exit 2
+              fi
+            fi
+            if [ -z "$version" ]; then
+              prefix=$(jq -r '.tags.manual_prefix' "$config")
+              version="${prefix}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            fi
+            if ! grep -Eq '^[0-9A-Za-z][0-9A-Za-z._-]{0,299}$' <<<"$version"; then
+              echo "Invalid immutable release tag: $version" >&2
+              exit 2
+            fi
+          elif [ "$REQUESTED_ACTION" = rollback ]; then
+            if [ "$REQUESTED_COMPONENT" = all ] || \
+              ! grep -Eq '^sha256:[0-9a-f]{64}$' <<<"$REQUESTED_DIGEST"; then
+              echo "Rollback requires one component and a sha256 source digest." >&2
+              exit 2
+            fi
+            if [ -z "$rollback_tag" ]; then
+              prefix=$(jq -r '.tags.rollback_prefix' "$config")
+              rollback_tag="${prefix}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            fi
+            if [ "$rollback_tag" = latest ] || \
+              ! grep -Eq '^[0-9A-Za-z][0-9A-Za-z._-]{0,299}$' <<<"$rollback_tag"; then
+              echo "Rollback requires a new valid immutable tag; latest is forbidden." >&2
+              exit 2
+            fi
+          else
+            echo "Unknown action: $REQUESTED_ACTION" >&2
+            exit 2
+          fi
+          {
+            echo "action=$REQUESTED_ACTION"
+            echo "environment=$(jq -r '.github_environment' "$config")"
+            echo "matrix=$matrix"
+            echo "platforms=$(jq -r '.platforms | join(",")' "$config")"
+            echo "version=$version"
+            echo "source_digest=$REQUESTED_DIGEST"
+            echo "rollback_tag=$rollback_tag"
+          } >>"$GITHUB_OUTPUT"
+
+  publish:
+    if: needs.prepare.outputs.action == 'publish'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ needs.prepare.outputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate cloud variables
+        env:
+          AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+        run: |
+          set -euo pipefail
+          test -n "$AWS_ROLE_ARN" || { echo 'Set AWS_ROLE_ARN in ecr-production.' >&2; exit 2; }
+          test -n "$AWS_REGION" || { echo 'Set AWS_REGION in ecr-production.' >&2; exit 2; }
+          test -n "$ECR_REGISTRY" || { echo 'Set ECR_REGISTRY in ecr-production.' >&2; exit 2; }
+      # Pinned official credential action; no long-lived access-key secrets.
+      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: aws-actions/amazon-ecr-login@v2
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+          role-session-name: mystack-${{ github.run_id }}-${{ matrix.name }}
+      - uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
-          file: ${{ matrix.component }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ needs.prepare.outputs.platforms }}
           push: true
-          tags: |
-            ${{ vars.ECR_REGISTRY }}/mystack-${{ matrix.component }}:${{ github.ref_name }}
-            ${{ vars.ECR_REGISTRY }}/mystack-${{ matrix.component }}:latest
-          cache-from: type=gha,scope=${{ matrix.component }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          tags: ${{ vars.ECR_REGISTRY }}/${{ matrix.repository }}:${{ needs.prepare.outputs.version }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
           provenance: mode=max
           sbom: true
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+      - name: Install locked verifier dependencies
+        run: uv sync --locked --all-packages
+      - name: Verify manifest platforms and vulnerability scans
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          mkdir -p release-artifacts
+          uv run --no-sync python scripts/ecr_release.py \
+            --region "$AWS_REGION" \
+            --report "release-artifacts/${{ matrix.name }}.json" \
+            verify-and-scan \
+            --component "${{ matrix.name }}" \
+            --tag "${{ needs.prepare.outputs.version }}" \
+            --expected-digest "${{ steps.build.outputs.digest }}"
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ecr-${{ matrix.name }}-${{ needs.prepare.outputs.version }}
+          path: release-artifacts/
+          if-no-files-found: warn
 
+  rollback:
+    if: needs.prepare.outputs.action == 'rollback'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ needs.prepare.outputs.environment }}
+    strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Validate cloud variables
+        env:
+          AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          test -n "$AWS_ROLE_ARN" || { echo 'Set AWS_ROLE_ARN in ecr-production.' >&2; exit 2; }
+          test -n "$AWS_REGION" || { echo 'Set AWS_REGION in ecr-production.' >&2; exit 2; }
+      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: mystack-rollback-${{ github.run_id }}
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+      - run: uv sync --locked --all-packages
+      - name: Add a new immutable rollback tag and re-verify
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          mkdir -p release-artifacts
+          uv run --no-sync python scripts/ecr_release.py \
+            --region "$AWS_REGION" \
+            --report "release-artifacts/rollback-${{ matrix.name }}.json" \
+            rollback \
+            --component "${{ matrix.name }}" \
+            --source-digest "${{ needs.prepare.outputs.source_digest }}" \
+            --target-tag "${{ needs.prepare.outputs.rollback_tag }}"
+          uv run --no-sync python scripts/ecr_release.py \
+            --region "$AWS_REGION" \
+            --report "release-artifacts/verification-${{ matrix.name }}.json" \
+            verify-and-scan \
+            --component "${{ matrix.name }}" \
+            --tag "${{ needs.prepare.outputs.rollback_tag }}" \
+            --expected-digest "${{ needs.prepare.outputs.source_digest }}"
+      - name: Upload rollback evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ecr-rollback-${{ matrix.name }}-${{ github.run_id }}
+          path: release-artifacts/
+          if-no-files-found: warn

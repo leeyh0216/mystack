@@ -3,7 +3,7 @@ CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check coverage-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check coverage-check ecr-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,6 +39,12 @@ coverage-check: ## Verify exhaustive API statuses and bilingual generated matric
 	  --check contracts/api-coverage.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
+
+ecr-check: ## Verify ECR release config, manifest/scanner logic, and workflow inputs.
+	@uv run python -m json.tool config/ecr-release.json >/dev/null
+	@uv run ruff check scripts/ecr_release.py tests/test_ecr_release.py
+	@uvx --from cfn-lint==1.54.0 cfn-lint infra/ecr/template.yaml
+	@uv run pytest tests/test_ecr_release.py --timeout 60 --timeout-method thread -vv
 
 test: ## Run unit, architecture, and protocol tests with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \
