@@ -151,8 +151,13 @@ document를 원자적으로 교체하며, 성공한 뒤에만 candidate를 reade
 실패는 candidate를 취소합니다. Durable commit 중 cancellation은 visible publish를 끝낸 다음
 cancellation을 반환합니다. Schema version 1은 읽을 수 있고 다음 mutation에서 migration합니다.
 Persistence는 repository transaction 뒤에 합성하며 JSON repository가 memory mutation 동작을
-상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Lifecycle이 소유한 outbound
-log publisher가 terminal local Spark process stream을 문서화된 EMR Step S3 배치에 투영합니다.
+상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Inbound startup-file adapter는
+side effect 전에 versioned `RunJobFlow` plan 전체를 검증하고
+`CreateCluster` command로 mapping한 뒤 queue driver 시작 후 기존 Application port를 호출합니다.
+Repository를 알거나 직접 변경하지 않습니다. Container 재시작 시 새 process-local ID가 생깁니다.
+자세한 계약은 [시작 클러스터 protocol](protocols/emr-startup-clusters.ko.md)에 있습니다.
+Lifecycle이 소유한 outbound log publisher가 terminal local Spark process stream을 문서화된
+EMR Step S3 배치에 투영합니다.
 Application/container ID는 synthetic임을 명시하고 게시 실패는 aggregate 밖에 기록해
 RuntimeResult를 바꾸지 않습니다. S3 주 application과 Spark
 dependency option은 path-style LocalStack용 object-store adapter가 materialize합니다. Spark는

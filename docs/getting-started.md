@@ -179,6 +179,12 @@ shows whether publication was `published`, `failed`, or `skipped` and lists ever
 the [EMR LogUri layout](protocols/emr-log-layout.md) for copy-paste boto3 usage, exact paths, failure
 semantics, and the explicit local-mode/YARN gap.
 
+To have clusters available as soon as the image becomes healthy, use the versioned external
+startup-cluster file. Its entries use official `RunJobFlow` member names, are all validated before
+the first cluster is created, and enter the same application use case as boto3. See the [startup
+cluster guide](protocols/emr-startup-clusters.md) for the exact schema, restart semantics, and a
+published-image command.
+
 <!-- section: overlays -->
 ## Compose overlays and configuration
 
@@ -186,6 +192,7 @@ semantics, and the explicit local-mode/YARN gap.
 | --- | --- |
 | Published image startup with packaged defaults | `-f compose.ghcr.yaml` |
 | Mount a reviewed YAML configuration read-only | add `-f compose.mount-config.yaml` |
+| Preconfigure EMR clusters from a reviewed file | add `-f compose.emr-startup-clusters.yaml` |
 | Build or change Mystack source | use the [development guide](development.md), not this user path |
 
 Download the configuration and overlay from the same Git tag before customizing them:

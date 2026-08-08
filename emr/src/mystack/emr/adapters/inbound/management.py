@@ -31,6 +31,9 @@ class EmrManagementAdapter:
         implemented_operations: frozenset[str],
         model_operation_count: int,
         config_fingerprint: str,
+        startup_cluster_source: str | None = None,
+        startup_cluster_fingerprint: str | None = None,
+        startup_cluster_count: int = 0,
     ) -> None:
         self._application = application
         self._work_root = work_root
@@ -38,6 +41,9 @@ class EmrManagementAdapter:
         self._implemented_operations = implemented_operations
         self._model_operation_count = model_operation_count
         self._config_fingerprint = config_fingerprint
+        self._startup_cluster_source = startup_cluster_source
+        self._startup_cluster_fingerprint = startup_cluster_fingerprint
+        self._startup_cluster_count = startup_cluster_count
 
     async def resources(self) -> dict[str, Any]:
         log_event(_LOGGER, logging.INFO, "emr.management.resources.before")
@@ -57,6 +63,11 @@ class EmrManagementAdapter:
             "emulator": {
                 "mode": "Spark local mode",
                 "config_fingerprint": self._config_fingerprint,
+                "startup_clusters": {
+                    "source": self._startup_cluster_source,
+                    "fingerprint": self._startup_cluster_fingerprint,
+                    "configured_count": self._startup_cluster_count,
+                },
                 "notice": "EMR control-plane emulation; no EC2, YARN, or HDFS cluster is created.",
             },
             "compatibility": {

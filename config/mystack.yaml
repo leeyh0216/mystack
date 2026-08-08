@@ -51,6 +51,9 @@ emr:
   terminate_grace_seconds: 10
   shutdown_timeout_seconds: 30
   output_tail_bytes: 32768
+  # Optional separate file; relative paths resolve beside this main configuration file.
+  # Shape source: https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
+  startup_clusters_file: null
   command_runner_jars: [command-runner.jar]
   api_page_size: 50
   max_active_steps: 256

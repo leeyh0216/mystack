@@ -17,6 +17,7 @@ on:
       - "config/**"
       - "compose.yaml"
       - "compose.mount-config.yaml"
+      - "compose.emr-startup-clusters.yaml"
       - "Makefile"
       - "**/Dockerfile"
       - ".github/workflows/e2e.yml"
@@ -137,10 +138,23 @@ jobs:
           uv sync --locked --all-packages
           uv run playwright install --with-deps chromium
       - name: Build and start Mystack
-        run: make up
+        env:
+          MYSTACK_EMR_STARTUP_CLUSTERS_FILE: ${{ github.workspace }}/tests/e2e/assets/emr-startup-clusters.yaml
+        run: |
+          wait_timeout=$(uv run python scripts/config_value.py tests.compose_wait_timeout_seconds)
+          docker compose -f compose.yaml -f compose.emr-startup-clusters.yaml \
+            up --build --detach --wait --wait-timeout "$wait_timeout"
+      - name: Verify startup provisioning and restart semantics
+        env:
+          MYSTACK_STARTUP_CLUSTER_E2E_REQUIRED: "1"
+        run: |
+          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          uv run pytest tests/e2e/test_emr_startup.py -m e2e \
+            --timeout "$timeout" --timeout-method thread -vv
       - name: Run the browser contract with the configured timeout
         env:
           MYSTACK_BROWSER_E2E_REQUIRED: "1"
+          MYSTACK_STARTUP_CLUSTER_E2E_REQUIRED: "1"
         run: |
           timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_console_browser.py -m e2e \

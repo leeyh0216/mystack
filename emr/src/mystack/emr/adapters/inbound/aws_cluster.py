@@ -9,11 +9,10 @@ from collections.abc import Mapping
 from typing import Any
 
 from mystack.aws_protocol import AwsRequestContext, OperationFamily
-from mystack.emr.application.commands import CreateCluster
 from mystack.emr.application.use_cases import EmrClusterCommands
 
 from .aws_errors import emr_family
-from .aws_shapes import bootstrap, mapping, optional_string, step_spec, tag
+from .aws_shapes import create_cluster_command
 
 
 class ClusterOperationFamily:
@@ -28,26 +27,7 @@ class ClusterOperationFamily:
         payload: Mapping[str, Any],
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
-        instances = mapping(payload["Instances"], "Instances")
-        command = CreateCluster(
-            name=str(payload["Name"]),
-            instance_config=dict(instances),
-            release_label=optional_string(payload.get("ReleaseLabel")),
-            keep_alive=bool(instances.get("KeepJobFlowAliveWhenNoSteps", False)),
-            termination_protected=bool(instances.get("TerminationProtected", False)),
-            visible_to_all_users=bool(payload.get("VisibleToAllUsers", True)),
-            step_concurrency_level=int(payload.get("StepConcurrencyLevel", 1)),
-            applications=tuple(
-                dict(mapping(value, "Applications[]")) for value in payload.get("Applications", ())
-            ),
-            bootstrap_actions=tuple(
-                bootstrap(value) for value in payload.get("BootstrapActions", ())
-            ),
-            steps=tuple(step_spec(value) for value in payload.get("Steps", ())),
-            tags=tuple(tag(value) for value in payload.get("Tags", ())),
-            log_uri=optional_string(payload.get("LogUri")),
-            service_role=optional_string(payload.get("ServiceRole")),
-        )
+        command = create_cluster_command(payload)
         cluster = await self._commands.create_cluster(
             command,
             region=context.region,

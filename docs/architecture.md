@@ -166,6 +166,10 @@ change.
   read-only and migrates on the next successful mutation.
 - Persistence is composed behind the repository transaction; the JSON repository does not inherit
   in-memory mutation behavior. EMR cluster state remains process-local.
+- The EMR startup-file adapter validates a complete versioned `RunJobFlow` plan before side effects,
+  maps it to `CreateCluster` commands, and calls the existing Application port after the queue driver
+  starts. It never knows or mutates the repository. Container restart intentionally creates new
+  process-local IDs. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
 - Work directories and logs are stored on named Docker volumes.
 - A lifecycle-owned outbound log publisher projects terminal local Spark process streams into the
   documented EMR Step S3 layout. Its application/container identifiers are explicitly synthetic;

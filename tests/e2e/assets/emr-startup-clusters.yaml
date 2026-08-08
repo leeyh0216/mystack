@@ -1,0 +1,14 @@
+# Official RunJobFlow request members:
+# https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
+schema_version: 1
+clusters:
+  - Name: preconfigured-e2e
+    ReleaseLabel: emr-7.8.0
+    Instances:
+      InstanceCount: 1
+      KeepJobFlowAliveWhenNoSteps: true
+    Applications:
+      - Name: Spark
+    Tags:
+      - Key: provisioned-by
+        Value: startup-e2e

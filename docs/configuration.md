@@ -97,6 +97,14 @@ S3 log publication has no separate hard-coded bucket or prefix. Each cluster sup
 path-style setting. This keeps image deployments configurable and lets the same boto3 S3 route
 reach LocalStack. See the [exact log protocol](protocols/emr-log-layout.md).
 
+`emr.startup_clusters_file` is either `null` or a path to a separate schema-versioned document.
+Relative paths resolve beside the selected main configuration. The file uses official
+[`RunJobFlow` members](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html) and
+is fully validated before any side effect. The optional
+`compose.emr-startup-clusters.yaml` overlay performs an explicit read-only
+[bind mount](https://docs.docker.com/engine/storage/bind-mounts/). See the [startup cluster
+protocol](protocols/emr-startup-clusters.md) for its allowlist and restart semantics.
+
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
 Compose service or custom runtime image needs no test-code change. Spark documents JAR and main

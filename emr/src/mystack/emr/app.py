@@ -23,7 +23,13 @@ from mystack.aws_protocol import (
 )
 from mystack.aws_protocol.observability import configure_logging, log_event
 
-from .adapters.inbound import EmrAwsAdapter, EmrManagementAdapter
+from .adapters.inbound import (
+    EmrAwsAdapter,
+    EmrManagementAdapter,
+    StartupClusterPlan,
+    StartupClusterProvisioner,
+    load_startup_cluster_plan,
+)
 from .adapters.outbound import (
     AsyncioTaskScheduler,
     InMemoryClusterRepository,
@@ -64,7 +70,9 @@ def create_app(
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
 
     owned_runtime: EmrRuntime | None = None
+    startup_plan = StartupClusterPlan.disabled()
     if application is None:
+        startup_plan = load_startup_cluster_plan(settings.startup_clusters_file, settings.policy)
         repository = InMemoryClusterRepository()
         executor = LocalProcessExecutor(settings)
         artifacts = S3ArtifactStore(settings.object_store)
@@ -78,7 +86,20 @@ def create_app(
             scheduler=AsyncioTaskScheduler(settings.shutdown_timeout_seconds),
             policy=settings.policy,
         )
-        owned_runtime = EmrRuntime.build(application, executor, artifacts, logs, settings)
+        startup = StartupClusterProvisioner(
+            application,
+            startup_plan,
+            region=settings.object_store.region,
+            account_id=settings.account_id,
+        )
+        owned_runtime = EmrRuntime.build(
+            application,
+            executor,
+            artifacts,
+            logs,
+            startup,
+            settings,
+        )
         application = owned_runtime.application
     adapter = EmrAwsAdapter(application, application, application)
     dispatcher = adapter.dispatcher()
@@ -96,6 +117,9 @@ def create_app(
         implemented_operations=dispatcher.operations,
         model_operation_count=len(service_model.operation_names),
         config_fingerprint=settings.config_fingerprint,
+        startup_cluster_source=startup_plan.source,
+        startup_cluster_fingerprint=startup_plan.fingerprint,
+        startup_cluster_count=len(startup_plan.commands),
     )
 
     @asynccontextmanager
@@ -117,6 +141,9 @@ def create_app(
                 work_root=str(settings.work_root),
                 operation_count=len(dispatcher.operations),
                 operations=sorted(dispatcher.operations),
+                startup_cluster_source=startup_plan.source,
+                startup_cluster_fingerprint=startup_plan.fingerprint,
+                startup_cluster_count=len(startup_plan.commands),
                 release_profiles={
                     key: {
                         "runtime_profile": value.runtime_profile,
@@ -143,6 +170,11 @@ def create_app(
                 "status": "ok",
                 "service": "emr",
                 "config_fingerprint": settings.config_fingerprint,
+                "startup_clusters": {
+                    "source": startup_plan.source,
+                    "fingerprint": startup_plan.fingerprint,
+                    "configured_count": len(startup_plan.commands),
+                },
                 "implemented_operations": sorted(dispatcher.operations),
             }
         )

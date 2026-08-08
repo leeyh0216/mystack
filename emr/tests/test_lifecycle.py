@@ -52,6 +52,12 @@ class _CloseRecorder:
     async def close(self) -> None:
         self._events.append(f"close:{self._name}")
 
+    async def provision(self) -> tuple[object, ...]:
+        self._events.append(f"provision:{self._name}")
+        if self._fail_start:
+            raise RuntimeError("startup failed")
+        return ()
+
 
 @pytest.mark.asyncio
 async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Path) -> None:
@@ -61,6 +67,7 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
         _executor=_CloseRecorder("executor", events),  # type: ignore[arg-type]
         _artifacts=_CloseRecorder("artifacts", events),  # type: ignore[arg-type]
         _logs=_CloseRecorder("logs", events),  # type: ignore[arg-type]
+        _startup=_CloseRecorder("startup", events),  # type: ignore[arg-type]
         _settings=SimpleNamespace(work_root=tmp_path),  # type: ignore[arg-type]
     )
 
@@ -70,6 +77,32 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
 
     assert events == [
         "start:application",
+        "close:application",
+        "close:executor",
+        "close:logs",
+        "close:artifacts",
+    ]
+    assert runtime.state is RuntimeState.CLOSED
+
+
+@pytest.mark.asyncio
+async def test_startup_provisioning_failure_closes_every_owned_resource(tmp_path: Path) -> None:
+    events: list[str] = []
+    runtime = EmrRuntime(
+        application=_CloseRecorder("application", events),  # type: ignore[arg-type]
+        _executor=_CloseRecorder("executor", events),  # type: ignore[arg-type]
+        _artifacts=_CloseRecorder("artifacts", events),  # type: ignore[arg-type]
+        _logs=_CloseRecorder("logs", events),  # type: ignore[arg-type]
+        _startup=_CloseRecorder("startup", events, fail_start=True),  # type: ignore[arg-type]
+        _settings=SimpleNamespace(work_root=tmp_path),  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(RuntimeError, match="startup failed"):
+        await runtime.start()
+
+    assert events == [
+        "start:application",
+        "provision:startup",
         "close:application",
         "close:executor",
         "close:logs",

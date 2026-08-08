@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from mystack.emr.application.commands import CreateCluster
 from mystack.emr.domain import (
     ActionOnFailure,
     BootstrapAction,
@@ -19,6 +20,29 @@ from mystack.emr.domain import (
     Step,
     StepSpec,
 )
+
+
+def create_cluster_command(payload: Mapping[str, Any]) -> CreateCluster:
+    """Map the supported RunJobFlow shape into the technology-neutral command."""
+
+    instances = mapping(payload["Instances"], "Instances")
+    return CreateCluster(
+        name=str(payload["Name"]),
+        instance_config=dict(instances),
+        release_label=optional_string(payload.get("ReleaseLabel")),
+        keep_alive=bool(instances.get("KeepJobFlowAliveWhenNoSteps", False)),
+        termination_protected=bool(instances.get("TerminationProtected", False)),
+        visible_to_all_users=bool(payload.get("VisibleToAllUsers", True)),
+        step_concurrency_level=int(payload.get("StepConcurrencyLevel", 1)),
+        applications=tuple(
+            dict(mapping(value, "Applications[]")) for value in payload.get("Applications", ())
+        ),
+        bootstrap_actions=tuple(bootstrap(value) for value in payload.get("BootstrapActions", ())),
+        steps=tuple(step_spec(value) for value in payload.get("Steps", ())),
+        tags=tuple(tag(value) for value in payload.get("Tags", ())),
+        log_uri=optional_string(payload.get("LogUri")),
+        service_role=optional_string(payload.get("ServiceRole")),
+    )
 
 
 def step_spec(raw: object) -> StepSpec:

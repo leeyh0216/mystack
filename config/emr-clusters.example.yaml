@@ -1,0 +1,18 @@
+# Versioned startup cluster input using the official RunJobFlow member names:
+# https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
+schema_version: 1
+clusters:
+  - Name: preconfigured-local-spark
+    ReleaseLabel: emr-7.8.0
+    Instances:
+      MasterInstanceType: m5.xlarge
+      SlaveInstanceType: m5.xlarge
+      InstanceCount: 1
+      KeepJobFlowAliveWhenNoSteps: true
+    Applications:
+      - Name: Spark
+    VisibleToAllUsers: true
+    StepConcurrencyLevel: 1
+    Tags:
+      - Key: provisioned-by
+        Value: mystack-startup-file

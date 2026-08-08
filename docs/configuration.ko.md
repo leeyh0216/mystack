@@ -95,6 +95,14 @@ S3 log 게시에는 별도로 hard-code한 bucket이나 prefix가 없습니다. 
 path-style 설정을 재사용합니다. 따라서 image 배포도 설정 가능하며 같은 boto3 S3 route로
 LocalStack에 접근합니다. 정확한 내용은 [log protocol](protocols/emr-log-layout.ko.md)을 참고하세요.
 
+`emr.startup_clusters_file`은 `null` 또는 별도의 schema-versioned document path입니다. Relative
+path는 선택한 main configuration 옆을 기준으로 해석합니다. File은 공식
+[`RunJobFlow` member](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html)를
+사용하며 side effect 전에 전체를 검증합니다. 선택적인 `compose.emr-startup-clusters.yaml`
+overlay는 명시적인 read-only [bind mount](https://docs.docker.com/engine/storage/bind-mounts/)를
+구성합니다. Allowlist와 재시작 동작은 [시작 클러스터
+protocol](protocols/emr-startup-clusters.ko.md)을 참고하세요.
+
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할

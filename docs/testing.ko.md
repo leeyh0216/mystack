@@ -42,6 +42,9 @@
   실행되어 `sudo`를 사용할 수 있는지, virtualenv를 만들고 뒤 PySpark Step이 그 interpreter를
   선택하는지 검증합니다.
 - boto3로 EMR 리소스를 생성하고 조회합니다.
+- Read-only versioned cluster file로 image를 시작하고 `RunJobFlow`를 호출하지 않은 상태에서 boto3와
+  management 경계로 cluster를 찾습니다. EMR 재시작 뒤에는 새 ID 하나만 존재해야 합니다. Unit
+  contract는 entry 하나가 잘못되면 command를 호출하기 전에 plan 전체를 거부합니다.
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
 - 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 주/dependency
   artifact materialize, 실행 중 subprocess 취소를 검증합니다. JAR 제출은 Spark 공식

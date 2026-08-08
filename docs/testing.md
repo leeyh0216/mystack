@@ -41,6 +41,9 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Upload bootstrap/application/input data through boto3 S3 to LocalStack; prove the bootstrap runs
   as `hadoop`, can use `sudo`, creates a virtualenv, and a later PySpark Step selects that interpreter.
 - Create and inspect EMR resources through boto3.
+- Start the image with a read-only versioned cluster file, discover its cluster through boto3 and
+  the management boundary without calling `RunJobFlow`, restart EMR, and require one newly assigned
+  ID. Unit contracts reject the complete plan before any command call when one entry is invalid.
 - Wait with a configured deadline and preserve logs on all failures.
 - Verify S3A output and step state for real Python and Java JAR Spark 3.5.x applications, including
   primary/dependency artifact materialization and cancellation while the subprocess is running. JAR

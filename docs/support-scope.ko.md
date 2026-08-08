@@ -15,7 +15,7 @@
 | 확장형 Proxy registry | 구현·단위 테스트 완료 | Proxy 코드 변경 없이 새 AWS JSON/SigV4 emulator 등록 |
 | AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
-| EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
+| EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
@@ -35,6 +35,9 @@ Data Catalog metadata transaction 동작입니다. 현재 partition expression e
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
+Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
+재시작 후 새 ID로 다시 생성합니다. 자세한 내용은 [시작 클러스터
+protocol](protocols/emr-startup-clusters.ko.md)에 있습니다.
 
 <!-- section: exclusions -->
 ## 명시적 제외

@@ -1,0 +1,8 @@
+# Optional image-friendly startup cluster file mount.
+# Bind-mount reference: https://docs.docker.com/engine/storage/bind-mounts/
+services:
+  emr:
+    environment:
+      MYSTACK__EMR__STARTUP_CLUSTERS_FILE: /etc/mystack/emr-clusters.yaml
+    volumes:
+      - ${MYSTACK_EMR_STARTUP_CLUSTERS_FILE:?Set MYSTACK_EMR_STARTUP_CLUSTERS_FILE to a reviewed YAML file}:/etc/mystack/emr-clusters.yaml:ro

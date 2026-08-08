@@ -51,6 +51,7 @@ class EmrSettings:
     terminate_grace_seconds: float
     shutdown_timeout_seconds: float
     output_tail_bytes: int
+    startup_clusters_file: Path | None
     command_runner_jars: frozenset[str]
     account_id: str
     object_store: ObjectStoreSettings
@@ -100,6 +101,10 @@ class EmrSettings:
                 terminate_grace_seconds=float(emr["terminate_grace_seconds"]),
                 shutdown_timeout_seconds=float(emr["shutdown_timeout_seconds"]),
                 output_tail_bytes=int(emr["output_tail_bytes"]),
+                startup_clusters_file=_optional_path(
+                    emr["startup_clusters_file"],
+                    configuration_source=Path(loaded.source),
+                ),
                 command_runner_jars=frozenset(map(str, emr["command_runner_jars"])),
                 account_id=str(localstack["account_id"]),
                 object_store=ObjectStoreSettings(
@@ -146,3 +151,10 @@ def _mapping(value: object, path: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ConfigurationError(f"Configuration section {path!r} must be a mapping")
     return value
+
+
+def _optional_path(value: object, *, configuration_source: Path) -> Path | None:
+    if value is None:
+        return None
+    path = Path(str(value)).expanduser()
+    return path if path.is_absolute() else configuration_source.parent / path

@@ -91,6 +91,12 @@ def test_console_resource_navigation_and_accessibility(
 
             component.select_option("emr")
             expect(page.get_by_role("status")).to_have_text("Healthy")
+            if os.getenv("MYSTACK_STARTUP_CLUSTER_E2E_REQUIRED", "").lower() in {
+                "1",
+                "true",
+                "yes",
+            }:
+                expect(page.get_by_role("button", name="Cluster preconfigured-e2e")).to_be_visible()
             page.get_by_role("button", name="Step console-log-step").click()
             page.get_by_role("tab", name="Logs").click()
             expect(page.get_by_role("heading", name="S3 LogUri publication")).to_be_visible()

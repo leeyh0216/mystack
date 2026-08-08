@@ -24,6 +24,12 @@ EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 
 부분 게시 object 수와 `fix_hint`를 포함하며 local publication record는 management endpoint에서
 확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr-log-layout.ko.md)에 있습니다.
 
+미리 구성한 cluster는 전체 file 검증 전후에 `emr.startup_clusters.load.*`, plan 실행 전후에
+`emr.startup_clusters.provision.*`, application port 호출마다 `emr.startup_cluster.create.*`를
+기록합니다. Source, fingerprint, 안전한 개수, definition index, cluster ID, 수정 위치를 통해 향후
+botocore mapping 변경을 진단할 수 있습니다. 자세한 내용은 [시작 클러스터
+계약](protocols/emr-startup-clusters.ko.md)에 있습니다.
+
 <!-- section: fields -->
 ## 공통 field
 

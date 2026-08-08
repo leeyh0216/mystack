@@ -183,6 +183,11 @@ Logs tab에서 게시 상태가 `published`, `failed`, `skipped`인지와 전체
 있습니다. 복사해 쓸 수 있는 boto3 사용법, 정확한 경로, 실패 의미와 local-mode/YARN 차이는
 [EMR LogUri 배치](protocols/emr-log-layout.ko.md)를 참고하세요.
 
+Image가 healthy 상태가 될 때 cluster가 이미 존재해야 하면 versioned external startup-cluster
+file을 사용하세요. Entry는 공식 `RunJobFlow` member 이름을 사용하고 첫 cluster 생성 전에 전체를
+검증하며 boto3와 같은 application use case로 들어갑니다. 정확한 schema, 재시작 동작과 게시 image
+명령은 [시작 클러스터 안내](protocols/emr-startup-clusters.ko.md)를 참고하세요.
+
 <!-- section: overlays -->
 ## Compose 조합과 설정
 
@@ -190,6 +195,7 @@ Logs tab에서 게시 상태가 `published`, `failed`, `skipped`인지와 전체
 | --- | --- |
 | 게시 image와 포함된 기본 설정으로 실행 | `-f compose.ghcr.yaml` |
 | 검토한 YAML 설정을 read-only mount | `-f compose.mount-config.yaml` 추가 |
+| 검토한 file로 EMR cluster 미리 생성 | `-f compose.emr-startup-clusters.yaml` 추가 |
 | Mystack source build 또는 변경 | 이 사용자 경로가 아닌 [개발 환경 안내](development.ko.md) 사용 |
 
 설정을 바꾸기 전에 같은 Git tag에서 설정과 overlay를 받습니다.

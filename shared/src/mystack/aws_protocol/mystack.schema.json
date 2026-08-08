@@ -94,6 +94,7 @@
         "terminate_grace_seconds",
         "shutdown_timeout_seconds",
         "output_tail_bytes",
+        "startup_clusters_file",
         "command_runner_jars",
         "api_page_size",
         "max_active_steps",
@@ -109,6 +110,11 @@
         "terminate_grace_seconds": {"$ref": "#/$defs/positive_number"},
         "shutdown_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "output_tail_bytes": {"type": "integer", "minimum": 1},
+        "startup_clusters_file": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Optional schema-versioned RunJobFlow-shaped startup cluster file. https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html"
+        },
         "command_runner_jars": {"$ref": "#/$defs/non_empty_string_array"},
         "api_page_size": {"type": "integer", "minimum": 1},
         "max_active_steps": {"type": "integer", "minimum": 1},

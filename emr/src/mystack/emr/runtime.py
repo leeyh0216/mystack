@@ -42,6 +42,10 @@ class AsyncCloseable(Protocol):
     async def close(self) -> None: ...
 
 
+class StartupProvisioning(Protocol):
+    async def provision(self) -> tuple[object, ...]: ...
+
+
 @dataclass(slots=True)
 class EmrRuntime:
     """Own service resources and close consumers before their dependencies."""
@@ -50,6 +54,7 @@ class EmrRuntime:
     _executor: ProcessExecutorLifecycle
     _artifacts: AsyncCloseable
     _logs: AsyncCloseable
+    _startup: StartupProvisioning
     _settings: RuntimeSettings
     _state: RuntimeState = RuntimeState.BUILT
 
@@ -60,6 +65,7 @@ class EmrRuntime:
         executor: ProcessExecutorLifecycle,
         artifacts: AsyncCloseable,
         logs: AsyncCloseable,
+        startup: StartupProvisioning,
         settings: RuntimeSettings,
     ) -> EmrRuntime:
         log_event(
@@ -70,7 +76,7 @@ class EmrRuntime:
             shutdown_timeout_seconds=settings.shutdown_timeout_seconds,
             side_effect=False,
         )
-        return cls(application, executor, artifacts, logs, settings)
+        return cls(application, executor, artifacts, logs, startup, settings)
 
     @property
     def state(self) -> RuntimeState:
@@ -95,6 +101,7 @@ class EmrRuntime:
         try:
             self._settings.work_root.mkdir(parents=True, exist_ok=True)
             await self.application.start()
+            startup_clusters = await self._startup.provision()
         except BaseException:
             try:
                 await self.close()
@@ -115,6 +122,7 @@ class EmrRuntime:
             logging.INFO,
             "emr.runtime.start.after",
             work_root=str(self._settings.work_root),
+            startup_cluster_count=len(startup_clusters),
             side_effect=True,
         )
 

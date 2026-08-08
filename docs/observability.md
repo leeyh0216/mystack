@@ -24,6 +24,12 @@ EMR LogUri publication emits `emr.step_logs.publish.*` around the complete archi
 and key evidence, partial object count, and a `fix_hint`, while the local publication record remains
 available through the management endpoint. See the [log layout contract](protocols/emr-log-layout.md).
 
+Preconfigured clusters emit `emr.startup_clusters.load.*` before/after whole-file validation,
+`emr.startup_clusters.provision.*` around the plan, and `emr.startup_cluster.create.*` for each
+application-port call. Source, fingerprint, safe counts, definition index, cluster ID, and repair
+location make a future botocore mapping drift diagnosable. See the [startup cluster
+contract](protocols/emr-startup-clusters.md).
+
 <!-- section: fields -->
 ## Common fields
 

@@ -39,6 +39,7 @@ operation별 구현 상태는 [API coverage](compatibility/api-coverage.ko.md)�
 - Resource, EMR log, route, thread/task UI: [관리 Console 안내](console.ko.md)
 - 구조화 log와 관리 endpoint: [관찰성 안내](observability.ko.md)
 - EMR `LogUri` S3 object 이름과 local-mode 정합성: [EMR log 배치](protocols/emr-log-layout.ko.md)
+- 미리 구성한 cluster와 재시작 동작: [EMR 시작 클러스터 file](protocols/emr-startup-clusters.ko.md)
 
 <!-- section: limits -->
 ## 먼저 알아야 할 제한
