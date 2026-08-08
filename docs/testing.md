@@ -44,6 +44,11 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Start the image with a read-only versioned cluster file, discover its cluster through boto3 and
   the management boundary without calling `RunJobFlow`, restart EMR, and require one newly assigned
   ID. Unit contracts reject the complete plan before any command call when one entry is invalid.
+- Start EMR through the read-only pre-start overlay, install a disposable CA in the OS/Python and
+  copied Java truststores, verify lexical order and exported values in PID 1, a boto3-created
+  bootstrap action, and a real Spark Step. Separate raw-container contracts require fail-fast
+  exit-code preservation, no later script, final UID 10001, and signal-safe PID 1 shutdown. See the
+  [pre-start contract](protocols/emr-prestart.md).
 - Wait with a configured deadline and preserve logs on all failures.
 - Verify S3A output and step state for real Python and Java JAR Spark 3.5.x applications, including
   primary/dependency artifact materialization and cancellation while the subprocess is running. JAR

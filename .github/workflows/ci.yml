@@ -89,6 +89,11 @@ jobs:
         run: |
           docker compose config --quiet
           make ghcr-compose-check
+          MYSTACK_EMR_PRESTART_SOURCE="$PWD/examples/emr-prestart" \
+            docker compose -f compose.yaml -f compose.emr-prestart.yaml config --quiet
+          MYSTACK_IMAGE_TAG=v0.0.0 \
+          MYSTACK_EMR_PRESTART_SOURCE="$PWD/examples/emr-prestart" \
+            docker compose -f compose.ghcr.yaml -f compose.emr-prestart.yaml config --quiet
       - name: Validate file-driven GHCR release contract
         run: uv run python scripts/registry_release.py check-config
       - name: Verify pinned AWS service-model manifest

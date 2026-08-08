@@ -45,6 +45,11 @@
 - Read-only versioned cluster file로 image를 시작하고 `RunJobFlow`를 호출하지 않은 상태에서 boto3와
   management 경계로 cluster를 찾습니다. EMR 재시작 뒤에는 새 ID 하나만 존재해야 합니다. Unit
   contract는 entry 하나가 잘못되면 command를 호출하기 전에 plan 전체를 거부합니다.
+- Read-only pre-start overlay로 EMR을 시작해 일회용 CA를 OS/Python과 복사한 Java truststore에
+  설치합니다. Lexical order와 export한 값이 PID 1, boto3로 만든 bootstrap action, 실제 Spark Step에
+  전달되는지 검증합니다. 별도 raw-container contract는 즉시 실패 exit code 보존, 뒤 script 미실행,
+  최종 UID 10001과 signal-safe PID 1 종료를 요구합니다. [Pre-start
+  계약](protocols/emr-prestart.ko.md)을 참고하세요.
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
 - 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 주/dependency
   artifact materialize, 실행 중 subprocess 취소를 검증합니다. JAR 제출은 Spark 공식

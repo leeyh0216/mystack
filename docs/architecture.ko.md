@@ -163,7 +163,11 @@ RuntimeResult를 바꾸지 않습니다. S3 주 application과 Spark
 dependency option은 path-style LocalStack용 object-store adapter가 materialize합니다. Spark는
 shell 없이 명시적 argument vector로 실행합니다. Bootstrap script는 `hadoop`과 선택적 `sudo`로
 Proxy가 아닌 EMR container 경계 안에서만 실행합니다. File은 뒤 Step까지 남지만 shell activation
-상태는 subprocess 사이에 전달되지 않습니다. Python의
+상태는 subprocess 사이에 전달되지 않습니다. 선택적 EMR pre-start entrypoint는 Domain과
+Application 밖의 별도 신뢰 배포 경계입니다. 운영자 file을 검사해 root로 source한 뒤 고정 standard
+library adapter가 group/GID/UID를 바꾸고 PID 1을 `hadoop`으로 exec합니다. Hook 객체나 plugin
+interface는 service 의존성 graph에 들어가지 않습니다. [Pre-start
+계약](protocols/emr-prestart.ko.md)을 참고하세요. Python의
 [os.replace](https://docs.python.org/3/library/os.html#os.replace)와
 [os.fsync](https://docs.python.org/3/library/os.html#os.fsync)를 사용합니다.
 

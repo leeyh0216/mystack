@@ -16,7 +16,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | AWS JSON 1.1 codec/model validation | Implemented, unit tested | EMR and Glue modeled request/response/error coverage |
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
 | EMR control plane | Partial: 13 boto3-tested operations plus versioned startup-file provisioning through the same use case | Broad public EMR API compatibility |
-| EMR bootstrap/Spark | Implemented vertical slice: `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
+| EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
@@ -37,6 +37,8 @@ E2E coverage. This is implementation coverage, not a claim that all upstream EMR
 are supported; the exact upstream classification is generated from the pinned botocore model.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are
 recreated with new IDs after EMR process restart. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
+Trusted pre-start scripts are an opt-in EMR container boundary, not an in-process plugin API or an
+EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract](protocols/emr-prestart.md).
 
 <!-- section: exclusions -->
 ## Explicit exclusions

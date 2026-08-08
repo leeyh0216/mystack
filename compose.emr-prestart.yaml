@@ -1,0 +1,10 @@
+# Optional trusted-root EMR initialization directory.
+# Bind mounts: https://docs.docker.com/engine/storage/bind-mounts/
+# ENTRYPOINT signal behavior: https://docs.docker.com/reference/dockerfile/#entrypoint
+services:
+  emr:
+    environment:
+      MYSTACK_EMR_PRESTART_ENABLED: "true"
+      MYSTACK_EMR_PRESTART_DIR: /etc/mystack/emr-prestart.d
+    volumes:
+      - ${MYSTACK_EMR_PRESTART_SOURCE:?Set MYSTACK_EMR_PRESTART_SOURCE to a reviewed directory}:/etc/mystack/emr-prestart.d:ro

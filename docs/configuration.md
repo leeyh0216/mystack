@@ -105,6 +105,12 @@ is fully validated before any side effect. The optional
 [bind mount](https://docs.docker.com/engine/storage/bind-mounts/). See the [startup cluster
 protocol](protocols/emr-startup-clusters.md) for its allowlist and restart semantics.
 
+Trusted EMR image initialization is deliberately earlier than this YAML resolution boundary.
+`MYSTACK_EMR_PRESTART_ENABLED`, `MYSTACK_EMR_PRESTART_DIR`, and the Compose-only host variable
+`MYSTACK_EMR_PRESTART_SOURCE` control the opt-in read-only script mount. They are never exposed to
+Domain or Application modules. See the [EMR pre-start contract](protocols/emr-prestart.md) for file
+validation, root-to-`hadoop` transition, runtime paths, and environment propagation.
+
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
 Compose service or custom runtime image needs no test-code change. Spark documents JAR and main

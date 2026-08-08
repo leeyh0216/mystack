@@ -39,6 +39,7 @@ for operation-by-operation status from the pinned botocore models.
 - Structured logs and management endpoints: [observability guide](observability.md)
 - EMR `LogUri` S3 object names and local-mode fidelity: [EMR log layout](protocols/emr-log-layout.md)
 - Preconfigured clusters and restart semantics: [EMR startup cluster file](protocols/emr-startup-clusters.md)
+- Enterprise CA, proxy, image inventory, and trusted initialization: [EMR pre-start guide](protocols/emr-prestart.md)
 
 <!-- section: limits -->
 ## Know the limits first

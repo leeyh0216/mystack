@@ -185,6 +185,12 @@ the first cluster is created, and enter the same application use case as boto3. 
 cluster guide](protocols/emr-startup-clusters.md) for the exact schema, restart semantics, and a
 published-image command.
 
+If the published EMR image needs an enterprise CA, proxy variables, or another root-level machine
+prerequisite, opt into the trusted pre-start overlay. Reviewed scripts run once before the service,
+then PID 1, bootstrap actions, and Spark run as `hadoop`. The [EMR pre-start
+guide](protocols/emr-prestart.md) provides the published-image Compose command, trust boundary,
+installed runtime paths, inventory command, and failure diagnostics.
+
 <!-- section: overlays -->
 ## Compose overlays and configuration
 
@@ -193,6 +199,7 @@ published-image command.
 | Published image startup with packaged defaults | `-f compose.ghcr.yaml` |
 | Mount a reviewed YAML configuration read-only | add `-f compose.mount-config.yaml` |
 | Preconfigure EMR clusters from a reviewed file | add `-f compose.emr-startup-clusters.yaml` |
+| Configure the EMR image from reviewed root scripts | add `-f compose.emr-prestart.yaml` |
 | Build or change Mystack source | use the [development guide](development.md), not this user path |
 
 Download the configuration and overlay from the same Git tag before customizing them:

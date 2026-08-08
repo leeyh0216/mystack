@@ -30,6 +30,12 @@ application-port call. Source, fingerprint, safe counts, definition index, clust
 location make a future botocore mapping drift diagnosable. See the [startup cluster
 contract](protocols/emr-startup-clusters.md).
 
+Trusted image initialization emits `emr.prestart.scan.*`, per-file
+`emr.prestart.script.before`/`after`/`failed`, and
+`emr.entrypoint.privilege_drop.before`/`failed`. It logs only a script basename, safe ownership and
+mode, SHA-256 prefix, duration or exit code, and a `fix_hint`; values and script contents remain
+private. See the [EMR pre-start contract](protocols/emr-prestart.md).
+
 <!-- section: fields -->
 ## Common fields
 

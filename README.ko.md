@@ -63,6 +63,7 @@ curl --fail http://localhost:4566/_mystack/health
 | 지원하는 EMR/Glue API와 오류 확인 | [지원 범위](docs/support-scope.ko.md), [API coverage](docs/compatibility/api-coverage.ko.md) |
 | Spark Glue Hive/Iceberg와 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md) |
 | YAML, timeout, port, Docker 설정 변경 | [설정 안내](docs/configuration.ko.md) |
+| EMR 시작 전에 enterprise CA 또는 proxy 설치 | [EMR pre-start 안내](docs/protocols/emr-prestart.ko.md) |
 | Resource, log, thread/task 진단 | [관리 Console 안내](docs/console.ko.md) |
 
 사용자 문서 전체의 권장 순서는 [사용자 안내](docs/index.ko.md)에 있습니다.

@@ -180,6 +180,10 @@ change.
 - User bootstrap scripts are intentionally executable code and run as `hadoop` with optional `sudo`
   inside the EMR container boundary, never in the proxy process. Files persist across later Steps,
   while shell activation state does not cross subprocess boundaries.
+- The optional EMR pre-start entrypoint is a separate trusted deployment boundary outside Domain
+  and Application. It validates and sources operator files as root, then a fixed stdlib adapter
+  changes groups/GID/UID and execs PID 1 as `hadoop`. No hook object or plugin interface enters the
+  service dependency graph. See the [pre-start contract](protocols/emr-prestart.md).
 
 Glue's JSON persistence adapter uses Python's atomic
 [`os.replace`](https://docs.python.org/3/library/os.html#os.replace) and durable

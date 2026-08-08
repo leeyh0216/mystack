@@ -18,6 +18,7 @@ on:
       - "compose.yaml"
       - "compose.mount-config.yaml"
       - "compose.emr-startup-clusters.yaml"
+      - "compose.emr-prestart.yaml"
       - "Makefile"
       - "**/Dockerfile"
       - ".github/workflows/e2e.yml"
@@ -140,9 +141,12 @@ jobs:
       - name: Build and start Mystack
         env:
           MYSTACK_EMR_STARTUP_CLUSTERS_FILE: ${{ github.workspace }}/tests/e2e/assets/emr-startup-clusters.yaml
+          MYSTACK_EMR_PRESTART_SOURCE: ${{ github.workspace }}/tests/e2e/assets/emr-prestart.d
         run: |
           wait_timeout=$(uv run python scripts/config_value.py tests.compose_wait_timeout_seconds)
-          docker compose -f compose.yaml -f compose.emr-startup-clusters.yaml \
+          docker compose -f compose.yaml \
+            -f compose.emr-startup-clusters.yaml \
+            -f compose.emr-prestart.yaml \
             up --build --detach --wait --wait-timeout "$wait_timeout"
       - name: Verify startup provisioning and restart semantics
         env:
@@ -150,6 +154,13 @@ jobs:
         run: |
           timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_emr_startup.py -m e2e \
+            --timeout "$timeout" --timeout-method thread -vv
+      - name: Verify trusted pre-start, inventory, and PID 1 semantics
+        env:
+          MYSTACK_PRESTART_E2E_REQUIRED: "1"
+        run: |
+          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          uv run pytest tests/e2e/test_emr_prestart.py -m e2e \
             --timeout "$timeout" --timeout-method thread -vv
       - name: Run the browser contract with the configured timeout
         env:

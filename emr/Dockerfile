@@ -86,17 +86,23 @@ RUN python3.11 -m pip install --no-cache-dir --require-hashes -r /opt/requiremen
 COPY shared /opt/src/shared
 COPY emr /opt/src/emr
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
+COPY --chmod=0755 emr/scripts/container/entrypoint.sh /usr/local/bin/mystack-emr-entrypoint
 # EMR bootstrap actions run as hadoop and use sudo for privileged work:
 # https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html
 RUN python3.11 -m pip install --no-cache-dir --no-deps /opt/src/shared /opt/src/emr \
     && rm -rf /opt/src /opt/requirements.txt \
     && useradd --create-home --uid 10001 hadoop \
-    && mkdir -p /var/lib/mystack/emr /home/hadoop/.ivy2 /etc/sudoers.d \
+    && mkdir -p \
+      /var/lib/mystack/emr \
+      /home/hadoop/.ivy2 \
+      /etc/mystack/emr-prestart.d \
+      /etc/sudoers.d \
     && printf 'hadoop ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/hadoop \
     && chmod 0440 /etc/sudoers.d/hadoop \
-    && chown -R hadoop:hadoop /var/lib/mystack /home/hadoop
+    && chown -R hadoop:hadoop /var/lib/mystack /home/hadoop \
+    && mystack-emr-runtime-inventory --output /opt/mystack/runtime-inventory.json \
+    && chmod 0444 /opt/mystack/runtime-inventory.json
 
-USER hadoop
 EXPOSE 8080
-ENTRYPOINT ["mystack-emr"]
+ENTRYPOINT ["/usr/local/bin/mystack-emr-entrypoint"]
 CMD ["--config", "/etc/mystack/mystack.yaml"]

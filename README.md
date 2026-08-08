@@ -62,6 +62,7 @@ the [development guide](docs/development.md), not the normal user path.
 | Check supported EMR/Glue APIs and errors | [Support scope](docs/support-scope.md), [API coverage](docs/compatibility/api-coverage.md) |
 | Check Spark Glue Hive/Iceberg and library evidence | [Client compatibility matrix](docs/compatibility/client-matrix.md) |
 | Change YAML, timeouts, ports, or Docker settings | [Configuration guide](docs/configuration.md) |
+| Install an enterprise CA or proxy before EMR starts | [EMR pre-start guide](docs/protocols/emr-prestart.md) |
 | Inspect resources, logs, threads, or tasks | [Management console guide](docs/console.md) |
 
 The [user guide](docs/index.md) provides the full recommended reading path.

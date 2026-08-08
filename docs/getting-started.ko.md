@@ -188,6 +188,12 @@ file을 사용하세요. Entry는 공식 `RunJobFlow` member 이름을 사용하
 검증하며 boto3와 같은 application use case로 들어갑니다. 정확한 schema, 재시작 동작과 게시 image
 명령은 [시작 클러스터 안내](protocols/emr-startup-clusters.ko.md)를 참고하세요.
 
+게시 EMR image에 enterprise CA, proxy 환경변수 또는 root 수준 machine 선행 구성이 필요하면 신뢰된
+pre-start overlay를 명시적으로 활성화하세요. 검토한 script를 service보다 먼저 한 번 실행한 다음 PID
+1, bootstrap action과 Spark는 `hadoop`으로 동작합니다. [EMR pre-start
+안내](protocols/emr-prestart.ko.md)에 게시 image Compose 명령, 신뢰 경계, 설치 runtime path, 정보 확인
+명령과 실패 진단 방법이 있습니다.
+
 <!-- section: overlays -->
 ## Compose 조합과 설정
 
@@ -196,6 +202,7 @@ file을 사용하세요. Entry는 공식 `RunJobFlow` member 이름을 사용하
 | 게시 image와 포함된 기본 설정으로 실행 | `-f compose.ghcr.yaml` |
 | 검토한 YAML 설정을 read-only mount | `-f compose.mount-config.yaml` 추가 |
 | 검토한 file로 EMR cluster 미리 생성 | `-f compose.emr-startup-clusters.yaml` 추가 |
+| 검토한 root script로 EMR image 구성 | `-f compose.emr-prestart.yaml` 추가 |
 | Mystack source build 또는 변경 | 이 사용자 경로가 아닌 [개발 환경 안내](development.ko.md) 사용 |
 
 설정을 바꾸기 전에 같은 Git tag에서 설정과 overlay를 받습니다.

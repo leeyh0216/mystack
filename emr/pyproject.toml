@@ -12,6 +12,8 @@ dependencies = [
 
 [project.scripts]
 mystack-emr = "mystack.emr.main:run"
+mystack-emr-runtime-inventory = "mystack.emr.runtime_inventory:run"
+mystack-emr-run-as-hadoop = "mystack.emr.privilege:run"
 
 [build-system]
 requires = ["uv_build==0.11.8"]

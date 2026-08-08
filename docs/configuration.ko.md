@@ -103,6 +103,12 @@ overlay는 명시적인 read-only [bind mount](https://docs.docker.com/engine/st
 구성합니다. Allowlist와 재시작 동작은 [시작 클러스터
 protocol](protocols/emr-startup-clusters.ko.md)을 참고하세요.
 
+신뢰된 EMR image 초기화는 이 YAML 해석 경계보다 의도적으로 먼저 실행합니다.
+`MYSTACK_EMR_PRESTART_ENABLED`, `MYSTACK_EMR_PRESTART_DIR`과 Compose host 전용
+`MYSTACK_EMR_PRESTART_SOURCE`가 명시적 read-only script mount를 제어합니다. 이 값은 Domain이나
+Application module에 노출하지 않습니다. File 검증, root에서 `hadoop`으로의 전환, runtime path와
+환경 전달은 [EMR pre-start 계약](protocols/emr-prestart.ko.md)을 참고하세요.
+
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할

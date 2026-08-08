@@ -30,6 +30,12 @@ EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 
 botocore mapping 변경을 진단할 수 있습니다. 자세한 내용은 [시작 클러스터
 계약](protocols/emr-startup-clusters.ko.md)에 있습니다.
 
+신뢰된 image 초기화는 `emr.prestart.scan.*`, file별
+`emr.prestart.script.before`/`after`/`failed`,
+`emr.entrypoint.privilege_drop.before`/`failed`를 남깁니다. Script basename, 안전한 소유권과 mode,
+SHA-256 prefix, 실행 시간 또는 exit code, `fix_hint`만 기록하며 값과 script 내용은 보호합니다.
+[EMR pre-start 계약](protocols/emr-prestart.ko.md)을 참고하세요.
+
 <!-- section: fields -->
 ## 공통 field
 
