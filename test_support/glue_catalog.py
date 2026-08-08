@@ -116,7 +116,7 @@ def exercise_all_glue_catalog_operations(client: Any, namespace: str) -> None:
             TableInput=updated_input,
             VersionId="0",
         )
-    assert mismatch.value.response["Error"]["Code"] == "VersionMismatchException"
+        assert mismatch.value.response["Error"]["Code"] == "ConcurrentModificationException"
     assert client.get_catalog_import_status()["ImportStatus"]["ImportCompleted"] is True
 
     client.create_table(DatabaseName=analytics, TableInput={"Name": "disposable"})
