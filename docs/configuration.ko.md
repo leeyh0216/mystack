@@ -35,7 +35,7 @@ argument로 전달하고 repository 안의 해당 파일을 `/etc/mystack/mystac
 Image와 설정이 불변이며 bind mount가 제한된 Docker host에서도 동작합니다. Source file은
 Docker build context 안에 있어야 합니다.
 
-개발 중 즉시 파일을 바꾸거나 prebuilt ECR image를 사용할 때는 read-only mount overlay를
+개발 중 즉시 파일을 바꾸거나 prebuilt registry image를 사용할 때는 read-only mount overlay를
 사용합니다.
 
 ```bash

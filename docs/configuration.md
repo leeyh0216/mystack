@@ -37,7 +37,7 @@ The default `make up CONFIG=config/mystack.yaml` passes `CONFIG` as the
 `/etc/mystack/mystack.yaml`. This is immutable and works on Docker hosts where bind mounts are
 restricted. The source must be inside the Docker build context.
 
-For live development or a prebuilt ECR image, mount a file read-only:
+For live development or a prebuilt registry image, mount a file read-only:
 
 ```bash
 MYSTACK_CONFIG_FILE=./config/mystack.yaml \

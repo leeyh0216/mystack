@@ -24,7 +24,7 @@ Glue Job, JobRun, and Crawler APIs are excluded. Glue scope is Data Catalog, Glu
 - Versioned YAML configuration with generic nested environment overrides
 - Structured boundary logs with payload hash/length but no payload or authorization contents
 - Thread and asyncio task diagnostic endpoints with optional Bearer token
-- GitHub milestones, bilingual issues, Python CI, model-drift, Docker E2E, and ECR workflows
+- GitHub milestones, bilingual issues, Python CI, model-drift, Docker E2E, and GHCR workflows
 - Twelve passing shared/Proxy tests at this revision
 
 ## Entry points and commands
@@ -62,4 +62,3 @@ Glue Job, JobRun, and Crawler APIs are excluded. Glue scope is Data Catalog, Glu
 - [Official botocore models](https://github.com/boto/botocore/tree/develop/botocore/data)
 - [AWS hexagonal architecture guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 - [AWS SDK custom endpoints](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
-

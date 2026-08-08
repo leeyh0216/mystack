@@ -9,7 +9,7 @@
 | `ci.yml` | push, pull request, manual | Python 3.11/3.12, lint, formatting, docs, model/requirements drift, Compose, unit/architecture/contract tests, packages |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg and required Chromium console accessibility E2E with logs retained |
-| `docker-publish.yml` | version tag, manual | immutable amd64/arm64 Proxy/EMR/Glue publish, scan evidence, and rollback retag |
+| `container-publish.yml` | version tag, manual | private GHCR amd64/arm64 publish, SBOM/provenance, OCI and Trivy evidence |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 
@@ -28,17 +28,16 @@ three component files, and CI rejects stale exports using the official
 [uv export mechanism](https://docs.astral.sh/uv/reference/cli/#uv-export). Default image bases are
 immutable multi-architecture digests rather than mutable tags.
 
-## ECR publication
+## GHCR publication
 
-Follow the complete [private ECR release and rollback runbook](ecr-release.md). Its CloudFormation
-stack provisions immutable, scan-on-push repositories and a repository/environment-restricted OIDC
-role. Configure `AWS_ROLE_ARN`, `AWS_REGION`, and `ECR_REGISTRY` as `ecr-production` environment
-variables. GitHub exchanges its OIDC token for the role; never store long-lived AWS keys. See the
-[official AWS OIDC guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws).
+Follow the complete [private GHCR image runbook](container-release.md). The publication job uses the
+repository's ephemeral `GITHUB_TOKEN` with `packages: write`; there are no AWS/GCP credentials or
+registry secrets. GitHub documents this authentication and automatic repository/package association
+in the official [Container registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
 
-Version and rollback tags are append-only and `latest` is intentionally absent. Production consumers
-pin the verified OCI index digest. Rollback associates a new unique tag with a prior digest and then
-re-runs platform and scan verification.
+Version tags are append-only by workflow policy and `latest` is intentionally absent. Consumers pin
+the verified OCI index digest. Rollback selects a prior verified digest and does not mutate registry
+history.
 
 ## Failure artifacts
 

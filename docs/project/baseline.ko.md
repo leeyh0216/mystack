@@ -24,7 +24,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog, G
 - 범용 nested 환경변수 override를 지원하는 versioned YAML 설정
 - payload 원문/Authorization 없이 hash·length를 기록하는 구조화 경계 로그
 - 선택적 Bearer token을 지원하는 thread·asyncio task 진단 endpoint
-- GitHub milestone, 한·영 이슈, Python CI, model drift, Docker E2E, ECR workflow
+- GitHub milestone, 한·영 이슈, Python CI, model drift, Docker E2E, GHCR workflow
 - 이 기준선 시점 shared/Proxy 테스트 12개 통과
 
 ## Entry point와 명령
@@ -62,4 +62,3 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog, G
 - [공식 botocore 모델](https://github.com/boto/botocore/tree/develop/botocore/data)
 - [AWS Hexagonal architecture 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)
 - [AWS SDK custom endpoint](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
-

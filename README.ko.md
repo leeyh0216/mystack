@@ -11,7 +11,7 @@ Mystack은 Amazon EMR과 AWS Glue Data Catalog를 공식 프로토콜에 맞춰 
 - LocalStack S3와 연결된 실제 Spark 3.5.x local mode 실행
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
 - Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1 상호운용성
-- Amazon ECR에 게시 가능한 Docker 이미지
+- GHCR에 비공개 게시되는 versioned multi-platform Docker 이미지
 
 Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. 현재 상태와 목표 범위는 [지원 범위](docs/support-scope.ko.md)와 [호환성 표](docs/compatibility/api-coverage.ko.md)에서 관리합니다.
 

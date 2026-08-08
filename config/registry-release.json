@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "registry": "ghcr.io",
+  "platforms": [
+    "linux/amd64",
+    "linux/arm64"
+  ],
+  "components": [
+    {
+      "name": "proxy",
+      "package": "mystack-proxy",
+      "dockerfile": "proxy/Dockerfile"
+    },
+    {
+      "name": "emr",
+      "package": "mystack-emr",
+      "dockerfile": "emr/Dockerfile"
+    },
+    {
+      "name": "glue",
+      "package": "mystack-glue",
+      "dockerfile": "glue/Dockerfile"
+    }
+  ],
+  "scan": {
+    "trivy_version": "v0.73.0",
+    "timeout": "20m",
+    "ignore_unfixed": true,
+    "fail_severities": [
+      "CRITICAL"
+    ]
+  },
+  "workflow_timeout_minutes": 120,
+  "tags": {
+    "release_pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+    "manual_prefix": "manual"
+  },
+  "official_sources": [
+    "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry",
+    "https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images",
+    "https://github.com/opencontainers/image-spec/blob/main/image-index.md",
+    "https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/"
+  ]
+}

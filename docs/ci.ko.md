@@ -9,7 +9,7 @@
 | `ci.yml` | push, PR, manual | Python 3.11/3.12, lint, format, docs, model/requirements drift, Compose, unit/architecture/contract test, package |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg와 필수 Chromium console 접근성 E2E, 로그 보존 |
-| `docker-publish.yml` | version tag, manual | immutable amd64/arm64 Proxy/EMR/Glue 게시, scan 증거, rollback retag |
+| `container-publish.yml` | version tag, manual | private GHCR amd64/arm64 게시, SBOM/provenance, OCI·Trivy 증거 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
 
@@ -28,18 +28,17 @@ component file을 갱신하고 CI는 공식 [uv export 방식](https://docs.astr
 stale export를 거부합니다. 기본 image base는 mutable tag 대신 immutable multi-architecture
 digest를 사용합니다.
 
-## ECR 게시
+## GHCR 게시
 
-전체 [private ECR 릴리스와 rollback runbook](ecr-release.ko.md)을 따릅니다. CloudFormation
-stack은 immutable scan-on-push repository와 repository/environment로 제한된 OIDC role을
-생성합니다. `AWS_ROLE_ARN`, `AWS_REGION`, `ECR_REGISTRY`를 `ecr-production` environment
-variable로 설정합니다. GitHub는 OIDC token을 role로 교환하며 장기 AWS key를 저장하지 않습니다.
-[공식 AWS OIDC 지침](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws)을
-참고하세요.
+전체 [private GHCR image runbook](container-release.ko.md)을 따릅니다. 게시 job은 repository의
+일회성 `GITHUB_TOKEN`과 `packages: write`를 사용하며 AWS/GCP credential이나 registry secret이
+없습니다. GitHub는 이 인증과 repository/package 자동 연결을 공식
+[Container registry 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)에
+문서화합니다.
 
-Version과 rollback tag는 append-only이며 `latest`는 의도적으로 없습니다. Production consumer는
-검증된 OCI index digest를 고정합니다. Rollback은 과거 digest에 새로운 고유 tag를 연결하고
-platform과 scan 검증을 다시 수행합니다.
+Version tag는 workflow 정책상 append-only이고 `latest`는 의도적으로 없습니다. Consumer는
+검증된 OCI index digest를 고정합니다. Rollback은 과거의 검증된 digest를 선택하며 registry
+이력을 변경하지 않습니다.
 
 ## 실패 artifact
 

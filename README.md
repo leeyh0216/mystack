@@ -11,7 +11,7 @@ The project targets:
 - real Spark 3.5.x execution in local mode with LocalStack S3 access
 - Glue Data Catalog behavior, including documented validation and service exceptions
 - Spark 3.5.4 interoperability with Glue Data Catalog, Hive-compatible types, and Iceberg 1.7.1
-- Docker images suitable for publishing to Amazon ECR
+- Versioned multi-platform Docker images published privately to GHCR
 
 Glue Jobs, JobRuns, and Crawlers are intentionally out of scope. Compatibility is delivered incrementally and tracked in [the support scope](docs/support-scope.md) and [compatibility matrix](docs/compatibility/api-coverage.md).
 

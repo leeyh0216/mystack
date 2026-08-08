@@ -13,7 +13,7 @@ Start here when maintaining Mystack:
 7. [Observability and thread diagnostics](observability.md)
 8. [Management console and resource API](console.md)
 9. [CI and release automation](ci.md)
-10. [Private ECR release and rollback](ecr-release.md)
+10. [Private GHCR image publication](container-release.md)
 11. [Upstream evolution policy](evolution.md)
 12. [Adding another emulator route](extending-proxy.md)
 13. [Implementation-derived UseCases](project/usecase-catalog.md)
