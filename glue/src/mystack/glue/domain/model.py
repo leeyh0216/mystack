@@ -13,7 +13,7 @@ import copy
 from dataclasses import dataclass, field
 from typing import Any, Self
 
-from .errors import InvalidInputError, VersionMismatchError
+from mystack.glue.domain.errors import InvalidInputError, VersionMismatchError
 
 DatabaseKey = tuple[str, str]
 TableKey = tuple[str, str, str]

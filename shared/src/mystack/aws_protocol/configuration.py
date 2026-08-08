@@ -22,8 +22,7 @@ from typing import Any
 
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
-
-from .observability import log_event
+from mystack.aws_protocol.observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
 _NESTED_PREFIX = "MYSTACK__"

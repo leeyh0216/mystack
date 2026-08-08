@@ -6,14 +6,13 @@ Official API inventory: https://docs.aws.amazon.com/emr/latest/APIReference/Welc
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationDispatcher, OperationFamilyRegistry
+from mystack.emr.adapters.inbound.aws_cluster import ClusterOperationFamily
+from mystack.emr.adapters.inbound.aws_control import ControlOperationFamily
+from mystack.emr.adapters.inbound.aws_operations import IMPLEMENTED_EMR_OPERATIONS
+from mystack.emr.adapters.inbound.aws_query import QueryOperationFamily
+from mystack.emr.adapters.inbound.aws_step import StepOperationFamily
+from mystack.emr.adapters.inbound.aws_tag import TagOperationFamily
 from mystack.emr.application.use_cases import EmrClusterCommands, EmrQueries, EmrStepCommands
-
-from .aws_cluster import ClusterOperationFamily
-from .aws_control import ControlOperationFamily
-from .aws_operations import IMPLEMENTED_EMR_OPERATIONS
-from .aws_query import QueryOperationFamily
-from .aws_step import StepOperationFamily
-from .aws_tag import TagOperationFamily
 
 
 class EmrAwsAdapter:

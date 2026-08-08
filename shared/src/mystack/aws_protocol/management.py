@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .configuration import ConfigurationError, LoadedConfiguration, require_mapping
+from mystack.aws_protocol.configuration import (
+    ConfigurationError,
+    LoadedConfiguration,
+    require_mapping,
+)
 
 
 @dataclass(frozen=True, slots=True)

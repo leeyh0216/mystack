@@ -12,6 +12,7 @@ import copy
 from collections.abc import Mapping
 from typing import Any
 
+from mystack.glue.adapters.inbound.aws_errors import error_detail
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
@@ -19,8 +20,6 @@ from mystack.glue.domain import (
     CatalogTableVersion,
 )
 from mystack.glue.domain.errors import GlueDomainError
-
-from .aws_errors import error_detail
 
 
 def database_document(value: CatalogDatabase) -> dict[str, Any]:

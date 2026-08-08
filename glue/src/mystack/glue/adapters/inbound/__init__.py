@@ -3,7 +3,7 @@
 Protocol reference: https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html
 """
 
-from .aws import GlueAwsAdapter
-from .management import GlueManagementAdapter
+from mystack.glue.adapters.inbound.aws import GlueAwsAdapter
+from mystack.glue.adapters.inbound.management import GlueManagementAdapter
 
 __all__ = ["GlueAwsAdapter", "GlueManagementAdapter"]

@@ -20,10 +20,9 @@ from pathlib import Path
 from typing import Protocol
 
 from mystack.aws_protocol.observability import log_event
+from mystack.emr.adapters.outbound.logs import StepLogPublicationRequest, StepLogPublisher
 from mystack.emr.application.ports import RuntimeResult
 from mystack.emr.domain import Cluster, Step
-
-from .logs import StepLogPublicationRequest, StepLogPublisher
 
 _LOGGER = logging.getLogger(__name__)
 _JOURNAL_FILE = "execution-journal.json"

@@ -12,19 +12,24 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from mystack.emr.application.cluster import ClusterCommandHandler
+from mystack.emr.application.commands import AddSteps, CreateCluster
+from mystack.emr.application.driver import ClusterQueueDriver
+from mystack.emr.application.failure import QueueCompletionPolicy
+from mystack.emr.application.pagination import Paginator
+from mystack.emr.application.policy import EmrPolicy
+from mystack.emr.application.ports import (
+    BootstrapRunner,
+    Clock,
+    IdGenerator,
+    StepRunner,
+    TaskScheduler,
+)
+from mystack.emr.application.queries import EmrQueryHandler
+from mystack.emr.application.step import StepCommandHandler
+from mystack.emr.application.transitions import LifecycleTransitions
 from mystack.emr.domain import BootstrapAction, Cluster, ClusterState, Step, StepState
 from mystack.emr.domain.repositories import ClusterRepository
-
-from .cluster import ClusterCommandHandler
-from .commands import AddSteps, CreateCluster
-from .driver import ClusterQueueDriver
-from .failure import QueueCompletionPolicy
-from .pagination import Paginator
-from .policy import EmrPolicy
-from .ports import BootstrapRunner, Clock, IdGenerator, StepRunner, TaskScheduler
-from .queries import EmrQueryHandler
-from .step import StepCommandHandler
-from .transitions import LifecycleTransitions
 
 
 class EmrApplication:

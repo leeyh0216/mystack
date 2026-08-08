@@ -6,11 +6,10 @@ https://docs.aws.amazon.com/emr/latest/APIReference/API_StepConfig.html
 
 from __future__ import annotations
 
+from mystack.emr.application.ports import StepRunner
+from mystack.emr.application.transitions import LifecycleTransitions
 from mystack.emr.domain import ActionOnFailure, Cluster, ClusterState, StateReason, Step, StepState
 from mystack.emr.domain.repositories import ClusterRepository
-
-from .ports import StepRunner
-from .transitions import LifecycleTransitions
 
 
 class QueueCompletionPolicy:

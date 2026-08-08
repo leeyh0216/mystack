@@ -12,10 +12,22 @@ from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from mystack.proxy.config import ServiceRoute
+from mystack.proxy.config import ProxySettings, ServiceRoute
 from mystack.proxy.runtime import ProxyRuntime, RuntimeState
 
-from .test_app import settings
+
+def settings() -> ProxySettings:
+    """Build the minimal runtime settings without coupling one test module to another."""
+
+    return ProxySettings(
+        fallback_url="http://localstack:4566",
+        routes=(),
+        request_timeout_seconds=30,
+        listen_host="127.0.0.1",
+        listen_port=8080,
+        config_source="test",
+        config_fingerprint="test-fingerprint",
+    )
 
 
 @pytest.mark.asyncio

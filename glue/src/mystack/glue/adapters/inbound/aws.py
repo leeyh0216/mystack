@@ -6,15 +6,14 @@ Official API inventory: https://docs.aws.amazon.com/glue/latest/webapi/Welcome.h
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationDispatcher, OperationFamilyRegistry
+from mystack.glue.adapters.inbound.aws_batch import BatchOperationFamily
+from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
+from mystack.glue.adapters.inbound.aws_database import DatabaseOperationFamily
+from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
+from mystack.glue.adapters.inbound.aws_partition import PartitionOperationFamily
+from mystack.glue.adapters.inbound.aws_table import TableOperationFamily
+from mystack.glue.adapters.inbound.aws_version import VersionOperationFamily
 from mystack.glue.application.use_cases import GlueCatalogUseCases
-
-from .aws_batch import BatchOperationFamily
-from .aws_context import GlueFamilyContext
-from .aws_database import DatabaseOperationFamily
-from .aws_operations import IMPLEMENTED_GLUE_OPERATIONS
-from .aws_partition import PartitionOperationFamily
-from .aws_table import TableOperationFamily
-from .aws_version import VersionOperationFamily
 
 
 class GlueAwsAdapter:

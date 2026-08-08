@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, ClassVar
 
-from .errors import InvalidStateTransitionError, StepNotFoundError
+from mystack.emr.domain.errors import InvalidStateTransitionError, StepNotFoundError
 
 
 class ClusterState(StrEnum):

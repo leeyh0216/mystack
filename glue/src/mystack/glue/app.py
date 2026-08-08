@@ -24,13 +24,12 @@ from mystack.aws_protocol import (
     load_configuration,
 )
 from mystack.aws_protocol.observability import configure_logging, log_event
-
-from .adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
-from .adapters.outbound import JsonCatalogRepository, SystemClock
-from .application import CatalogApplication
-from .application.ports import Clock
-from .config import GlueSettings
-from .domain.repositories import CatalogRepository
+from mystack.glue.adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
+from mystack.glue.adapters.outbound import JsonCatalogRepository, SystemClock
+from mystack.glue.application import CatalogApplication
+from mystack.glue.application.ports import Clock
+from mystack.glue.config import GlueSettings
+from mystack.glue.domain.repositories import CatalogRepository
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -35,13 +35,19 @@ Distribution 이름은 유지하고 다음 import 경로를 사용합니다.
 `tool.uv.build-backend.module-name`을 선언하고 console script는 새 module을 직접 가리킵니다.
 이 Python package는 repository 내부에서만 사용하므로 compatibility shim은 제공하지 않습니다.
 
+Project 내부 import는 완전한 `mystack.aws_protocol`, `mystack.proxy`, `mystack.emr`,
+`mystack.glue` 경로를 사용합니다. 한 package 안에서도 상대 import를 금지해 package 깊이를
+계산하지 않고도 독자와 architecture 검사가 dependency 소유자를 알 수 있게 합니다.
+
 <!-- section: consequences -->
 ## 결과
 
 담당 영역 사이의 결합을 추가하지 않으면서 모든 제품 module의 공통 소유 관계가 드러납니다.
 새 distribution도 `mystack.<service>` 일부를 제공할 수 있습니다. Wheel 하나가 namespace root
 initializer를 추가하면 함께 설치할 때 조용히 깨질 수 있으므로 source tree import만으로는
-충분히 검증할 수 없습니다.
+충분히 검증할 수 없습니다. Ruff `TID252`가 local, pre-commit, CI에서 모든 상대 import를
+거부합니다. Test는 다른 test module을 import하지 않고 자체 test data를 구성하거나 소유자가
+명시된 helper를 import합니다.
 
 <!-- section: verification -->
 ## 검증
@@ -57,3 +63,4 @@ environment에 함께 설치해 설정된 module을 모두 찾습니다. Subproc
 - [Python namespace package 명세](https://docs.python.org/3/reference/import.html#namespace-packages)
 - [Python virtual environment](https://docs.python.org/3/library/venv.html)
 - [uv namespace package 설정](https://docs.astral.sh/uv/concepts/build-backend/#namespace-packages)
+- [Ruff relative import 규칙](https://docs.astral.sh/ruff/rules/relative-imports/)

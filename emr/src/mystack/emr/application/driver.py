@@ -12,12 +12,11 @@ import asyncio
 import logging
 
 from mystack.aws_protocol.observability import log_event
+from mystack.emr.application.failure import QueueCompletionPolicy
+from mystack.emr.application.ports import BootstrapRunner, StepRunner, TaskScheduler
+from mystack.emr.application.transitions import LifecycleTransitions
 from mystack.emr.domain import ClusterState, StateReason, StepState
 from mystack.emr.domain.repositories import ClusterRepository
-
-from .failure import QueueCompletionPolicy
-from .ports import BootstrapRunner, StepRunner, TaskScheduler
-from .transitions import LifecycleTransitions
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -17,8 +17,7 @@ from mystack.aws_protocol.configuration import (
     LoadedConfiguration,
     require_mapping,
 )
-
-from .application import EmrPolicy, ReleaseProfile
+from mystack.emr.application import EmrPolicy, ReleaseProfile
 
 
 @dataclass(frozen=True, slots=True)

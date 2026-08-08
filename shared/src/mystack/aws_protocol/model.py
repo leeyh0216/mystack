@@ -23,9 +23,8 @@ import botocore
 import botocore.session
 from botocore.model import OperationModel, ServiceModel
 from botocore.validate import ParamValidator
-
-from .errors import AwsServiceError
-from .observability import log_event
+from mystack.aws_protocol.errors import AwsServiceError
+from mystack.aws_protocol.observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
 _LEGACY_SURROGATE_PAIR_RANGE = r"\uD800\uDC00-\uDBFF\uDFFF"

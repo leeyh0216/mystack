@@ -35,13 +35,19 @@ No distribution may contain `mystack/__init__.py`. Each member declares its dott
 `tool.uv.build-backend.module-name`, and console scripts point directly at the new module. No
 compatibility shim is provided because these Python packages are repository-internal.
 
+All intra-project imports use their complete `mystack.aws_protocol`, `mystack.proxy`,
+`mystack.emr`, or `mystack.glue` path. Relative imports are forbidden even within one package so a
+reader and the architecture checks see the dependency owner without resolving package depth.
+
 <!-- section: consequences -->
 ## Consequences
 
 All product modules now have a visible shared owner without coupling their service contexts.
 Additional distributions can contribute another `mystack.<service>` portion. A wheel that adds the
 namespace-root initializer could silently break co-installation, so source-tree imports alone are
-insufficient verification.
+insufficient verification. Ruff `TID252` rejects every relative import locally, in pre-commit, and
+in CI. Tests construct their own fixtures or import an explicitly owned helper instead of importing
+sibling test modules.
 
 <!-- section: verification -->
 ## Verification
@@ -57,3 +63,4 @@ namespace-root initializer and compare module paths with each member's build con
 - [Python namespace package specification](https://docs.python.org/3/reference/import.html#namespace-packages)
 - [Python virtual environments](https://docs.python.org/3/library/venv.html)
 - [uv namespace package configuration](https://docs.astral.sh/uv/concepts/build-backend/#namespace-packages)
+- [Ruff relative-import rule](https://docs.astral.sh/ruff/rules/relative-imports/)

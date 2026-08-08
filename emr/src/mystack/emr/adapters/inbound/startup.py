@@ -21,11 +21,10 @@ from typing import Any, Protocol
 import yaml
 from mystack.aws_protocol import AwsServiceError, AwsServiceModel, ConfigurationError
 from mystack.aws_protocol.observability import log_event
+from mystack.emr.adapters.inbound.aws_shapes import create_cluster_command
 from mystack.emr.application.commands import CreateCluster
 from mystack.emr.application.use_cases import EmrClusterCommands
 from mystack.emr.domain import Cluster
-
-from .aws_shapes import create_cluster_command
 
 _LOGGER = logging.getLogger(__name__)
 _ROOT_FIELDS = frozenset({"schema_version", "clusters"})

@@ -11,11 +11,10 @@ from collections.abc import Mapping
 from typing import Any
 
 from mystack.aws_protocol import AwsRequestContext, OperationFamily
+from mystack.emr.adapters.inbound.aws_errors import emr_family
+from mystack.emr.adapters.inbound.aws_shapes import step_spec
 from mystack.emr.application.commands import AddSteps
 from mystack.emr.application.use_cases import EmrStepCommands
-
-from .aws_errors import emr_family
-from .aws_shapes import step_spec
 
 
 class StepOperationFamily:

@@ -5,9 +5,8 @@ Reference: https://docs.aws.amazon.com/glue/latest/dg/start-data-catalog.html
 
 from __future__ import annotations
 
+from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.domain import AlreadyExistsError, EntityNotFoundError
-
-from .database import DatabaseCommands, DatabaseQueries
 
 
 class CatalogInitializer:

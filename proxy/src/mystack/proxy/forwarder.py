@@ -23,9 +23,8 @@ import httpx
 from fastapi import Request
 from fastapi.responses import Response, StreamingResponse
 from mystack.aws_protocol.observability import log_event, payload_fingerprint
-
-from .config import ProxySettings, ServiceRoute
-from .ports import (
+from mystack.proxy.config import ProxySettings, ServiceRoute
+from mystack.proxy.ports import (
     ManagementBackendUnavailableError,
     ManagementResponse,
     RouteDetector,

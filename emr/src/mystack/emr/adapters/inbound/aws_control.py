@@ -8,9 +8,8 @@ https://docs.aws.amazon.com/emr/latest/APIReference/API_SetTerminationProtection
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
+from mystack.emr.adapters.inbound.aws_errors import emr_family
 from mystack.emr.application.use_cases import EmrClusterCommands
-
-from .aws_errors import emr_family
 
 
 class ControlOperationFamily:

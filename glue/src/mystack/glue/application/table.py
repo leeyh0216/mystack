@@ -11,6 +11,9 @@ from __future__ import annotations
 import copy
 import re
 
+from mystack.glue.application.pagination import Paginator
+from mystack.glue.application.ports import Clock
+from mystack.glue.application.state import database, name, rename_table_partitions, table
 from mystack.glue.domain import (
     AlreadyExistsError,
     CatalogTable,
@@ -19,10 +22,6 @@ from mystack.glue.domain import (
     InvalidInputError,
 )
 from mystack.glue.domain.repositories import CatalogRepository
-
-from .pagination import Paginator
-from .ports import Clock
-from .state import database, name, rename_table_partitions, table
 
 
 class TableCommands:

@@ -8,14 +8,13 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from mystack.glue.application.batch import PartitionBatchFailure
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
     CatalogTable,
     CatalogTableVersion,
 )
-
-from .batch import PartitionBatchFailure
 
 
 class GlueCatalogUseCases(Protocol):

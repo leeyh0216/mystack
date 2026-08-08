@@ -7,10 +7,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from mystack.emr.application.ports import IdGenerator
 from mystack.emr.domain import StateReason, Step, StepState
 from mystack.emr.domain.model import StepSpec, StepTimeline
-
-from .ports import IdGenerator
 
 
 class StepFactory:

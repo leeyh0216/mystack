@@ -12,8 +12,7 @@ from typing import Protocol
 
 from fastapi import Request
 from fastapi.responses import Response
-
-from .config import ServiceRoute
+from mystack.proxy.config import ServiceRoute
 
 
 @dataclass(frozen=True, slots=True)

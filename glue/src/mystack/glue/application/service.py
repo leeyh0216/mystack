@@ -7,6 +7,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from mystack.glue.application.batch import PartitionBatchFailure, PartitionBatchHandler
+from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
+from mystack.glue.application.initialization import CatalogInitializer
+from mystack.glue.application.pagination import Paginator
+from mystack.glue.application.partition import PartitionCommands, PartitionQueries
+from mystack.glue.application.ports import Clock
+from mystack.glue.application.table import TableCommands, TableQueries, TableVersionQueries
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
@@ -14,14 +21,6 @@ from mystack.glue.domain import (
     CatalogTableVersion,
 )
 from mystack.glue.domain.repositories import CatalogRepository
-
-from .batch import PartitionBatchFailure, PartitionBatchHandler
-from .database import DatabaseCommands, DatabaseQueries
-from .initialization import CatalogInitializer
-from .pagination import Paginator
-from .partition import PartitionCommands, PartitionQueries
-from .ports import Clock
-from .table import TableCommands, TableQueries, TableVersionQueries
 
 
 @dataclass(frozen=True, slots=True)

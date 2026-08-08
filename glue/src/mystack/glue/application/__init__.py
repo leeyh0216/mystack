@@ -3,6 +3,6 @@
 Reference: https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html
 """
 
-from .service import CatalogApplication, CatalogPolicy
+from mystack.glue.application.service import CatalogApplication, CatalogPolicy
 
 __all__ = ["CatalogApplication", "CatalogPolicy"]

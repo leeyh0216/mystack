@@ -7,10 +7,9 @@ https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
-
-from .aws_context import GlueFamilyContext
-from .aws_errors import error_detail, glue_family
-from .aws_shapes import mapping, partition_document, partition_error
+from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
+from mystack.glue.adapters.inbound.aws_errors import error_detail, glue_family
+from mystack.glue.adapters.inbound.aws_shapes import mapping, partition_document, partition_error
 
 
 class BatchOperationFamily:

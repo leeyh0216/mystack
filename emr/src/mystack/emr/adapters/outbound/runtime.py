@@ -24,10 +24,9 @@ from urllib.parse import urlparse
 import boto3
 from botocore.config import Config
 from mystack.aws_protocol.observability import log_event, payload_fingerprint
+from mystack.emr.adapters.outbound.journal import StepExecutionJournal
 from mystack.emr.application.ports import RuntimeResult
 from mystack.emr.domain import BootstrapAction, Cluster, Step
-
-from .journal import StepExecutionJournal
 
 _LOGGER = logging.getLogger(__name__)
 _S3_SCHEMES = frozenset({"s3", "s3a", "s3n"})

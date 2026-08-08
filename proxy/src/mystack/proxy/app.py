@@ -19,10 +19,9 @@ from mystack.aws_protocol import (
     load_configuration,
 )
 from mystack.aws_protocol.observability import configure_logging, log_event
-
-from .config import ProxySettings
-from .ports import ManagementBackendUnavailableError, UnknownManagementComponentError
-from .runtime import ProxyRuntime
+from mystack.proxy.config import ProxySettings
+from mystack.proxy.ports import ManagementBackendUnavailableError, UnknownManagementComponentError
+from mystack.proxy.runtime import ProxyRuntime
 
 _LOGGER = logging.getLogger(__name__)
 

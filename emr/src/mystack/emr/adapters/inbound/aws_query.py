@@ -9,11 +9,8 @@ https://docs.aws.amazon.com/emr/latest/APIReference/API_ListSteps.html
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
-from mystack.emr.application.use_cases import EmrQueries
-from mystack.emr.domain import ClusterState, StepState
-
-from .aws_errors import emr_family
-from .aws_shapes import (
+from mystack.emr.adapters.inbound.aws_errors import emr_family
+from mystack.emr.adapters.inbound.aws_shapes import (
     cluster_document,
     cluster_summary,
     optional_float,
@@ -21,6 +18,8 @@ from .aws_shapes import (
     step_document,
     with_marker,
 )
+from mystack.emr.application.use_cases import EmrQueries
+from mystack.emr.domain import ClusterState, StepState
 
 
 class QueryOperationFamily:

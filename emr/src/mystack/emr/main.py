@@ -7,9 +7,8 @@ import argparse
 
 import uvicorn
 from mystack.aws_protocol import load_configuration
-
-from .app import create_app
-from .config import EmrSettings
+from mystack.emr.app import create_app
+from mystack.emr.config import EmrSettings
 
 
 def run() -> None:

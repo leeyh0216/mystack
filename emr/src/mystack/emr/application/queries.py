@@ -7,10 +7,9 @@ https://docs.aws.amazon.com/emr/latest/APIReference/API_ListSteps.html
 
 from __future__ import annotations
 
+from mystack.emr.application.pagination import Paginator
 from mystack.emr.domain import BootstrapAction, Cluster, ClusterState, Step, StepState
 from mystack.emr.domain.repositories import ClusterRepository
-
-from .pagination import Paginator
 
 
 class EmrQueryHandler:

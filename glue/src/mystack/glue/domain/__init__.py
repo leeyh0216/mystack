@@ -3,13 +3,13 @@
 Reference: https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html
 """
 
-from .errors import (
+from mystack.glue.domain.errors import (
     AlreadyExistsError,
     EntityNotFoundError,
     InvalidInputError,
     VersionMismatchError,
 )
-from .model import (
+from mystack.glue.domain.model import (
     CatalogDatabase,
     CatalogDocument,
     CatalogName,

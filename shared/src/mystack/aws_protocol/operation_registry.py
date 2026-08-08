@@ -10,8 +10,8 @@ import logging
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
-from .dispatcher import OperationDispatcher, OperationHandler
-from .observability import log_event
+from mystack.aws_protocol.dispatcher import OperationDispatcher, OperationHandler
+from mystack.aws_protocol.observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
 

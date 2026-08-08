@@ -1,15 +1,19 @@
 """AWS wire-protocol building blocks shared by Mystack service adapters."""
 
-from .configuration import ConfigurationError, LoadedConfiguration, load_configuration
-from .context import AwsRequestContext
-from .diagnostics import DiagnosticsSettings, create_diagnostics_router
-from .dispatcher import OperationDispatcher
-from .endpoint import AwsJsonRpcEndpoint
-from .errors import AwsServiceError
-from .management import ManagementUiSettings
-from .model import AwsServiceModel
-from .operation_registry import OperationFamily, OperationFamilyRegistry
-from .static_ui import HistoryFallbackStaticFiles
+from mystack.aws_protocol.configuration import (
+    ConfigurationError,
+    LoadedConfiguration,
+    load_configuration,
+)
+from mystack.aws_protocol.context import AwsRequestContext
+from mystack.aws_protocol.diagnostics import DiagnosticsSettings, create_diagnostics_router
+from mystack.aws_protocol.dispatcher import OperationDispatcher
+from mystack.aws_protocol.endpoint import AwsJsonRpcEndpoint
+from mystack.aws_protocol.errors import AwsServiceError
+from mystack.aws_protocol.management import ManagementUiSettings
+from mystack.aws_protocol.model import AwsServiceModel
+from mystack.aws_protocol.operation_registry import OperationFamily, OperationFamilyRegistry
+from mystack.aws_protocol.static_ui import HistoryFallbackStaticFiles
 
 __all__ = [
     "AwsJsonRpcEndpoint",

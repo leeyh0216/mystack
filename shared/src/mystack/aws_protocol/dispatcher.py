@@ -11,9 +11,9 @@ import time
 from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 
-from .context import AwsRequestContext
-from .errors import AwsServiceError
-from .observability import log_event
+from mystack.aws_protocol.context import AwsRequestContext
+from mystack.aws_protocol.errors import AwsServiceError
+from mystack.aws_protocol.observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from .model import Cluster
+from mystack.emr.domain.model import Cluster
 
 
 class ClusterRepository(Protocol):

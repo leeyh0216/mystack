@@ -10,8 +10,8 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
-from .config import ServiceRoute
-from .ports import RouteMatch
+from mystack.proxy.config import ServiceRoute
+from mystack.proxy.ports import RouteMatch
 
 _CREDENTIAL_SCOPE = re.compile(
     r"Credential=[^/]+/\d{8}/[^/]+/(?P<service>[^/]+)/aws4_request",

@@ -9,9 +9,8 @@ import argparse
 
 import uvicorn
 from mystack.aws_protocol import load_configuration
-
-from .app import create_app
-from .config import ProxySettings
+from mystack.proxy.app import create_app
+from mystack.proxy.config import ProxySettings
 
 
 def run() -> None:

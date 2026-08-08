@@ -16,12 +16,11 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
-
-from .context import AwsRequestContext
-from .dispatcher import OperationDispatcher
-from .errors import AwsServiceError
-from .model import AwsServiceModel
-from .observability import log_event, payload_fingerprint
+from mystack.aws_protocol.context import AwsRequestContext
+from mystack.aws_protocol.dispatcher import OperationDispatcher
+from mystack.aws_protocol.errors import AwsServiceError
+from mystack.aws_protocol.model import AwsServiceModel
+from mystack.aws_protocol.observability import log_event, payload_fingerprint
 
 _LOGGER = logging.getLogger(__name__)
 

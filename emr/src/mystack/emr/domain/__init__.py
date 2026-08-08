@@ -3,7 +3,7 @@
 Reference: https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html
 """
 
-from .model import (
+from mystack.emr.domain.model import (
     ActionOnFailure,
     BootstrapAction,
     Cluster,

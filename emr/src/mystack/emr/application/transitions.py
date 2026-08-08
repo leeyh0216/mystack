@@ -10,9 +10,8 @@ from __future__ import annotations
 import logging
 
 from mystack.aws_protocol.observability import log_event
+from mystack.emr.application.ports import Clock
 from mystack.emr.domain import Cluster, ClusterState, StateReason, Step, StepState
-
-from .ports import Clock
 
 _LOGGER = logging.getLogger(__name__)
 

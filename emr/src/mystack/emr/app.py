@@ -24,8 +24,7 @@ from mystack.aws_protocol import (
     load_configuration,
 )
 from mystack.aws_protocol.observability import configure_logging, log_event
-
-from .adapters.inbound import (
+from mystack.emr.adapters.inbound import (
     EmrAwsAdapter,
     EmrLogEventStream,
     EmrManagementAdapter,
@@ -33,7 +32,7 @@ from .adapters.inbound import (
     StartupClusterProvisioner,
     load_startup_cluster_plan,
 )
-from .adapters.outbound import (
+from mystack.emr.adapters.outbound import (
     AsyncioTaskScheduler,
     InMemoryClusterRepository,
     LocalBootstrapRunner,
@@ -45,10 +44,10 @@ from .adapters.outbound import (
     StepExecutionJournal,
     SystemClock,
 )
-from .application import EmrApplication
-from .config import EmrSettings
-from .domain.errors import EmrDomainError
-from .runtime import EmrRuntime
+from mystack.emr.application import EmrApplication
+from mystack.emr.config import EmrSettings
+from mystack.emr.domain.errors import EmrDomainError
+from mystack.emr.runtime import EmrRuntime
 
 _LOGGER = logging.getLogger(__name__)
 

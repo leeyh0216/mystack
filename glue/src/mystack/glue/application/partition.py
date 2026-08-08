@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import hashlib
 
+from mystack.glue.application.expression import matches_partition
+from mystack.glue.application.pagination import Paginator
+from mystack.glue.application.ports import Clock
+from mystack.glue.application.state import name, partition, partition_key, table
 from mystack.glue.domain import AlreadyExistsError, CatalogPartition, InvalidInputError
 from mystack.glue.domain.repositories import CatalogRepository
-
-from .expression import matches_partition
-from .pagination import Paginator
-from .ports import Clock
-from .state import name, partition, partition_key, table
 
 
 class PartitionCommands:

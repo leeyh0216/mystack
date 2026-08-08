@@ -7,9 +7,8 @@ import argparse
 
 import uvicorn
 from mystack.aws_protocol import load_configuration
-
-from .app import create_app
-from .config import GlueSettings
+from mystack.glue.app import create_app
+from mystack.glue.config import GlueSettings
 
 
 def run() -> None:

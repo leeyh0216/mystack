@@ -6,10 +6,15 @@ Official APIs: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-d
 from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
-
-from .aws_context import GlueFamilyContext
-from .aws_errors import glue_family
-from .aws_shapes import database_document, mapping, optional_int, optional_string, with_token
+from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
+from mystack.glue.adapters.inbound.aws_errors import glue_family
+from mystack.glue.adapters.inbound.aws_shapes import (
+    database_document,
+    mapping,
+    optional_int,
+    optional_string,
+    with_token,
+)
 
 
 class DatabaseOperationFamily:

@@ -13,16 +13,19 @@ from enum import StrEnum
 
 import httpx
 from mystack.aws_protocol.observability import log_event
-
-from .config import ProxySettings, ServiceRoute
-from .forwarder import AwsRequestForwarder, HttpManagementForwarder, HttpServiceUiForwarder
-from .ports import (
+from mystack.proxy.config import ProxySettings, ServiceRoute
+from mystack.proxy.forwarder import (
+    AwsRequestForwarder,
+    HttpManagementForwarder,
+    HttpServiceUiForwarder,
+)
+from mystack.proxy.ports import (
     AwsRequestForwarding,
     ManagementForwarding,
     RouteDetector,
     ServiceUiForwarding,
 )
-from .routing import AwsServiceDetector
+from mystack.proxy.routing import AwsServiceDetector
 
 _LOGGER = logging.getLogger(__name__)
 

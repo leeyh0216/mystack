@@ -15,8 +15,7 @@ from mystack.aws_protocol.configuration import (
     LoadedConfiguration,
     require_mapping,
 )
-
-from .application import CatalogPolicy
+from mystack.glue.application import CatalogPolicy
 
 
 @dataclass(frozen=True, slots=True)

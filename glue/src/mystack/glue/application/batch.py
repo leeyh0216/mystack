@@ -11,10 +11,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from mystack.glue.application.partition import PartitionCommands, PartitionQueries
 from mystack.glue.domain import CatalogPartition, EntityNotFoundError
 from mystack.glue.domain.errors import GlueDomainError
-
-from .partition import PartitionCommands, PartitionQueries
 
 
 @dataclass(frozen=True, slots=True)

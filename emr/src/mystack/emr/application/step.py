@@ -9,15 +9,14 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from mystack.emr.application.commands import AddSteps
+from mystack.emr.application.policy import EmrPolicy
+from mystack.emr.application.ports import Clock, IdGenerator, QueueDriver, StepRunner
+from mystack.emr.application.step_factory import StepFactory
+from mystack.emr.application.transitions import LifecycleTransitions
 from mystack.emr.domain import ClusterState, StateReason, Step, StepState
 from mystack.emr.domain.errors import ActiveStepLimitExceededError, InvalidClusterStateError
 from mystack.emr.domain.repositories import ClusterRepository
-
-from .commands import AddSteps
-from .policy import EmrPolicy
-from .ports import Clock, IdGenerator, QueueDriver, StepRunner
-from .step_factory import StepFactory
-from .transitions import LifecycleTransitions
 
 
 class StepCommandHandler:

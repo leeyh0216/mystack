@@ -14,8 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from mystack.aws_protocol.observability import log_event
-
-from .application import EmrApplication
+from mystack.emr.application import EmrApplication
 
 _LOGGER = logging.getLogger(__name__)
 

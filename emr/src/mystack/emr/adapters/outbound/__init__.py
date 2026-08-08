@@ -4,16 +4,16 @@ Architecture reference:
 https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html
 """
 
-from .journal import StepExecutionJournal, StepExecutionRecord
-from .logs import S3StepLogPublisher
-from .repository import InMemoryClusterRepository
-from .runtime import (
+from mystack.emr.adapters.outbound.journal import StepExecutionJournal, StepExecutionRecord
+from mystack.emr.adapters.outbound.logs import S3StepLogPublisher
+from mystack.emr.adapters.outbound.repository import InMemoryClusterRepository
+from mystack.emr.adapters.outbound.runtime import (
     LocalBootstrapRunner,
     LocalProcessExecutor,
     LocalSparkStepRunner,
     S3ArtifactStore,
 )
-from .system import AsyncioTaskScheduler, RandomAwsIds, SystemClock
+from mystack.emr.adapters.outbound.system import AsyncioTaskScheduler, RandomAwsIds, SystemClock
 
 __all__ = [
     "AsyncioTaskScheduler",

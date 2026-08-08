@@ -20,9 +20,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-
-from .configuration import ConfigurationError, LoadedConfiguration, require_mapping
-from .observability import log_event
+from mystack.aws_protocol.configuration import (
+    ConfigurationError,
+    LoadedConfiguration,
+    require_mapping,
+)
+from mystack.aws_protocol.observability import log_event
 
 _LOGGER = logging.getLogger(__name__)
 
