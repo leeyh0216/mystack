@@ -35,21 +35,26 @@ commit된 YAML에 넣지 말고 배포 시 주입합니다. Docker의 일반 환
 <!-- section: docker-modes -->
 ## Docker 실행 방식
 
-기본 `make up CONFIG=config/mystack.yaml`은 `CONFIG`를 `MYSTACK_CONFIG_SOURCE` build
-argument로 전달하고 repository 안의 해당 파일을 `/etc/mystack/mystack.yaml`에 복사합니다.
-Image와 설정이 불변이며 bind mount가 제한된 Docker host에서도 동작합니다. Source file은
-Docker build context 안에 있어야 합니다.
+일반 사용자는 `compose.ghcr.yaml`을 사용합니다. 게시 image마다 같은 release에서 검토한
+`/etc/mystack/mystack.yaml`이 포함되므로 repository clone이나 config mount가 필요하지 않습니다.
+`MYSTACK_IMAGE_TAG`는 필수입니다. Digest를 고정할 때는 component별 전체 image reference를
+`MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, `MYSTACK_GLUE_IMAGE`로 지정할 수 있습니다. Compose가
+nested fallback을 평가하므로 세 override를 모두 써도 tag를 정의해야 합니다.
 
-개발 중 즉시 파일을 바꾸거나 prebuilt registry image를 사용할 때는 read-only mount overlay를
-사용합니다.
+게시 환경을 바꾸려면 image와 같은 Git tag에서 `config/mystack.yaml`과
+`compose.mount-config.yaml`을 받은 뒤 read-only mount를 사용합니다.
 
 ```bash
-MYSTACK_CONFIG_FILE=./config/mystack.yaml \
-docker compose -f compose.yaml -f compose.mount-config.yaml up --detach --wait
+MYSTACK_CONFIG_FILE="$PWD/mystack.yaml" \
+docker compose -f compose.ghcr.yaml -f compose.mount-config.yaml up --detach --wait
 ```
 
 Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 process 시작 시 한 번만
 읽으며 일부 값만 적용된 hot reload는 하지 않습니다.
+
+Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_SOURCE` build argument를
+사용할 수 있습니다. 이 source build 경로는 [개발 환경 안내](development.ko.md)에 있으며 image
+사용자에게 필요하지 않습니다.
 
 <!-- section: sections -->
 ## 주요 section

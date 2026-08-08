@@ -11,7 +11,8 @@ the repository, protocol, CI, or releases, go to the [maintainer guide](maintain
 <!-- section: start -->
 ## Start here
 
-1. Follow the [detailed usage guide](getting-started.md) to start Docker Compose and verify the public endpoint.
+1. Follow the [detailed usage guide](getting-started.md) to pull private GHCR images without a source
+   clone, start Docker Compose, and verify the public endpoint.
 2. Choose ports, timeouts, data paths, and file overrides in the [configuration guide](configuration.md).
 3. Check the exact API and library evidence in the [support scope](support-scope.md) and [client
    compatibility matrix](compatibility/client-matrix.md).

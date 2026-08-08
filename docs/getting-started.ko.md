@@ -25,31 +25,48 @@ host 정보를 보고 EMR, Glue, LocalStack으로 전달합니다. AWS SDK의 en
 <!-- section: compose -->
 ## Docker Compose로 시작하기
 
-Docker Engine과 Compose를 설치하고 private repository를 clone합니다. 최초 image build에는
-Spark와 Glue image를 받아야 하므로 12GB 이상의 여유 공간을 권장합니다.
+Docker Engine과 Compose를 설치하고 private repository 접근을 위해 GitHub CLI를 인증합니다.
+Source clone, Python 환경, Java 설치, local image build는 필요하지 않습니다. 세 `mystack-*`
+package에 모두 존재하는 tag를 선택하세요. `latest`는 의도적으로 제공하지 않습니다.
 
 ```bash
-gh repo clone leeyh0216/mystack
-cd mystack
-cp .env.example .env
-docker compose config --quiet
-docker compose up --build --detach --wait --wait-timeout 300
+export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
+mkdir mystack-runtime && cd mystack-runtime
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
+
+export CR_PAT=READ_PACKAGES_권한을_가진_CLASSIC_PAT
+echo "$CR_PAT" | docker login ghcr.io -u GITHUB_사용자명 --password-stdin
+unset CR_PAT
+
+docker compose -f compose.ghcr.yaml config --quiet
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-Compose file 형식과 `--wait` 동작은 [Docker Compose
-문서](https://docs.docker.com/reference/cli/docker/compose/up/)를 기준으로 합니다. 모든
-container가 `healthy`가 된 다음 client를 실행하세요.
+GitHub [Container registry 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)에
+따라 private local pull에는 `read:packages` 권한의 classic PAT가 필요합니다. `gh auth`는 private
+repository에서 file 하나를 받는 권한을 별도로 제공합니다. 어떤 token도 `.env`에 저장하지 마세요.
+
+Image 전용 Compose file에는 `build` key가 없습니다. Compose의 [필수 변수
+치환](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)으로 명시적
+tag를 요구하고 해당 release에 포함된 설정을 사용합니다. 네 container가 모두 `healthy`가 된 뒤
+client를 실행하세요.
 
 ```bash
-aws --endpoint-url http://localhost:4566 glue get-databases
-aws --endpoint-url http://localhost:4566 emr list-clusters
-aws --endpoint-url http://localhost:4566 s3 ls
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 glue get-databases
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 emr list-clusters
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 s3 ls
 ```
 
-`.env.example`의 credential은 local emulator용 값입니다. 실제 AWS credential을 `.env`나
-repository에 넣지 마세요. 종료할 때 data를 남기려면 `docker compose stop`을 사용합니다.
-`make down`은 test용 volume까지 제거하므로 저장 data도 삭제됩니다.
+이 값은 local emulator용이며 실제 AWS credential이 아닙니다. 실제 AWS credential을 이 runtime
+directory에 넣지 마세요.
 
 <!-- section: clients -->
 ## boto3와 application 연결하기
@@ -132,39 +149,81 @@ print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
 
 | 목적 | 명령에 추가할 file |
 | --- | --- |
-| 기본 local build와 실행 | `-f compose.yaml` |
-| YAML 설정을 rebuild 없이 mount | `-f compose.mount-config.yaml` |
+| 게시 image와 포함된 기본 설정으로 실행 | `-f compose.ghcr.yaml` |
+| 검토한 YAML 설정을 read-only mount | `-f compose.mount-config.yaml` 추가 |
+| Mystack source build 또는 변경 | 이 사용자 경로가 아닌 [개발 환경 안내](development.ko.md) 사용 |
 
-예를 들어 rebuild 없이 설정 파일을 적용하려면 다음과 같이 실행합니다.
+설정을 바꾸기 전에 같은 Git tag에서 설정과 overlay를 받습니다.
 
 ```bash
-export MYSTACK_CONFIG_FILE="$PWD/config/mystack.yaml"
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/config/mystack.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > mystack.yaml
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.mount-config.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.mount-config.yaml
+export MYSTACK_CONFIG_FILE="$PWD/mystack.yaml"
 docker compose \
-  -f compose.yaml \
+  -f compose.ghcr.yaml \
   -f compose.mount-config.yaml \
-  up --build --detach --wait
+  up --detach --wait --wait-timeout 300
 ```
 
 Compose는 뒤에 지정한 file을 앞의 설정과 병합합니다. 정확한 규칙은 [Compose file 병합
 문서](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)를 참고하세요. 전체
 YAML key와 환경변수 우선순위는 [설정 안내](configuration.ko.md)에 있습니다.
 
+<!-- section: lifecycle -->
+## Upgrade, rollback과 정리
+
+Proxy, EMR, Glue에 모두 존재하는 tag로만 upgrade합니다. 같은 Git tag의 Compose file로 교체하고
+`.env`를 갱신한 뒤 먼저 pull합니다. Compose는 변경된 container를 다시 만들고 named volume은
+보존합니다.
+
+```bash
+export MYSTACK_IMAGE_TAG=v0.2.0
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
+```
+
+Rollback은 이전에 검증한 tag로 같은 절차를 실행합니다. 배포 identity를 엄격하게 고정하려면 release
+artifact의 세 `ghcr.io/...@sha256:...` 전체 값을 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`,
+`MYSTACK_GLUE_IMAGE`로 지정하세요. 이 값은 공통 tag보다 우선합니다. Compose가 모든 fallback을
+검증할 수 있도록 `.env`의 필수 `MYSTACK_IMAGE_TAG` entry는 유지하세요.
+
+```bash
+docker compose -f compose.ghcr.yaml stop                  # container와 data 보존
+docker compose -f compose.ghcr.yaml down                  # container 제거, named volume 보존
+docker compose -f compose.ghcr.yaml down --volumes        # emulator state 영구 제거
+```
+
+마지막 명령은 EMR, Glue, LocalStack data를 삭제합니다. 공유 장비에서 `docker logout ghcr.io`를
+실행하면 저장한 GHCR login이 사라져 다른 private package pull에도 영향을 줄 수 있습니다.
+
 <!-- section: verify -->
 ## 동작 확인과 문제 해결
 
 ```bash
-make routes
-make logs SERVICE=glue
-make threads
-make tasks
+docker compose -f compose.ghcr.yaml ps
+docker compose -f compose.ghcr.yaml logs --tail 200 proxy glue emr
+curl --fail http://localhost:4566/_mystack/routes
+curl --fail http://localhost:4566/_mystack/diagnostics/threads
+curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
+- `unauthorized` 또는 `denied`: package access와 `read:packages` classic PAT를 확인한 뒤
+  `docker login ghcr.io`를 다시 실행하세요.
+- `manifest unknown`: 선택한 tag가 세 package에 모두 있어야 하며 `latest`는 없습니다.
 - `connection refused`: `docker compose ps`에서 Proxy와 dependency health를 확인하세요.
 - bind mount 권한 오류: Docker Desktop의 file sharing 권한과 절대 경로를 확인하세요.
-- protocol 변경 의심: `make model-check`, `make coverage-check`를 실행하세요.
-- test가 멈춤: `config/mystack.yaml`의 `tests.*_timeout_seconds`를 조정하고 thread/task endpoint를
-  확인하세요.
+- 작업이 멈춤: service deadline을 바꾸기 전에 thread/task endpoint와 component log를 확인하세요.
+- protocol 또는 client 불일치 의심: 선택한 version과 생성된 [Client 호환성
+  근거](compatibility/client-matrix.ko.generated.md)를 비교하세요.
 
 관리 endpoint와 log에 관한 자세한 내용은 [관찰성 안내](observability.ko.md)를 참고하세요.
 
@@ -172,6 +231,8 @@ open http://localhost:4566/_mystack/console
 ## 공식 참고 자료
 
 - [Docker Compose up](https://docs.docker.com/reference/cli/docker/compose/up/)
+- [GitHub Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+- [Compose 변수 치환](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
 - [Compose file 병합](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint 구성](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)

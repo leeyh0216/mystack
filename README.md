@@ -28,24 +28,33 @@ for exact boundaries.
 <!-- section: quick-start -->
 ## Quick start
 
-Docker Engine with Compose is the only runtime prerequisite. AWS CLI is optional; boto3 and other
-AWS SDKs use the same endpoint.
+The normal path pulls the private published images; it does not clone or build this repository.
+Install Docker Engine with Compose and authenticate GitHub CLI for this private repository. Choose
+an existing semantic tag from the package/release page. GitHub requires a classic personal access
+token with only `read:packages` for private GHCR pulls; see the official [Container registry
+guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
 
 ```bash
-cp .env.example .env
-docker compose config --quiet
-docker compose up --build --detach --wait --wait-timeout 300
-aws --endpoint-url http://localhost:4566 glue get-databases
+export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
+mkdir mystack-runtime && cd mystack-runtime
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+
+export CR_PAT=YOUR_CLASSIC_PAT_WITH_READ_PACKAGES
+echo "$CR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+unset CR_PAT
+
+docker compose -f compose.ghcr.yaml config --quiet
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
+curl --fail http://localhost:4566/_mystack/health
 ```
 
 Open `http://localhost:4566/_mystack/console` for resources, logs, routes, thread stacks, and asyncio
 tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
-boto3, AWS SDK for pandas, and application-container configuration.
-
-`make up CONFIG=path/in/repository.yaml` embeds the selected file in locally built
-images; `compose.mount-config.yaml` optionally mounts a file read-only for live development or
-prebuilt images. Use `MYSTACK__SECTION__KEY` only for deployment-specific overrides. See the
-[configuration guide](docs/configuration.md) and [Docker Compose specification](https://docs.docker.com/reference/compose-file/).
+boto3, AWS SDK for pandas, upgrades, rollback, troubleshooting, and cleanup. Source builds belong in
+the [development guide](docs/development.md), not the normal user path.
 
 <!-- section: user-paths -->
 ## Find your task

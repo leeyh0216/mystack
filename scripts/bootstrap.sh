@@ -35,6 +35,8 @@ echo "[mystack] syncing locked Python workspace"
 uv sync --locked --all-packages
 echo "[mystack] checking bilingual documentation and official references"
 uv run python scripts/check_docs.py
+echo "[mystack] checking the source-free GHCR user Compose file"
+make ghcr-compose-check
 echo "[mystack] checking hash-locked container requirements"
 uv run python scripts/export_requirements.py --check
 echo "[mystack] checking pinned AWS service models"

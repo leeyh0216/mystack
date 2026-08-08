@@ -30,6 +30,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: ghcr-compose-contract
+        name: Source-free GHCR Compose contract
+        entry: make ghcr-compose-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: requirement-locks
         name: Container requirement lock drift
         entry: uv run python scripts/export_requirements.py --check

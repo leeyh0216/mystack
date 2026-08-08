@@ -28,25 +28,34 @@ Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. “�
 <!-- section: quick-start -->
 ## 빠른 시작
 
-사전 요구사항은 Docker Engine과 Compose입니다. AWS CLI를 사용하지 않아도 boto3나 다른 AWS
-SDK로 같은 endpoint에 연결할 수 있습니다.
+일반 사용 경로는 private 게시 image를 pull하며 repository를 clone하거나 build하지 않습니다.
+Docker Engine과 Compose를 설치하고 private repository에 접근할 GitHub CLI 인증을 준비합니다.
+Package/release page에서 실제 semantic tag를 선택하세요. Private GHCR pull에는
+`read:packages`만 가진 classic personal access token이 필요합니다. 공식 [Container registry
+안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를
+참고하세요.
 
 ```bash
-cp .env.example .env
-docker compose config --quiet
-docker compose up --build --detach --wait --wait-timeout 300
-aws --endpoint-url http://localhost:4566 glue get-databases
+export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
+mkdir mystack-runtime && cd mystack-runtime
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+
+export CR_PAT=READ_PACKAGES_권한을_가진_CLASSIC_PAT
+echo "$CR_PAT" | docker login ghcr.io -u GITHUB_사용자명 --password-stdin
+unset CR_PAT
+
+docker compose -f compose.ghcr.yaml config --quiet
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
+curl --fail http://localhost:4566/_mystack/health
 ```
 
 `http://localhost:4566/_mystack/console`에서 resource, log, route, thread stack, asyncio task를
-확인할 수 있습니다. Docker Compose 조합, boto3와 AWS SDK for pandas 연결, 애플리케이션 container
-설정은 [상세 사용 안내](docs/getting-started.ko.md)부터 읽어보세요.
-
-`make up CONFIG=repository/내부/경로.yaml`은 선택한 파일을 local
-image에 포함하고, live 개발이나 prebuilt image에는 `compose.mount-config.yaml`로 파일을
-read-only mount할 수 있습니다. `MYSTACK__SECTION__KEY`는 배포별 override에만 사용합니다.
-자세한 내용은 [설정 가이드](docs/configuration.ko.md)와
-[Docker Compose specification](https://docs.docker.com/reference/compose-file/)을 참고하세요.
+확인할 수 있습니다. Docker Compose 조합, boto3와 AWS SDK for pandas 연결, upgrade, rollback,
+문제 해결과 정리는 [상세 사용 안내](docs/getting-started.ko.md)부터 읽어보세요. Source build는 일반
+사용 경로가 아니며 [개발 환경 안내](docs/development.ko.md)에 있습니다.
 
 <!-- section: user-paths -->
 ## 원하는 작업부터 찾기

@@ -97,6 +97,7 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make ghcr-compose-check
 make compatibility-check
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check

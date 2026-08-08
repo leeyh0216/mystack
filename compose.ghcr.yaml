@@ -1,0 +1,81 @@
+# Image-only user deployment. No local source tree or build context is required.
+# Compose interpolation: https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/
+# Private GHCR pulls: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+name: mystack
+
+x-mystack-service: &mystack-service
+  restart: unless-stopped
+  environment:
+    MYSTACK_CONFIG_FILE: /etc/mystack/mystack.yaml
+  networks: [mystack]
+
+services:
+  proxy:
+    <<: *mystack-service
+    image: ${MYSTACK_PROXY_IMAGE:-ghcr.io/leeyh0216/mystack-proxy:${MYSTACK_IMAGE_TAG:?Set MYSTACK_IMAGE_TAG to a published explicit version}}
+    ports:
+      - "${MYSTACK_PORT:-4566}:8080"
+    depends_on:
+      localstack: {condition: service_healthy}
+      emr: {condition: service_healthy}
+      glue: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  emr:
+    <<: *mystack-service
+    image: ${MYSTACK_EMR_IMAGE:-ghcr.io/leeyh0216/mystack-emr:${MYSTACK_IMAGE_TAG:?Set MYSTACK_IMAGE_TAG to a published explicit version}}
+    volumes:
+      - emr-data:/var/lib/mystack/emr
+      - ivy-cache:/home/mystack/.ivy2
+    healthcheck:
+      test: [CMD, python3.11, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  glue:
+    <<: *mystack-service
+    image: ${MYSTACK_GLUE_IMAGE:-ghcr.io/leeyh0216/mystack-glue:${MYSTACK_IMAGE_TAG:?Set MYSTACK_IMAGE_TAG to a published explicit version}}
+    volumes:
+      - glue-data:/var/lib/mystack/glue
+    environment:
+      MYSTACK_CONFIG_FILE: /etc/mystack/mystack.yaml
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ENDPOINT_URL_GLUE: ${GLUE_CATALOG_ENDPOINT_URL:-http://proxy:8080}
+      AWS_ENDPOINT_URL_S3: ${OBJECT_STORE_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL_STS: ${STS_ENDPOINT_URL:-http://localstack:4566}
+    healthcheck:
+      test: [CMD, python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/_mystack/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  localstack:
+    image: ${LOCALSTACK_IMAGE:-localstack/localstack:4.7.0@sha256:12253acd9676770e9bd31cbfcf17c5ca6fd7fb5c0c62f3c46dd701f20304260c}
+    environment:
+      DEBUG: ${LOCALSTACK_DEBUG:-0}
+      PERSISTENCE: ${LOCALSTACK_PERSISTENCE:-1}
+    volumes:
+      - localstack-data:/var/lib/localstack
+    networks: [mystack]
+    healthcheck:
+      test: [CMD-SHELL, "curl -fsS http://127.0.0.1:4566/_localstack/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  emr-data:
+  glue-data:
+  ivy-cache:
+  localstack-data:
+
+networks:
+  mystack:

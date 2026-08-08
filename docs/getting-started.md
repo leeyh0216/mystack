@@ -24,31 +24,47 @@ configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoi
 <!-- section: compose -->
 ## Start with Docker Compose
 
-Install Docker Engine with Compose, then clone the private repository. Allow at least 12 GB of free
-space for the first Spark and Glue image build.
+Install Docker Engine with Compose and authenticate GitHub CLI for access to the private repository.
+No source clone, Python environment, Java installation, or local image build is needed. Pick a tag
+that exists for all three `mystack-*` packages; `latest` is intentionally unavailable.
 
 ```bash
-gh repo clone leeyh0216/mystack
-cd mystack
-cp .env.example .env
-docker compose config --quiet
-docker compose up --build --detach --wait --wait-timeout 300
+export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
+mkdir mystack-runtime && cd mystack-runtime
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
+
+export CR_PAT=YOUR_CLASSIC_PAT_WITH_READ_PACKAGES
+echo "$CR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+unset CR_PAT
+
+docker compose -f compose.ghcr.yaml config --quiet
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-The Compose file and `--wait` behavior follow the [Docker Compose
-documentation](https://docs.docker.com/reference/cli/docker/compose/up/). Wait until every container
-is `healthy` before starting clients.
+GitHub's [Container registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+requires a classic PAT with `read:packages` for a private local pull. `gh auth` separately authorizes
+the one-file download from the private repository. Never save either token in `.env`.
+
+The image-only Compose file contains no `build` key. It requires an explicit tag through Compose's
+[required interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
+and uses the configuration packaged in that release. Wait until all four containers are `healthy`.
 
 ```bash
-aws --endpoint-url http://localhost:4566 glue get-databases
-aws --endpoint-url http://localhost:4566 emr list-clusters
-aws --endpoint-url http://localhost:4566 s3 ls
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 glue get-databases
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 emr list-clusters
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+  aws --endpoint-url http://localhost:4566 s3 ls
 ```
 
-The credentials in `.env.example` are local-emulator values. Never place real AWS credentials in
-`.env` or the repository. Use `docker compose stop` when you want to preserve data. `make down`
-removes the test volumes and therefore deletes their stored data.
+These are local-emulator credentials, not AWS credentials. Never put real AWS credentials in this
+runtime directory.
 
 <!-- section: clients -->
 ## Connect boto3 and applications
@@ -129,38 +145,82 @@ excluded services. In particular, `wr.athena.*` is currently out of scope.
 
 | Purpose | File to add to the command |
 | --- | --- |
-| Default local build and startup | `-f compose.yaml` |
-| Mount YAML configuration without rebuilding | `-f compose.mount-config.yaml` |
+| Published image startup with packaged defaults | `-f compose.ghcr.yaml` |
+| Mount a reviewed YAML configuration read-only | add `-f compose.mount-config.yaml` |
+| Build or change Mystack source | use the [development guide](development.md), not this user path |
 
-For example, apply a configuration file without rebuilding:
+Download the configuration and overlay from the same Git tag before customizing them:
 
 ```bash
-export MYSTACK_CONFIG_FILE="$PWD/config/mystack.yaml"
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/config/mystack.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > mystack.yaml
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.mount-config.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.mount-config.yaml
+export MYSTACK_CONFIG_FILE="$PWD/mystack.yaml"
 docker compose \
-  -f compose.yaml \
+  -f compose.ghcr.yaml \
   -f compose.mount-config.yaml \
-  up --build --detach --wait
+  up --detach --wait --wait-timeout 300
 ```
 
 Compose merges later files into the earlier configuration. See the [Compose file merge
 documentation](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/) for exact rules
 and the [configuration guide](configuration.md) for every YAML key and override precedence.
 
+<!-- section: lifecycle -->
+## Upgrade, rollback, and cleanup
+
+Upgrade only to a tag that exists on Proxy, EMR, and Glue. Replace the Compose file from the same Git
+tag, update `.env`, pull first, and let Compose recreate changed containers while preserving named
+volumes:
+
+```bash
+export MYSTACK_IMAGE_TAG=v0.2.0
+gh api -H "Accept: application/vnd.github.raw+json" \
+  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  > compose.ghcr.yaml
+printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
+docker compose -f compose.ghcr.yaml pull
+docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
+```
+
+Rollback uses the same sequence with the previous verified tag. For deployment-grade identity,
+override `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, and `MYSTACK_GLUE_IMAGE` with the three full
+`ghcr.io/...@sha256:...` values from release artifacts; these take precedence over the shared tag.
+Keep the required `MYSTACK_IMAGE_TAG` entry in `.env` so Compose can validate every fallback.
+
+```bash
+docker compose -f compose.ghcr.yaml stop                  # preserve containers and data
+docker compose -f compose.ghcr.yaml down                  # remove containers, preserve named volumes
+docker compose -f compose.ghcr.yaml down --volumes        # permanently remove emulator state
+```
+
+The final command deletes EMR, Glue, and LocalStack data. On a shared machine, `docker logout ghcr.io`
+also removes the saved GHCR login and can affect other private package pulls.
+
 <!-- section: verify -->
 ## Verify and troubleshoot
 
 ```bash
-make routes
-make logs SERVICE=glue
-make threads
-make tasks
+docker compose -f compose.ghcr.yaml ps
+docker compose -f compose.ghcr.yaml logs --tail 200 proxy glue emr
+curl --fail http://localhost:4566/_mystack/routes
+curl --fail http://localhost:4566/_mystack/diagnostics/threads
+curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
+- `unauthorized` or `denied`: confirm package access, use a classic PAT with `read:packages`, then
+  repeat `docker login ghcr.io`.
+- `manifest unknown`: the selected tag must exist on all three packages; there is no `latest` tag.
 - `connection refused`: inspect Proxy and dependency health with `docker compose ps`.
 - Bind-mount permission error: inspect Docker Desktop file-sharing permission and absolute paths.
-- Suspected protocol change: run `make model-check` and `make coverage-check`.
-- Hung test: tune `tests.*_timeout_seconds` in `config/mystack.yaml` and inspect thread/task endpoints.
+- Hung operation: inspect thread/task endpoints and component logs before changing configured
+  service deadlines.
+- Suspected protocol or client mismatch: compare the selected version with the generated [client
+  compatibility evidence](compatibility/client-matrix.generated.md).
 
 See the [observability guide](observability.md) for management endpoints and structured logs.
 
@@ -168,6 +228,8 @@ See the [observability guide](observability.md) for management endpoints and str
 ## Official sources
 
 - [Docker Compose up](https://docs.docker.com/reference/cli/docker/compose/up/)
+- [GitHub Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+- [Compose interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
 - [Compose file merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)

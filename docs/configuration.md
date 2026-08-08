@@ -37,20 +37,26 @@ between ordinary environment configuration and [secrets](https://docs.docker.com
 <!-- section: docker-modes -->
 ## Docker modes
 
-The default `make up CONFIG=config/mystack.yaml` passes `CONFIG` as the
-`MYSTACK_CONFIG_SOURCE` build argument and copies that repository-local file to
-`/etc/mystack/mystack.yaml`. This is immutable and works on Docker hosts where bind mounts are
-restricted. The source must be inside the Docker build context.
+The normal user command uses `compose.ghcr.yaml`. Each published image contains the reviewed
+`/etc/mystack/mystack.yaml` from the same release, so no repository clone or config mount is needed.
+`MYSTACK_IMAGE_TAG` is required and component-specific full image references can be supplied through
+`MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, and `MYSTACK_GLUE_IMAGE` for digest pinning. Keep the tag
+defined even when all three overrides are present because Compose evaluates nested fallbacks.
 
-For live development or a prebuilt registry image, mount a file read-only:
+To customize a published deployment, download `config/mystack.yaml` and
+`compose.mount-config.yaml` from the same Git tag as the images, then mount the file read-only:
 
 ```bash
-MYSTACK_CONFIG_FILE=./config/mystack.yaml \
-docker compose -f compose.yaml -f compose.mount-config.yaml up --detach --wait
+MYSTACK_CONFIG_FILE="$PWD/mystack.yaml" \
+docker compose -f compose.ghcr.yaml -f compose.mount-config.yaml up --detach --wait
 ```
 
 Restart the affected container after editing the mounted file. Configuration is intentionally
 loaded once at process startup; no partially applied hot reload is performed.
+
+Repository maintainers can use `make up CONFIG=config/mystack.yaml`; that source-build path passes
+`MYSTACK_CONFIG_SOURCE` as a build argument. It is documented in the [development guide](development.md)
+and is not required for image consumers.
 
 <!-- section: sections -->
 ## Main sections
