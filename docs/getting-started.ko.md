@@ -268,6 +268,13 @@ curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
+**EMR**에서 `RunJobFlow`와 같은 field로 cluster를 생성하고 선택한 뒤 Spark Step을 제출하면
+상태, failure detail, stdout/stderr, S3 log publication 상태를 추적할 수 있습니다. Cluster 종료
+보호와 종료, 실행 중 Step 취소 역시 boto3 호환 public AWS endpoint를 사용합니다. **Glue**에서는
+database와 table을 선택해 일반 column, partition key, partition 값과 위치, parameter, raw
+metadata를 탐색할 수 있습니다. Console은 현재 선택을 유지하며 설정된 주기로 polling합니다.
+정확한 경계와 보안 model은 [Console 안내](console.ko.md)를 참고하세요.
+
 - `unauthorized` 또는 `denied`: package 소유자가 세 package를 모두 public으로 전환했는지와 image
   이름이 정확한지 확인하세요. Consumer token을 우회 방법으로 추가하지 마세요.
 - `manifest unknown`: 선택한 tag가 세 package에 모두 있어야 하며 `latest`는 없습니다.

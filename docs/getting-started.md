@@ -265,6 +265,14 @@ curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
+In **EMR**, create a cluster with the same fields used by `RunJobFlow`, select it, submit a Spark
+Step, and follow state, failure detail, stdout/stderr, and S3 log-publication status. Cluster
+protection and termination, plus active-Step cancellation, also use the public boto3-compatible
+AWS endpoint. In **Glue**, select a database and table to explore ordinary columns, partition keys,
+partition values and locations, parameters, and raw metadata. The Console polls at the configured
+interval while preserving the current selection. See the [Console guide](console.md) for its exact
+boundary and security model.
+
 - `unauthorized` or `denied`: verify that the package owner made all three packages public and that
   the image name is exact. Do not add a consumer token as a workaround.
 - `manifest unknown`: the selected tag must exist on all three packages; there is no `latest` tag.

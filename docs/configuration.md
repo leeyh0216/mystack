@@ -27,6 +27,7 @@ Examples:
 MYSTACK_CONFIG_FILE=config/mystack.yaml \
 MYSTACK__LOGGING__LEVEL=DEBUG \
 MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600 \
+MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
 mystack-proxy
 ```
 
@@ -64,6 +65,7 @@ and is not required for image consumers.
 | Path | Responsibility |
 | --- | --- |
 | `logging` | Structured log level and format contract |
+| `management.console` | Browser Console automatic refresh interval |
 | `management.diagnostics` | Enablement, bearer token, and maximum thread/task stack depth |
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
@@ -76,6 +78,12 @@ New settings must be added to the YAML, mapped by the relevant composition-root 
 adapter, covered by a typed configuration test, and documented in both languages. Inner Domain
 and Application modules receive typed policy/value objects and never read files or environment
 variables.
+
+`management.console.refresh_interval_seconds` controls state-preserving polling for the selected
+EMR or Glue workspace. It must be at least 0.5 seconds. The value is injected into the static
+Console at the composition boundary, so browser code has no environment-specific interval. This
+release uses the standard browser timer contract documented by
+[`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval).
 
 `emr.shutdown_timeout_seconds` bounds service shutdown after scheduling has stopped. Within that
 deadline, EMR cancels and awaits owned driver tasks, terminates or kills bootstrap/Spark children

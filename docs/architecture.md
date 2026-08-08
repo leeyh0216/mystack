@@ -129,6 +129,12 @@ adapter translates its Application/Domain resources to versioned JSON; the Proxy
 and the packaged browser UI renders it without importing service internals. See the
 [management console contract](console.md).
 
+Console commands do not bypass this architecture with an internal object bridge. EMR mutations
+send documented AWS JSON 1.1 requests to the public Proxy and therefore traverse the same routing,
+model validation, application handlers, repositories, error translation, and boundary logging as
+boto3. Glue exploration remains a read model. Static browser modules know only these two outward
+contracts, so neither Proxy nor browser code can reach a service repository or Domain object.
+
 Proxy controllers receive only typed AWS-request and management-forwarding capabilities from a
 runtime context. The context owns one shared HTTP pool, closes it exactly once on normal shutdown or
 partial startup failure, and never exposes the client through FastAPI application state. Route

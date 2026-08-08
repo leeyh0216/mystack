@@ -21,7 +21,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions and additional clients |
-| Web console | Implemented: EMR/Glue resources, status/detail, EMR logs, route/thread/task views, keyboard/browser E2E | Additional service-specific visualizations |
+| Web console | Implemented: create/protect/terminate EMR clusters, submit/track/cancel Steps, Step logs/publication, Glue database/table/schema/partition explorer, route/thread/task views, keyboard/browser E2E | Live log streaming, Spark UI and History Server links |
 
 The management console is served at `/_mystack/console`. Glue metadata mutations use serialized
 candidate-state transactions: persistence failure leaves visible and durable state unchanged, and

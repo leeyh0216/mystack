@@ -177,13 +177,13 @@
 <!-- section: uc-010 -->
 ## UC-010: Operate the browser management console
 
-- Purpose/actor/trigger: local operator opens `/_mystack/console` and selects tabs/resources/logs.
-- Input: component/tab/resource selection, refresh action and optional management token.
-- Output: accessible status, compatibility, resource detail, logs, route and stack views.
-- Stored/changed data/events: browser view state only; invokes read-only management endpoints.
-- Preconditions/rules: packaged static asset and public Proxy; keyboard/ARIA tab contract.
-- Failures: unavailable component/endpoint/token displays non-secret error state.
-- Observability: Playwright keyboard/resource/log/browser E2E and captured screenshot.
+- Purpose/actor/trigger: local operator opens `/_mystack/console` to operate EMR, explore Glue, or inspect diagnostics.
+- Input: cluster/Step forms and actions, database/table/tab selection, refresh and optional management token.
+- Output: accessible lifecycle/status, logs and publication evidence, Glue schema/partition metadata, route and stack views.
+- Stored/changed data/events: browser selection state; reads use management endpoints while EMR mutations use the public AWS endpoint and normal application use cases.
+- Preconditions/rules: packaged static modules and public Proxy; configured polling interval; keyboard/ARIA tab contract; arrays are never shell-parsed.
+- Failures: unavailable component/endpoint/token or modeled AWS error displays a non-secret error with AWS code/request ID when present.
+- Observability: Playwright cluster/Step/Glue/keyboard/browser E2E, protocol boundary logs, and captured screenshot.
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
 - Confidence: High

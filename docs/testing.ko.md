@@ -69,6 +69,12 @@
 - AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
   같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
   기록합니다.
+- Playwright로 management Console을 조작해 EMR cluster 생성·종료, Step 제출·추적·취소·조회,
+  S3 log publication, 복합 Glue schema와 partition 탐색, keyboard/ARIA 동작과 깨끗한 browser
+  console을 검증합니다. Browser action은 `tests.e2e.browser_action_timeout_seconds`를 사용하고
+  CI는 설정된 환경변수 이름으로 Chromium 실행을 필수화합니다. Playwright 공식
+  [auto-waiting 동작](https://playwright.dev/python/docs/actionability)도 이 명시적 deadline
+  안에서만 사용합니다.
 - 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
 
 <!-- section: reproducibility -->

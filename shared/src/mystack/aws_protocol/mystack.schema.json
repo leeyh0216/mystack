@@ -30,8 +30,16 @@
     "management": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["diagnostics"],
+      "required": ["console", "diagnostics"],
       "properties": {
+        "console": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["refresh_interval_seconds"],
+          "properties": {
+            "refresh_interval_seconds": {"type": "number", "minimum": 0.5}
+          }
+        },
         "diagnostics": {
           "type": "object",
           "additionalProperties": false,

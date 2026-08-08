@@ -117,6 +117,14 @@ def create_app(
         implemented_operations=dispatcher.operations,
         model_operation_count=len(service_model.operation_names),
         config_fingerprint=settings.config_fingerprint,
+        default_release_label=settings.policy.default_release_label,
+        release_profiles={
+            label: {
+                "runtime_profile": profile.runtime_profile,
+                "aws_spark_version": profile.aws_spark_version,
+            }
+            for label, profile in settings.policy.release_profiles.items()
+        },
         startup_cluster_source=startup_plan.source,
         startup_cluster_fingerprint=startup_plan.fingerprint,
         startup_cluster_count=len(startup_plan.commands),

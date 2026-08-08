@@ -1,87 +1,246 @@
 <!doctype html>
 <!--
   Visual reference: https://aws.amazon.com/console/
-  Accessibility reference: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
-  EMR log reference:
-  https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html
+  Accessibility references:
+  https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+  https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+  Service references:
+  https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html
+  https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html
 -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="mystack-refresh-interval-ms" content="__MYSTACK_REFRESH_INTERVAL_MS__">
   <title>Mystack Console</title>
-  <style>
-    :root{color-scheme:dark;--ink:#e9ebed;--muted:#aab7c4;--line:#465568;--panel:#161e2d;--nav:#101820;--accent:#f90;--blue:#0972d3;--focus:#59b9ff;--good:#7ce38b;--bad:#ff9b9b}
-    *{box-sizing:border-box}body{margin:0;background:#0f1720;color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}.skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:8px;z-index:9;background:#fff;color:#111;padding:8px}
-    header{height:54px;display:flex;align-items:center;gap:22px;padding:0 24px;background:var(--nav);border-bottom:1px solid #293444;box-shadow:0 2px 8px #0008}.brand{font-size:19px;font-weight:700}.brand b{color:var(--accent)}header span:last-child,.lead,.label,.muted{color:var(--muted)}
-    main{max-width:1600px;margin:auto;padding:26px}h1{font-size:25px;margin:0 0 5px}.lead{margin:0 0 20px}.toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:grid;gap:4px;font-weight:650}.field span{font-size:12px;color:var(--muted)}
-    select,input,button{color:var(--ink);background:#202b3a;border:1px solid #607088;border-radius:4px;padding:8px 11px;min-height:38px}input{min-width:260px}button{cursor:pointer;background:var(--blue);border-color:#3897e6;font-weight:700}button.secondary{background:#202b3a}button:hover{filter:brightness(1.13)}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-    .status{min-height:38px;display:flex;align-items:center;padding:0 8px}.ok{color:var(--good)}.error{color:var(--bad)}.grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:13px;margin:20px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:15px;box-shadow:0 1px 3px #0008}.label{font-size:12px;text-transform:uppercase}.value{font-size:21px;font-weight:750;margin-top:4px;overflow-wrap:anywhere}.notice{margin-top:10px;color:var(--muted)}
-    .tabs{display:flex;gap:5px;overflow:auto;border-bottom:1px solid var(--line)}[role=tab]{border-radius:4px 4px 0 0;background:#172234;border-color:transparent;padding:10px 15px}[role=tab][aria-selected=true]{background:var(--panel);border:1px solid var(--line);border-bottom-color:var(--panel);color:#fff}
-    [role=tabpanel]{background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 6px 6px;min-height:430px}.split{display:grid;grid-template-columns:minmax(280px,36%) 1fr;min-height:430px}.list-pane{border-right:1px solid var(--line);padding:14px}.detail-pane{padding:14px;min-width:0}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.panel-head h2{font-size:16px;margin:0}.search{min-width:140px;width:100%}
-    .resources{list-style:none;margin:0;padding:0;max-height:560px;overflow:auto}.resources li+li{margin-top:6px}.resource{width:100%;display:grid;grid-template-columns:1fr auto;gap:7px;text-align:left;background:#202b3a;border-color:#45566b;font-weight:500}.resource.selected{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent)}.kind{color:var(--muted);font-size:11px;text-transform:uppercase}.state{font-size:11px;border:1px solid #66768b;border-radius:999px;padding:2px 7px;align-self:center}
-    pre{margin:0;padding:14px;background:#101820;border:1px solid #334154;border-radius:4px;min-height:320px;max-height:60vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}.log-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}.log-grid h2{font-size:15px}.log-publication{grid-column:1/-1}.log-publication pre{min-height:0;max-height:220px}.empty{padding:22px;color:var(--muted)}[hidden]{display:none!important}
-    @media(max-width:900px){main{padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.list-pane{border-right:0;border-bottom:1px solid var(--line)}.log-grid{grid-template-columns:1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}input{min-width:100%}.toolbar>*{width:100%}}
-  </style>
+  <link rel="stylesheet" href="/_mystack/assets/console/console.css">
+  <script type="module" src="/_mystack/assets/console/console.js"></script>
 </head>
 <body>
-  <a class="skip" href="#main">Skip to main content</a>
-  <header><div class="brand"><b>◆</b> Mystack</div><span>Emulation Management Console</span></header>
-  <main id="main">
-    <h1>Service resources</h1>
-    <p class="lead">Inspect emulator resources, compatibility, process logs, and live diagnostics.</p>
-    <div class="toolbar">
-      <label class="field"><span>Component</span><select id="component" aria-describedby="componentHelp"></select></label>
-      <span id="componentHelp" hidden>Select a registered Proxy component.</span>
-      <label class="field"><span>Management token</span><input id="token" type="password" autocomplete="off" placeholder="Optional bearer token"></label>
-      <button id="refresh" type="button">Refresh</button>
-      <span id="status" class="status ok" role="status" aria-live="polite">Ready</span>
+  <a class="skip-link" href="#workspace">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/_mystack/console" aria-label="Mystack Console home">
+      <span aria-hidden="true">◆</span> Mystack
+    </a>
+    <span class="topbar-title">Management Console</span>
+    <div class="topbar-status">
+      <span id="healthDot" class="health-dot" aria-hidden="true"></span>
+      <span id="status" role="status" aria-live="polite">Starting…</span>
     </div>
-    <div class="grid" aria-label="Component summary">
-      <div class="card"><div class="label">Component</div><div class="value" id="componentValue">—</div></div>
-      <div class="card"><div class="label">Emulator mode</div><div class="value" id="modeValue">—</div></div>
-      <div class="card"><div class="label">Compatibility</div><div class="value" id="compatibilityValue">—</div></div>
-      <div class="card"><div class="label">Resources</div><div class="value" id="resourceCount">—</div></div>
-    </div>
-    <p class="notice" id="notice"></p>
-    <div class="tabs" role="tablist" aria-label="Management views">
-      <button id="tab-resources" class="secondary" role="tab" aria-selected="true" aria-controls="panel-resources" tabindex="0" data-view="resources">Resources</button>
-      <button id="tab-logs" class="secondary" role="tab" aria-selected="false" aria-controls="panel-logs" tabindex="-1" data-view="logs">Logs</button>
-      <button id="tab-threads" class="secondary" role="tab" aria-selected="false" aria-controls="panel-threads" tabindex="-1" data-view="threads">Thread stacks</button>
-      <button id="tab-tasks" class="secondary" role="tab" aria-selected="false" aria-controls="panel-tasks" tabindex="-1" data-view="tasks">Asyncio tasks</button>
-      <button id="tab-routes" class="secondary" role="tab" aria-selected="false" aria-controls="panel-routes" tabindex="-1" data-view="routes">Route registry</button>
-    </div>
-    <section id="panel-resources" role="tabpanel" aria-labelledby="tab-resources">
-      <div class="split">
-        <div class="list-pane"><div class="panel-head"><h2>Resource list</h2></div><label class="field"><span>Filter resources</span><input id="search" class="search" type="search" placeholder="Name, ID, state"></label><ul id="resourceList" class="resources"></ul></div>
-        <div class="detail-pane"><div class="panel-head"><h2>Resource detail</h2><span id="selection" class="muted">Nothing selected</span></div><pre id="resourceDetail">Select a resource.</pre></div>
+  </header>
+
+  <div class="shell">
+    <nav class="service-nav" aria-label="Services">
+      <div class="nav-heading">Services</div>
+      <button class="service-link selected" type="button" data-component="emr" aria-current="page">
+        <span class="service-icon" aria-hidden="true">E</span>
+        <span><b>EMR</b><small>Clusters &amp; Steps</small></span>
+      </button>
+      <button class="service-link" type="button" data-component="glue">
+        <span class="service-icon glue" aria-hidden="true">G</span>
+        <span><b>Glue</b><small>Data Catalog</small></span>
+      </button>
+      <button class="service-link" type="button" data-component="proxy">
+        <span class="service-icon proxy" aria-hidden="true">P</span>
+        <span><b>System</b><small>Routes &amp; diagnostics</small></span>
+      </button>
+      <div class="nav-divider"></div>
+      <label class="token-field">
+        <span>Management token</span>
+        <input id="token" type="password" autocomplete="off" placeholder="Optional">
+      </label>
+    </nav>
+
+    <main id="workspace" tabindex="-1">
+      <section class="page-header">
+        <div>
+          <p class="eyebrow" id="serviceEyebrow">Amazon EMR emulator</p>
+          <h1 id="pageTitle">Clusters</h1>
+          <p id="pageDescription">Create local Spark clusters, submit Steps, and inspect their output.</p>
+        </div>
+        <div class="header-actions">
+          <span id="lastUpdated" class="muted">Not refreshed</span>
+          <button id="refresh" class="button secondary" type="button">Refresh</button>
+          <button id="primaryAction" class="button primary" type="button">Create cluster</button>
+        </div>
+      </section>
+
+      <section class="summary-grid" aria-label="Service summary">
+        <article class="summary-card"><span>Mode</span><strong id="modeValue">—</strong></article>
+        <article class="summary-card"><span>Compatibility</span><strong id="compatibilityValue">—</strong></article>
+        <article class="summary-card"><span id="metricOneLabel">Clusters</span><strong id="metricOneValue">—</strong></article>
+        <article class="summary-card"><span id="metricTwoLabel">Steps</span><strong id="metricTwoValue">—</strong></article>
+      </section>
+      <p id="notice" class="service-notice"></p>
+      <div id="alert" class="alert" role="alert" hidden></div>
+
+      <section id="emrView" class="service-view" aria-labelledby="pageTitle">
+        <div class="content-grid emr-grid">
+          <section class="panel list-panel" aria-labelledby="clusterHeading">
+            <div class="panel-header">
+              <div><p class="kicker">EMR</p><h2 id="clusterHeading">Clusters</h2></div>
+              <span id="clusterCount" class="count-badge">0</span>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">Filter clusters</span>
+              <input id="clusterSearch" type="search" placeholder="Filter by name, ID, or state">
+            </label>
+            <div id="clusterList" class="resource-list" role="list"></div>
+          </section>
+
+          <section class="panel detail-panel" aria-labelledby="clusterDetailHeading">
+            <div id="emrEmpty" class="empty-state">
+              <div class="empty-icon" aria-hidden="true">E</div>
+              <h2>Select a cluster</h2>
+              <p>Choose a cluster to inspect its configuration, Steps, timeline, and logs.</p>
+            </div>
+            <div id="emrDetail" hidden>
+              <div class="panel-header detail-heading">
+                <div>
+                  <p class="kicker">Cluster detail</p>
+                  <h2 id="clusterDetailHeading">—</h2>
+                  <p id="clusterIdentity" class="mono muted"></p>
+                </div>
+                <div class="cluster-actions">
+                  <button id="addStep" class="button primary" type="button">Add Step</button>
+                  <button id="terminationProtection" class="button secondary" type="button">Protect</button>
+                  <button id="terminateCluster" class="button danger" type="button">Terminate</button>
+                </div>
+              </div>
+              <dl id="clusterFacts" class="facts-grid"></dl>
+              <div class="subtabs" role="tablist" aria-label="Cluster detail views">
+                <button type="button" role="tab" aria-selected="true" aria-controls="clusterOverview" data-emr-tab="overview">Overview</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="clusterSteps" data-emr-tab="steps" tabindex="-1">Steps</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="clusterLogs" data-emr-tab="logs" tabindex="-1">Logs</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="clusterRaw" data-emr-tab="raw" tabindex="-1">Raw detail</button>
+              </div>
+              <div id="clusterOverview" class="subtab-panel" role="tabpanel">
+                <div class="two-column">
+                  <section><h3>Bootstrap actions</h3><div id="bootstrapList"></div></section>
+                  <section><h3>Tags</h3><div id="tagList"></div></section>
+                </div>
+                <section><h3>Timeline</h3><ol id="clusterTimeline" class="timeline"></ol></section>
+              </div>
+              <div id="clusterSteps" class="subtab-panel" role="tabpanel" hidden>
+                <div class="table-toolbar">
+                  <div><h3>Steps</h3><p class="muted">Newest Step first. Select a row to inspect logs.</p></div>
+                  <label class="search-field compact"><span class="sr-only">Filter Steps</span><input id="stepSearch" type="search" placeholder="Filter Steps"></label>
+                </div>
+                <div class="table-scroll"><table>
+                  <thead><tr><th>Name</th><th>State</th><th>Created</th><th>Duration</th><th>Action</th></tr></thead>
+                  <tbody id="stepRows"></tbody>
+                </table></div>
+              </div>
+              <div id="clusterLogs" class="subtab-panel" role="tabpanel" hidden>
+                <div id="logEmpty" class="empty-inline">Select a Step from the Steps tab.</div>
+                <div id="logContent" hidden>
+                  <div class="log-heading">
+                    <div><h3 id="logStepName">Step logs</h3><p id="logStepIdentity" class="mono muted"></p></div>
+                    <button id="cancelStep" class="button danger" type="button">Cancel Step</button>
+                  </div>
+                  <section><h4>S3 LogUri publication</h4><div id="logPublication" class="publication-card"></div></section>
+                  <div class="log-grid">
+                    <section><h4>stdout</h4><pre id="stdout" tabindex="0"></pre></section>
+                    <section><h4>stderr</h4><pre id="stderr" tabindex="0"></pre></section>
+                  </div>
+                </div>
+              </div>
+              <div id="clusterRaw" class="subtab-panel" role="tabpanel" hidden><pre id="emrRaw" tabindex="0"></pre></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="glueView" class="service-view" hidden aria-labelledby="pageTitle">
+        <div class="content-grid glue-grid">
+          <section class="panel catalog-pane" aria-labelledby="databaseHeading">
+            <div class="panel-header"><div><p class="kicker">Catalog</p><h2 id="databaseHeading">Databases</h2></div><span id="databaseCount" class="count-badge">0</span></div>
+            <label class="search-field"><span class="sr-only">Filter databases</span><input id="databaseSearch" type="search" placeholder="Filter databases"></label>
+            <div id="databaseList" class="resource-list" role="list"></div>
+          </section>
+          <section class="panel catalog-pane" aria-labelledby="tableHeading">
+            <div class="panel-header"><div><p class="kicker" id="selectedDatabaseLabel">Select database</p><h2 id="tableHeading">Tables</h2></div><span id="tableCount" class="count-badge">0</span></div>
+            <label class="search-field"><span class="sr-only">Filter tables</span><input id="tableSearch" type="search" placeholder="Filter tables"></label>
+            <div id="tableList" class="resource-list" role="list"></div>
+          </section>
+          <section class="panel detail-panel glue-detail" aria-labelledby="tableDetailHeading">
+            <div id="glueEmpty" class="empty-state"><div class="empty-icon glue" aria-hidden="true">G</div><h2>Explore the Data Catalog</h2><p>Select a database and table to inspect schema, partition keys, storage, and metadata.</p></div>
+            <div id="glueDetail" hidden>
+              <div class="panel-header detail-heading">
+                <div><p class="kicker" id="tableDatabase">Database</p><h2 id="tableDetailHeading">—</h2><p id="tableIdentity" class="mono muted"></p></div>
+                <span id="tableType" class="state-badge neutral">TABLE</span>
+              </div>
+              <dl id="tableFacts" class="facts-grid"></dl>
+              <div class="subtabs" role="tablist" aria-label="Table detail views">
+                <button type="button" role="tab" aria-selected="true" aria-controls="schemaPanel" data-glue-tab="schema">Schema</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="partitionPanel" data-glue-tab="partitions" tabindex="-1">Partitions</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="parameterPanel" data-glue-tab="parameters" tabindex="-1">Parameters</button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="glueRawPanel" data-glue-tab="raw" tabindex="-1">Raw detail</button>
+              </div>
+              <div id="schemaPanel" class="subtab-panel" role="tabpanel">
+                <section><h3>Columns</h3><div class="table-scroll"><table><thead><tr><th>#</th><th>Name</th><th>Type</th><th>Comment</th></tr></thead><tbody id="columnRows"></tbody></table></div></section>
+                <section><h3>Partition keys</h3><div id="partitionKeyList"></div></section>
+              </div>
+              <div id="partitionPanel" class="subtab-panel" role="tabpanel" hidden>
+                <div class="table-toolbar"><div><h3>Partitions</h3><p id="partitionSummary" class="muted"></p></div><label class="search-field compact"><span class="sr-only">Filter partitions</span><input id="partitionSearch" type="search" placeholder="Filter values"></label></div>
+                <div class="table-scroll"><table><thead id="partitionHead"></thead><tbody id="partitionRows"></tbody></table></div>
+              </div>
+              <div id="parameterPanel" class="subtab-panel" role="tabpanel" hidden><div id="parameterList"></div></div>
+              <div id="glueRawPanel" class="subtab-panel" role="tabpanel" hidden><pre id="glueRaw" tabindex="0"></pre></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="systemView" class="service-view" hidden aria-labelledby="pageTitle">
+        <div class="subtabs system-tabs" role="tablist" aria-label="System views">
+          <button type="button" role="tab" aria-selected="true" aria-controls="routesPanel" data-system-tab="routes">Route registry</button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="threadsPanel" data-system-tab="threads" tabindex="-1">Thread stacks</button>
+          <button type="button" role="tab" aria-selected="false" aria-controls="tasksPanel" data-system-tab="tasks" tabindex="-1">Asyncio tasks</button>
+        </div>
+        <section id="routesPanel" class="panel diagnostics-panel" role="tabpanel"><pre id="routes" tabindex="0"></pre></section>
+        <section id="threadsPanel" class="panel diagnostics-panel" role="tabpanel" hidden><pre id="threads" tabindex="0"></pre></section>
+        <section id="tasksPanel" class="panel diagnostics-panel" role="tabpanel" hidden><pre id="tasks" tabindex="0"></pre></section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="clusterDialog" aria-labelledby="clusterDialogTitle">
+    <form id="clusterForm" method="dialog">
+      <div class="dialog-header"><div><p class="kicker">Amazon EMR compatible</p><h2 id="clusterDialogTitle">Create cluster</h2></div><button class="icon-button" type="button" data-close-dialog="clusterDialog" aria-label="Close create cluster dialog">×</button></div>
+      <div class="form-grid">
+        <label><span>Cluster name <b aria-hidden="true">*</b></span><input name="name" required maxlength="256" autocomplete="off"></label>
+        <label><span>Release label</span><select name="releaseLabel" required><option value="">Loading configured releases…</option></select></label>
+        <label><span>Instance count</span><input name="instanceCount" type="number" min="1" value="1" required></label>
+        <label><span>Step concurrency</span><input name="stepConcurrency" type="number" min="1" value="1" required></label>
+        <label><span>Service role</span><input name="serviceRole" placeholder="EMR_DefaultRole" autocomplete="off"></label>
+        <label><span>S3 LogUri</span><input name="logUri" placeholder="s3://existing-bucket/logs/" autocomplete="off"></label>
+        <label class="checkbox"><input name="keepAlive" type="checkbox" checked><span>Keep cluster alive when no Steps remain</span></label>
+        <label class="checkbox"><input name="terminationProtected" type="checkbox"><span>Enable termination protection</span></label>
+        <label class="checkbox"><input name="visibleToAllUsers" type="checkbox" checked><span>Visible to all users</span></label>
+        <label class="wide"><span>Bootstrap script S3 URI</span><input name="bootstrapPath" placeholder="s3://bucket/bootstrap.sh" autocomplete="off"></label>
+        <label class="wide"><span>Bootstrap arguments <small>one argument per line</small></span><textarea name="bootstrapArgs" rows="3"></textarea></label>
+        <label class="wide"><span>Tags <small>one key=value pair per line</small></span><textarea name="tags" rows="3"></textarea></label>
       </div>
-    </section>
-    <section id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" hidden>
-      <div id="logEmpty" class="empty">Select an EMR Step from Resources to load process logs.</div>
-      <div id="logContent" class="log-grid" hidden><div id="logPublication" class="log-publication"><h2>S3 LogUri publication</h2><pre id="logPublicationDetail"></pre></div><div><h2>stdout</h2><pre id="stdout"></pre></div><div><h2>stderr</h2><pre id="stderr"></pre></div></div>
-    </section>
-    <section id="panel-threads" role="tabpanel" aria-labelledby="tab-threads" hidden><pre id="threads"></pre></section>
-    <section id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" hidden><pre id="tasks"></pre></section>
-    <section id="panel-routes" role="tabpanel" aria-labelledby="tab-routes" hidden><pre id="routes"></pre></section>
-  </main>
-  <script>
-    const state={resources:null,items:[],selected:null,threads:null,tasks:null,routes:null};
-    const el=id=>document.getElementById(id),headers=()=>el('token').value?{Authorization:`Bearer ${el('token').value}`}:{},component=()=>el('component').value;
-    const diagnosticsUrl=(name,kind)=>name==='proxy'?`/_mystack/diagnostics/${kind}`:`/_mystack/components/${encodeURIComponent(name)}/diagnostics/${kind}`;
-    async function json(path){const response=await fetch(path,{headers:headers()}),body=await response.json();if(!response.ok)throw new Error(`${response.status}: ${JSON.stringify(body)}`);return body}
-    function resourceItems(document){const service=document.service,items=[];if(service==='emr'){for(const cluster of document.resources.clusters){items.push({kind:'Cluster',id:cluster.id,name:cluster.name,state:cluster.state,detail:cluster});for(const step of cluster.steps)items.push({kind:'Step',id:step.id,name:step.name,state:step.state,detail:{cluster_id:cluster.id,...step},logs:{cluster_id:cluster.id,step_id:step.id}})}}else if(service==='glue'){for(const database of document.resources.databases){items.push({kind:'Database',id:database.id,name:database.name,detail:database});for(const table of database.tables){items.push({kind:'Table',id:table.id,name:table.name,state:table.table_type,detail:table});for(const partition of table.partitions)items.push({kind:'Partition',id:`${table.id}/${partition.id}`,name:partition.id||'(unpartitioned)',detail:{database_name:database.name,table_name:table.name,...partition}})}}}else{for(const route of document.resources.routes||[])items.push({kind:'Route',id:route.id,name:route.name,detail:route})}return items}
-    function summary(document){el('componentValue').textContent=document.service;el('modeValue').textContent=document.emulator.mode;const c=document.compatibility;el('compatibilityValue').textContent=c.implemented_operation_count===undefined?c.classification:`${c.classification} · ${c.implemented_operation_count}/${c.model_operation_count}`;el('resourceCount').textContent=Object.values(document.counts).reduce((a,b)=>a+b,0);el('notice').textContent=document.emulator.notice||''}
-    function renderList(){const query=el('search').value.toLowerCase(),list=el('resourceList');list.replaceChildren();for(const item of state.items.filter(x=>`${x.kind} ${x.id} ${x.name} ${x.state||''}`.toLowerCase().includes(query))){const li=document.createElement('li'),button=document.createElement('button');button.type='button';button.className=`resource${state.selected===item?' selected':''}`;button.setAttribute('aria-label',`${item.kind} ${item.name}`);button.innerHTML=`<span><span class="kind">${escapeText(item.kind)}</span><br>${escapeText(item.name)}<br><span class="muted">${escapeText(item.id)}</span></span>${item.state?`<span class="state">${escapeText(item.state)}</span>`:''}`;button.onclick=()=>selectItem(item);li.append(button);list.append(li)}if(!list.children.length){const li=document.createElement('li');li.className='empty';li.textContent='No matching resources.';list.append(li)}}
-    function escapeText(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
-    function selectItem(item){state.selected=item;el('selection').textContent=`${item.kind} · ${item.id}`;el('resourceDetail').textContent=JSON.stringify(item.detail,null,2);renderList();if(item.logs)loadLogs(item);else clearLogs()}
-    function clearLogs(){el('logEmpty').hidden=false;el('logContent').hidden=true;el('logPublicationDetail').textContent='';el('stdout').textContent='';el('stderr').textContent=''}
-    async function loadLogs(item){el('logEmpty').textContent='Loading logs…';el('logEmpty').hidden=false;el('logContent').hidden=true;try{const query=new URLSearchParams(item.logs),data=await json(`/_mystack/components/${encodeURIComponent(component())}/logs?${query}`);el('logPublicationDetail').textContent=JSON.stringify(data.log_publication||{status:'unavailable'},null,2);el('stdout').textContent=data.stdout||'(empty)';el('stderr').textContent=data.stderr||'(empty)';el('logEmpty').hidden=true;el('logContent').hidden=false}catch(error){el('logEmpty').textContent=`Logs unavailable: ${error}`}}
-    function activateTab(tab,focus=true){document.querySelectorAll('[role=tab]').forEach(value=>{const active=value===tab;value.setAttribute('aria-selected',String(active));value.tabIndex=active?0:-1;el(`panel-${value.dataset.view}`).hidden=!active});if(focus)tab.focus()}
-    async function refresh(){el('status').textContent='Loading…';el('status').className='status';try{const name=component(),[resources,threads,tasks,routes]=await Promise.all([json(`/_mystack/components/${encodeURIComponent(name)}/resources`),json(diagnosticsUrl(name,'threads')),json(diagnosticsUrl(name,'tasks')),json('/_mystack/routes')]);state.resources=resources;state.items=resourceItems(resources);state.selected=null;state.threads=threads;state.tasks=tasks;state.routes=routes;summary(resources);el('threads').textContent=JSON.stringify(threads,null,2);el('tasks').textContent=JSON.stringify(tasks,null,2);el('routes').textContent=JSON.stringify(routes,null,2);el('resourceDetail').textContent='Select a resource.';el('selection').textContent='Nothing selected';clearLogs();renderList();el('status').textContent='Healthy';el('status').className='status ok'}catch(error){el('status').textContent='Request failed';el('status').className='status error';el('resourceDetail').textContent=String(error)}}
-    document.querySelectorAll('[role=tab]').forEach((tab,index,tabs)=>{tab.onclick=()=>activateTab(tab,false);tab.onkeydown=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();let target=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;activateTab(tabs[target])}});
-    el('refresh').onclick=refresh;el('component').onchange=refresh;el('search').oninput=renderList;
-    fetch('/_mystack/components').then(response=>response.json()).then(document=>{for(const name of document.components)el('component').add(new Option(name,name));refresh()}).catch(error=>{el('status').textContent=`Startup failed: ${error}`;el('status').className='status error'});
-  </script>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close-dialog="clusterDialog">Cancel</button><button class="button primary" type="submit">Create cluster</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="stepDialog" aria-labelledby="stepDialogTitle">
+    <form id="stepForm" method="dialog">
+      <div class="dialog-header"><div><p class="kicker">Spark 3.5 Step</p><h2 id="stepDialogTitle">Add Step</h2></div><button class="icon-button" type="button" data-close-dialog="stepDialog" aria-label="Close add Step dialog">×</button></div>
+      <div class="form-grid">
+        <label class="wide"><span>Step name <b aria-hidden="true">*</b></span><input name="name" required maxlength="256" autocomplete="off"></label>
+        <label class="wide"><span>Application resource <b aria-hidden="true">*</b></span><input name="application" required placeholder="s3://bucket/jobs/main.py" autocomplete="off"></label>
+        <label><span>Action on failure</span><select name="actionOnFailure"><option>CONTINUE</option><option>CANCEL_AND_WAIT</option><option>TERMINATE_CLUSTER</option></select></label>
+        <span></span>
+        <label class="wide"><span>spark-submit options <small>one argument per line, before application</small></span><textarea name="submitOptions" rows="4" placeholder="--driver-memory&#10;1g"></textarea></label>
+        <label class="wide"><span>Application arguments <small>one argument per line</small></span><textarea name="applicationArgs" rows="4" placeholder="--output&#10;s3://bucket/output/"></textarea></label>
+        <label class="wide"><span>Spark properties <small>one key=value pair per line</small></span><textarea name="properties" rows="3"></textarea></label>
+      </div>
+      <div class="dialog-footer"><button class="button secondary" type="button" data-close-dialog="stepDialog">Cancel</button><button class="button primary" type="submit">Add Step</button></div>
+    </form>
+  </dialog>
 </body>
 </html>

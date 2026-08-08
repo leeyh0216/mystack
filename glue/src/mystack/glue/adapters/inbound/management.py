@@ -46,6 +46,22 @@ class GlueManagementAdapter:
             "glue.management.resources.before",
             catalog_id=self._catalog_id,
         )
+        try:
+            return await self._resources()
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "glue.management.resources.failed",
+                catalog_id=self._catalog_id,
+                fix_hint=(
+                    "Inspect Glue application pagination and durable catalog repository state."
+                ),
+                exc_info=True,
+            )
+            raise
+
+    async def _resources(self) -> dict[str, Any]:
         databases = await self._all(
             lambda token: self._application.get_databases(
                 self._catalog_id,

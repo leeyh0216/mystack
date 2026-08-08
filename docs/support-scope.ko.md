@@ -21,7 +21,7 @@
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
-| Web console | 구현: EMR/Glue resource·상태·상세, EMR log, route/thread/task, keyboard/browser E2E | 추가 service별 시각화 |
+| Web console | 구현: EMR cluster 생성·보호·종료, Step 제출·추적·취소, Step log/publication, Glue database/table/schema/partition 탐색, route/thread/task, keyboard/browser E2E | Live log streaming, Spark UI와 History Server link |
 
 관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata mutation은 직렬화한
 candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를

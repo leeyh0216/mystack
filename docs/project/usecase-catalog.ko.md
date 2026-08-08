@@ -178,13 +178,13 @@
 <!-- section: uc-010 -->
 ## UC-010: Browser management console 운영
 
-- 목적/actor/trigger: local operator가 `/_mystack/console`을 열고 tab/resource/log를 선택합니다.
-- 입력: component/tab/resource 선택, refresh, 선택 management token.
-- 출력: 접근 가능한 status, compatibility, resource detail, log, route/stack view입니다.
-- 저장/변경: browser view state뿐이며 read-only management endpoint를 호출합니다.
-- 선행조건/규칙: packaged static asset/public Proxy, keyboard/ARIA tab 계약.
-- 실패: unavailable component/endpoint/token은 secret 없는 오류 상태로 표시합니다.
-- 관측: Playwright keyboard/resource/log/browser E2E와 screenshot.
+- 목적/actor/trigger: local operator가 `/_mystack/console`을 열어 EMR을 운영하고 Glue를 탐색하거나 진단을 확인합니다.
+- 입력: cluster/Step form과 action, database/table/tab 선택, refresh, 선택 management token.
+- 출력: 접근 가능한 lifecycle/status, log/publication 근거, Glue schema/partition metadata, route/stack view입니다.
+- 저장/변경: browser 선택 상태를 유지합니다. Read는 management endpoint, EMR mutation은 public AWS endpoint와 기존 application use case를 사용합니다.
+- 선행조건/규칙: packaged static module/public Proxy, 설정 polling 주기, keyboard/ARIA tab 계약, array를 shell parsing하지 않음.
+- 실패: unavailable component/endpoint/token 또는 modeled AWS error는 secret 없이 표시하며 가능한 경우 AWS code/request ID를 보존합니다.
+- 관측: Playwright cluster/Step/Glue/keyboard/browser E2E, protocol 경계 log와 screenshot.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
 - 신뢰도: High

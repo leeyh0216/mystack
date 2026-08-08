@@ -11,7 +11,7 @@
 - Status: approved
 - Owner: leeyh0216
 - Updated: 2026-08-08
-- Repository: private `leeyh0216/mystack`
+- Repository: public `leeyh0216/mystack`
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 
 <!-- section: purpose -->
@@ -61,12 +61,13 @@ contracts.
   policy; repositories expose collection snapshots and candidate transactions only.
 - Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
   1.7.1 create/append/read/schema-evolution, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
-- Operations: resource/log console, route/thread/task diagnostics, structured boundary logs without
-  authorization or payload contents.
+- Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
+  resource/log views, route/thread/task diagnostics, and structured boundary logs without
+  authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, anonymously
   consumable public GHCR multi-platform publication, SBOM/provenance, OCI index validation, and
   Trivy policy.
-- Final test inventory: 101 collected. The fast suite selects 96, passes 94, and skips two real-AWS
+- Final test inventory: 154 collected. The fast suite selects 146, passes 144, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 

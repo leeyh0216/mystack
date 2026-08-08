@@ -35,7 +35,8 @@ for operation-by-operation status from the pinned botocore models.
 ## Configure and diagnose usage
 
 - YAML, environment overrides, and Docker mounts: [configuration guide](configuration.md)
-- Resource, EMR log, route, and thread/task UI: [management console guide](console.md)
+- Create/track EMR clusters and Steps, explore Glue metadata, and inspect diagnostics:
+  [management console guide](console.md)
 - Structured logs and management endpoints: [observability guide](observability.md)
 - EMR `LogUri` S3 object names and local-mode fidelity: [EMR log layout](protocols/emr-log-layout.md)
 - Preconfigured clusters and restart semantics: [EMR startup cluster file](protocols/emr-startup-clusters.md)

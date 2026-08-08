@@ -11,7 +11,7 @@
 - 상태: approved
 - 소유자: leeyh0216
 - 갱신일: 2026-08-08
-- 저장소: private `leeyh0216/mystack`
+- 저장소: public `leeyh0216/mystack`
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 
 <!-- section: purpose -->
@@ -58,11 +58,12 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   소유하며 repository는 collection snapshot과 candidate transaction만 노출하도록 분리했습니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
   create/append/read/schema evolution, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
-- 운영 기능은 resource/log console, route/thread/task 진단, authorization과 payload 내용을 제외한
-  구조화 boundary log를 포함합니다.
+- 운영 기능은 EMR cluster/Step command와 Glue metadata 탐색을 제공하는 service-aware Console,
+  resource/log view, route/thread/task 진단, authorization과 payload 내용을 제외한 구조화 boundary
+  log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, 익명으로 소비할 수
   있는 public GHCR multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 101개입니다. Fast suite는 96개를 선택해 94개가 통과하고 real-AWS
+- 최종 test inventory는 154개입니다. Fast suite는 146개를 선택해 144개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 

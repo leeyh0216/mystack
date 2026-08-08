@@ -38,6 +38,25 @@ def test_schema_rejects_non_positive_timeout(monkeypatch) -> None:
         load_configuration("config/mystack.yaml")
 
 
+def test_console_refresh_interval_is_typed_and_bounded(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS",
+        "0.5",
+    )
+    loaded = load_configuration("config/mystack.yaml")
+    assert loaded.document["management"]["console"]["refresh_interval_seconds"] == 0.5
+
+    monkeypatch.setenv(
+        "MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS",
+        "0.49",
+    )
+    with pytest.raises(
+        ConfigurationError,
+        match=r"management\.console\.refresh_interval_seconds",
+    ):
+        load_configuration("config/mystack.yaml")
+
+
 def test_schema_rejects_removed_glue_extension_configuration(monkeypatch) -> None:
     monkeypatch.setenv("MYSTACK__GLUE__EXTENSIONS__ENABLED", "true")
 

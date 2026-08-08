@@ -47,8 +47,9 @@ docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-Open `http://localhost:4566/_mystack/console` for resources, logs, routes, thread stacks, and asyncio
-tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
+Open `http://localhost:4566/_mystack/console` to create and operate EMR clusters, submit and track
+Steps, inspect their logs, explore Glue databases/tables/schemas/partitions, and view routes, thread
+stacks, and asyncio tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
 boto3, AWS SDK for pandas, upgrades, rollback, troubleshooting, and cleanup. Source builds belong in
 the [development guide](docs/development.md), not the normal user path.
 
@@ -63,7 +64,7 @@ the [development guide](docs/development.md), not the normal user path.
 | Check Spark Glue Hive/Iceberg and library evidence | [Client compatibility matrix](docs/compatibility/client-matrix.md) |
 | Change YAML, timeouts, ports, or Docker settings | [Configuration guide](docs/configuration.md) |
 | Install an enterprise CA or proxy before EMR starts | [EMR pre-start guide](docs/protocols/emr-prestart.md) |
-| Inspect resources, logs, threads, or tasks | [Management console guide](docs/console.md) |
+| Operate EMR, explore Glue, or inspect diagnostics | [Management console guide](docs/console.md) |
 
 The [user guide](docs/index.md) provides the full recommended reading path.
 

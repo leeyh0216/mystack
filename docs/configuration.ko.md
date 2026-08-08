@@ -25,6 +25,7 @@ build argument, runtime environment variable, read-only config, secret을 각 �
 MYSTACK_CONFIG_FILE=config/mystack.yaml \
 MYSTACK__LOGGING__LEVEL=DEBUG \
 MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600 \
+MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
 mystack-proxy
 ```
 
@@ -62,6 +63,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | 경로 | 책임 |
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
+| `management.console` | Browser Console 자동 갱신 주기 |
 | `management.diagnostics` | thread/task stack 활성화, bearer token, 최대 깊이 |
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
@@ -73,6 +75,12 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 새 설정은 YAML에 추가하고 해당 composition-root configuration adapter에서 typed value로
 mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 Domain/Application module은
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
+
+`management.console.refresh_interval_seconds`는 선택한 EMR 또는 Glue workspace의 선택 상태를
+유지하는 polling 주기이며 최소 0.5초입니다. Composition 경계에서 static Console에 값을
+주입하므로 browser code에는 환경별 interval이 없습니다. 현재 release는 표준 browser timer
+계약인 [`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval)을
+사용합니다.
 
 `emr.shutdown_timeout_seconds`는 새 scheduling을 멈춘 뒤 service 종료 전체를 제한합니다. 이
 deadline 안에서 EMR은 소유한 driver task를 cancel/await하고,

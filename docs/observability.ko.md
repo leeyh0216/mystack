@@ -19,6 +19,13 @@ Mystack은 Controller, component 경계, 상태 전이, 모든 외부 side effec
 
 Repository, S3, process, container, outbound HTTP adapter는 해당 단계를 모두 기록해야 합니다.
 
+Console read는 기술 실패를 포함해 전·후에 `proxy.management.*`, `emr.management.*`,
+`glue.management.*`를 기록합니다. EMR Console command는 일반 AWS protocol request이므로
+`proxy.forward.*`, `controller.request.*`, `application.dispatch.*`, Domain transition event가
+operation과 request ID를 보존합니다. 변경된 boto/botocore request가 더는 올바르게 routing되지
+않으면 `proxy.routing.fallback`에서 먼저 확인할 수 있고 modeled AWS rejection은 기술 traceback이
+아니라 `*.service_error`로 남습니다.
+
 EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 object 전후에
 `emr.step_log_object.put.*`를 기록합니다. 실패 event는 cluster/Step, 안전한 bucket/key 정보,
 부분 게시 object 수와 `fix_hint`를 포함하며 local publication record는 management endpoint에서

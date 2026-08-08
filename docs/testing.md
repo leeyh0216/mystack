@@ -69,6 +69,13 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
   same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
   matrix](compatibility/client-matrix.md) records the exact scope.
+- Drive the management Console with Playwright: create/terminate an EMR cluster, submit, track,
+  cancel and inspect a Step, verify S3 log publication, explore a complex Glue schema and partition,
+  and assert keyboard/ARIA behavior plus a clean browser console. Browser actions use
+  `tests.e2e.browser_action_timeout_seconds`; CI makes Chromium execution mandatory through the
+  configured environment-variable name. Playwright's official
+  [auto-waiting behavior](https://playwright.dev/python/docs/actionability) remains bounded by that
+  explicit deadline.
 - The current Iceberg scenario covers create, append, read, and schema evolution. Partition and transaction scenarios remain target scope, using the [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
 <!-- section: reproducibility -->

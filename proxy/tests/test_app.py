@@ -29,6 +29,7 @@ def settings(routes: tuple[ServiceRoute, ...] = ()) -> ProxySettings:
         request_timeout_seconds=30,
         listen_host="127.0.0.1",
         listen_port=8080,
+        console_refresh_interval_seconds=2,
         config_source="test",
         config_fingerprint="test-fingerprint",
     )
@@ -206,7 +207,16 @@ def test_console_and_component_diagnostics_are_registry_driven() -> None:
         )
     ) as client:
         assert client.get("/_mystack/components").json() == {"components": ["proxy", "emr"]}
-        assert "Mystack Console" in client.get("/_mystack/console").text
+        console = client.get("/_mystack/console")
+        assert "Mystack Console" in console.text
+        assert 'content="2000"' in console.text
+        stylesheet = client.get("/_mystack/assets/console/console.css")
+        javascript = client.get("/_mystack/assets/console/console.js")
+        assert stylesheet.status_code == 200
+        assert stylesheet.headers["content-type"].startswith("text/css")
+        assert javascript.status_code == 200
+        assert javascript.headers["content-type"].startswith("text/javascript")
+        assert client.get("/_mystack/assets/console/unknown.js").status_code == 404
         response = client.get(
             "/_mystack/components/emr/diagnostics/threads",
             headers={"Authorization": "Bearer token"},

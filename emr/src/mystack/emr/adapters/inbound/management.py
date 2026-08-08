@@ -31,6 +31,8 @@ class EmrManagementAdapter:
         implemented_operations: frozenset[str],
         model_operation_count: int,
         config_fingerprint: str,
+        default_release_label: str,
+        release_profiles: dict[str, dict[str, str]],
         startup_cluster_source: str | None = None,
         startup_cluster_fingerprint: str | None = None,
         startup_cluster_count: int = 0,
@@ -41,13 +43,25 @@ class EmrManagementAdapter:
         self._implemented_operations = implemented_operations
         self._model_operation_count = model_operation_count
         self._config_fingerprint = config_fingerprint
+        self._default_release_label = default_release_label
+        self._release_profiles = release_profiles
         self._startup_cluster_source = startup_cluster_source
         self._startup_cluster_fingerprint = startup_cluster_fingerprint
         self._startup_cluster_count = startup_cluster_count
 
     async def resources(self) -> dict[str, Any]:
         log_event(_LOGGER, logging.INFO, "emr.management.resources.before")
-        clusters, _ = await self._application.list_clusters()
+        try:
+            clusters, _ = await self._application.list_clusters()
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "emr.management.resources.failed",
+                fix_hint="Inspect the EMR application query boundary and repository state.",
+                exc_info=True,
+            )
+            raise
         resources = [_cluster(value) for value in clusters]
         step_count = sum(len(value["steps"]) for value in resources)
         log_event(
@@ -63,6 +77,8 @@ class EmrManagementAdapter:
             "emulator": {
                 "mode": "Spark local mode",
                 "config_fingerprint": self._config_fingerprint,
+                "default_release_label": self._default_release_label,
+                "release_profiles": self._release_profiles,
                 "startup_clusters": {
                     "source": self._startup_cluster_source,
                     "fingerprint": self._startup_cluster_fingerprint,
@@ -81,24 +97,38 @@ class EmrManagementAdapter:
         }
 
     async def logs(self, cluster_id: str, step_id: str) -> dict[str, Any]:
-        cluster = await self._application.describe_cluster(cluster_id)
-        step = cluster.step(step_id)
-        work_dir = self._work_root / cluster.id / step.id
         log_event(
             _LOGGER,
             logging.INFO,
             "emr.management.logs.before",
-            cluster_id=cluster.id,
-            step_id=step.id,
-            work_dir=str(work_dir),
+            cluster_id=cluster_id,
+            step_id=step_id,
             output_tail_bytes=self._output_tail_bytes,
             side_effect=True,
         )
-        stdout, stderr = await asyncio.gather(
-            asyncio.to_thread(_tail, work_dir / "stdout.log", self._output_tail_bytes),
-            asyncio.to_thread(_tail, work_dir / "stderr.log", self._output_tail_bytes),
-        )
-        publication = await asyncio.to_thread(_publication, work_dir / "log-publication.json")
+        try:
+            cluster = await self._application.describe_cluster(cluster_id)
+            step = cluster.step(step_id)
+            work_dir = self._work_root / cluster.id / step.id
+            stdout, stderr = await asyncio.gather(
+                asyncio.to_thread(_tail, work_dir / "stdout.log", self._output_tail_bytes),
+                asyncio.to_thread(_tail, work_dir / "stderr.log", self._output_tail_bytes),
+            )
+            publication = await asyncio.to_thread(_publication, work_dir / "log-publication.json")
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "emr.management.logs.failed",
+                cluster_id=cluster_id,
+                step_id=step_id,
+                fix_hint=(
+                    "Verify the cluster and Step IDs, then inspect the configured EMR work root."
+                ),
+                side_effect=True,
+                exc_info=True,
+            )
+            raise
         log_event(
             _LOGGER,
             logging.INFO,
@@ -134,6 +164,10 @@ def _cluster(value: Cluster) -> dict[str, Any]:
         "state": value.state,
         "state_reason": {"code": value.reason.code, "message": value.reason.message},
         "release_label": value.release_label,
+        "log_uri": value.log_uri,
+        "service_role": value.service_role,
+        "step_concurrency_level": value.step_concurrency_level,
+        "instance_config": value.instance_config,
         "created_at": _timestamp(value.timeline.creation),
         "ready_at": _timestamp(value.timeline.ready),
         "ended_at": _timestamp(value.timeline.end),

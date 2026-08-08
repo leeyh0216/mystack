@@ -21,7 +21,7 @@ from mystack.aws_protocol import (
 from mystack.aws_protocol.observability import configure_logging, log_event
 
 from .config import ProxySettings
-from .console import console_response
+from .console import console_asset_response, console_response
 from .ports import ManagementBackendUnavailableError, UnknownManagementComponentError
 from .runtime import ProxyRuntime
 
@@ -116,7 +116,13 @@ def create_app(
 
     @app.get("/_mystack/console")
     async def console() -> Response:
-        return console_response()
+        return console_response(
+            refresh_interval_seconds=resolved_settings.console_refresh_interval_seconds
+        )
+
+    @app.get("/_mystack/assets/console/{asset_name}")
+    async def console_asset(asset_name: str) -> Response:
+        return console_asset_response(asset_name)
 
     async def forward_management(
         request: Request,

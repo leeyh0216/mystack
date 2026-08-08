@@ -19,6 +19,13 @@ Mystack emits structured JSON at controllers, component boundaries, state transi
 
 Repository, S3, process, container, and outbound HTTP adapters must emit all applicable phases.
 
+Console reads emit `proxy.management.*`, `emr.management.*`, or `glue.management.*` before, after,
+and on technical failure. EMR Console commands are ordinary AWS protocol requests, so
+`proxy.forward.*`, `controller.request.*`, `application.dispatch.*`, and domain transition events
+retain the operation and request ID. A changed boto/botocore request that no longer routes correctly
+is therefore visible first in `proxy.routing.fallback`; a modeled AWS rejection remains a
+`*.service_error`, not a technical traceback.
+
 EMR LogUri publication emits `emr.step_logs.publish.*` around the complete archive and
 `emr.step_log_object.put.*` around every S3 object. Failures contain the cluster/Step, safe bucket
 and key evidence, partial object count, and a `fix_hint`, while the local publication record remains

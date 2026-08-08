@@ -7,6 +7,10 @@ logging:
   format: json
 
 management:
+  console:
+    # Polling complements explicit refresh; streaming log transport is configured separately.
+    # Timer behavior: https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timers
+    refresh_interval_seconds: 2
   diagnostics:
     enabled: true
     stack_limit: 100
