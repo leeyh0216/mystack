@@ -166,8 +166,10 @@ def test_isolated_runner_uses_generated_nodes_and_configured_timeout() -> None:
     )
     command, timeout = runner.command(case)
     assert command[:3] == ["uv", "run", "pytest"]
-    assert "emr/tests/test_boto3_contract.py" in command
-    assert "glue/tests/test_boto3_contract.py" in command
+    nodes = command[3 : command.index("-m")]
+    assert any(node.startswith("emr/tests/test_boto3_contract.py::") for node in nodes)
+    assert any(node.startswith("glue/tests/test_boto3_contract.py::") for node in nodes)
+    assert all("test_ui" not in node for node in nodes)
     assert command[command.index("--timeout") + 1] == str(timeout)
     assert timeout == 120
 
