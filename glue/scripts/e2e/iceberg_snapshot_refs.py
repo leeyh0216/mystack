@@ -289,24 +289,30 @@ class IcebergSnapshotScenario:
         return values[0]
 
     def _current_snapshot(self) -> int:
-        row = self.spark.sql(
+        row = self._single_row(
             f"SELECT snapshot_id FROM {self.qualified_table}.history "
             "WHERE is_current_ancestor = true ORDER BY made_current_at DESC LIMIT 1"
-        ).one()
+        )
         return int(row.snapshot_id)
 
     def _snapshot_time(self, snapshot_id: int) -> datetime:
-        row = self.spark.sql(
+        row = self._single_row(
             f"SELECT committed_at FROM {self.qualified_table}.snapshots "
             f"WHERE snapshot_id = {snapshot_id}"
-        ).one()
+        )
         return row.committed_at
 
     def _reference_snapshot(self, name: str) -> int:
-        row = self.spark.sql(
+        row = self._single_row(
             f"SELECT snapshot_id FROM {self.qualified_table}.refs WHERE name = '{name}'"
-        ).one()
+        )
         return int(row.snapshot_id)
+
+    def _single_row(self, statement: str) -> Row:
+        rows = self.spark.sql(statement).collect()
+        if len(rows) != 1:
+            raise RuntimeError(f"Iceberg inspection returned {len(rows)} rows; expected one")
+        return rows[0]
 
     def _snapshot_ids(self) -> list[int]:
         return sorted(
