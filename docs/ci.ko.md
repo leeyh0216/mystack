@@ -63,4 +63,7 @@ Version tag는 workflow 정책상 append-only이고 `latest`는 의도적으로 
 <!-- section: artifacts -->
 ## 실패 artifact
 
-CI는 coverage, model drift, Docker log, test artifact를 항상 보존하려고 시도합니다. 로그는 component 경계와 side effect event를 담되 secret은 포함하지 않습니다.
+CI는 coverage, model drift, Docker log, test artifact를 항상 보존하려고 시도합니다. Release 검증
+artifact에는 생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md), compiled
+matrix, API 분류, 결정적 Glue 오류 catalog도 보존합니다. 로그는 component 경계와 side effect
+event를 담되 secret은 포함하지 않습니다.

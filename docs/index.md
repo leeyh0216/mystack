@@ -14,8 +14,8 @@ the repository, protocol, CI, or releases, go to the [maintainer guide](maintain
 1. Follow the [detailed usage guide](getting-started.md) to anonymously pull public GHCR images
    without a source clone, start Docker Compose, and verify the public endpoint.
 2. Choose ports, timeouts, data paths, and file overrides in the [configuration guide](configuration.md).
-3. Check the exact API and library evidence in the [support scope](support-scope.md) and [client
-   compatibility matrix](compatibility/client-matrix.md).
+3. Check the exact API and library evidence in the [generated release acceptance](compatibility/release-acceptance.generated.md),
+   [support scope](support-scope.md), and [client compatibility matrix](compatibility/client-matrix.md).
 
 <!-- section: clients -->
 ## Paths by client

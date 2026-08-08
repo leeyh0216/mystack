@@ -25,9 +25,9 @@ The current primary paths are:
 - A reproducible local runtime based on Docker Compose
 
 Glue Jobs, JobRuns, and Crawlers are intentionally out of scope. A passing E2E path is never a claim
-that an entire library is supported. Consult the [support scope](docs/support-scope.md), [client
-compatibility matrix](docs/compatibility/client-matrix.md), and [API coverage](docs/compatibility/api-coverage.md)
-for exact boundaries.
+that an entire library is supported. Consult the generated [release acceptance](docs/compatibility/release-acceptance.generated.md),
+the [support scope](docs/support-scope.md), [client compatibility matrix](docs/compatibility/client-matrix.md),
+and [API coverage](docs/compatibility/api-coverage.md) for exact boundaries.
 
 <!-- section: quick-start -->
 ## Quick start
@@ -65,6 +65,7 @@ the [development guide](docs/development.md), not the normal user path.
 | Start with Docker Compose | [Detailed usage guide](docs/getting-started.md) |
 | Connect AWS CLI, boto3, or AWS SDK for pandas | [Client setup in the usage guide](docs/getting-started.md) |
 | Check supported EMR/Glue APIs and errors | [Support scope](docs/support-scope.md), [API coverage](docs/compatibility/api-coverage.md) |
+| Check release-blocking Glue/Hive/Iceberg/EMR guarantees | [Generated release acceptance](docs/compatibility/release-acceptance.generated.md) |
 | Check Spark Glue Hive/Iceberg, Open Table Format, and library evidence | [Client compatibility matrix](docs/compatibility/client-matrix.md), [Open Table Format protocol](docs/protocols/glue-open-table-format.md) |
 | Configure or call managed Iceberg table optimizers | [Table optimizer protocol](docs/protocols/glue-table-optimizers.md) |
 | Change YAML, timeouts, ports, or Docker settings | [Configuration guide](docs/configuration.md) |

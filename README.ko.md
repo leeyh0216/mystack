@@ -25,7 +25,8 @@ Docker 애플리케이션입니다. 사용자는 AWS CLI, boto3와 기존 클라
 - Docker Compose 기반의 재현 가능한 local 실행 환경
 
 Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. “일부 경로 E2E 통과”를 라이브러리
-전체 지원으로 해석하지 않습니다. 정확한 범위는 [지원 범위](docs/support-scope.ko.md),
+전체 지원으로 해석하지 않습니다. 정확한 범위는 생성된 [release 수용 범위](docs/compatibility/release-acceptance.ko.generated.md),
+[지원 범위](docs/support-scope.ko.md),
 [Client 호환성 표](docs/compatibility/client-matrix.ko.md),
 [API coverage](docs/compatibility/api-coverage.ko.md)에서 확인하세요.
 
@@ -66,6 +67,7 @@ thread stack, asyncio task를 탐색할 수 있습니다. Docker Compose 조합,
 | Docker Compose로 처음 실행 | [상세 사용 안내](docs/getting-started.ko.md) |
 | AWS CLI, boto3, AWS SDK for pandas 연결 | [상세 사용 안내의 client 절차](docs/getting-started.ko.md) |
 | 지원하는 EMR/Glue API와 오류 확인 | [지원 범위](docs/support-scope.ko.md), [API coverage](docs/compatibility/api-coverage.ko.md) |
+| Release를 차단하는 Glue/Hive/Iceberg/EMR 보장 확인 | [생성된 release 수용 범위](docs/compatibility/release-acceptance.ko.generated.md) |
 | Spark Glue Hive/Iceberg, Open Table Format, 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md), [Open Table Format protocol](docs/protocols/glue-open-table-format.ko.md) |
 | Managed Iceberg table optimizer 설정과 호출 | [Table optimizer protocol](docs/protocols/glue-table-optimizers.ko.md) |
 | YAML, timeout, port, Docker 설정 변경 | [설정 안내](docs/configuration.ko.md) |

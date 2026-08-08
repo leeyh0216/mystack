@@ -1,4 +1,184 @@
 {
+  "acceptance": {
+    "areas": {
+      "aws-sdk-pandas": {
+        "case_ids": [
+          "awswrangler-3.17.0-glue-s3"
+        ],
+        "claim_en": "The accepted AWS SDK for pandas profile writes and reads partitioned Parquet while registering and querying Glue database, table, partition, and S3 metadata through the public Proxy.",
+        "claim_ko": "\uc218\uc6a9\ud55c AWS SDK for pandas profile\uc774 \uacf5\uac1c Proxy\ub97c \ud1b5\ud574 partitioned Parquet\uc744 \uc4f0\uace0 \uc77d\uc73c\uba70 Glue database, table, partition\uacfc S3 metadata\ub97c \ub4f1\ub85d\ud558\uace0 \uc870\ud68c\ud569\ub2c8\ub2e4.",
+        "evidence_paths": [
+          "tests/e2e/test_awswrangler.py",
+          "docs/compatibility/client-matrix.md"
+        ],
+        "official_sources": [
+          "aws-sdk-pandas"
+        ],
+        "scenario_ids": [
+          "parquet-glue-s3-round-trip"
+        ],
+        "title_en": "AWS SDK for pandas Glue/S3 round trip",
+        "title_ko": "AWS SDK for pandas Glue/S3 \uc655\ubcf5"
+      },
+      "emr-pyspark-s3": {
+        "case_ids": [
+          "boto3-botocore-1.43.66-contract",
+          "emr-7.8.0-spark-3.5.4"
+        ],
+        "claim_en": "boto3 creates and controls the emulated EMR cluster while bootstrap actions, S3 artifact download, local PySpark execution, cancellation, lifecycle, and log publication remain functional.",
+        "claim_ko": "boto3\ub85c emulated EMR cluster\ub97c \uc0dd\uc131\ud558\uace0 \uc81c\uc5b4\ud558\uba70 bootstrap action, S3 artifact download, local PySpark \uc2e4\ud589, \ucde8\uc18c, lifecycle, log \uac8c\uc2dc\uac00 \uacc4\uc18d \ub3d9\uc791\ud568\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.",
+        "evidence_paths": [
+          "emr/tests/test_boto3_contract.py",
+          "tests/e2e/test_emr_spark.py",
+          "docs/protocols/emr-log-layout.md",
+          "docs/testing.md"
+        ],
+        "official_sources": [
+          "botocore-models",
+          "emr-7.8.0"
+        ],
+        "scenario_ids": [
+          "emr-control-plane",
+          "bootstrap-s3-spark-step-lifecycle"
+        ],
+        "title_en": "EMR PySpark and LocalStack S3 regression",
+        "title_ko": "EMR PySpark\uc640 LocalStack S3 \ud68c\uadc0"
+      },
+      "glue-control-plane-errors": {
+        "case_ids": [
+          "boto3-botocore-1.43.66-contract",
+          "boto3-botocore-1.43.66-public-proxy"
+        ],
+        "claim_en": "Every Glue Catalog operation in the accepted boto3 profile crosses the service boundary, the public Proxy path is exercised, and the documented local error catalog stays exhaustive and ordered.",
+        "claim_ko": "\uc218\uc6a9\ud55c boto3 profile\uc758 \ubaa8\ub4e0 Glue Catalog operation\uc774 service boundary\ub97c \ud1b5\uacfc\ud558\uace0 \uacf5\uac1c Proxy \uacbd\ub85c\ub97c \uac80\uc99d\ud558\uba70, \ubb38\uc11c\ud654\ud55c \ub85c\uceec \uc624\ub958 catalog\uc758 \uc804\uccb4\uc131\uacfc \uc21c\uc11c\ub97c \uc720\uc9c0\ud569\ub2c8\ub2e4.",
+        "evidence_paths": [
+          "contracts/api-coverage.json",
+          "contracts/glue-error-conditions.yaml",
+          "docs/compatibility/api-coverage.generated.md",
+          "docs/compatibility/glue-errors.generated.md"
+        ],
+        "official_sources": [
+          "botocore-models"
+        ],
+        "scenario_ids": [
+          "glue-data-catalog",
+          "modeled-service-errors",
+          "glue-operations-through-public-proxy"
+        ],
+        "title_en": "Glue Catalog API and deterministic errors",
+        "title_ko": "Glue Catalog API\uc640 \uacb0\uc815\uc801 \uc624\ub958"
+      },
+      "iceberg": {
+        "case_ids": [
+          "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1"
+        ],
+        "claim_en": "The Glue 5 profile covers Open Table Format input, create/read/write/evolution, row-level DML, snapshots and refs, maintenance procedures, managed optimizers, rename/drop/purge, and concurrent commit retry.",
+        "claim_ko": "Glue 5 profile\uc5d0\uc11c Open Table Format input, create/read/write/evolution, row-level DML, snapshot\uacfc ref, maintenance procedure, managed optimizer, rename/drop/purge, concurrent commit retry\ub97c \uac80\uc99d\ud569\ub2c8\ub2e4.",
+        "evidence_paths": [
+          "tests/e2e/test_glue_spark_catalog.py",
+          "docs/protocols/glue-open-table-format.md",
+          "docs/protocols/glue-iceberg-evolution.md",
+          "docs/protocols/glue-iceberg-row-level-dml.md",
+          "docs/protocols/glue-iceberg-snapshots-refs-procedures.md",
+          "docs/protocols/glue-table-optimizers.md",
+          "docs/protocols/glue-iceberg-lifecycle.md",
+          "docs/protocols/glue-iceberg-commits.md"
+        ],
+        "official_sources": [
+          "glue-5.0",
+          "glue-iceberg",
+          "glue-open-table-format",
+          "glue-table-optimizers",
+          "iceberg-evolution",
+          "iceberg-spark-writes",
+          "iceberg-configuration",
+          "iceberg-spark-queries",
+          "iceberg-spark-ddl",
+          "iceberg-spark-procedures",
+          "iceberg-branching",
+          "iceberg-glue-catalog-source"
+        ],
+        "scenario_ids": [
+          "iceberg-open-table-format-input",
+          "iceberg-create-append-read-evolve",
+          "iceberg-partition-schema-sort-evolution",
+          "iceberg-row-level-dml",
+          "iceberg-snapshots-refs-procedures",
+          "iceberg-managed-table-optimizers",
+          "iceberg-rename-drop-purge",
+          "iceberg-multi-container-contention"
+        ],
+        "title_en": "Iceberg Java GlueCatalog lifecycle",
+        "title_ko": "Iceberg Java GlueCatalog lifecycle"
+      },
+      "spark-hive": {
+        "case_ids": [
+          "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1"
+        ],
+        "claim_en": "The Glue 5 Spark Hive client covers complex types, typed partition pruning, partition DDL and repair, and the supported ALTER TABLE metadata variants.",
+        "claim_ko": "Glue 5 Spark Hive client\ub85c complex type, type \uae30\ubc18 partition pruning, partition DDL\uacfc repair, \uc9c0\uc6d0\ud558\ub294 ALTER TABLE metadata \ubcc0\ud615\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.",
+        "evidence_paths": [
+          "tests/e2e/test_glue_spark_catalog.py",
+          "docs/protocols/glue-partition-expressions.md",
+          "docs/protocols/glue-hive-partition-ddl.md",
+          "docs/protocols/glue-hive-table-alter.md"
+        ],
+        "official_sources": [
+          "glue-5.0",
+          "glue-hive"
+        ],
+        "scenario_ids": [
+          "hive-complex-types",
+          "hive-partition-pruning",
+          "hive-partition-ddl-repair",
+          "hive-table-alter"
+        ],
+        "title_en": "Spark Hive catalog behavior",
+        "title_ko": "Spark Hive catalog \ub3d9\uc791"
+      }
+    },
+    "evidence_sha256": "4599c54d79152fef04eeb57e8e07b222f2f533bcebcb3954f4656bb299e52647",
+    "exclusions": {
+      "additional-catalog-clients": {
+        "official_sources": [
+          "glue-iceberg"
+        ],
+        "reason_en": "PyIceberg, Flink, Trino, and the Glue Iceberg REST endpoint have no compatibility claim.",
+        "reason_ko": "PyIceberg, Flink, Trino, Glue Iceberg REST endpoint\ub294 \ud638\ud658\uc131\uc744 \ubcf4\uc7a5\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+        "title_en": "Additional catalog clients",
+        "title_ko": "\ucd94\uac00 catalog client"
+      },
+      "external-fidelity": {
+        "official_sources": [
+          "emr-7.8.0"
+        ],
+        "reason_en": "Real-AWS differential tests and physical EC2, YARN, or HDFS distribution are excluded.",
+        "reason_ko": "\uc2e4 AWS \ube44\uad50 \uc2dc\ud5d8\uacfc \ubb3c\ub9ac EC2, YARN, HDFS \ubd84\uc0b0 \ud658\uacbd \uc7ac\ud604\uc740 \uc81c\uc678\ud569\ub2c8\ub2e4.",
+        "title_en": "External AWS and distributed runtime fidelity",
+        "title_ko": "\uc678\ubd80 AWS\uc640 \ubd84\uc0b0 runtime \uc7ac\ud604\ub3c4"
+      },
+      "glue-compute": {
+        "official_sources": [
+          "glue-5.0"
+        ],
+        "reason_en": "Jobs, JobRuns, Crawlers, and their client paths are outside this catalog-store release.",
+        "reason_ko": "Job, JobRun, Crawler\uc640 \uc774\ub97c \uc0ac\uc6a9\ud558\ub294 client \uacbd\ub85c\ub294 \uc774\ubc88 catalog-store release \ubc94\uc704 \ubc16\uc785\ub2c8\ub2e4.",
+        "title_en": "Glue compute services",
+        "title_ko": "Glue compute service"
+      },
+      "security-and-cloud-boundaries": {
+        "official_sources": [
+          "glue-iceberg"
+        ],
+        "reason_en": "Authentication, authorization, IAM, Lake Formation, cross-account, and cross-Region semantics are not emulated.",
+        "reason_ko": "\uc778\uc99d, \uc778\uac00, IAM, Lake Formation, cross-account, cross-Region \uc758\ubbf8\ub860\uc740 emulation\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4.",
+        "title_en": "Security and cloud account boundaries",
+        "title_ko": "\ubcf4\uc548\uacfc cloud account \uacbd\uacc4"
+      }
+    },
+    "summary_en": "Release acceptance is limited to the exact clients, runtimes, operations, and scenarios listed here; it is not a claim of complete AWS Glue or EMR compatibility.",
+    "summary_ko": "Release \uc218\uc6a9 \ubc94\uc704\ub294 \uc5ec\uae30\uc5d0 \uba85\uc2dc\ud55c client, runtime, operation, scenario\ub85c \uc81c\ud55c\ud558\uba70 AWS Glue \ub610\ub294 EMR \uc804\uccb4 \ud638\ud658\uc131\uc744 \uc758\ubbf8\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
+  },
   "cases": [
     {
       "artifact_ids": [
@@ -1069,5 +1249,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "6f11085711ca06c5681b3df0b3efdb1b7cb3e3d199471001a7fa0a44b9c7db07"
+  "source_sha256": "25e391107147c9b7083c1286209f6790fd03fc0816c55e049615995d8547bc7a"
 }

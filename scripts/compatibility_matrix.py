@@ -27,10 +27,20 @@ DEFAULT_MANIFEST = ROOT / "compatibility/cases.yaml"
 DEFAULT_OUTPUT = ROOT / "contracts/compatibility-matrix.generated.json"
 DEFAULT_ENGLISH = ROOT / "docs/compatibility/client-matrix.generated.md"
 DEFAULT_KOREAN = ROOT / "docs/compatibility/client-matrix.ko.generated.md"
+DEFAULT_ACCEPTANCE_ENGLISH = ROOT / "docs/compatibility/release-acceptance.generated.md"
+DEFAULT_ACCEPTANCE_KOREAN = ROOT / "docs/compatibility/release-acceptance.ko.generated.md"
 LOGGER = logging.getLogger("mystack.compatibility")
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 DIGEST_PATTERN = re.compile(r"^(sha256|sha512):([0-9a-f]+)$")
 MUTABLE_TOKENS = re.compile(r"(?:^|[/:@._-])(latest|main|master|develop)(?:$|[/:@._-])", re.I)
+
+
+def _localized_evidence_path(value: str, *, korean: bool) -> str:
+    if not korean or not value.endswith(".md"):
+        return value
+    if value.endswith(".generated.md"):
+        return value.removesuffix(".generated.md") + ".ko.generated.md"
+    return value.removesuffix(".md") + ".ko.md"
 
 
 class ManifestError(ValueError):
@@ -87,6 +97,7 @@ class ManifestValidator:
             "compatibility_profiles",
             "scenario_sets",
             "lanes",
+            "acceptance",
             "cases",
         }
     )
@@ -115,6 +126,22 @@ class ManifestValidator:
     )
     SCENARIO_FIELDS = frozenset({"kind", "test_nodes", "scenario_ids"})
     LANE_FIELDS = frozenset({"release_blocking", "events", "description_en", "description_ko"})
+    ACCEPTANCE_FIELDS = frozenset({"summary_en", "summary_ko", "areas", "exclusions"})
+    ACCEPTANCE_AREA_FIELDS = frozenset(
+        {
+            "title_en",
+            "title_ko",
+            "claim_en",
+            "claim_ko",
+            "case_ids",
+            "scenario_ids",
+            "evidence_paths",
+            "official_sources",
+        }
+    )
+    ACCEPTANCE_EXCLUSION_FIELDS = frozenset(
+        {"title_en", "title_ko", "reason_en", "reason_ko", "official_sources"}
+    )
     CASE_FIELDS = frozenset(
         {
             "id",
@@ -184,6 +211,13 @@ class ManifestValidator:
         self._validate_lanes(lanes)
         self._validate_cases(
             document["cases"], artifacts, runtimes, runners, profiles, scenarios, lanes
+        )
+        self._validate_acceptance(
+            document["acceptance"],
+            document["cases"],
+            scenarios,
+            lanes,
+            sources,
         )
         LOGGER.info("event=compatibility.manifest.validate.after cases=%d", len(document["cases"]))
 
@@ -408,6 +442,131 @@ class ManifestValidator:
             if lane["release_blocking"] and case["lane"] != "required":
                 raise ManifestError(f"invalid release-blocking lane path={path}.lane")
 
+    def _validate_acceptance(
+        self,
+        acceptance: Any,
+        cases: list[dict[str, Any]],
+        scenarios: dict[str, Any],
+        lanes: dict[str, Any],
+        sources: dict[str, Any],
+    ) -> None:
+        path = "acceptance"
+        LOGGER.info("event=compatibility.acceptance.validate.before")
+        self._strict(acceptance, self.ACCEPTANCE_FIELDS, self.ACCEPTANCE_FIELDS, path)
+        self._text(acceptance["summary_en"], f"{path}.summary_en")
+        self._text(acceptance["summary_ko"], f"{path}.summary_ko")
+        areas = self._id_mapping(acceptance, "areas")
+        exclusions = self._id_mapping(acceptance, "exclusions")
+        case_by_id = {case["id"]: case for case in cases}
+        required_case_ids = {
+            case["id"] for case in cases if lanes[case["lane"]]["release_blocking"]
+        }
+        required_scenario_ids = {
+            scenario_id
+            for case in cases
+            if case["id"] in required_case_ids
+            for scenario_id in scenarios[case["scenario_set"]]["scenario_ids"]
+        }
+        covered_cases: set[str] = set()
+        covered_scenarios: set[str] = set()
+        for area_id, area in areas.items():
+            area_path = f"{path}.areas.{area_id}"
+            self._strict(
+                area,
+                self.ACCEPTANCE_AREA_FIELDS,
+                self.ACCEPTANCE_AREA_FIELDS,
+                area_path,
+            )
+            for field in ("title_en", "title_ko", "claim_en", "claim_ko"):
+                self._text(area[field], f"{area_path}.{field}")
+            area_case_ids = self._string_list(area["case_ids"], f"{area_path}.case_ids")
+            area_scenario_ids = self._string_list(area["scenario_ids"], f"{area_path}.scenario_ids")
+            for case_id in area_case_ids:
+                case = self._reference(case_id, case_by_id, f"{area_path}.case_ids")
+                if not lanes[case["lane"]]["release_blocking"]:
+                    raise ManifestError(
+                        f"acceptance references non-blocking case path={area_path}.case_ids "
+                        f"case={case_id}"
+                    )
+            allowed_scenarios = {
+                scenario_id
+                for case_id in area_case_ids
+                for scenario_id in scenarios[case_by_id[case_id]["scenario_set"]]["scenario_ids"]
+            }
+            unknown_scenarios = sorted(set(area_scenario_ids) - allowed_scenarios)
+            if unknown_scenarios:
+                raise ManifestError(
+                    f"acceptance scenario is not owned by its cases path={area_path}.scenario_ids "
+                    f"ids={unknown_scenarios}"
+                )
+            repeated_scenarios = sorted(covered_scenarios & set(area_scenario_ids))
+            if repeated_scenarios:
+                raise ManifestError(
+                    f"acceptance scenario has multiple owners path={area_path}.scenario_ids "
+                    f"ids={repeated_scenarios}"
+                )
+            covered_cases.update(area_case_ids)
+            covered_scenarios.update(area_scenario_ids)
+            for evidence_path in self._string_list(
+                area["evidence_paths"], f"{area_path}.evidence_paths"
+            ):
+                self._validate_evidence_path(evidence_path, f"{area_path}.evidence_paths")
+            for source_id in self._string_list(
+                area["official_sources"], f"{area_path}.official_sources"
+            ):
+                self._reference(source_id, sources, f"{area_path}.official_sources")
+        if covered_cases != required_case_ids:
+            raise ManifestError(
+                "release-blocking case acceptance coverage drift "
+                f"missing={sorted(required_case_ids - covered_cases)} "
+                f"extra={sorted(covered_cases - required_case_ids)} "
+                "fix_hint=document-required-case-in-acceptance"
+            )
+        if covered_scenarios != required_scenario_ids:
+            raise ManifestError(
+                "release-blocking scenario acceptance coverage drift "
+                f"missing={sorted(required_scenario_ids - covered_scenarios)} "
+                f"extra={sorted(covered_scenarios - required_scenario_ids)} "
+                "fix_hint=document-required-scenario-in-acceptance"
+            )
+        for exclusion_id, exclusion in exclusions.items():
+            exclusion_path = f"{path}.exclusions.{exclusion_id}"
+            self._strict(
+                exclusion,
+                self.ACCEPTANCE_EXCLUSION_FIELDS,
+                self.ACCEPTANCE_EXCLUSION_FIELDS,
+                exclusion_path,
+            )
+            for field in ("title_en", "title_ko", "reason_en", "reason_ko"):
+                self._text(exclusion[field], f"{exclusion_path}.{field}")
+            for source_id in self._string_list(
+                exclusion["official_sources"], f"{exclusion_path}.official_sources"
+            ):
+                self._reference(source_id, sources, f"{exclusion_path}.official_sources")
+        LOGGER.info(
+            "event=compatibility.acceptance.validate.after areas=%d exclusions=%d "
+            "required_cases=%d required_scenarios=%d",
+            len(areas),
+            len(exclusions),
+            len(required_case_ids),
+            len(required_scenario_ids),
+        )
+
+    def _validate_evidence_path(self, value: str, path: str) -> None:
+        root = self._root.resolve()
+        candidates = tuple(dict.fromkeys((value, _localized_evidence_path(value, korean=True))))
+        for candidate in candidates:
+            evidence = Path(candidate)
+            resolved = (root / evidence).resolve()
+            if (
+                evidence.is_absolute()
+                or not resolved.is_relative_to(root)
+                or not resolved.is_file()
+            ):
+                raise ManifestError(
+                    f"missing or unsafe acceptance evidence path={path} evidence={candidate!r}"
+                )
+
     def _id_mapping(self, document: dict[str, Any], name: str) -> dict[str, Any]:
         value = self._mapping(document[name], name)
         if not value:
@@ -548,12 +707,31 @@ class MatrixCompiler:
                 }
             )
         source_digest = self._digest(document)
+        acceptance = dict(document["acceptance"])
+        acceptance["evidence_sha256"] = self._digest(
+            {
+                "acceptance": document["acceptance"],
+                "required_cases": [
+                    {
+                        "id": case["id"],
+                        "evidence_sha256": case["evidence_sha256"],
+                    }
+                    for case in compiled_cases
+                    if case["release_blocking"]
+                ],
+            }
+        )
+        LOGGER.info(
+            "event=compatibility.acceptance.compile.after evidence_sha256=%s",
+            acceptance["evidence_sha256"],
+        )
         result = {
             "schema_version": 1,
             "generated_from": "compatibility/cases.yaml",
             "source_sha256": source_digest,
             "lanes": document["lanes"],
             "official_sources": document["official_sources"],
+            "acceptance": acceptance,
             "github_matrices": matrices,
             "cases": compiled_cases,
             "fix_hints": [
@@ -659,6 +837,120 @@ class MatrixRenderer:
         return "\n".join(lines) + "\n"
 
 
+class AcceptanceRenderer:
+    """Render release-blocking scope and evidence from the same validated manifest."""
+
+    def render(self, compiled: dict[str, Any], *, korean: bool) -> str:
+        acceptance = compiled["acceptance"]
+        if korean:
+            counterpart = "release-acceptance.generated.md"
+            counterpart_label = "English"
+            title = "# Catalog release 수용 범위 (생성됨)"
+            intro = (
+                "이 파일은 `compatibility/cases.yaml`에서 결정적으로 생성됩니다. 직접 수정하지 "
+                "마세요. 아래 모든 case는 `required`이며 release 게시 전에 통과해야 합니다."
+            )
+            area_heading = "## Release-blocking 보장"
+            headings = ("영역", "보장", "Case", "고정 버전", "Scenario", "근거", "공식 출처")
+            exclusion_heading = "## 명시적 제외"
+            exclusion_headings = ("영역", "제외 이유", "공식 출처")
+            source_heading = "## 공식 참고 자료"
+            summary = acceptance["summary_ko"]
+            evidence_label = "수용 근거"
+        else:
+            counterpart = "release-acceptance.ko.generated.md"
+            counterpart_label = "한국어"
+            title = "# Catalog release acceptance (generated)"
+            intro = (
+                "This file is deterministically generated from `compatibility/cases.yaml`; do not "
+                "edit it directly. Every case below is `required` and must pass before publication."
+            )
+            area_heading = "## Release-blocking guarantees"
+            headings = (
+                "Area",
+                "Claim",
+                "Cases",
+                "Exact versions",
+                "Scenarios",
+                "Evidence",
+                "Official sources",
+            )
+            exclusion_heading = "## Explicit exclusions"
+            exclusion_headings = ("Area", "Reason", "Official sources")
+            source_heading = "## Official references"
+            summary = acceptance["summary_en"]
+            evidence_label = "Acceptance evidence"
+        lines = [
+            f"[{counterpart_label}]({counterpart})",
+            "",
+            title,
+            "",
+            intro,
+            "",
+            summary,
+            "",
+            f"{evidence_label}: `{acceptance['evidence_sha256']}`",
+            "",
+            area_heading,
+            "",
+            "| " + " | ".join(headings) + " |",
+            "| " + " | ".join("---" for _ in headings) + " |",
+        ]
+        referenced_sources: set[str] = set()
+        case_by_id = {case["id"]: case for case in compiled["cases"]}
+        for area_id, area in acceptance["areas"].items():
+            referenced_sources.update(area["official_sources"])
+            title_text = area["title_ko" if korean else "title_en"]
+            claim = area["claim_ko" if korean else "claim_en"]
+            cases = "<br>".join(f"`{value}`" for value in area["case_ids"])
+            versions = {
+                name: str(version)
+                for case_id in area["case_ids"]
+                for profile in case_by_id[case_id]["compatibility_profiles"].values()
+                for name, version in profile["versions"].items()
+            }
+            version_text = "<br>".join(
+                f"{name} `{version}`" for name, version in sorted(versions.items())
+            )
+            scenarios = "<br>".join(f"`{value}`" for value in area["scenario_ids"])
+            evidence = "<br>".join(
+                f"[{_localized_evidence_path(value, korean=korean)}]"
+                f"(../../{_localized_evidence_path(value, korean=korean)})"
+                for value in area["evidence_paths"]
+            )
+            sources = "<br>".join(
+                f"[{value}]({compiled['official_sources'][value]['url']})"
+                for value in area["official_sources"]
+            )
+            lines.append(
+                f"| `{area_id}` — {title_text} | {claim} | {cases} | {version_text} | "
+                f"{scenarios} | {evidence} | {sources} |"
+            )
+        lines.extend(
+            [
+                "",
+                exclusion_heading,
+                "",
+                "| " + " | ".join(exclusion_headings) + " |",
+                "| " + " | ".join("---" for _ in exclusion_headings) + " |",
+            ]
+        )
+        for exclusion_id, exclusion in acceptance["exclusions"].items():
+            referenced_sources.update(exclusion["official_sources"])
+            title_text = exclusion["title_ko" if korean else "title_en"]
+            reason = exclusion["reason_ko" if korean else "reason_en"]
+            sources = "<br>".join(
+                f"[{value}]({compiled['official_sources'][value]['url']})"
+                for value in exclusion["official_sources"]
+            )
+            lines.append(f"| `{exclusion_id}` — {title_text} | {reason} | {sources} |")
+        lines.extend(["", source_heading, ""])
+        for source_id in sorted(referenced_sources):
+            source = compiled["official_sources"][source_id]
+            lines.append(f"- [{source['title']}]({source['url']}) (`{source_id}`)")
+        return "\n".join(lines) + "\n"
+
+
 @dataclass(frozen=True)
 class GeneratedArtifacts:
     """Own comparison and atomic writes for compiler outputs."""
@@ -666,12 +958,21 @@ class GeneratedArtifacts:
     output: Path
     english: Path
     korean: Path
+    acceptance_english: Path
+    acceptance_korean: Path
 
-    def expected(self, compiled: dict[str, Any], renderer: MatrixRenderer) -> dict[Path, str]:
+    def expected(
+        self,
+        compiled: dict[str, Any],
+        renderer: MatrixRenderer,
+        acceptance_renderer: AcceptanceRenderer,
+    ) -> dict[Path, str]:
         return {
             self.output: json.dumps(compiled, indent=2, sort_keys=True) + "\n",
             self.english: renderer.render(compiled, korean=False),
             self.korean: renderer.render(compiled, korean=True),
+            self.acceptance_english: acceptance_renderer.render(compiled, korean=False),
+            self.acceptance_korean: acceptance_renderer.render(compiled, korean=True),
         }
 
     def check(self, expected: dict[Path, str]) -> None:
@@ -724,6 +1025,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--english", type=Path, default=DEFAULT_ENGLISH)
     parser.add_argument("--korean", type=Path, default=DEFAULT_KOREAN)
+    parser.add_argument("--acceptance-english", type=Path, default=DEFAULT_ACCEPTANCE_ENGLISH)
+    parser.add_argument("--acceptance-korean", type=Path, default=DEFAULT_ACCEPTANCE_KOREAN)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--check", action="store_true")
     action.add_argument("--write", action="store_true")
@@ -746,8 +1049,14 @@ def main() -> None:
         return
     try:
         compiled = compile_manifest(args.manifest)
-        artifacts = GeneratedArtifacts(args.output, args.english, args.korean)
-        expected = artifacts.expected(compiled, MatrixRenderer())
+        artifacts = GeneratedArtifacts(
+            args.output,
+            args.english,
+            args.korean,
+            args.acceptance_english,
+            args.acceptance_korean,
+        )
+        expected = artifacts.expected(compiled, MatrixRenderer(), AcceptanceRenderer())
         if args.write:
             artifacts.write(expected)
         else:

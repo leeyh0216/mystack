@@ -15,7 +15,8 @@
 1. [상세 사용 안내](getting-started.ko.md)로 source clone 없이 public GHCR image를 익명으로
    pull하고 Docker Compose를 시작한 뒤 공개 endpoint를 확인합니다.
 2. [설정 안내](configuration.ko.md)에서 port, 제한 시간, data path와 file override를 선택합니다.
-3. [지원 범위](support-scope.ko.md)와 [Client 호환성 표](compatibility/client-matrix.ko.md)에서
+3. [생성된 release 수용 범위](compatibility/release-acceptance.ko.generated.md),
+   [지원 범위](support-scope.ko.md), [Client 호환성 표](compatibility/client-matrix.ko.md)에서
    사용하려는 API와 라이브러리의 실제 검증 범위를 확인합니다.
 
 <!-- section: clients -->

@@ -68,6 +68,19 @@ def test_committed_generated_matrix_is_current_and_lossless() -> None:
         "spark_version": "3.5.4",
     }
     assert all(len(case["evidence_sha256"]) == 64 for case in compiled["cases"])
+    assert len(compiled["acceptance"]["evidence_sha256"]) == 64
+    acceptance = compiled["acceptance"]
+    covered_cases = {
+        case_id for area in acceptance["areas"].values() for case_id in area["case_ids"]
+    }
+    covered_scenarios = {
+        scenario_id for area in acceptance["areas"].values() for scenario_id in area["scenario_ids"]
+    }
+    required = [case for case in compiled["cases"] if case["release_blocking"]]
+    assert covered_cases == {case["id"] for case in required}
+    assert covered_scenarios == {
+        scenario_id for case in required for scenario_id in case["scenario"]["scenario_ids"]
+    }
 
 
 def test_same_contract_case_adds_an_actions_entry_without_cross_product(tmp_path: Path) -> None:
@@ -77,6 +90,7 @@ def test_same_contract_case_adds_an_actions_entry_without_cross_product(tmp_path
         case = copy.deepcopy(document["cases"][0])
         case["id"] = "boto3-botocore-1.43.66-contract-second-explicit-case"
         document["cases"].append(case)
+        document["acceptance"]["areas"]["glue-control-plane-errors"]["case_ids"].append(case["id"])
 
     changed = _compile_mutation(tmp_path, add_case)
     before = baseline["github_matrices"]["required_contract"]["include"]
@@ -124,6 +138,16 @@ def test_same_contract_case_adds_an_actions_entry_without_cross_product(tmp_path
             lambda value: value["cases"][0].update({"artifacts": ["botocore-1.43.66"]}),
             "profile version has no exact case artifact",
         ),
+        (
+            lambda value: value["acceptance"]["areas"]["spark-hive"]["scenario_ids"].pop(),
+            "scenario acceptance coverage drift",
+        ),
+        (
+            lambda value: value["acceptance"]["areas"]["spark-hive"]["evidence_paths"].append(
+                "missing/release-evidence.md"
+            ),
+            "missing or unsafe acceptance evidence",
+        ),
     ],
 )
 def test_pretest_validation_rejects_drift(tmp_path: Path, mutation, message: str) -> None:
@@ -156,6 +180,20 @@ def test_each_lane_has_an_explicit_non_cross_product_case_matrix() -> None:
         for entry in matrix["include"]
     }
     assert matrix_ids == {case["id"] for case in compiled["cases"]}
+
+
+def test_release_workflow_preserves_compiled_acceptance_evidence() -> None:
+    workflow = (ROOT / ".github/workflows/container-publish.yml").read_text(encoding="utf-8")
+
+    assert "Preserve release-blocking acceptance and diagnostics" in workflow
+    for path in (
+        "contracts/compatibility-matrix.generated.json",
+        "contracts/api-coverage.json",
+        "contracts/glue-error-conditions.yaml",
+        "docs/compatibility/release-acceptance.generated.md",
+        "docs/compatibility/release-acceptance.ko.generated.md",
+    ):
+        assert path in workflow
 
 
 def test_isolated_runner_uses_generated_nodes_and_configured_timeout() -> None:

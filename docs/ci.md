@@ -63,4 +63,7 @@ history.
 <!-- section: artifacts -->
 ## Failure artifacts
 
-CI always attempts to preserve coverage, model drift, Docker logs, and test artifacts. Logs must retain component boundary and side-effect events but never secrets.
+CI always attempts to preserve coverage, model drift, Docker logs, and test artifacts. The release
+validation artifact also retains the generated [release acceptance](compatibility/release-acceptance.generated.md),
+compiled matrix, API classification, and deterministic Glue error catalog. Logs must retain
+component boundary and side-effect events but never secrets.

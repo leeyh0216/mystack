@@ -29,16 +29,19 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 
 1. Add its exact artifact URL and content digest to `compatibility/cases.yaml`.
 2. Add or reuse one runtime profile, runner adapter, compatibility profile, and scenario set.
-3. Add one explicit case. Do not add a version axis that creates unreviewed combinations.
-4. Run `make compatibility-generate`, review the JSON and both generated tables, then run
+3. Add one explicit case and assign every new required case/scenario to one bilingual acceptance
+   area. Do not add a version axis that creates unreviewed combinations.
+4. Run `make compatibility-generate`, review the JSON, exact-version tables, and generated
+   release-acceptance tables, then run
    `make compatibility-case CASE=<id>`.
 5. Run `make compatibility-check`. CI derives a new job from the generated `include` entry without
    workflow source changes.
 
 The compiler fails before tests for unknown fields, duplicate IDs, mutable sources, invalid digests,
-unknown adapters, runtime/config mismatches, stale model fingerprints, and missing test nodes. A case
-records exact versions, scenario/operation IDs, model fingerprints, and a deterministic evidence
-hash so logs point maintainers at the broken boundary.
+unknown adapters, runtime/config mismatches, stale model fingerprints, missing test nodes, unsafe
+evidence paths, and undocumented required cases or scenarios. A case records exact versions,
+scenario/operation IDs, model fingerprints, and a deterministic evidence hash so logs point
+maintainers at the broken boundary.
 
 <!-- section: checklist -->
 ## Compatibility change checklist
