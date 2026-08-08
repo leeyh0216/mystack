@@ -104,8 +104,9 @@ Rename/drop/purge uses it as described by the
 [Iceberg lifecycle contract](glue-iceberg-lifecycle.md).
 
 This contract does not itself define Iceberg SQL semantics. Managed optimizers,
-Open Table Format inputs, Lake Formation, authentication, cross-account/cross-Region behavior,
-PyIceberg, Flink, and Trino are excluded.
+Open Table Format inputs are covered by the separate [input contract](glue-open-table-format.md).
+Lake Formation, authentication, cross-account/cross-Region behavior, PyIceberg, Flink, and Trino
+are excluded.
 
 <!-- section: sources -->
 ## Official sources

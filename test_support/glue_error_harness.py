@@ -20,6 +20,31 @@ from mystack.glue.application.policies import GlueFaultInjectionPolicy
 from mystack.glue.domain import CatalogState
 
 
+class InMemoryIcebergMetadataStore:
+    def __init__(self) -> None:
+        self.documents: dict[str, dict] = {}
+
+    async def read(self, location: str) -> dict:
+        if location not in self.documents:
+            raise OSError("deterministic missing metadata")
+        return copy.deepcopy(self.documents[location])
+
+    async def write(self, location: str, document: dict) -> None:
+        self.documents[location] = copy.deepcopy(document)
+
+    async def delete(self, location: str) -> None:
+        self.documents.pop(location, None)
+
+
+class IncrementingIdentifierGenerator:
+    def __init__(self) -> None:
+        self._value = 0
+
+    def new(self) -> str:
+        self._value += 1
+        return f"00000000-0000-0000-0000-{self._value:012d}"
+
+
 class IncrementingClock:
     def __init__(self) -> None:
         self._value = 0.0
@@ -55,6 +80,7 @@ class GlueCatalogHarness:
         fault_injection: GlueFaultInjectionPolicy | None = None,
     ) -> None:
         self.store = store or ToggleFailureStore()
+        self.metadata_store = InMemoryIcebergMetadataStore()
         repository = TransactionalCatalogRepository(self.store)
         application = CatalogApplication(
             repository,
@@ -79,6 +105,8 @@ class GlueCatalogHarness:
                     ),
                 ),
             ),
+            iceberg_metadata_store=self.metadata_store,
+            identifier_generator=IncrementingIdentifierGenerator(),
         )
         endpoint = AwsJsonRpcEndpoint(
             AwsServiceModel("glue"),

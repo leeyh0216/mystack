@@ -52,8 +52,13 @@ aggregate state를 변경할 수 없습니다. AWS 문서상 [Data Catalog가 ty
 보존합니다.
 
 Glue Application은 database command/query, table command/query, table-version query, partition
-command/query, 부분 성공 partition batch, pagination, initialization handler로 책임을 나눕니다.
-`CatalogApplication`은 inbound port를 위한 delegation 전용 compatibility facade입니다. Rename과
+command/query, 부분 성공 partition batch, Open Table Format orchestration, pagination,
+initialization handler로 책임을 나눕니다. Open Table Format domain planning은 storage와 무관하며
+application handler가 주입받은 metadata-store port, 기존 table command, 고유 candidate, 보상,
+`VersionId` CAS를 조정합니다. LocalStack 호환 S3 adapter는 AWS [hexagonal architecture
+지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에
+따라 composition root에서만 만듭니다. `CatalogApplication`은 inbound port를 위한 delegation 전용
+compatibility facade입니다. Rename과
 cascade policy는 이 handler가 소유하며 repository는 snapshot과 candidate transaction capability만
 노출합니다.
 

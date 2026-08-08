@@ -61,7 +61,12 @@ statement that the [Data Catalog does not validate type strings](https://docs.aw
 
 Glue Application responsibilities are separate handlers for database commands/queries, table
 commands/queries, table-version queries, partition commands/queries, partial-success partition
-batches, pagination, and initialization. `CatalogApplication` is a delegation-only compatibility
+batches, Open Table Format orchestration, pagination, and initialization. Open Table Format domain
+planning is storage-neutral; its application handler coordinates the injected metadata-store port,
+existing table commands, unique candidates, compensation, and `VersionId` CAS. The concrete
+LocalStack-compatible S3 adapter is created only at the composition root, following AWS's
+[hexagonal architecture guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html).
+`CatalogApplication` is a delegation-only compatibility
 facade for inbound ports. Rename and cascade policy belongs to these handlers; repositories expose
 only snapshot and candidate-transaction capabilities.
 

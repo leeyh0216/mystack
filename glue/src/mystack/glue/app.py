@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
@@ -25,9 +26,14 @@ from mystack.aws_protocol import (
 )
 from mystack.aws_protocol.observability import configure_logging, log_event
 from mystack.glue.adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
-from mystack.glue.adapters.outbound import JsonCatalogRepository, SystemClock
+from mystack.glue.adapters.outbound import (
+    JsonCatalogRepository,
+    S3IcebergMetadataStore,
+    SystemClock,
+    SystemIdentifierGenerator,
+)
 from mystack.glue.application import CatalogApplication
-from mystack.glue.application.ports import Clock
+from mystack.glue.application.ports import Clock, IcebergMetadataStore, IdentifierGenerator
 from mystack.glue.config import GlueSettings
 from mystack.glue.domain.repositories import CatalogRepository
 
@@ -41,6 +47,8 @@ def create_app(
     application: CatalogApplication | None = None,
     repository: CatalogRepository | None = None,
     clock: Clock | None = None,
+    iceberg_metadata_store: IcebergMetadataStore | None = None,
+    identifier_generator: IdentifierGenerator | None = None,
     diagnostics_settings: DiagnosticsSettings | None = None,
     log_level: str | None = None,
 ) -> FastAPI:
@@ -69,11 +77,18 @@ def create_app(
         lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
     )
     clock = clock or SystemClock()
+    owned_metadata_store: S3IcebergMetadataStore | None = None
+    object_store_endpoint = urlparse(settings.object_store.endpoint_url)
     if application is None:
+        if iceberg_metadata_store is None:
+            owned_metadata_store = S3IcebergMetadataStore(settings.object_store)
+            iceberg_metadata_store = owned_metadata_store
         application = CatalogApplication(
             repository=repository,
             clock=clock,
             policy=settings.policy,
+            iceberg_metadata_store=iceberg_metadata_store,
+            identifier_generator=identifier_generator or SystemIdentifierGenerator(),
         )
     service_model = AwsServiceModel("glue")
     adapter = GlueAwsAdapter(
@@ -100,33 +115,46 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        settings.data_root.mkdir(parents=True, exist_ok=True)
-        await application.initialize()
-        log_event(
-            _LOGGER,
-            logging.INFO,
-            "glue.started",
-            config_source=settings.config_source,
-            config_fingerprint=settings.config_fingerprint,
-            data_root=str(settings.data_root),
-            state_file=str(settings.state_file),
-            catalog_lock_file=str(settings.catalog_lock.lock_file),
-            catalog_lock_acquire_timeout_seconds=(settings.catalog_lock.acquire_timeout_seconds),
-            catalog_lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
-            operation_count=len(dispatcher.operations),
-            operations=sorted(dispatcher.operations),
-            runtime_profile={
-                "name": settings.runtime.name,
-                "spark_version": settings.runtime.spark_version,
-                "python_version": settings.runtime.python_version,
-                "java_version": settings.runtime.java_version,
-                "iceberg_version": settings.runtime.iceberg_version,
-            },
-            fault_injection_enabled=settings.fault_injection.enabled,
-            fault_rule_count=len(settings.fault_injection.rules),
-        )
-        yield
-        log_event(_LOGGER, logging.INFO, "glue.stopping")
+        try:
+            settings.data_root.mkdir(parents=True, exist_ok=True)
+            await application.initialize()
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.started",
+                config_source=settings.config_source,
+                config_fingerprint=settings.config_fingerprint,
+                data_root=str(settings.data_root),
+                state_file=str(settings.state_file),
+                catalog_lock_file=str(settings.catalog_lock.lock_file),
+                catalog_lock_acquire_timeout_seconds=(
+                    settings.catalog_lock.acquire_timeout_seconds
+                ),
+                catalog_lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
+                operation_count=len(dispatcher.operations),
+                operations=sorted(dispatcher.operations),
+                runtime_profile={
+                    "name": settings.runtime.name,
+                    "spark_version": settings.runtime.spark_version,
+                    "python_version": settings.runtime.python_version,
+                    "java_version": settings.runtime.java_version,
+                    "iceberg_version": settings.runtime.iceberg_version,
+                },
+                object_store_endpoint_scheme=object_store_endpoint.scheme,
+                object_store_endpoint_host=object_store_endpoint.hostname,
+                object_store_endpoint_port=object_store_endpoint.port,
+                object_store_region=settings.object_store.region,
+                object_store_path_style=settings.object_store.s3_path_style,
+                fault_injection_enabled=settings.fault_injection.enabled,
+                fault_rule_count=len(settings.fault_injection.rules),
+            )
+            yield
+        finally:
+            try:
+                if owned_metadata_store is not None:
+                    await owned_metadata_store.close()
+            finally:
+                log_event(_LOGGER, logging.INFO, "glue.stopping")
 
     app = FastAPI(title="Mystack Glue Data Catalog Emulator", version="0.1.0", lifespan=lifespan)
     app.include_router(create_diagnostics_router("glue", diagnostics_settings))

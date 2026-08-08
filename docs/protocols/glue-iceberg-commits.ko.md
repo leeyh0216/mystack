@@ -100,9 +100,9 @@ Snapshot/reference/procedure commit도 같은 경로를 사용하며 [Iceberg sn
 Rename/drop/purge는 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)에 정리한 순서를
 사용합니다.
 
-이 계약 자체는 Iceberg SQL 의미론을 정의하지 않습니다. Managed optimizer,
-Open Table Format input, Lake Formation, 인증·인가, cross-account/cross-Region, PyIceberg, Flink,
-Trino는 범위가 아닙니다.
+이 계약 자체는 Iceberg SQL 의미론을 정의하지 않습니다. Open Table Format input은 별도
+[입력 계약](glue-open-table-format.ko.md)에서 다룹니다. Managed optimizer, Lake Formation,
+인증·인가, cross-account/cross-Region, PyIceberg, Flink, Trino는 범위가 아닙니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

@@ -462,6 +462,7 @@ version = "0.1.0"
 source = { editable = "glue" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
+    { name = "boto3" },
     { name = "fastapi" },
     { name = "mystack-aws-protocol" },
     { name = "uvicorn", extra = ["standard"] },
@@ -470,6 +471,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "antlr4-python3-runtime", specifier = "==4.13.2" },
+    { name = "boto3", specifier = "==1.43.66" },
     { name = "fastapi", specifier = ">=0.116,<1" },
     { name = "mystack-aws-protocol", editable = "shared" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.35,<1" },

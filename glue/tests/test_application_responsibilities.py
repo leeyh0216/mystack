@@ -16,6 +16,7 @@ from mystack.glue.adapters.outbound import (
 from mystack.glue.application.batch import PartitionBatchHandler
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.initialization import CatalogInitializer
+from mystack.glue.application.open_table_format import OpenTableFormatCommands
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition import (
     PartitionCommands,
@@ -39,6 +40,7 @@ def test_application_handlers_have_one_explicit_responsibility() -> None:
     assert _public_methods(TableCommands) == {"create", "delete", "update"}
     assert _public_methods(TableQueries) == {"get", "list"}
     assert _public_methods(TableVersionQueries) == {"get", "list"}
+    assert _public_methods(OpenTableFormatCommands) == {"create", "update"}
     assert _public_methods(PartitionCommands) == {"create", "delete", "update"}
     assert _public_methods(PartitionQueries) == {"get", "list"}
     assert _public_methods(PartitionTargetResolver) == {"require"}

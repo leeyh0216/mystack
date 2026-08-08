@@ -95,9 +95,9 @@ Row-level writes are covered separately by the [Iceberg row-level DML
 contract](glue-iceberg-row-level-dml.md). Snapshot, reference, metadata-table, and procedure behavior
 is covered by the [snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md).
 Rename/drop/purge is covered by the [Iceberg lifecycle contract](glue-iceberg-lifecycle.md).
-This evolution contract does not redefine it. Authentication, authorization, IAM,
-Lake Formation, cross-account/cross-Region behavior, Open Table Format APIs, PyIceberg, Flink, and
-Trino remain explicit project exclusions.
+This evolution contract does not redefine it. Open Table Format inputs are covered by the separate
+[input contract](glue-open-table-format.md). Authentication, authorization, IAM, Lake Formation,
+cross-account/cross-Region behavior, PyIceberg, Flink, and Trino remain explicit project exclusions.
 
 <!-- section: sources -->
 ## Official sources

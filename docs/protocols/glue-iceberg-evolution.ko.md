@@ -94,8 +94,8 @@ Row-level write는 별도 [Iceberg row-level DML 계약](glue-iceberg-row-level-
 Snapshot, reference, metadata table, procedure 동작은 [snapshot/reference/procedure
 계약](glue-iceberg-snapshots-refs-procedures.ko.md)이 다룹니다. 이 evolution 계약은
 rename/drop/purge를 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)에 위임합니다.
-인증, 인가, IAM, Lake Formation,
-cross-account/cross-Region, Open Table Format API, PyIceberg, Flink, Trino는 계속 명시적인 프로젝트
+Open Table Format input은 별도 [입력 계약](glue-open-table-format.ko.md)에서 다룹니다. 인증, 인가,
+IAM, Lake Formation, cross-account/cross-Region, PyIceberg, Flink, Trino는 계속 명시적인 프로젝트
 제외 범위입니다.
 
 <!-- section: sources -->

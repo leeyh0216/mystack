@@ -39,6 +39,59 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     database = f"mystack_e2e_{suffix}"
     catalog_name = "mystack"
     s3.create_bucket(Bucket=bucket)
+    iceberg_database = f"{database}_iceberg"
+    glue.create_database(DatabaseInput={"Name": iceberg_database})
+    open_table_location = f"s3://{bucket}/iceberg/iceberg_open_table_format"
+    glue.create_table(
+        DatabaseName=iceberg_database,
+        Name="iceberg_open_table_format",
+        OpenTableFormatInput={
+            "IcebergInput": {
+                "MetadataOperation": "CREATE",
+                "Version": "2",
+                "CreateIcebergTableInput": {
+                    "Location": open_table_location,
+                    "Schema": {
+                        "SchemaId": 0,
+                        "Type": "struct",
+                        "IdentifierFieldIds": [1],
+                        "Fields": [
+                            {"Id": 1, "Name": "id", "Type": "long", "Required": True},
+                            {
+                                "Id": 2,
+                                "Name": "category",
+                                "Type": "string",
+                                "Required": False,
+                            },
+                        ],
+                    },
+                    "PartitionSpec": {
+                        "SpecId": 0,
+                        "Fields": [
+                            {
+                                "SourceId": 2,
+                                "FieldId": 1000,
+                                "Name": "category",
+                                "Transform": "identity",
+                            }
+                        ],
+                    },
+                    "WriteOrder": {
+                        "OrderId": 1,
+                        "Fields": [
+                            {
+                                "SourceId": 1,
+                                "Transform": "identity",
+                                "Direction": "asc",
+                                "NullOrder": "nulls-first",
+                            }
+                        ],
+                    },
+                    "Properties": {"write.format.default": "parquet"},
+                },
+            }
+        },
+    )
 
     command = [
         "docker",
@@ -64,6 +117,8 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         database,
         "--catalog-name",
         catalog_name,
+        "--sdk-timeout-seconds",
+        str(e2e_settings.sdk_read_timeout_seconds),
     ]
     completed = subprocess.run(
         command,
@@ -90,6 +145,13 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         "rename-table",
     }
     assert result["iceberg_count"] == 2
+    assert result["iceberg_open_table_format_initial_columns"] == ["id", "category"]
+    assert result["iceberg_open_table_format_initial_count"] == 1
+    assert result["iceberg_open_table_format_evolved_columns"] == ["id", "category", "note"]
+    assert result["iceberg_open_table_format_rows"] == [
+        {"id": 1, "category": "north", "note": None},
+        {"id": 2, "category": "south", "note": "evolved"},
+    ]
     assert result["iceberg_evolution_count"] == 2
     assert result["iceberg_evolution_filtered_count"] == 1
     assert result["iceberg_evolution_columns"] == [
@@ -144,6 +206,23 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     assert hive_table["StorageDescriptor"]["Columns"][2]["Type"] == "array<string>"
     assert iceberg_table["Parameters"]["table_type"].upper() == "ICEBERG"
     assert int(iceberg_table["VersionId"]) >= 4
+    open_table = glue.get_table(
+        DatabaseName=result["iceberg_database"],
+        Name=result["iceberg_open_table_format_table"],
+    )["Table"]
+    assert int(open_table["VersionId"]) >= 3
+    assert open_table["Parameters"]["previous_metadata_location"].startswith(
+        f"{open_table_location}/metadata/"
+    )
+    open_table_metadata = IcebergMetadataDocument.load_from_s3(
+        s3,
+        open_table["Parameters"]["metadata_location"],
+    )
+    assert open_table_metadata.top_level_field_names() == ["id", "category", "note"]
+    assert open_table_metadata.identifier_field_names() == {"id"}
+    assert open_table_metadata.current_partition_transforms() == {"identity"}
+    assert open_table_metadata.current_sort_fields()[0]["source_name"] == "id"
+    assert open_table_metadata.snapshot_count() == 2
     evolution_table = glue.get_table(
         DatabaseName=result["iceberg_database"],
         Name=result["iceberg_evolution_table"],

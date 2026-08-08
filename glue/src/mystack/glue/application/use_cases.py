@@ -50,6 +50,14 @@ class GlueCatalogUseCases(Protocol):
         definition: dict,
     ) -> CatalogTable: ...
 
+    async def create_open_table_format(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: object,
+        iceberg_input: object,
+    ) -> CatalogTable: ...
+
     async def get_table(
         self,
         catalog_id: str,
@@ -73,6 +81,17 @@ class GlueCatalogUseCases(Protocol):
         database: str,
         old_name: str,
         definition: dict,
+        *,
+        version_id: str | None,
+        skip_archive: bool,
+    ) -> None: ...
+
+    async def update_open_table_format(
+        self,
+        catalog_id: str,
+        database: str,
+        table_name: str,
+        update_input: object,
         *,
         version_id: str | None,
         skip_archive: bool,

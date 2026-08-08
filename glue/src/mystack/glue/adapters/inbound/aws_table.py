@@ -37,10 +37,20 @@ class TableOperationFamily:
     async def create_table(self, payload, context):
         del context
         definition = payload.get("TableInput")
-        if definition is None:
+        open_format = payload.get("OpenTableFormatInput")
+        if (definition is None) == (open_format is None):
             raise InvalidInputError(
-                "Mystack currently requires TableInput; OpenTableFormatInput is not implemented"
+                "CreateTable requires exactly one of TableInput or OpenTableFormatInput"
             )
+        if open_format is not None:
+            open_format_document = mapping(open_format, "OpenTableFormatInput")
+            await self._context.application.create_open_table_format(
+                self._context.catalog(payload),
+                str(payload["DatabaseName"]),
+                payload.get("Name"),
+                open_format_document.get("IcebergInput"),
+            )
+            return {}
         await self._context.application.create_table(
             self._context.catalog(payload),
             str(payload["DatabaseName"]),
@@ -78,11 +88,25 @@ class TableOperationFamily:
     async def update_table(self, payload, context):
         del context
         definition = payload.get("TableInput")
-        if definition is None:
+        open_format = payload.get("UpdateOpenTableFormatInput")
+        if (definition is None) == (open_format is None):
             raise InvalidInputError(
-                "Mystack currently requires TableInput; "
-                "UpdateOpenTableFormatInput is not implemented"
+                "UpdateTable requires exactly one of TableInput or UpdateOpenTableFormatInput"
             )
+        if open_format is not None:
+            table_name = payload.get("Name")
+            if table_name is None:
+                raise InvalidInputError("Name is required with UpdateOpenTableFormatInput")
+            open_format_document = mapping(open_format, "UpdateOpenTableFormatInput")
+            await self._context.application.update_open_table_format(
+                self._context.catalog(payload),
+                str(payload["DatabaseName"]),
+                str(table_name),
+                open_format_document.get("UpdateIcebergInput"),
+                version_id=optional_string(payload.get("VersionId")),
+                skip_archive=bool(payload.get("SkipArchive", False)),
+            )
+            return {}
         old_name = str(payload.get("Name") or mapping(definition, "TableInput")["Name"])
         await self._context.application.update_table(
             self._context.catalog(payload),

@@ -61,6 +61,11 @@
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
+- boto3 `OpenTableFormatInput`으로 Iceberg v2 table을 생성하고 실제 GlueCatalog로 load/append한 뒤
+  `UpdateOpenTableFormatInput`으로 evolve하고 다시 append합니다. 같은 Spark process에서 S3
+  metadata도 확인합니다. Glue 공식
+  [`CreateIcebergTableInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateIcebergTableInput.html)과
+  [내부 protocol](protocols/glue-open-table-format.ko.md)을 기준으로 합니다.
 - Glue state store의 실패·cancellation·같은 process 및 spawn process concurrent writer·stale table
   version·상한이 있는 file-lock contention·restart·rename/cascade·schema-1 migration을 주입합니다. 이
   계약은 Data Catalog metadata 원자성과 Iceberg catalog-pointer CAS를 검증하지만 Mystack이 Iceberg
@@ -90,7 +95,8 @@
   둘을 모두 보존해야 합니다. [Iceberg snapshot/reference/procedure
   protocol](protocols/glue-iceberg-snapshots-refs-procedures.ko.md), [Iceberg row-level DML
   protocol](protocols/glue-iceberg-row-level-dml.ko.md), [Iceberg lifecycle
-  protocol](protocols/glue-iceberg-lifecycle.ko.md), [Iceberg evolution
+  protocol](protocols/glue-iceberg-lifecycle.ko.md), [Open Table Format 입력
+  protocol](protocols/glue-open-table-format.ko.md), [Iceberg evolution
   protocol](protocols/glue-iceberg-evolution.ko.md), [Iceberg commit
   protocol](protocols/glue-iceberg-commits.ko.md), [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
   참고하세요.

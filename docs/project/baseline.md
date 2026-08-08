@@ -60,9 +60,13 @@ contracts.
   at the inbound adapter.
 - Glue responsibilities: immutable lossless domain snapshots own name/revision/archive/partition
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
-  policy; repositories expose collection snapshots and candidate transactions only.
+  policy; a separate Open Table Format planner/orchestrator owns Iceberg v2 input validation,
+  metadata-store coordination, compensation, and catalog CAS; repositories expose collection
+  snapshots and candidate transactions only. This follows the official Glue
+  [`OpenTableFormatInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_OpenTableFormatInput.html).
 - Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
-  1.7.1 create/append/read, dynamic overwrite, COW/MOR row-level DML, partition/schema/sort/identifier
+  1.7.1 Open Table Format create/update, create/append/read, dynamic overwrite, COW/MOR row-level
+  DML, partition/schema/sort/identifier
   evolution, time travel, branch/tag writes, metadata/snapshot/maintenance procedures,
   rename/catalog-drop/tracked-file purge, S3 orphan cleanup and concurrent `VersionId` commit
   retry, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.

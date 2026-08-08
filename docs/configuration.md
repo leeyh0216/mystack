@@ -93,6 +93,12 @@ All processes sharing a state file must mount and configure the same lock file. 
 [Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md) and Python's official
 [`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) reference.
 
+Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
+path-style setting through an injected S3 port. The application never assumes a Compose service
+name, and the configured S3 bucket must already exist. Create/update ordering, candidate cleanup,
+and exclusions are in the [Open Table Format input protocol](protocols/glue-open-table-format.md).
+The endpoint and credentials follow the official [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html).
+
 `glue.fault_injection` is disabled by default. When enabled, each rule selects one implemented
 operation and either `OperationTimeoutException` or `InternalServiceException`; only one rule may
 select an operation. Shared modeled shape and value validation run first, then the configured failure stops the

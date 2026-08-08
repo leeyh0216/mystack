@@ -120,14 +120,17 @@
 - Responsibility: `CatalogTable` owns revision/archive/CAS; table command, query, and version-query
   handlers are independent.
 - Side effects: one candidate commit for table rename, archived version, and child partition keys.
-  Iceberg updates atomically swap the supplied `metadata_location`; Mystack does not implement or
-  parse the Iceberg metadata format. Real-client E2E proves Iceberg-owned partition/schema/sort/
+  Normal GlueCatalog updates atomically swap the supplied `metadata_location`; Mystack does not
+  parse or rewrite client-owned Iceberg metadata. For the distinct official Open Table Format input,
+  Mystack materializes an Iceberg v2 metadata candidate through a storage port, then publishes it
+  with catalog CAS and compensation. Real-client E2E proves Iceberg-owned partition/schema/sort/
   identifier evolution, COW/MOR row-level commits, refs, snapshot/maintenance procedure commits,
   and rename/drop/purge survive this lossless pointer path and Iceberg-owned lifecycle sequence.
 - Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
   JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
-  modeled `ConcurrentModificationException`; open-table-format input excluded.
+  modeled `ConcurrentModificationException`; invalid Open Table Format documents use the same
+  deterministic `InvalidInputException` boundary.
 - Observability: safe Iceberg commit/version/conflict/persistence events, spawned-process CAS tests,
   COW/MOR snapshot evidence, snapshot/ref/procedure and lifecycle evidence, and two-container real
   Spark/Iceberg retry E2E.
@@ -136,8 +139,10 @@
   `glue/tests/test_iceberg_row_level_catalog.py`,
   `glue/tests/test_iceberg_snapshot_ref_catalog.py`,
   `glue/tests/test_iceberg_lifecycle_catalog.py`,
+  `glue/tests/test_open_table_format.py`,
   `docs/protocols/glue-iceberg-snapshots-refs-procedures.md`,
-  `docs/protocols/glue-iceberg-lifecycle.md`
+  `docs/protocols/glue-iceberg-lifecycle.md`,
+  `docs/protocols/glue-open-table-format.md`
 - Confidence: High
 
 <!-- section: uc-007 -->

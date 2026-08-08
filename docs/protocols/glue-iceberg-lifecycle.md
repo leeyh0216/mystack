@@ -104,8 +104,8 @@ When an upgrade breaks this profile, inspect:
 
 This profile does not make rename or purge atomic across Glue and S3, emulate scheduled optimizer
 services, or guarantee recovery from an S3 deletion failure after catalog deletion. Authentication,
-authorization, IAM, Lake Formation, cross-account/cross-Region, Open Table Format APIs,
-PyIceberg, Flink, and Trino are excluded.
+authorization, IAM, Lake Formation, cross-account/cross-Region, PyIceberg, Flink, and Trino are
+excluded. Open Table Format inputs are covered separately by the [input contract](glue-open-table-format.md).
 
 <!-- section: sources -->
 ## Official sources

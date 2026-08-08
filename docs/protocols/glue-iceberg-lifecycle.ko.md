@@ -102,7 +102,8 @@ Upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 
 이 profile은 Glue와 S3 전체의 rename/purge 원자성, 예약 optimizer service, catalog 삭제 이후 S3
 삭제 실패의 자동 복구를 보장하지 않습니다. 인증, 인가, IAM, Lake Formation,
-cross-account/cross-Region, Open Table Format API, PyIceberg, Flink, Trino는 제외합니다.
+cross-account/cross-Region, PyIceberg, Flink, Trino는 제외합니다. Open Table Format input은 별도
+[입력 계약](glue-open-table-format.ko.md)에서 다룹니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

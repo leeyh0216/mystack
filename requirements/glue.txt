@@ -24,10 +24,17 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
+boto3==1.43.66 \
+    --hash=sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb \
+    --hash=sha256:ffc77129a4e5519bdbd9b278e4fe9e6276c9d951e0d2b60d626977bdb957cb38
+    # via mystack-glue
 botocore==1.43.66 \
     --hash=sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325 \
     --hash=sha256:dde324cbe8be14b536b78f4fafe192f94fffcc70716bde804044e62495af8c3c
-    # via mystack-aws-protocol
+    # via
+    #   boto3
+    #   mystack-aws-protocol
+    #   s3transfer
 click==8.4.2 \
     --hash=sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6 \
     --hash=sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76
@@ -70,7 +77,9 @@ idna==3.18 \
 jmespath==1.1.0 \
     --hash=sha256:472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d \
     --hash=sha256:a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64
-    # via botocore
+    # via
+    #   boto3
+    #   botocore
 jsonschema==4.26.0 \
     --hash=sha256:0c26707e2efad8aa1bfc5b7ce170f3fccc2e4918ff85989ba9ffa9facb2be326 \
     --hash=sha256:d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce
@@ -217,6 +226,10 @@ rpds-py==2026.6.3 \
     # via
     #   jsonschema
     #   referencing
+s3transfer==0.19.2 \
+    --hash=sha256:ba0309fd86be3c27dbf78cdd813c13c5e1df16e5874b99d2535ebbdfb9892993 \
+    --hash=sha256:d8168eccca828cbb2cd573675333f3bddd254313a9c42494b84c76b539e8ba25
+    # via boto3
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81

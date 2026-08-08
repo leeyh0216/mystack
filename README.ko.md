@@ -17,7 +17,8 @@ Docker 애플리케이션입니다. 사용자는 AWS CLI, boto3와 기존 클라
 - LocalStack S3와 연결된 실제 Spark 3.5.x local mode 실행
 - pause/resume/download, 재시작 복구, S3 게시를 지원하는 EMR Step stdout/stderr
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
-- Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1 상호운용성
+- Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1과 문서화한 [Open Table Format create/update
+  입력](docs/protocols/glue-open-table-format.ko.md) 상호운용성
 - AWS SDK for pandas 3.17.0 기반 partitioned Parquet와 Glue Catalog 왕복
 - Docker Compose 기반의 재현 가능한 local 실행 환경
 
@@ -63,7 +64,7 @@ thread stack, asyncio task를 탐색할 수 있습니다. Docker Compose 조합,
 | Docker Compose로 처음 실행 | [상세 사용 안내](docs/getting-started.ko.md) |
 | AWS CLI, boto3, AWS SDK for pandas 연결 | [상세 사용 안내의 client 절차](docs/getting-started.ko.md) |
 | 지원하는 EMR/Glue API와 오류 확인 | [지원 범위](docs/support-scope.ko.md), [API coverage](docs/compatibility/api-coverage.ko.md) |
-| Spark Glue Hive/Iceberg와 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md) |
+| Spark Glue Hive/Iceberg, Open Table Format, 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md), [Open Table Format protocol](docs/protocols/glue-open-table-format.ko.md) |
 | YAML, timeout, port, Docker 설정 변경 | [설정 안내](docs/configuration.ko.md) |
 | EMR 시작 전에 enterprise CA 또는 proxy 설치 | [EMR pre-start 안내](docs/protocols/emr-prestart.ko.md) |
 | EMR 운영, Glue 탐색, 진단 확인 | [관리 Console 안내](docs/console.ko.md) |

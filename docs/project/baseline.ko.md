@@ -57,9 +57,14 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   domain error를 문서화된 오류로 변환합니다.
 - Glue 책임은 immutable lossless domain snapshot이 name/revision/archive/partition invariant를,
   focused command/query/version/batch/pagination/initialization handler가 application policy를
-  소유하며 repository는 collection snapshot과 candidate transaction만 노출하도록 분리했습니다.
+  소유하도록 분리했습니다. 별도의 Open Table Format planner/orchestrator는 Iceberg v2 입력 검증,
+  metadata-store 조정, 보상, catalog CAS를 소유하며 repository는 collection snapshot과 candidate
+  transaction만 노출합니다. 이는 Glue 공식
+  [`OpenTableFormatInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_OpenTableFormatInput.html)을
+  기준으로 합니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
-  create/append/read, dynamic overwrite, COW/MOR row-level DML, partition/schema/sort/identifier
+  Open Table Format create/update, create/append/read, dynamic overwrite, COW/MOR row-level DML,
+  partition/schema/sort/identifier
   evolution, time travel, branch/tag write, metadata/snapshot/maintenance procedure,
   rename/catalog-drop/추적 file purge, S3 orphan cleanup, concurrent `VersionId` commit retry,
   AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.

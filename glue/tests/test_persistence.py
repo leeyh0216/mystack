@@ -28,6 +28,11 @@ from mystack.glue.domain import (
     VersionMismatchError,
 )
 
+from test_support.glue_error_harness import (
+    IncrementingIdentifierGenerator,
+    InMemoryIcebergMetadataStore,
+)
+
 
 class IncrementingClock:
     def __init__(self) -> None:
@@ -90,6 +95,8 @@ def _application(repository) -> CatalogApplication:
                 ),
             ),
         ),
+        iceberg_metadata_store=InMemoryIcebergMetadataStore(),
+        identifier_generator=IncrementingIdentifierGenerator(),
     )
 
 

@@ -19,6 +19,10 @@ from mystack.glue.domain.model import (
     CatalogTableVersion,
     PartitionValues,
 )
+from mystack.glue.domain.open_table_format import (
+    IcebergOpenTableFormatPlanner,
+    PlannedIcebergTable,
+)
 
 __all__ = [
     "AlreadyExistsError",
@@ -30,7 +34,9 @@ __all__ = [
     "CatalogTable",
     "CatalogTableVersion",
     "EntityNotFoundError",
+    "IcebergOpenTableFormatPlanner",
     "InvalidInputError",
     "PartitionValues",
+    "PlannedIcebergTable",
     "VersionMismatchError",
 ]

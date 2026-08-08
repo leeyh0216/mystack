@@ -15,6 +15,7 @@ from mystack.glue.application.batch import (
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.initialization import CatalogInitializer
+from mystack.glue.application.open_table_format import OpenTableFormatCommands
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition import (
     PartitionCommands,
@@ -25,13 +26,14 @@ from mystack.glue.application.partition_expression import (
     PartitionExpressionCompiler,
     PartitionExpressionPolicy,
 )
-from mystack.glue.application.ports import Clock
+from mystack.glue.application.ports import Clock, IcebergMetadataStore, IdentifierGenerator
 from mystack.glue.application.table import TableCommands, TableQueries, TableVersionQueries
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
     CatalogTable,
     CatalogTableVersion,
+    IcebergOpenTableFormatPlanner,
 )
 from mystack.glue.domain.repositories import CatalogRepository
 
@@ -52,6 +54,9 @@ class CatalogApplication:
         repository: CatalogRepository,
         clock: Clock,
         policy: CatalogPolicy,
+        *,
+        iceberg_metadata_store: IcebergMetadataStore,
+        identifier_generator: IdentifierGenerator,
     ) -> None:
         paginator = Paginator(policy.api_page_size)
         self._database_commands = DatabaseCommands(repository, clock)
@@ -59,6 +64,15 @@ class CatalogApplication:
         self._table_commands = TableCommands(repository, clock, IcebergCommitObserver())
         self._table_queries = TableQueries(repository, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
+        self._open_table_format = OpenTableFormatCommands(
+            databases=self._database_queries,
+            tables=self._table_queries,
+            table_commands=self._table_commands,
+            metadata_store=iceberg_metadata_store,
+            identifiers=identifier_generator,
+            clock=clock,
+            planner=IcebergOpenTableFormatPlanner(),
+        )
         self._partition_commands = PartitionCommands(repository, clock)
         self._partition_queries = PartitionQueries(
             repository,
@@ -118,6 +132,20 @@ class CatalogApplication:
     ) -> CatalogTable:
         return await self._table_commands.create(catalog_id, database_name, definition)
 
+    async def create_open_table_format(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: object,
+        iceberg_input: object,
+    ) -> CatalogTable:
+        return await self._open_table_format.create(
+            catalog_id,
+            database_name,
+            table_name,
+            iceberg_input,
+        )
+
     async def get_table(self, catalog_id: str, database: str, name: str) -> CatalogTable:
         return await self._table_queries.get(catalog_id, database, name)
 
@@ -153,6 +181,25 @@ class CatalogApplication:
             database,
             old_name,
             definition,
+            version_id=version_id,
+            skip_archive=skip_archive,
+        )
+
+    async def update_open_table_format(
+        self,
+        catalog_id: str,
+        database: str,
+        table_name: str,
+        update_input: object,
+        *,
+        version_id: str | None,
+        skip_archive: bool,
+    ) -> None:
+        await self._open_table_format.update(
+            catalog_id,
+            database,
+            table_name,
+            update_input,
             version_id=version_id,
             skip_archive=skip_archive,
         )

@@ -61,6 +61,11 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
+- Create an Iceberg v2 table through boto3 `OpenTableFormatInput`, load/append it through the real
+  GlueCatalog, evolve it through `UpdateOpenTableFormatInput`, append again, and inspect the S3
+  metadata in the same Spark process. See the official Glue
+  [`CreateIcebergTableInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateIcebergTableInput.html)
+  and the [local protocol](protocols/glue-open-table-format.md).
 - Inject Glue state-store failure, cancellation, same-process and spawned-process concurrent
   writers, stale table versions, bounded file-lock contention, restart, rename/cascade, and schema-1
   migration. These contracts prove Data Catalog metadata atomicity and Iceberg catalog-pointer CAS;
@@ -92,6 +97,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   refresh/retry the stale `VersionId` commit and retain both appends. See the
   [Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.md),
   [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md),
+  [Open Table Format input protocol](protocols/glue-open-table-format.md),
   [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md),
   [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md),
   [Iceberg commit protocol](protocols/glue-iceberg-commits.md), and

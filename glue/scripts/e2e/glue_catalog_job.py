@@ -17,6 +17,7 @@ from iceberg_evolution import exercise_iceberg_evolution
 from iceberg_lifecycle import exercise_iceberg_lifecycle
 from iceberg_row_level import exercise_iceberg_row_level_writes
 from iceberg_snapshot_refs import exercise_iceberg_snapshots_and_procedures
+from open_table_format import exercise_open_table_format
 from pyspark.sql import SparkSession
 from spark_catalog_session import GlueSparkCatalogSettings
 
@@ -38,6 +39,7 @@ def main() -> None:
     parser.add_argument("--bucket", required=True)
     parser.add_argument("--database", required=True)
     parser.add_argument("--catalog-name", required=True)
+    parser.add_argument("--sdk-timeout-seconds", required=True, type=float)
     args = parser.parse_args()
 
     hive_database = f"{args.database}_hive"
@@ -130,6 +132,16 @@ def main() -> None:
         qualified_namespace = f"{args.catalog_name}.`{iceberg_database}`"
         qualified_table = f"{qualified_namespace}.`{iceberg_table}`"
         spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {qualified_namespace}")
+        open_table_format = exercise_open_table_format(
+            spark,
+            catalog_endpoint=args.catalog_endpoint,
+            region=args.region,
+            database=iceberg_database,
+            catalog_name=args.catalog_name,
+            table="iceberg_open_table_format",
+            location=f"s3://{args.bucket}/iceberg/iceberg_open_table_format",
+            sdk_timeout_seconds=args.sdk_timeout_seconds,
+        )
         spark.sql(
             f"""
             CREATE TABLE {qualified_table} (
@@ -189,6 +201,7 @@ def main() -> None:
                     "hive_alter_failures": hive_alter_failures,
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
+                    **open_table_format,
                     **iceberg_evolution,
                     **iceberg_row_level,
                     **iceberg_snapshots,
@@ -205,6 +218,9 @@ def main() -> None:
             or set(hive_alter_failures)
             != {"drop-column", "rename-column", "change-column-type", "rename-table"}
             or iceberg_count != 2
+            or open_table_format["iceberg_open_table_format_initial_count"] != 1
+            or open_table_format["iceberg_open_table_format_evolved_columns"]
+            != ["id", "category", "note"]
             or iceberg_evolution["iceberg_evolution_count"] != 2
             or iceberg_evolution["iceberg_evolution_filtered_count"] != 1
             or iceberg_row_level["iceberg_row_cow_after_overwrite"]

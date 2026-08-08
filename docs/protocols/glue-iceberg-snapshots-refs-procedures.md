@@ -79,9 +79,9 @@ When an Iceberg or Spark upgrade breaks this profile, inspect:
 
 Rename/drop/purge is covered by the [Iceberg lifecycle contract](glue-iceberg-lifecycle.md).
 This contract does not guarantee scheduled optimizer services, every procedure option, or every
-metadata table. Authentication, authorization, IAM,
-Lake Formation, cross-account/cross-Region, Open Table Format APIs, PyIceberg, Flink, and Trino are
-explicitly excluded.
+metadata table. Open Table Format inputs are covered by the separate
+[input contract](glue-open-table-format.md). Authentication, authorization, IAM, Lake Formation,
+cross-account/cross-Region, PyIceberg, Flink, and Trino are explicitly excluded.
 
 <!-- section: sources -->
 ## Official sources

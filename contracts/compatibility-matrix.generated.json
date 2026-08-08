@@ -739,6 +739,7 @@
             "partition-repair",
             "table-alter",
             "iceberg-glue-catalog",
+            "iceberg-open-table-format-input",
             "schema-evolution",
             "iceberg-hidden-partitioning",
             "iceberg-partition-evolution",
@@ -767,6 +768,7 @@
             "glue-5.0",
             "glue-hive",
             "glue-iceberg",
+            "glue-open-table-format",
             "iceberg-evolution",
             "iceberg-spark-writes",
             "iceberg-configuration",
@@ -799,7 +801,7 @@
           }
         }
       },
-      "evidence_sha256": "126e36c97447d321587d97f1516d5baf19204310124eda31781b24abd52f9819",
+      "evidence_sha256": "c0c6e2cc54bfca41e1ae3872ded63ecc1ff01029612776bd13f9d5a3f4232e33",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -837,6 +839,7 @@
           "hive-partition-pruning",
           "hive-partition-ddl-repair",
           "hive-table-alter",
+          "iceberg-open-table-format-input",
           "iceberg-create-append-read-evolve",
           "iceberg-partition-schema-sort-evolution",
           "iceberg-row-level-dml",
@@ -905,7 +908,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "126e36c97447d321587d97f1516d5baf19204310124eda31781b24abd52f9819",
+          "evidence_sha256": "c0c6e2cc54bfca41e1ae3872ded63ecc1ff01029612776bd13f9d5a3f4232e33",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -982,6 +985,10 @@
       "title": "AWS Glue libraries public ECR image",
       "url": "https://gallery.ecr.aws/glue/aws-glue-libs"
     },
+    "glue-open-table-format": {
+      "title": "AWS Glue Open Table Format CreateTable input",
+      "url": "https://docs.aws.amazon.com/glue/latest/webapi/API_OpenTableFormatInput.html"
+    },
     "iceberg-branching": {
       "title": "Apache Iceberg 1.7.1 branching and tagging",
       "url": "https://iceberg.apache.org/docs/1.7.1/branching/"
@@ -1028,5 +1035,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "01a14339bbd4c023b6ad3f8abfcea69d253e7dee4d458f589597318d75a2d842"
+  "source_sha256": "64112e89f0bda1085bbf97f1d3c487ed248a14c3da78e0597e3094a02f1c2e7c"
 }

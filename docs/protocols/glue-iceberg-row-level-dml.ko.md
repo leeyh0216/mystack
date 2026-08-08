@@ -89,8 +89,8 @@ Client를 올린 뒤 이 profile이 깨지면 다음을 확인합니다.
 Snapshot time travel, branch/tag write, metadata table, procedure는
 [snapshot/reference/procedure 계약](glue-iceberg-snapshots-refs-procedures.ko.md)이 다룹니다. 이
 row-level 계약은 rename/drop/purge를 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)에
-위임합니다. 인증, 인가, IAM, Lake Formation,
-cross-account/cross-Region, Open Table Format API, PyIceberg, Flink, Trino도 제외합니다.
+위임합니다. Open Table Format input은 별도 [입력 계약](glue-open-table-format.ko.md)에서 다룹니다.
+인증, 인가, IAM, Lake Formation, cross-account/cross-Region, PyIceberg, Flink, Trino도 제외합니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

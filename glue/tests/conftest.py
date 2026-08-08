@@ -22,6 +22,11 @@ from botocore.config import Config
 from mystack.aws_protocol import LoadedConfiguration, load_configuration
 from mystack.glue.app import create_app
 
+from test_support.glue_error_harness import (
+    IncrementingIdentifierGenerator,
+    InMemoryIcebergMetadataStore,
+)
+
 
 @pytest.fixture
 def glue_test_timeout() -> float:
@@ -42,7 +47,11 @@ def glue_server(tmp_path: Path, glue_test_timeout: float) -> Iterator[str]:
     port = _free_port()
     server = uvicorn.Server(
         uvicorn.Config(
-            create_app(configuration=configured),
+            create_app(
+                configuration=configured,
+                iceberg_metadata_store=InMemoryIcebergMetadataStore(),
+                identifier_generator=IncrementingIdentifierGenerator(),
+            ),
             host="127.0.0.1",
             port=port,
             log_level="warning",

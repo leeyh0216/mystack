@@ -40,12 +40,22 @@ class GlueCatalogLockSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class GlueObjectStoreSettings:
+    endpoint_url: str
+    region: str
+    access_key_id: str
+    secret_access_key: str
+    s3_path_style: bool
+
+
+@dataclass(frozen=True, slots=True)
 class GlueSettings:
     listen_host: str
     listen_port: int
     data_root: Path
     state_file: Path
     catalog_lock: GlueCatalogLockSettings
+    object_store: GlueObjectStoreSettings
     default_region: str
     runtime: GlueRuntimeProfile
     policy: CatalogPolicy
@@ -96,6 +106,13 @@ class GlueSettings:
                     lock_file=lock_file,
                     acquire_timeout_seconds=lock_timeout_seconds,
                     poll_interval_seconds=lock_poll_interval_seconds,
+                ),
+                object_store=GlueObjectStoreSettings(
+                    endpoint_url=str(localstack["endpoint_url"]),
+                    region=str(localstack["region"]),
+                    access_key_id=str(localstack["access_key_id"]),
+                    secret_access_key=str(localstack["secret_access_key"]),
+                    s3_path_style=bool(localstack["s3_path_style"]),
                 ),
                 default_region=str(localstack["region"]),
                 runtime=GlueRuntimeProfile(

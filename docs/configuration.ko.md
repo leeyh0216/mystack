@@ -90,6 +90,13 @@ State file을 공유하는 모든 process가 같은 lock file을 mount하고 설
 GlueCatalog commit 계약](protocols/glue-iceberg-commits.ko.md)과 Python 공식
 [`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) 문서를 참고하세요.
 
+Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
+credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며
+설정한 S3 bucket은 미리 존재해야 합니다. Create/update 순서, candidate cleanup, 제외 범위는
+[Open Table Format 입력 protocol](protocols/glue-open-table-format.ko.md)에 있습니다. Endpoint와
+credential은 AWS 공식 [SDK endpoint
+설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)을 따릅니다.
+
 `glue.fault_injection`은 기본적으로 꺼져 있습니다. 활성화하면 rule 하나가 구현된 operation
 하나와 `OperationTimeoutException` 또는 `InternalServiceException` 중 하나를 선택합니다. 한
 operation에는 rule 하나만 둘 수 있습니다. 공통 model의 요청 구조와 value 검증을 먼저 수행한 뒤 설정된 실패가

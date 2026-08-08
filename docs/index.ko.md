@@ -26,7 +26,7 @@
 | AWS CLI와 boto3 | 같은 공개 Proxy에서 EMR 13개, Glue 22개 operation | [상세 사용 안내](getting-started.ko.md) |
 | AWS SDK for pandas 3.17.0 | Partitioned Parquet S3 write/read와 Glue table/partition | [상세 사용 안내](getting-started.ko.md) |
 | Spark 3.5.4 Glue Hive client | Complex type Parquet create/insert/read | [Client 호환성 표](compatibility/client-matrix.ko.md) |
-| Apache Iceberg 1.7.1 GlueCatalog | Create/read/write/evolution, COW/MOR DML, time travel, ref, metadata/maintenance procedure, rename/drop/purge | [Client 호환성 표](compatibility/client-matrix.ko.md) |
+| Apache Iceberg 1.7.1 GlueCatalog | Open Table Format API create/update, read/write/evolution, COW/MOR DML, time travel, ref, metadata/maintenance procedure, rename/drop/purge | [Client 호환성 표](compatibility/client-matrix.ko.md), [Open Table Format protocol](protocols/glue-open-table-format.ko.md) |
 | EMR Spark step | S3 bootstrap, Python/JAR local Spark, S3A output, cancel | [지원 범위](support-scope.ko.md) |
 
 표에 없는 라이브러리나 함수는 자동으로 지원되는 것으로 간주하지 않습니다. 고정 botocore model의

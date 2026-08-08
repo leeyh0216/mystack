@@ -26,6 +26,11 @@ from mystack.glue.application.partition_expression import PartitionExpressionPol
 from mystack.glue.config import GlueSettings
 from mystack.glue.domain import VersionMismatchError
 
+from test_support.glue_error_harness import (
+    IncrementingIdentifierGenerator,
+    InMemoryIcebergMetadataStore,
+)
+
 
 class IncrementingClock:
     def __init__(self) -> None:
@@ -55,6 +60,8 @@ def _application(state_file: Path, lock_file: Path) -> CatalogApplication:
                 supported_key_types=("string",),
             ),
         ),
+        iceberg_metadata_store=InMemoryIcebergMetadataStore(),
+        identifier_generator=IncrementingIdentifierGenerator(),
     )
 
 
@@ -278,6 +285,8 @@ def test_catalog_lock_configuration_resolves_paths_and_rejects_invalid_interval(
     settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
     assert settings.catalog_lock.lock_file == Path("/var/lib/mystack/glue/catalog-state.lock")
     assert settings.catalog_lock.acquire_timeout_seconds == 30.0
+    assert settings.object_store.endpoint_url == "http://localstack:4566"
+    assert settings.object_store.s3_path_style is True
 
     monkeypatch.setenv("MYSTACK__GLUE__CATALOG_LOCK__ACQUIRE_TIMEOUT_SECONDS", "0.01")
     loaded = load_configuration("config/mystack.yaml")

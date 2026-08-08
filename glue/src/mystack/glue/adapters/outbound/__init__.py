@@ -4,6 +4,7 @@ Architecture reference:
 https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html
 """
 
+from mystack.glue.adapters.outbound.iceberg_metadata import S3IcebergMetadataStore
 from mystack.glue.adapters.outbound.repository import (
     CatalogStateStore,
     CatalogStateSynchronizer,
@@ -15,7 +16,7 @@ from mystack.glue.adapters.outbound.repository import (
     TransactionalCatalogRepository,
     VolatileCatalogStateStore,
 )
-from mystack.glue.adapters.outbound.system import SystemClock
+from mystack.glue.adapters.outbound.system import SystemClock, SystemIdentifierGenerator
 
 __all__ = [
     "CatalogStateStore",
@@ -25,7 +26,9 @@ __all__ = [
     "JsonCatalogRepository",
     "JsonCatalogStateStore",
     "LocalCatalogStateSynchronizer",
+    "S3IcebergMetadataStore",
     "SystemClock",
+    "SystemIdentifierGenerator",
     "TransactionalCatalogRepository",
     "VolatileCatalogStateStore",
 ]
