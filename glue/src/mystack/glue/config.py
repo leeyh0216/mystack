@@ -17,6 +17,7 @@ from mystack.aws_protocol.configuration import (
 )
 from mystack.glue.application import CatalogPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
+from mystack.glue.application.policies import GlueFaultInjectionPolicy, GlueFaultRule
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +39,7 @@ class GlueSettings:
     default_region: str
     runtime: GlueRuntimeProfile
     policy: CatalogPolicy
+    fault_injection: GlueFaultInjectionPolicy
     config_source: str
     config_fingerprint: str
 
@@ -48,6 +50,7 @@ class GlueSettings:
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
         expression = require_mapping(glue, "partition_expressions")
+        fault_injection = require_mapping(glue, "fault_injection")
         try:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
@@ -84,6 +87,13 @@ class GlueSettings:
                         ),
                     ),
                 ),
+                fault_injection=GlueFaultInjectionPolicy(
+                    enabled=bool(fault_injection["enabled"]),
+                    rules=tuple(
+                        _fault_rule(value, index)
+                        for index, value in enumerate(fault_injection["rules"])
+                    ),
+                ),
                 config_source=loaded.source,
                 config_fingerprint=loaded.fingerprint,
             )
@@ -91,3 +101,19 @@ class GlueSettings:
             raise ConfigurationError(
                 f"Glue configuration is missing required key: {error.args[0]}"
             ) from error
+
+
+def _fault_rule(value: object, index: int) -> GlueFaultRule:
+    if not isinstance(value, dict):
+        raise ConfigurationError(f"glue.fault_injection.rules[{index}] must be a mapping")
+    try:
+        return GlueFaultRule(
+            rule_id=str(value["id"]),
+            operation=str(value["operation"]),
+            error_code=str(value["error_code"]),
+            message=str(value["message"]),
+        )
+    except KeyError as error:
+        raise ConfigurationError(
+            f"glue.fault_injection.rules[{index}] is missing required key: {error.args[0]}"
+        ) from error

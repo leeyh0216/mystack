@@ -164,7 +164,7 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "runtime_profile"],
+      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
@@ -180,6 +180,28 @@
             "max_length": {"type": "integer", "minimum": 1},
             "max_tokens": {"type": "integer", "minimum": 1},
             "supported_key_types": {"$ref": "#/$defs/non_empty_string_array"}
+          }
+        },
+        "fault_injection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "rules"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "rules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "operation", "error_code", "message"],
+                "properties": {
+                  "id": {"$ref": "#/$defs/non_empty_string"},
+                  "operation": {"$ref": "#/$defs/non_empty_string"},
+                  "error_code": {"enum": ["InternalServiceException", "OperationTimeoutException"]},
+                  "message": {"$ref": "#/$defs/non_empty_string"}
+                }
+              }
+            }
           }
         },
         "runtime_profile": {"$ref": "#/$defs/non_empty_string"}

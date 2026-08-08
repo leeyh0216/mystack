@@ -104,6 +104,7 @@ make coverage-check
 make ghcr-compose-check
 make compatibility-check
 make antlr-check
+make glue-errors-check
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
@@ -122,7 +123,7 @@ both Vite production builds. Set `MYSTACK_FRONTEND_TEST_TIMEOUT_MS` to a positiv
 to override the explicit 10-second test/hook deadline. `make pre-commit` installs and runs
 repository-local hooks backed by `uv.lock` and `package-lock.json`. The hooks reject Python and React/TypeScript
 lint/format, bilingual documentation, container requirement lock, botocore model-manifest, and
-generated interoperability evidence
+generated interoperability/error evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 

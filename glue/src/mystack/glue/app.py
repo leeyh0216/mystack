@@ -71,7 +71,11 @@ def create_app(
             policy=settings.policy,
         )
     service_model = AwsServiceModel("glue")
-    adapter = GlueAwsAdapter(application, settings.policy.default_catalog_id)
+    adapter = GlueAwsAdapter(
+        application,
+        settings.policy.default_catalog_id,
+        settings.fault_injection,
+    )
     dispatcher = adapter.dispatcher()
     endpoint = AwsJsonRpcEndpoint(
         service_model,
@@ -110,6 +114,8 @@ def create_app(
                 "java_version": settings.runtime.java_version,
                 "iceberg_version": settings.runtime.iceberg_version,
             },
+            fault_injection_enabled=settings.fault_injection.enabled,
+            fault_rule_count=len(settings.fault_injection.rules),
         )
         yield
         log_event(_LOGGER, logging.INFO, "glue.stopping")

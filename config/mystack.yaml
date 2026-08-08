@@ -102,6 +102,11 @@ glue:
       - tinyint
       - smallint
       - decimal
+  # Deterministic documented service failures are opt-in and selected by operation only.
+  # Source: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html
+  fault_injection:
+    enabled: false
+    rules: []
   runtime_profile: glue-5.0
 
 runtime_profiles:

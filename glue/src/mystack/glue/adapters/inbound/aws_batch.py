@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
 from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
-from mystack.glue.adapters.inbound.aws_errors import error_detail, glue_family
 from mystack.glue.adapters.inbound.aws_shapes import mapping, partition_document, partition_error
 
 
@@ -17,7 +16,7 @@ class BatchOperationFamily:
         self._context = context
 
     def family(self) -> OperationFamily:
-        return glue_family(
+        return self._context.error_boundary.family(
             "batch",
             {
                 "BatchCreatePartition": self.batch_create_partition,
@@ -81,7 +80,7 @@ class BatchOperationFamily:
             "Errors": [
                 {
                     "PartitionValueList": list(failure.values),
-                    "ErrorDetail": error_detail(failure.error),
+                    "ErrorDetail": self._context.error_boundary.error_detail(failure.error),
                 }
                 for failure in failures
             ]

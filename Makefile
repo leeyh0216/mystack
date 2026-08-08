@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -40,6 +40,12 @@ antlr-generate: ## Regenerate the pinned Glue partition-expression parser from i
 
 antlr-check: ## Reject ANTLR version, grammar, or committed generated-parser drift.
 	@uv run python scripts/generate_glue_expression_parser.py --check
+
+glue-errors-generate: ## Regenerate bilingual evidence from the Glue error-condition catalog.
+	@uv run python scripts/glue_error_contracts.py --write
+
+glue-errors-check: ## Reject Glue error coverage, precedence, model, or evidence drift.
+	@uv run python scripts/glue_error_contracts.py --check
 
 architecture-check: ## Enforce dependency directions, composition roots, and import cycles.
 	@uv run python scripts/architecture_contract.py --root .

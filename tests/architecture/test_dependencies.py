@@ -67,6 +67,22 @@ def test_architecture_exceptions_are_explicit_and_minimal() -> None:
     }
 
 
+def test_inbound_adapter_may_depend_on_application_protocols_and_policies(tmp_path: Path) -> None:
+    _write_sources(
+        tmp_path,
+        {
+            "sample/src/mystack/sample/adapters/inbound/api.py": (
+                "from mystack.sample.application.policies import Policy\n"
+                "from mystack.sample.application.use_cases import UseCase\n"
+            ),
+            "sample/src/mystack/sample/application/policies.py": "class Policy: pass\n",
+            "sample/src/mystack/sample/application/use_cases.py": "class UseCase: pass\n",
+        },
+    )
+
+    assert scan_repository(tmp_path, (SAMPLE,)) == ()
+
+
 @pytest.mark.parametrize(
     ("boundaries", "sources", "expected_rule"),
     (

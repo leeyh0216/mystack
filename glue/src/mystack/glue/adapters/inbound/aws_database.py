@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from mystack.aws_protocol import OperationFamily
 from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
-from mystack.glue.adapters.inbound.aws_errors import glue_family
 from mystack.glue.adapters.inbound.aws_shapes import (
     database_document,
     mapping,
@@ -22,7 +21,7 @@ class DatabaseOperationFamily:
         self._context = context
 
     def family(self) -> OperationFamily:
-        return glue_family(
+        return self._context.error_boundary.family(
             "database",
             {
                 "CreateDatabase": self.create_database,

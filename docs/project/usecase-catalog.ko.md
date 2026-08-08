@@ -226,3 +226,26 @@
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py`
 - 신뢰도: High
+
+<!-- section: uc-013 -->
+## UC-013: 문서화된 Glue timeout 또는 internal failure 재현
+
+- 목적/actor/trigger: Maintainer가 Glue emulator 시작 전에 YAML fault rule을 활성화하고 해당
+  operation에 유효한 boto3/CLI 요청을 보냅니다.
+- 입력: 고유 rule ID, 구현한 22개 operation 중 하나, `OperationTimeoutException` 또는
+  `InternalServiceException`, response message입니다.
+- 출력: 결정적인 code/status/message와 request ID가 있는 modeled AWS JSON error입니다.
+- 저장/변경: 없으며 handler와 catalog repository를 호출하지 않습니다.
+- 책임: Type이 있는 application policy가 설정 값을 보유하고 inbound `GlueFaultInjector`가 rule을
+  선택하며 공통 controller가 wire serialization을 담당합니다.
+- 부수효과: Configuration loading 뒤에는 없습니다.
+- 선행조건/규칙: 공식 요청 구조/value 검증이 injection보다 먼저이며 operation마다 rule 하나만
+  허용합니다. 인증·인가 오류와 알 수 없는 operation은 시작 시 거부합니다.
+- 실패: 잘못된 설정은 service 시작을 막고 일치하지 않는 operation은 자연스러운 catalog 경로를
+  따릅니다.
+- 관측: `glue.error.decision`이 요청 값과 설정 response message 없이 condition/rule/phase/code와
+  mutation 보장을 기록합니다.
+- 근거: `contracts/glue-error-conditions.yaml`,
+  `glue/src/mystack/glue/adapters/inbound/aws_faults.py`,
+  `glue/tests/test_error_contracts.py`
+- 신뢰도: High

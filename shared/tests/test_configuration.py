@@ -24,6 +24,15 @@ def test_nested_environment_override_is_typed(monkeypatch) -> None:
     )
 
 
+def test_glue_fault_injection_is_file_driven_and_disabled_by_default() -> None:
+    loaded = load_configuration("config/mystack.yaml")
+
+    assert loaded.document["glue"]["fault_injection"] == {
+        "enabled": False,
+        "rules": [],
+    }
+
+
 def test_schema_rejects_unknown_keys_with_actionable_path(monkeypatch) -> None:
     monkeypatch.setenv("MYSTACK__PROXY__UNSUPPORTED_OPTION", "true")
 

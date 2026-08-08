@@ -69,7 +69,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
-| `glue` | durable catalog state, catalog ID, paging, partition expression 정책, runtime profile |
+| `glue` | durable catalog state, catalog ID, paging, partition expression/fault 정책, runtime profile |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -81,6 +81,27 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 `max_length` 기본값은 공식 API의 2,048자 제한이고, `max_tokens`는 parser 작업량을 제한하며,
 `supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
 protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+
+`glue.fault_injection`은 기본적으로 꺼져 있습니다. 활성화하면 rule 하나가 구현된 operation
+하나와 `OperationTimeoutException` 또는 `InternalServiceException` 중 하나를 선택합니다. 한
+operation에는 rule 하나만 둘 수 있습니다. 공통 model의 요청 구조와 value 검증을 먼저 수행한 뒤 설정된 실패가
+Catalog 조회나 mutation 전에 handler를 중단합니다. Rule은 시작 시 mounted file에서 한 번
+읽습니다.
+
+```yaml
+glue:
+  fault_injection:
+    enabled: true
+    rules:
+      - id: timeout-get-table
+        operation: GetTable
+        error_code: OperationTimeoutException
+        message: 결정적 test를 위해 주입한 timeout
+```
+
+인증·인가 오류는 설정할 수 없습니다. 실패 시나리오가 끝나면 rule을 제거하거나 비활성화하고
+Glue container를 재시작하세요. 우선순위와 log는 [Glue 오류 결정
+protocol](protocols/glue-error-decisions.ko.md)을 참고하세요.
 
 `management.console.refresh_interval_seconds`는 선택한 EMR 또는 Glue workspace의 선택 상태를
 유지하는 polling 주기이며 최소 0.5초입니다. 각 emulator가 service 소유 UI 설정 endpoint에서

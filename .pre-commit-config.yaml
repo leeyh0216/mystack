@@ -66,6 +66,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: glue-error-contracts
+        name: Deterministic Glue error contract drift
+        entry: make glue-errors-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: api-coverage
         name: Complete API classification and generated matrix drift
         entry: uv run python scripts/api_coverage.py --check contracts/api-coverage.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md

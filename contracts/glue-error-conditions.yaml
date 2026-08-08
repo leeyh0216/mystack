@@ -1,0 +1,166 @@
+# Deterministic Glue error decisions derived from official public models and documentation.
+# This catalog never includes authentication, authorization, IAM, or Lake Formation failures.
+schema_version: 1
+
+official_sources:
+  glue-exceptions: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html
+  glue-api: https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html
+  botocore-glue-model: https://github.com/boto/botocore/tree/develop/botocore/data/glue
+  aws-json-1.1: https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/Welcome.html
+
+precedence:
+  - protocol_shape
+  - required_fields
+  - value_constraints
+  - fault_injection
+  - parent_existence
+  - duplicate_conflict
+  - version_concurrency
+  - mutation
+  - persistence_side_effect
+
+conditions:
+  protocol.input_shape:
+    phase: protocol_shape
+    category: validation
+    error_code: InvalidInputException
+    http_status: 400
+    message_template: "{operation}: {model_validation_report}"
+    mutation_guarantee: handler_not_called
+    response_mode: service_error
+    model_scope: global_exception
+    source: botocore-glue-model
+  input.value_invalid:
+    phase: value_constraints
+    category: validation
+    error_code: InvalidInputException
+    http_status: 400
+    message_template: "{domain_validation_message}"
+    mutation_guarantee: candidate_not_committed
+    response_mode: service_error
+    model_scope: operation
+    source: glue-exceptions
+  fault.operation_timeout:
+    phase: fault_injection
+    category: injectable
+    error_code: OperationTimeoutException
+    http_status: 400
+    message_template: "{configured_message}"
+    mutation_guarantee: handler_not_called
+    response_mode: service_error
+    model_scope: operation
+    source: glue-exceptions
+  fault.internal_service:
+    phase: fault_injection
+    category: injectable
+    error_code: InternalServiceException
+    http_status: 500
+    message_template: "{configured_message}"
+    mutation_guarantee: handler_not_called
+    response_mode: service_error
+    model_scope: operation
+    source: glue-exceptions
+  resource.not_found:
+    phase: parent_existence
+    category: not_found
+    error_code: EntityNotFoundException
+    http_status: 400
+    message_template: "{resource_type} {resource_identifier} does not exist"
+    mutation_guarantee: candidate_not_committed
+    response_mode: service_error
+    model_scope: operation
+    source: glue-exceptions
+  resource.already_exists:
+    phase: duplicate_conflict
+    category: conflict
+    error_code: AlreadyExistsException
+    http_status: 400
+    message_template: "{resource_type} {resource_identifier} already exists"
+    mutation_guarantee: candidate_not_committed
+    response_mode: service_error
+    model_scope: global_exception
+    source: glue-exceptions
+  version.mismatch:
+    phase: version_concurrency
+    category: concurrency
+    error_code: VersionMismatchException
+    http_status: 400
+    message_template: "Expected table version {expected}; current version is {current}"
+    mutation_guarantee: candidate_not_committed
+    response_mode: service_error
+    model_scope: global_exception
+    source: glue-exceptions
+  batch.item_invalid:
+    phase: mutation
+    category: validation
+    error_code: InvalidInputException
+    http_status: 200
+    message_template: "{item_validation_message}"
+    mutation_guarantee: ordered_partial_success
+    response_mode: batch_item
+    model_scope: operation
+    source: glue-api
+  batch.item_not_found:
+    phase: mutation
+    category: not_found
+    error_code: EntityNotFoundException
+    http_status: 200
+    message_template: "{item_identifier} does not exist"
+    mutation_guarantee: ordered_partial_success
+    response_mode: batch_item
+    model_scope: operation
+    source: glue-api
+  batch.item_already_exists:
+    phase: mutation
+    category: conflict
+    error_code: AlreadyExistsException
+    http_status: 200
+    message_template: "{item_identifier} already exists"
+    mutation_guarantee: ordered_partial_success
+    response_mode: batch_item
+    model_scope: operation
+    source: glue-api
+  adapter.mapping_failure:
+    phase: mutation
+    category: system
+    error_code: InternalServiceException
+    http_status: 500
+    message_template: "An internal Glue request mapping error occurred."
+    mutation_guarantee: candidate_not_committed
+    response_mode: service_error
+    model_scope: operation
+    source: botocore-glue-model
+  persistence.side_effect_failed:
+    phase: persistence_side_effect
+    category: system
+    error_code: InternalServiceException
+    http_status: 500
+    message_template: "An internal Glue persistence error occurred."
+    mutation_guarantee: candidate_not_published
+    response_mode: service_error
+    model_scope: operation
+    source: glue-exceptions
+
+operations:
+  BatchCreatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_invalid, batch.item_already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  BatchDeletePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  BatchGetPartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  BatchUpdatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_invalid, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  CreateDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  CreatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  CreateTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  DeleteDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  DeletePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  DeleteTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  GetCatalogImportStatus: [protocol.input_shape, fault.operation_timeout, fault.internal_service, adapter.mapping_failure]
+  GetDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetDatabases: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, adapter.mapping_failure]
+  GetPartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetPartitions: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetTables: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetTableVersion: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  GetTableVersions: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
+  UpdateDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  UpdatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  UpdateTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, version.mismatch, adapter.mapping_failure, persistence.side_effect_failed]

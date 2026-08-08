@@ -227,3 +227,26 @@
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py`
 - Confidence: High
+
+<!-- section: uc-013 -->
+## UC-013: Reproduce a documented Glue timeout or internal failure
+
+- Purpose/actor/trigger: maintainer enables a YAML fault rule before starting the Glue emulator and
+  sends an otherwise valid boto3/CLI request for that operation.
+- Input: unique rule ID, one of 22 implemented operations, `OperationTimeoutException` or
+  `InternalServiceException`, and response message.
+- Output: modeled AWS JSON error with deterministic code/status/message and request ID.
+- Stored/changed data: none; the handler and catalog repository are not called.
+- Responsibility: typed application policy contains configuration values; inbound
+  `GlueFaultInjector` selects a rule; shared controller owns wire serialization.
+- Side effects: none after configuration loading.
+- Preconditions/rules: official shape/value validation precedes injection; one rule per operation;
+  authentication/authorization errors and unknown operations are rejected at startup.
+- Failures: invalid configuration prevents service startup; a nonmatching operation follows its
+  natural catalog path.
+- Observability: `glue.error.decision` records condition/rule/phase/code and mutation guarantee
+  without request values or configured response message.
+- Evidence: `contracts/glue-error-conditions.yaml`,
+  `glue/src/mystack/glue/adapters/inbound/aws_faults.py`,
+  `glue/tests/test_error_contracts.py`
+- Confidence: High

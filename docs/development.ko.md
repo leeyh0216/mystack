@@ -104,6 +104,7 @@ make coverage-check
 make ghcr-compose-check
 make compatibility-check
 make antlr-check
+make glue-errors-check
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
@@ -122,7 +123,7 @@ production build를 실행합니다. `MYSTACK_FRONTEND_TEST_TIMEOUT_MS`를 양�
 지정하면 명시적인 기본 10초 test/hook deadline을 바꿀 수 있습니다. `make pre-commit`은
 `uv.lock`과 `package-lock.json`으로 재현되는 repository-local hook을 설치하고 실행합니다.
 Python과 React/TypeScript lint/format, 한·영 문서, container requirement lock, botocore model manifest와 생성된
-상호운용성 근거의 변경을 commit
+상호운용성·오류 근거의 변경을 commit
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
 

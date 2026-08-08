@@ -243,6 +243,7 @@ def _dependency_violations(
     ):
         allowed = (
             f"{boundary.package}.application.commands",
+            f"{boundary.package}.application.policies",
             f"{boundary.package}.application.use_cases",
         )
         if not imported.startswith(allowed):
@@ -250,7 +251,8 @@ def _dependency_violations(
                 _violation(
                     reference,
                     "inbound-concrete-facade",
-                    "Depend on application.use_cases Protocols and command values, not the facade.",
+                    "Depend on application.use_cases Protocols, policies, and command values, "
+                    "not the facade.",
                 )
             )
     return violations

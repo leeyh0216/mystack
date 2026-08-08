@@ -17,7 +17,7 @@
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
-| Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | 지원 client가 요구하는 Catalog input과 문서화된 오류의 결정적 동작 |
+| Glue Data Catalog | 부분 구현: boto3로 검증한 22개 operation, 강제하는 오류 결정 pipeline, 전체 operation catalog, 선택적 timeout/internal failure injection | Database/table/version 및 partition/batch 작업으로 resource별 문서 기반 오류 조건 완성 |
 | Spark + Hive + Glue Catalog | 구현: 공식 Glue 5 image, complex type, type 기반 pruning, partition DDL/repair, 지원되는 Hive V1 table ALTER metadata 의미론 | 구현된 모든 Glue operation의 결정적인 문서 기반 오류 coverage |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
@@ -38,6 +38,9 @@ Spark Hive partition add/drop/rename/location과 repair mapping은 [Hive partiti
 protocol](protocols/glue-hive-partition-ddl.ko.md)에 정리했습니다.
 지원하는 table-level column/property/SerDe/location 변경과 client가 거부하는 variant는 [Hive
 table ALTER protocol](protocols/glue-hive-table-alter.ko.md)에 정리했습니다.
+구현한 모든 operation은 생성한 [Glue 오류
+matrix](compatibility/glue-errors.ko.generated.md)에 포함됩니다. 우선순위, 안전한 logging, file 기반
+failure injection은 [오류 결정 protocol](protocols/glue-error-decisions.ko.md)에 정의했습니다.
 
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.

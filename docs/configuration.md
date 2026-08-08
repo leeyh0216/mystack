@@ -71,7 +71,7 @@ and is not required for image consumers.
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
-| `glue` | Durable catalog state, catalog ID, paging, partition-expression policy, and runtime profile |
+| `glue` | Durable catalog state, catalog ID, paging, partition-expression/fault policies, and runtime profile |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -84,6 +84,26 @@ variables.
 `max_length` defaults to the official 2,048-character API limit, `max_tokens` bounds parser work,
 and `supported_key_types` defines the typed compatibility profile. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md).
+
+`glue.fault_injection` is disabled by default. When enabled, each rule selects one implemented
+operation and either `OperationTimeoutException` or `InternalServiceException`; only one rule may
+select an operation. Shared modeled shape and value validation run first, then the configured failure stops the
+handler before catalog lookup or mutation. Rules are loaded once at startup from the mounted file:
+
+```yaml
+glue:
+  fault_injection:
+    enabled: true
+    rules:
+      - id: timeout-get-table
+        operation: GetTable
+        error_code: OperationTimeoutException
+        message: Injected timeout for a deterministic test
+```
+
+Authentication/authorization failures cannot be configured. Remove or disable rules and restart
+the Glue container after the failure scenario. See the [Glue error decision
+protocol](protocols/glue-error-decisions.md) for precedence and logging.
 
 `management.console.refresh_interval_seconds` controls state-preserving polling for the selected
 EMR or Glue workspace. It must be at least 0.5 seconds. Each emulator exposes the value through its
