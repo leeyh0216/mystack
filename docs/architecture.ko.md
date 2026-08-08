@@ -62,6 +62,12 @@ compatibility facade입니다. Rename과
 cascade policy는 이 handler가 소유하며 repository는 snapshot과 candidate transaction capability만
 노출합니다.
 
+Managed table optimizer는 전용 domain aggregate, command/query handler, executor port와 lifecycle
+소유 scheduler를 추가합니다. Scheduler는 application facade를 통해서만 work를 claim하고
+transition하며 outbound adapter는 Spark process/file, Spark entrypoint는 Iceberg procedure를
+소유합니다. [Optimizer protocol](protocols/glue-table-optimizers.ko.md)과 AWS [table optimizer
+API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-table-optimizers.html)를 참고하세요.
+
 EMR Application은 cluster command, Step command, read-only query, opaque pagination, queue
 완료/실패 policy, 비동기 cluster driver를 분리합니다. Inbound adapter는 concrete facade가 아니라
 각각의 최소 command/query Protocol을 선언합니다. Typed EMR runtime은 작업을 시작하지 않은 상태로
@@ -72,7 +78,7 @@ cancellation](https://docs.python.org/3/library/asyncio-task.html#task-cancellat
 subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) 계약을 따릅니다.
 
 Inbound AWS mapping은 operation family별로 구성합니다. EMR은 cluster, Step, control, tag, query,
-Glue는 database, table, version, partition, batch family를 소유합니다. Shared 검증 registry가 이를
+Glue는 database, table, version, partition, batch, table-optimizer family를 소유합니다. Shared 검증 registry가 이를
 합치며 소유권 중복, 구현 operation 누락, 분류되지 않은 예상 밖 handler가 있으면 시작을
 중단합니다. Registry는 공식 [botocore service
 model](https://github.com/boto/botocore/tree/develop/botocore/data)에서 유도한 전체 호환성 분류와
@@ -118,7 +124,10 @@ host:4566 -> proxy:8080
                 `-- 기타 모든 요청    -> localstack:4566
 ```
 
-EMR은 emulated cluster별 Spark local process를 실행합니다. Glue Job/JobRun은 구현하지 않으며 Spark 기반 Glue Catalog/Hive/Iceberg 검증은 versioned runtime profile에서 실행합니다.
+EMR은 emulated cluster별 Spark local process를 실행합니다. Glue managed optimizer scheduler는
+outbound port를 통해 timeout이 있는 local Glue 5 Spark process를 실행하지만 Glue Job/JobRun
+실행은 아닙니다. Runtime process는 설정한 catalog/LocalStack endpoint와 local test credential을
+명시적 argument와 environment로 받습니다.
 
 Management traffic은 별도 outward read-model 경계를 사용합니다. 각 service의 inbound
 management adapter가 Application/Domain resource를 versioned JSON으로 변환하고 각 emulator가
@@ -161,10 +170,11 @@ Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side
 ## 저장과 실행
 
 Glue Application은 각 mutation을 격리된 `CatalogState` candidate에 적용하고 repository가
-transaction을 직렬화합니다. JSON state store는 schema version 2를 저장하고 fsync한 뒤 기존
+transaction을 직렬화합니다. JSON state store는 schema version 3을 저장하고 fsync한 뒤 기존
 document를 원자적으로 교체하며, 성공한 뒤에만 candidate를 reader에게 공개합니다. Persistence
 실패는 candidate를 취소합니다. Durable commit 중 cancellation은 visible publish를 끝낸 다음
-cancellation을 반환합니다. Schema version 1은 읽을 수 있고 다음 mutation에서 migration합니다.
+cancellation을 반환합니다. Schema version 1과 2는 읽을 수 있고 다음 mutation에서 migration합니다.
+Optimizer와 상한이 있는 run history는 같은 database/table aggregate transaction의 child입니다.
 Persistence는 repository transaction 뒤에 합성하며 JSON repository가 memory mutation 동작을
 상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Inbound startup-file adapter는
 side effect 전에 versioned `RunJobFlow` plan 전체를 검증하고

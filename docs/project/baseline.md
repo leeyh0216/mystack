@@ -52,7 +52,7 @@ contracts.
   and queue-driver components sit behind minimal inbound Protocols. A typed Build/Start/Close runtime
   cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
   closes artifacts, and releases driver locks.
-- Glue: 22 operations covering database, table/version, and partition/batch behavior with
+- Glue: 28 operations covering database, table/version, partition/batch, and table optimizers with
   deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. Serialized
   candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
   schema 1, and keep rename/cascade/version checks atomic. A bounded POSIX lock and latest-state

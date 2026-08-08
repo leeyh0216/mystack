@@ -19,6 +19,8 @@ Docker 애플리케이션입니다. 사용자는 AWS CLI, boto3와 기존 클라
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
 - Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1과 문서화한 [Open Table Format create/update
   입력](docs/protocols/glue-open-table-format.ko.md) 상호운용성
+- 여섯 boto3 API와 timeout이 있는 Glue 5 Spark worker를 통한 managed Iceberg compaction,
+  snapshot retention, orphan file optimizer
 - AWS SDK for pandas 3.17.0 기반 partitioned Parquet와 Glue Catalog 왕복
 - Docker Compose 기반의 재현 가능한 local 실행 환경
 
@@ -65,6 +67,7 @@ thread stack, asyncio task를 탐색할 수 있습니다. Docker Compose 조합,
 | AWS CLI, boto3, AWS SDK for pandas 연결 | [상세 사용 안내의 client 절차](docs/getting-started.ko.md) |
 | 지원하는 EMR/Glue API와 오류 확인 | [지원 범위](docs/support-scope.ko.md), [API coverage](docs/compatibility/api-coverage.ko.md) |
 | Spark Glue Hive/Iceberg, Open Table Format, 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md), [Open Table Format protocol](docs/protocols/glue-open-table-format.ko.md) |
+| Managed Iceberg table optimizer 설정과 호출 | [Table optimizer protocol](docs/protocols/glue-table-optimizers.ko.md) |
 | YAML, timeout, port, Docker 설정 변경 | [설정 안내](docs/configuration.ko.md) |
 | EMR 시작 전에 enterprise CA 또는 proxy 설치 | [EMR pre-start 안내](docs/protocols/emr-prestart.ko.md) |
 | EMR 운영, Glue 탐색, 진단 확인 | [관리 Console 안내](docs/console.ko.md) |
@@ -75,7 +78,7 @@ thread stack, asyncio task를 탐색할 수 있습니다. Docker Compose 조합,
 ## 현재 지원 수준
 
 현재 적극적으로 구현 중입니다. EMR은 boto3로 검증한 13개 operation, Glue는 boto3로
-검증한 Data Catalog 22개 operation을 제공합니다. Spark 3.5.4 Hive/Iceberg와 AWS SDK for
+검증한 Data Catalog 28개 operation을 제공합니다. Spark 3.5.4 Hive/Iceberg와 AWS SDK for
 pandas 3.17.0은 문서에 적힌 세로 경로만 E2E로 검증합니다. Athena, Glue Job/JobRun/Crawler,
 운영 IAM, YARN/HDFS 환경은 현재 지원하지 않습니다.
 

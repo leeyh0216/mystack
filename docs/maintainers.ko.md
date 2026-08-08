@@ -44,6 +44,8 @@
   계약](protocols/glue-iceberg-lifecycle.ko.md)
 - AWS Open Table Format 요청 구조, service 소유 Iceberg metadata, S3 보상과 수정 위치:
   [Open Table Format 입력 계약](protocols/glue-open-table-format.ko.md)
+- Glue managed optimizer API, lifecycle, scheduler, Spark 실행과 수정 위치: [table optimizer
+  계약](protocols/glue-table-optimizers.ko.md)
 - 고정 botocore model과 구현 상태: [API coverage](compatibility/api-coverage.ko.md)
 - 외부 client별 E2E claim: [Client 호환성 표](compatibility/client-matrix.ko.md)
 - AWS, boto, Spark 변경 대응 위치와 자동 검사: [변경 대응 정책](evolution.ko.md)

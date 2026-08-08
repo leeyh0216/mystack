@@ -191,25 +191,31 @@
               "BatchCreatePartition",
               "BatchDeletePartition",
               "BatchGetPartition",
+              "BatchGetTableOptimizer",
               "BatchUpdatePartition",
               "CreateDatabase",
               "CreatePartition",
               "CreateTable",
+              "CreateTableOptimizer",
               "DeleteDatabase",
               "DeletePartition",
               "DeleteTable",
+              "DeleteTableOptimizer",
               "GetCatalogImportStatus",
               "GetDatabase",
               "GetDatabases",
               "GetPartition",
               "GetPartitions",
               "GetTable",
+              "GetTableOptimizer",
               "GetTables",
               "GetTableVersion",
               "GetTableVersions",
+              "ListTableOptimizerRuns",
               "UpdateDatabase",
               "UpdatePartition",
-              "UpdateTable"
+              "UpdateTable",
+              "UpdateTableOptimizer"
             ]
           },
           "runtime_kinds": [
@@ -227,7 +233,7 @@
           }
         }
       },
-      "evidence_sha256": "e0fc5c4c730c98ad3fde7d6cc7f075ba84775a12682a0166dac67b7447aad67e",
+      "evidence_sha256": "60bcf2133f5fb289e3eaa67693ebbdf9c246c2f80b0cd9104cff3cf4b29cc1d7",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -345,25 +351,31 @@
               "BatchCreatePartition",
               "BatchDeletePartition",
               "BatchGetPartition",
+              "BatchGetTableOptimizer",
               "BatchUpdatePartition",
               "CreateDatabase",
               "CreatePartition",
               "CreateTable",
+              "CreateTableOptimizer",
               "DeleteDatabase",
               "DeletePartition",
               "DeleteTable",
+              "DeleteTableOptimizer",
               "GetCatalogImportStatus",
               "GetDatabase",
               "GetDatabases",
               "GetPartition",
               "GetPartitions",
               "GetTable",
+              "GetTableOptimizer",
               "GetTables",
               "GetTableVersion",
               "GetTableVersions",
+              "ListTableOptimizerRuns",
               "UpdateDatabase",
               "UpdatePartition",
-              "UpdateTable"
+              "UpdateTable",
+              "UpdateTableOptimizer"
             ]
           },
           "runtime_kinds": [
@@ -381,7 +393,7 @@
           }
         }
       },
-      "evidence_sha256": "debd1c8642816707e95e9c75a97fd49e6be739568d4cb2ffa3aa50b4a46900d6",
+      "evidence_sha256": "8598a4f9863fce32982e6e090ef9ddcbdf7e15cb7253fb015581f7a39063defd",
       "expected_duration_minutes": 60,
       "id": "boto3-botocore-1.43.66-public-proxy",
       "lane": "required",
@@ -506,25 +518,31 @@
               "BatchCreatePartition",
               "BatchDeletePartition",
               "BatchGetPartition",
+              "BatchGetTableOptimizer",
               "BatchUpdatePartition",
               "CreateDatabase",
               "CreatePartition",
               "CreateTable",
+              "CreateTableOptimizer",
               "DeleteDatabase",
               "DeletePartition",
               "DeleteTable",
+              "DeleteTableOptimizer",
               "GetCatalogImportStatus",
               "GetDatabase",
               "GetDatabases",
               "GetPartition",
               "GetPartitions",
               "GetTable",
+              "GetTableOptimizer",
               "GetTables",
               "GetTableVersion",
               "GetTableVersions",
+              "ListTableOptimizerRuns",
               "UpdateDatabase",
               "UpdatePartition",
-              "UpdateTable"
+              "UpdateTable",
+              "UpdateTableOptimizer"
             ]
           },
           "runtime_kinds": [
@@ -579,7 +597,7 @@
           }
         }
       },
-      "evidence_sha256": "50b6c4adc782e997703eb5c12a95921ba1dcc1c55a3db87e6d16e518e98a0f38",
+      "evidence_sha256": "b70383d9abced9024296de8b77c5a84291670fd5847ef534599be44bb7f155f9",
       "expected_duration_minutes": 60,
       "id": "emr-7.8.0-spark-3.5.4",
       "lane": "required",
@@ -695,25 +713,31 @@
               "BatchCreatePartition",
               "BatchDeletePartition",
               "BatchGetPartition",
+              "BatchGetTableOptimizer",
               "BatchUpdatePartition",
               "CreateDatabase",
               "CreatePartition",
               "CreateTable",
+              "CreateTableOptimizer",
               "DeleteDatabase",
               "DeletePartition",
               "DeleteTable",
+              "DeleteTableOptimizer",
               "GetCatalogImportStatus",
               "GetDatabase",
               "GetDatabases",
               "GetPartition",
               "GetPartitions",
               "GetTable",
+              "GetTableOptimizer",
               "GetTables",
               "GetTableVersion",
               "GetTableVersions",
+              "ListTableOptimizerRuns",
               "UpdateDatabase",
               "UpdatePartition",
-              "UpdateTable"
+              "UpdateTable",
+              "UpdateTableOptimizer"
             ]
           },
           "runtime_kinds": [
@@ -755,6 +779,7 @@
             "iceberg-metadata-tables",
             "iceberg-snapshot-procedures",
             "iceberg-maintenance-procedures",
+            "iceberg-managed-table-optimizers",
             "iceberg-orphan-s3-cleanup",
             "iceberg-rename",
             "iceberg-catalog-drop",
@@ -769,6 +794,7 @@
             "glue-hive",
             "glue-iceberg",
             "glue-open-table-format",
+            "glue-table-optimizers",
             "iceberg-evolution",
             "iceberg-spark-writes",
             "iceberg-configuration",
@@ -782,8 +808,11 @@
             "glue": [
               "CreateDatabase",
               "CreateTable",
+              "CreateTableOptimizer",
+              "DeleteTableOptimizer",
               "GetDatabase",
               "GetTable",
+              "ListTableOptimizerRuns",
               "UpdateTable"
             ]
           },
@@ -801,7 +830,7 @@
           }
         }
       },
-      "evidence_sha256": "c0c6e2cc54bfca41e1ae3872ded63ecc1ff01029612776bd13f9d5a3f4232e33",
+      "evidence_sha256": "4fa3c08945ba9aed74b19590c2e518f6f0b585a81d0cae3e18b1601c03909585",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -844,6 +873,7 @@
           "iceberg-partition-schema-sort-evolution",
           "iceberg-row-level-dml",
           "iceberg-snapshots-refs-procedures",
+          "iceberg-managed-table-optimizers",
           "iceberg-rename-drop-purge",
           "iceberg-multi-container-contention"
         ],
@@ -880,7 +910,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "e0fc5c4c730c98ad3fde7d6cc7f075ba84775a12682a0166dac67b7447aad67e",
+          "evidence_sha256": "60bcf2133f5fb289e3eaa67693ebbdf9c246c2f80b0cd9104cff3cf4b29cc1d7",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -896,19 +926,19 @@
         },
         {
           "case_id": "boto3-botocore-1.43.66-public-proxy",
-          "evidence_sha256": "debd1c8642816707e95e9c75a97fd49e6be739568d4cb2ffa3aa50b4a46900d6",
+          "evidence_sha256": "8598a4f9863fce32982e6e090ef9ddcbdf7e15cb7253fb015581f7a39063defd",
           "python_version": "3.11",
           "timeout_minutes": 60
         },
         {
           "case_id": "emr-7.8.0-spark-3.5.4",
-          "evidence_sha256": "50b6c4adc782e997703eb5c12a95921ba1dcc1c55a3db87e6d16e518e98a0f38",
+          "evidence_sha256": "b70383d9abced9024296de8b77c5a84291670fd5847ef534599be44bb7f155f9",
           "python_version": "3.11",
           "timeout_minutes": 60
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "c0c6e2cc54bfca41e1ae3872ded63ecc1ff01029612776bd13f9d5a3f4232e33",
+          "evidence_sha256": "4fa3c08945ba9aed74b19590c2e518f6f0b585a81d0cae3e18b1601c03909585",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -989,6 +1019,10 @@
       "title": "AWS Glue Open Table Format CreateTable input",
       "url": "https://docs.aws.amazon.com/glue/latest/webapi/API_OpenTableFormatInput.html"
     },
+    "glue-table-optimizers": {
+      "title": "AWS Glue Data Catalog table optimizers",
+      "url": "https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html"
+    },
     "iceberg-branching": {
       "title": "Apache Iceberg 1.7.1 branching and tagging",
       "url": "https://iceberg.apache.org/docs/1.7.1/branching/"
@@ -1035,5 +1069,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "64112e89f0bda1085bbf97f1d3c487ed248a14c3da78e0597e3094a02f1c2e7c"
+  "source_sha256": "6f11085711ca06c5681b3df0b3efdb1b7cb3e3d199471001a7fa0a44b9c7db07"
 }

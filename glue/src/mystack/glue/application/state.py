@@ -58,6 +58,8 @@ def rename_database_children(
     catalog_id: str,
     old_name: str,
     new_name: str,
+    *,
+    now: float,
 ) -> None:
     for key in [value for value in state.tables if value[:2] == (catalog_id, old_name)]:
         child = state.tables.pop(key).move_database(new_name)
@@ -65,19 +67,41 @@ def rename_database_children(
     for key in [value for value in state.partitions if value[:2] == (catalog_id, old_name)]:
         child = state.partitions.pop(key).move_database(new_name)
         state.partitions[partition_key(child)] = child
+    for key in [value for value in state.optimizers if value[:2] == (catalog_id, old_name)]:
+        child = (
+            state.optimizers.pop(key)
+            .cancel_active_run(
+                now=now,
+                reason="Owning Glue database was renamed during optimizer execution",
+            )
+            .move_database(new_name)
+        )
+        state.optimizers[child.key] = child
 
 
-def rename_table_partitions(
+def rename_table_children(
     state: CatalogState,
     catalog_id: str,
     database_name: str,
     old_name: str,
     new_name: str,
+    *,
+    now: float,
 ) -> None:
     prefix = (catalog_id, database_name, old_name)
     for key in [value for value in state.partitions if value[:3] == prefix]:
         child = state.partitions.pop(key).move_table(new_name)
         state.partitions[partition_key(child)] = child
+    for key in [value for value in state.optimizers if value[:3] == prefix]:
+        child = (
+            state.optimizers.pop(key)
+            .cancel_active_run(
+                now=now,
+                reason="Owning Glue table was renamed during optimizer execution",
+            )
+            .move_table(new_name)
+        )
+        state.optimizers[child.key] = child
 
 
 def partition_key(

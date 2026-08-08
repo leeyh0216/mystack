@@ -163,7 +163,7 @@
   입력 순서 처리입니다. Spark Hive rename은 AWS 유지보수 Glue client의 `UpdatePartition` 경로를
   사용합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.
-- 관측: 값을 제외한 batch 전·항목·후와 expression 단계 log, 결정적 wire contract, Glue 22개 전체
+- 관측: 값을 제외한 batch 전·항목·후와 expression 단계 log, 결정적 wire contract, Glue 28개 전체
   public Proxy E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/inbound/aws.py`,
@@ -256,7 +256,7 @@
 
 - 목적/actor/trigger: Maintainer가 Glue emulator 시작 전에 YAML fault rule을 활성화하고 해당
   operation에 유효한 boto3/CLI 요청을 보냅니다.
-- 입력: 고유 rule ID, 구현한 22개 operation 중 하나, `OperationTimeoutException` 또는
+- 입력: 고유 rule ID, 구현한 28개 operation 중 하나, `OperationTimeoutException` 또는
   `InternalServiceException`, response message입니다.
 - 출력: 결정적인 code/status/message와 request ID가 있는 modeled AWS JSON error입니다.
 - 저장/변경: 없으며 handler와 catalog repository를 호출하지 않습니다.
@@ -298,3 +298,29 @@
   `glue/tests/test_database_table_error_semantics.py`,
   `contracts/glue-error-conditions.yaml`
 - 신뢰도: High
+
+<!-- section: uc-015 -->
+## UC-015: Glue Iceberg table optimizer 관리와 실행
+
+- 목적/actor/trigger: boto3가 compaction, retention, orphan-file optimizer를 관리하고 service
+  scheduler가 실행 시각이 된 run을 claim합니다.
+- 입력: catalog/database/table/type, 공식 `TableOptimizerConfiguration`, pagination, file에 설정한
+  scheduler/process limit입니다.
+- 출력: AWS API 여섯 개 응답, 부분 batch 실패, 상한이 있는 run history, typed metric, run별 Spark
+  stdout/stderr입니다.
+- 저장/변경: catalog schema 3 안의 optimizer configuration, revision, next-run time, 연속 실패 수,
+  run history입니다. Iceberg procedure가 metadata를 commit하고 LocalStack S3 object를 바꿀 수 있습니다.
+- 책임: optimizer domain이 기본값과 transition, application command/query가 aggregate mutation,
+  runtime이 task, outbound adapter가 subprocess/file, Spark entrypoint가 Iceberg procedure를 소유합니다.
+- 선행조건/규칙: Iceberg table과 location 존재, compaction은 Parquet, retention/orphan 주기 3–168시간,
+  table 내부 orphan location, 설정된 concurrency와 timeout입니다.
+- 실패: InvalidInput, EntityNotFound, AlreadyExists, 항목별 batch 오류, 결정적인 process timeout/failure,
+  네 번 실패한 compaction 비활성화입니다. IAM/인가는 없습니다.
+- 관측: claim, transition, scheduler, process, result decode 전후/stale/failure event와 수정 안내를
+  기록하며 raw configuration과 credential은 제외합니다.
+- 근거: `glue/src/mystack/glue/application/table_optimizer.py`,
+  `glue/src/mystack/glue/application/table_optimizer_runtime.py`,
+  `glue/src/mystack/glue/adapters/outbound/table_optimizer_executor.py`,
+  `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`,
+  `docs/protocols/glue-table-optimizers.ko.md`.
+- 신뢰도: 문서화한 Glue 5/Spark 3.5.4/Iceberg 1.7.1 경로는 High.

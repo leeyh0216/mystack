@@ -13,6 +13,7 @@ from mystack.glue.adapters.inbound.aws_database import DatabaseOperationFamily
 from mystack.glue.adapters.inbound.aws_errors import GlueErrorBoundary, GlueErrorTranslator
 from mystack.glue.adapters.inbound.aws_faults import GlueFaultInjector
 from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
+from mystack.glue.adapters.inbound.aws_optimizer import TableOptimizerOperationFamily
 from mystack.glue.adapters.inbound.aws_partition import PartitionOperationFamily
 from mystack.glue.adapters.inbound.aws_table import TableOperationFamily
 from mystack.glue.adapters.inbound.aws_version import VersionOperationFamily
@@ -40,6 +41,7 @@ def test_glue_families_are_disjoint_complete_and_match_coverage() -> None:
         VersionOperationFamily(context).family(),
         PartitionOperationFamily(context).family(),
         BatchOperationFamily(context).family(),
+        TableOptimizerOperationFamily(context).family(),
     )
     owners = [operation for family in families for operation in family.handlers]
 
@@ -49,6 +51,7 @@ def test_glue_families_are_disjoint_complete_and_match_coverage() -> None:
         "version",
         "partition",
         "batch",
+        "table-optimizer",
     ]
     assert len(owners) == len(set(owners))
     assert set(owners) == IMPLEMENTED_GLUE_OPERATIONS == IMPLEMENTED["glue"]

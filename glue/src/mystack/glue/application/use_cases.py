@@ -9,11 +9,14 @@ from __future__ import annotations
 from typing import Protocol
 
 from mystack.glue.application.batch import PartitionBatchFailure, PartitionBatchGetResult
+from mystack.glue.application.table_optimizer import BatchTableOptimizerResult
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
     CatalogTable,
     CatalogTableVersion,
+    TableOptimizer,
+    TableOptimizerRun,
 )
 
 
@@ -193,6 +196,56 @@ class GlueCatalogUseCases(Protocol):
         table: str,
         value_groups: list[tuple[str, ...]],
     ) -> list[PartitionBatchFailure]: ...
+
+    async def create_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        configuration: object,
+    ) -> None: ...
+
+    async def update_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        configuration: object,
+    ) -> None: ...
+
+    async def delete_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+    ) -> None: ...
+
+    async def get_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+    ) -> TableOptimizer: ...
+
+    async def batch_get_table_optimizers(
+        self,
+        entries: list[tuple[str, str, str, object]],
+    ) -> BatchTableOptimizerResult: ...
+
+    async def list_table_optimizer_runs(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        *,
+        next_token: str | None,
+        max_results: int | None,
+    ) -> tuple[list[TableOptimizerRun], str | None]: ...
 
 
 class GlueManagementQueries(Protocol):

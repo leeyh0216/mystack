@@ -29,7 +29,7 @@ test starts.
 
 | Client | Pinned version | Status | Verified path |
 | --- | --- | --- | --- |
-| boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | 13 EMR and 22 Glue Catalog operations plus S3 fixtures |
+| boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | 13 EMR and 28 Glue Catalog operations plus S3 fixtures |
 | AWS SDK for pandas | 3.17.0 | `E2E` | partitioned Parquet write/read, Glue database/table/partition registration and lookup, S3 HEAD |
 | Spark Glue Hive client | Glue 5.0 / Spark 3.5.4 | `E2E` | complex-type Parquet table create/insert/read |
 | Apache Iceberg Java GlueCatalog | 1.7.1 | `E2E` | create/read/write/evolution, COW/MOR DML, time travel, refs, metadata and maintenance procedures, concurrent retry |

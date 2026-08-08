@@ -55,6 +55,7 @@ class DatabaseCommands:
                     catalog_id,
                     normalized_old,
                     revised.name,
+                    now=self._clock.now(),
                 )
 
     async def delete(self, catalog_id: str, database_name: str) -> None:
@@ -70,6 +71,8 @@ class DatabaseCommands:
                 state.tables.pop(table_key)
             for partition_key in [value for value in state.partitions if value[:2] == key]:
                 state.partitions.pop(partition_key)
+            for optimizer_key in [value for value in state.optimizers if value[:2] == key]:
+                state.optimizers.pop(optimizer_key)
 
 
 class DatabaseQueries:

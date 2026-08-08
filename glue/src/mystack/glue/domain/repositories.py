@@ -9,7 +9,7 @@ from __future__ import annotations
 from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 
-from mystack.glue.domain.model import CatalogState
+from mystack.glue.domain.catalog_state import CatalogState
 
 
 class CatalogRepository(Protocol):

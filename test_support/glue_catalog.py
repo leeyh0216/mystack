@@ -119,6 +119,87 @@ def exercise_all_glue_catalog_operations(client: Any, namespace: str) -> None:
         assert mismatch.value.response["Error"]["Code"] == "ConcurrentModificationException"
     assert client.get_catalog_import_status()["ImportStatus"]["ImportCompleted"] is True
 
+    client.create_table_optimizer(
+        CatalogId="000000000000",
+        DatabaseName=analytics,
+        TableName="events",
+        Type="compaction",
+        TableOptimizerConfiguration={
+            "enabled": False,
+            "compactionConfiguration": {
+                "icebergConfiguration": {"strategy": "binpack", "minInputFiles": 5}
+            },
+        },
+    )
+    with pytest.raises(ClientError) as duplicate_optimizer:
+        client.create_table_optimizer(
+            CatalogId="000000000000",
+            DatabaseName=analytics,
+            TableName="events",
+            Type="compaction",
+            TableOptimizerConfiguration={"enabled": False},
+        )
+    assert duplicate_optimizer.value.response["Error"]["Code"] == "AlreadyExistsException"
+    optimizer = client.get_table_optimizer(
+        CatalogId="000000000000",
+        DatabaseName=analytics,
+        TableName="events",
+        Type="compaction",
+    )["TableOptimizer"]
+    assert optimizer["configuration"]["compactionConfiguration"]["icebergConfiguration"] == {
+        "strategy": "binpack",
+        "minInputFiles": 5,
+        "deleteFileThreshold": 1,
+    }
+    client.update_table_optimizer(
+        CatalogId="000000000000",
+        DatabaseName=analytics,
+        TableName="events",
+        Type="compaction",
+        TableOptimizerConfiguration={"enabled": False},
+    )
+    batch_optimizers = client.batch_get_table_optimizer(
+        Entries=[
+            {
+                "catalogId": "000000000000",
+                "databaseName": analytics,
+                "tableName": "events",
+                "type": "compaction",
+            },
+            {
+                "catalogId": "000000000000",
+                "databaseName": analytics,
+                "tableName": "events",
+                "type": "retention",
+            },
+        ]
+    )
+    assert len(batch_optimizers["TableOptimizers"]) == 1
+    assert batch_optimizers["Failures"][0]["error"]["ErrorCode"] == "EntityNotFoundException"
+    assert (
+        client.list_table_optimizer_runs(
+            CatalogId="000000000000",
+            DatabaseName=analytics,
+            TableName="events",
+            Type="compaction",
+        )["TableOptimizerRuns"]
+        == []
+    )
+    client.delete_table_optimizer(
+        CatalogId="000000000000",
+        DatabaseName=analytics,
+        TableName="events",
+        Type="compaction",
+    )
+    with pytest.raises(ClientError) as deleted_optimizer:
+        client.get_table_optimizer(
+            CatalogId="000000000000",
+            DatabaseName=analytics,
+            TableName="events",
+            Type="compaction",
+        )
+    assert deleted_optimizer.value.response["Error"]["Code"] == "EntityNotFoundException"
+
     client.create_table(DatabaseName=analytics, TableInput={"Name": "disposable"})
     client.delete_table(DatabaseName=analytics, Name="disposable")
     with pytest.raises(ClientError) as deleted:

@@ -9,7 +9,7 @@ botocore: `1.43.66`
 | Service | COMPATIBLE | PARTIAL | PROTOCOL_ONLY | NOT_PLANNED | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | EMR | 13 | 0 | 52 | 0 | 65 |
-| GLUE | 22 | 0 | 249 | 28 | 299 |
+| GLUE | 28 | 0 | 243 | 28 | 299 |
 
 | Service | Operation | Status | Meaning |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ botocore: `1.43.66`
 | GLUE | `BatchGetIterableForms` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `BatchGetJobs` | `NOT_PLANNED` | Glue Job/JobRun/Crawler family excluded |
 | GLUE | `BatchGetPartition` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
-| GLUE | `BatchGetTableOptimizer` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `BatchGetTableOptimizer` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `BatchGetTriggers` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `BatchGetWorkflows` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `BatchPutDataQualityStatisticAnnotation` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
@@ -130,7 +130,7 @@ botocore: `1.43.66`
 | GLUE | `CreateSecurityConfiguration` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `CreateSession` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `CreateTable` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
-| GLUE | `CreateTableOptimizer` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `CreateTableOptimizer` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `CreateTrigger` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `CreateUsageProfile` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `CreateUserDefinedFunction` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
@@ -169,7 +169,7 @@ botocore: `1.43.66`
 | GLUE | `DeleteSecurityConfiguration` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `DeleteSession` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `DeleteTable` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
-| GLUE | `DeleteTableOptimizer` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `DeleteTableOptimizer` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `DeleteTableVersion` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `DeleteTrigger` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `DeleteUsageProfile` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
@@ -250,7 +250,7 @@ botocore: `1.43.66`
 | GLUE | `GetSessionEndpoint` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `GetStatement` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `GetTable` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
-| GLUE | `GetTableOptimizer` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `GetTableOptimizer` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `GetTableVersion` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `GetTableVersions` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `GetTables` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
@@ -296,7 +296,7 @@ botocore: `1.43.66`
 | GLUE | `ListSchemas` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `ListSessions` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `ListStatements` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
-| GLUE | `ListTableOptimizerRuns` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `ListTableOptimizerRuns` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `ListTriggers` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `ListUsageProfiles` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `ListWorkflows` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
@@ -372,7 +372,7 @@ botocore: `1.43.66`
 | GLUE | `UpdateSchema` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `UpdateSourceControlFromJob` | `NOT_PLANNED` | Glue Job/JobRun/Crawler family excluded |
 | GLUE | `UpdateTable` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
-| GLUE | `UpdateTableOptimizer` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
+| GLUE | `UpdateTableOptimizer` | `COMPATIBLE` | Implemented with boto3 contracts and public Proxy E2E |
 | GLUE | `UpdateTrigger` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `UpdateUsageProfile` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |
 | GLUE | `UpdateUserDefinedFunction` | `PROTOCOL_ONLY` | Pinned wire model tracked; semantics pending |

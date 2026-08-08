@@ -19,6 +19,9 @@ from mystack.glue.domain import (
     CatalogTable,
     CatalogTableVersion,
     InvalidInputError,
+    TableOptimizer,
+    TableOptimizerRun,
+    TableOptimizerType,
 )
 from mystack.glue.domain.errors import GlueDomainError
 
@@ -125,6 +128,62 @@ def with_token(result: dict[str, Any], token: str | None) -> dict[str, Any]:
     if token is not None:
         result["NextToken"] = token
     return result
+
+
+def table_optimizer_document(value: TableOptimizer) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "type": value.optimizer_type.value,
+        "configuration": value.configuration.document,
+        "configurationSource": "table",
+    }
+    if value.last_run is not None:
+        result["lastRun"] = table_optimizer_run_document(
+            value.last_run,
+            value.optimizer_type,
+        )
+    return result
+
+
+def table_optimizer_run_document(
+    value: TableOptimizerRun,
+    optimizer_type: object,
+) -> dict[str, Any]:
+    parsed_type = TableOptimizerType.parse(optimizer_type)
+    result: dict[str, Any] = {
+        "eventType": value.event_type.value,
+        "startTimestamp": value.start_timestamp,
+    }
+    if value.end_timestamp is not None:
+        result["endTimestamp"] = value.end_timestamp
+    if value.error is not None:
+        result["error"] = value.error
+    if value.metrics is not None:
+        result.update(_optimizer_metric_documents(parsed_type, value.metrics))
+    configuration = value.configuration or {}
+    if parsed_type is TableOptimizerType.COMPACTION:
+        iceberg = configuration.get("compactionConfiguration", {}).get("icebergConfiguration", {})
+        result["compactionStrategy"] = iceberg.get("strategy", "binpack")
+    return result
+
+
+def _optimizer_metric_documents(
+    optimizer_type: TableOptimizerType,
+    metrics: dict[str, Any],
+) -> dict[str, Any]:
+    if optimizer_type is TableOptimizerType.COMPACTION:
+        legacy_keys = (
+            "NumberOfBytesCompacted",
+            "NumberOfFilesCompacted",
+            "NumberOfDpus",
+            "JobDurationInHour",
+        )
+        return {
+            "metrics": {key: str(metrics[key]) for key in legacy_keys if key in metrics},
+            "compactionMetrics": {"IcebergMetrics": copy.deepcopy(metrics)},
+        }
+    if optimizer_type is TableOptimizerType.RETENTION:
+        return {"retentionMetrics": {"IcebergMetrics": copy.deepcopy(metrics)}}
+    return {"orphanFileDeletionMetrics": {"IcebergMetrics": copy.deepcopy(metrics)}}
 
 
 def _require_attribute_combination(

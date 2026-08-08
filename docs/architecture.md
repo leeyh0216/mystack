@@ -70,6 +70,12 @@ LocalStack-compatible S3 adapter is created only at the composition root, follow
 facade for inbound ports. Rename and cascade policy belongs to these handlers; repositories expose
 only snapshot and candidate-transaction capabilities.
 
+Managed table optimizers add a focused domain aggregate, command/query handlers, an executor port,
+and a lifecycle-owned scheduler. The scheduler can claim and transition work only through the
+application facade; the outbound adapter owns Spark process/files, and the Spark-side entry point
+owns Iceberg procedures. See the [optimizer protocol](protocols/glue-table-optimizers.md) and AWS's
+[table optimizer API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-table-optimizers.html).
+
 EMR Application separates cluster commands, Step commands, read-only queries, opaque pagination,
 queue-completion/failure policy, and the asynchronous cluster driver. The inbound adapter declares
 those minimal command/query Protocols instead of depending on the concrete facade. The typed EMR
@@ -80,7 +86,7 @@ deadline, and removes per-cluster driver locks after each run. This follows Pyth
 [async subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) contracts.
 
 Inbound AWS mapping is organized by operation family. EMR owns cluster, Step, control, tag, and
-query families; Glue owns database, table, version, partition, and batch families. A shared validated
+query families; Glue owns database, table, version, partition, batch, and table-optimizer families. A shared validated
 registry merges them and fails startup on duplicate ownership, a missing implemented operation, or
 an unexpected unclassified handler. The registry is checked bidirectionally against the exhaustive
 compatibility classification derived from the official [botocore service
@@ -128,7 +134,10 @@ host:4566 -> proxy:8080
                 `-- all other traffic  -> localstack:4566
 ```
 
-The EMR emulator runs one local Spark process at a time per emulated cluster by default. Spark-based Glue interoperability tests use versioned runtime profiles; Glue Job/JobRun execution is not implemented. Runtime processes receive LocalStack endpoints and test credentials through environment variables.
+The EMR emulator runs one local Spark process at a time per emulated cluster by default. Glue's
+managed optimizer scheduler runs bounded local Glue 5 Spark processes through an outbound port;
+this is not Glue Job/JobRun execution. Runtime processes receive configured catalog/LocalStack
+endpoints and local test credentials through explicit arguments and environment variables.
 
 Management traffic uses a separate outward read-model boundary. Each service's inbound management
 adapter translates its Application/Domain resources to versioned JSON and each emulator packages
@@ -173,11 +182,12 @@ change.
 ## Persistence and execution
 
 - Glue Application code applies each mutation to an isolated `CatalogState` candidate while the
-  repository serializes transactions. The JSON state store persists and fsyncs schema version 2,
+  repository serializes transactions. The JSON state store persists and fsyncs schema version 3,
   atomically replaces the previous document, and only then publishes the candidate to readers.
   Persistence failure rolls the candidate back, while cancellation during a successful durable
-  commit completes visible publication before cancellation is returned. Schema version 1 loads
-  read-only and migrates on the next successful mutation.
+  commit completes visible publication before cancellation is returned. Schema versions 1 and 2
+  load read-only and migrate on the next successful mutation. Optimizers and bounded run history
+  are children of the same database/table aggregate transaction.
 - Persistence is composed behind the repository transaction; the JSON repository does not inherit
   in-memory mutation behavior. EMR cluster state remains process-local.
 - The EMR startup-file adapter validates a complete versioned `RunJobFlow` plan before side effects,

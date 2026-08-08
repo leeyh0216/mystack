@@ -97,6 +97,38 @@ credential, path-style 설정을 사용합니다. Application은 Compose service
 credential은 AWS 공식 [SDK endpoint
 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)을 따릅니다.
 
+`glue.table_optimizers`는 managed Iceberg optimizer scheduler와 timeout이 있는 Glue 5 Spark
+subprocess를 설정합니다. Relative `work_root`는 `glue.data_root` 아래에서 해석합니다.
+`catalog_endpoint_url`은 Glue container 자기 자신에서 보이는 endpoint이고 `catalog_name`은
+Iceberg Spark catalog 이름입니다. 모든 주기, 동시 실행 수, history 상한, 연속 실패 비활성화
+기준, 실행 파일, submit argument, process timeout과 terminate grace period를 file로 받습니다.
+
+```yaml
+glue:
+  table_optimizers:
+    enabled: true
+    work_root: table-optimizer-runs
+    catalog_endpoint_url: http://127.0.0.1:8080
+    catalog_name: mystack
+    scheduler:
+      poll_interval_seconds: 2
+      initial_delay_seconds: 2
+      max_concurrent_runs: 1
+      compaction_interval_seconds: 86400
+      history_limit: 100
+      compaction_failure_limit: 4
+    worker:
+      spark_submit: /opt/mystack/bin/spark-submit
+      submit_args: [--master, "local[*]"]
+      timeout_seconds: 1800
+      terminate_grace_seconds: 10
+```
+
+S3 endpoint, region, local credential은 `localstack` 설정을 사용하고 catalog location은 계속
+`s3://` URI로 적습니다. API, lifecycle, log와 수정 경계는 [managed optimizer
+protocol](protocols/glue-table-optimizers.ko.md)을 참고하세요. 세 managed type의 공식 근거는
+AWS [table optimizer 안내](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html)입니다.
+
 `glue.fault_injection`은 기본적으로 꺼져 있습니다. 활성화하면 rule 하나가 구현된 operation
 하나와 `OperationTimeoutException` 또는 `InternalServiceException` 중 하나를 선택합니다. 한
 operation에는 rule 하나만 둘 수 있습니다. 공통 model의 요청 구조와 value 검증을 먼저 수행한 뒤 설정된 실패가

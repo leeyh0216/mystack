@@ -22,10 +22,10 @@ the repository, protocol, CI, or releases, go to the [maintainer guide](maintain
 
 | Client or task | Current evidence | Start with |
 | --- | --- | --- |
-| AWS CLI and boto3 | 13 EMR and 22 Glue operations through the same public Proxy | [Detailed usage guide](getting-started.md) |
+| AWS CLI and boto3 | 13 EMR and 28 Glue operations through the same public Proxy | [Detailed usage guide](getting-started.md) |
 | AWS SDK for pandas 3.17.0 | Partitioned Parquet S3 write/read and Glue table/partitions | [Detailed usage guide](getting-started.md) |
 | Spark 3.5.4 Glue Hive client | Complex-type Parquet create/insert/read | [Client compatibility matrix](compatibility/client-matrix.md) |
-| Apache Iceberg 1.7.1 GlueCatalog | Open Table Format API create/update, read/write/evolution, COW/MOR DML, time travel, refs, metadata/maintenance procedures, rename/drop/purge | [Client compatibility matrix](compatibility/client-matrix.md), [Open Table Format protocol](protocols/glue-open-table-format.md) |
+| Apache Iceberg 1.7.1 GlueCatalog | Open Table Format API create/update, read/write/evolution, COW/MOR DML, time travel, refs, metadata/maintenance procedures, managed table optimizers, rename/drop/purge | [Client compatibility matrix](compatibility/client-matrix.md), [table optimizer protocol](protocols/glue-table-optimizers.md) |
 | EMR Spark step | S3 bootstrap, Python/JAR local Spark, S3A output, and cancellation | [Support scope](support-scope.md) |
 
 An unlisted library or function is not implicitly supported. See [API coverage](compatibility/api-coverage.md)

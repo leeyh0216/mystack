@@ -45,6 +45,8 @@ Mystack from an application, start with the [user guide](index.md).
   [Iceberg lifecycle contract](protocols/glue-iceberg-lifecycle.md)
 - AWS Open Table Format request shapes, service-owned Iceberg metadata, S3 compensation, and repair
   locations: [Open Table Format input contract](protocols/glue-open-table-format.md)
+- Glue managed optimizer APIs, lifecycle, scheduler, Spark execution, and repair locations:
+  [table optimizer contract](protocols/glue-table-optimizers.md)
 - Pinned botocore models and implementation status: [API coverage](compatibility/api-coverage.md)
 - E2E claims by external client: [client compatibility matrix](compatibility/client-matrix.md)
 - AWS, boto, and Spark evolution plus automated repair locations: [evolution policy](evolution.md)

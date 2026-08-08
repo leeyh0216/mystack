@@ -332,7 +332,7 @@
         },
         "BatchGetTableOptimizer": {
           "fingerprint": "2fcc02c9d404f0a18d515a05db29683fb76462c24f6c48cb6225eb34fc908839",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "BatchGetTriggers": {
           "fingerprint": "1395375a1d783ec611d89844245cc45ec640331d1505c1029a71603c3c99dca7",
@@ -480,7 +480,7 @@
         },
         "CreateTableOptimizer": {
           "fingerprint": "7ad114e0fd0b0a145965bd6405c5cd0a685cd27df147ba8fdeb5eeb6f74364d7",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "CreateTrigger": {
           "fingerprint": "a193da57137338500a396ace1ade146ae372a56d3d13d52f2ed10d17e4b469e5",
@@ -636,7 +636,7 @@
         },
         "DeleteTableOptimizer": {
           "fingerprint": "4f1371741b95726fd4938b8bdaf97f234297b8384d0c26a936073fe85982919b",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "DeleteTableVersion": {
           "fingerprint": "53cc6a11a04dc0ec73bbc81f67565924c67687a9a4904aed067732d650474ed3",
@@ -960,7 +960,7 @@
         },
         "GetTableOptimizer": {
           "fingerprint": "4076c3c92be53655560b6851bc014736a470131507a2abb9cfa5712d48d2ae05",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "GetTableVersion": {
           "fingerprint": "4d0261c8501ce272c9bfe7ce2aeb34fb3674c6aa2315667694d4c699d4655d84",
@@ -1144,7 +1144,7 @@
         },
         "ListTableOptimizerRuns": {
           "fingerprint": "4f2bfa7d3bee7390d414b2c0e2973a3526e706d95b68326b8fae626d1d95087a",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "ListTriggers": {
           "fingerprint": "e9b6c557e38a293a2f216dfcfc50a445f1763d66fdfa15c5b370c791f493031a",
@@ -1448,7 +1448,7 @@
         },
         "UpdateTableOptimizer": {
           "fingerprint": "8920bf3276ed4ecade43f37e348a4b168832e555f8cb0d5d0a8a8b978c29f43c",
-          "status": "PROTOCOL_ONLY"
+          "status": "COMPATIBLE"
         },
         "UpdateTrigger": {
           "fingerprint": "8215b929126dc38b57e55dcf7e988a014bd5049e06f703a5f593104221239b23",

@@ -28,12 +28,21 @@ from mystack.glue.application.partition_expression import (
 )
 from mystack.glue.application.ports import Clock, IcebergMetadataStore, IdentifierGenerator
 from mystack.glue.application.table import TableCommands, TableQueries, TableVersionQueries
+from mystack.glue.application.table_optimizer import (
+    BatchTableOptimizerResult,
+    TableOptimizerCommands,
+    TableOptimizerPolicy,
+    TableOptimizerQueries,
+)
+from mystack.glue.application.table_optimizer_contracts import TableOptimizerWork
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
     CatalogTable,
     CatalogTableVersion,
     IcebergOpenTableFormatPlanner,
+    TableOptimizer,
+    TableOptimizerRun,
 )
 from mystack.glue.domain.repositories import CatalogRepository
 
@@ -57,6 +66,7 @@ class CatalogApplication:
         *,
         iceberg_metadata_store: IcebergMetadataStore,
         identifier_generator: IdentifierGenerator,
+        table_optimizer_policy: TableOptimizerPolicy | None = None,
     ) -> None:
         paginator = Paginator(policy.api_page_size)
         self._database_commands = DatabaseCommands(repository, clock)
@@ -84,6 +94,19 @@ class CatalogApplication:
             self._partition_queries,
             PartitionTargetResolver(repository),
         )
+        optimizer_policy = table_optimizer_policy or TableOptimizerPolicy(
+            initial_delay_seconds=30.0,
+            compaction_interval_seconds=24 * 3600.0,
+            history_limit=100,
+            compaction_failure_limit=4,
+        )
+        self._table_optimizer_commands = TableOptimizerCommands(
+            repository,
+            clock,
+            identifier_generator,
+            optimizer_policy,
+        )
+        self._table_optimizer_queries = TableOptimizerQueries(repository, paginator)
         self._initializer = CatalogInitializer(
             self._database_commands,
             self._database_queries,
@@ -372,3 +395,92 @@ class CatalogApplication:
             table,
             value_groups,
         )
+
+    async def create_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        configuration: object,
+    ) -> None:
+        await self._table_optimizer_commands.create(
+            catalog_id, database, table, optimizer_type, configuration
+        )
+
+    async def update_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        configuration: object,
+    ) -> None:
+        await self._table_optimizer_commands.update(
+            catalog_id, database, table, optimizer_type, configuration
+        )
+
+    async def delete_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+    ) -> None:
+        await self._table_optimizer_commands.delete(catalog_id, database, table, optimizer_type)
+
+    async def get_table_optimizer(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+    ) -> TableOptimizer:
+        return await self._table_optimizer_queries.get(catalog_id, database, table, optimizer_type)
+
+    async def batch_get_table_optimizers(
+        self,
+        entries: list[tuple[str, str, str, object]],
+    ) -> BatchTableOptimizerResult:
+        return await self._table_optimizer_queries.batch_get(entries)
+
+    async def list_table_optimizer_runs(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        optimizer_type: object,
+        *,
+        next_token: str | None,
+        max_results: int | None,
+    ) -> tuple[list[TableOptimizerRun], str | None]:
+        return await self._table_optimizer_queries.list_runs(
+            catalog_id,
+            database,
+            table,
+            optimizer_type,
+            next_token=next_token,
+            max_results=max_results,
+        )
+
+    async def recover_interrupted_table_optimizer_runs(self, reason: str) -> int:
+        return await self._table_optimizer_commands.recover_interrupted(reason)
+
+    async def claim_due_table_optimizer_work(self, maximum: int) -> list[TableOptimizerWork]:
+        return await self._table_optimizer_commands.claim_due(maximum)
+
+    async def mark_table_optimizer_in_progress(self, work: TableOptimizerWork) -> bool:
+        return await self._table_optimizer_commands.mark_in_progress(work)
+
+    async def complete_table_optimizer(
+        self,
+        work: TableOptimizerWork,
+        metrics: dict,
+    ) -> bool:
+        return await self._table_optimizer_commands.complete(work, metrics)
+
+    async def fail_table_optimizer(self, work: TableOptimizerWork, error: str) -> bool:
+        return await self._table_optimizer_commands.fail(work, error)
+
+    async def is_table_optimizer_work_current(self, work: TableOptimizerWork) -> bool:
+        return await self._table_optimizer_queries.is_current(work)

@@ -29,11 +29,19 @@ from mystack.glue.adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
 from mystack.glue.adapters.outbound import (
     JsonCatalogRepository,
     S3IcebergMetadataStore,
+    SparkTableOptimizerExecutor,
+    SparkTableOptimizerExecutorSettings,
     SystemClock,
     SystemIdentifierGenerator,
 )
 from mystack.glue.application import CatalogApplication
-from mystack.glue.application.ports import Clock, IcebergMetadataStore, IdentifierGenerator
+from mystack.glue.application.ports import (
+    Clock,
+    IcebergMetadataStore,
+    IdentifierGenerator,
+    TableOptimizerExecutor,
+)
+from mystack.glue.application.table_optimizer_runtime import TableOptimizerRuntime
 from mystack.glue.config import GlueSettings
 from mystack.glue.domain.repositories import CatalogRepository
 
@@ -49,6 +57,8 @@ def create_app(
     clock: Clock | None = None,
     iceberg_metadata_store: IcebergMetadataStore | None = None,
     identifier_generator: IdentifierGenerator | None = None,
+    table_optimizer_executor: TableOptimizerExecutor | None = None,
+    table_optimizer_runtime: TableOptimizerRuntime | None = None,
     diagnostics_settings: DiagnosticsSettings | None = None,
     log_level: str | None = None,
 ) -> FastAPI:
@@ -89,6 +99,31 @@ def create_app(
             policy=settings.policy,
             iceberg_metadata_store=iceberg_metadata_store,
             identifier_generator=identifier_generator or SystemIdentifierGenerator(),
+            table_optimizer_policy=settings.table_optimizers.policy,
+        )
+    if table_optimizer_runtime is None and settings.table_optimizers.enabled:
+        if table_optimizer_executor is None:
+            optimizer = settings.table_optimizers
+            table_optimizer_executor = SparkTableOptimizerExecutor(
+                SparkTableOptimizerExecutorSettings(
+                    spark_submit=optimizer.worker.spark_submit,
+                    submit_args=optimizer.worker.submit_args,
+                    work_root=optimizer.work_root,
+                    timeout_seconds=optimizer.worker.timeout_seconds,
+                    terminate_grace_seconds=optimizer.worker.terminate_grace_seconds,
+                    catalog_endpoint_url=optimizer.catalog_endpoint_url,
+                    object_store_endpoint_url=settings.object_store.endpoint_url,
+                    region=settings.object_store.region,
+                    access_key_id=settings.object_store.access_key_id,
+                    secret_access_key=settings.object_store.secret_access_key,
+                    catalog_name=optimizer.catalog_name,
+                )
+            )
+        table_optimizer_runtime = TableOptimizerRuntime(
+            application,
+            table_optimizer_executor,
+            poll_interval_seconds=settings.table_optimizers.poll_interval_seconds,
+            max_concurrent_runs=settings.table_optimizers.max_concurrent_runs,
         )
     service_model = AwsServiceModel("glue")
     adapter = GlueAwsAdapter(
@@ -117,7 +152,10 @@ def create_app(
     async def lifespan(app: FastAPI):
         try:
             settings.data_root.mkdir(parents=True, exist_ok=True)
+            settings.table_optimizers.work_root.mkdir(parents=True, exist_ok=True)
             await application.initialize()
+            if table_optimizer_runtime is not None:
+                await table_optimizer_runtime.start()
             log_event(
                 _LOGGER,
                 logging.INFO,
@@ -147,14 +185,26 @@ def create_app(
                 object_store_path_style=settings.object_store.s3_path_style,
                 fault_injection_enabled=settings.fault_injection.enabled,
                 fault_rule_count=len(settings.fault_injection.rules),
+                table_optimizer_enabled=settings.table_optimizers.enabled,
+                table_optimizer_poll_interval_seconds=(
+                    settings.table_optimizers.poll_interval_seconds
+                ),
+                table_optimizer_max_concurrent_runs=(settings.table_optimizers.max_concurrent_runs),
+                table_optimizer_worker_timeout_seconds=(
+                    settings.table_optimizers.worker.timeout_seconds
+                ),
             )
             yield
         finally:
             try:
-                if owned_metadata_store is not None:
-                    await owned_metadata_store.close()
+                if table_optimizer_runtime is not None:
+                    await table_optimizer_runtime.close()
             finally:
-                log_event(_LOGGER, logging.INFO, "glue.stopping")
+                try:
+                    if owned_metadata_store is not None:
+                        await owned_metadata_store.close()
+                finally:
+                    log_event(_LOGGER, logging.INFO, "glue.stopping")
 
     app = FastAPI(title="Mystack Glue Data Catalog Emulator", version="0.1.0", lifespan=lifespan)
     app.include_router(create_diagnostics_router("glue", diagnostics_settings))
@@ -175,6 +225,7 @@ def create_app(
                 "config_fingerprint": settings.config_fingerprint,
                 "implemented_operations": sorted(dispatcher.operations),
                 "runtime_profile": settings.runtime.name,
+                "table_optimizers_enabled": settings.table_optimizers.enabled,
             }
         )
 

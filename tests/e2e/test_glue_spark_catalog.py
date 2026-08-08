@@ -336,6 +336,14 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         ("2026-09-03", "west"),
         ("2026-09-04", "east"),
     }
+    _exercise_managed_table_optimizers(
+        glue,
+        database=result["iceberg_database"],
+        table="iceberg_types",
+        table_location=iceberg_table["StorageDescriptor"]["Location"],
+        timeout_seconds=e2e_settings.timeout_seconds,
+        poll_interval_seconds=e2e_settings.poll_interval_seconds,
+    )
 
 
 def _write_diagnostics(
@@ -345,6 +353,107 @@ def _write_diagnostics(
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     (artifacts_dir / "glue-spark.stdout.log").write_text(completed.stdout, encoding="utf-8")
     (artifacts_dir / "glue-spark.stderr.log").write_text(completed.stderr, encoding="utf-8")
+
+
+def _exercise_managed_table_optimizers(
+    glue,
+    *,
+    database: str,
+    table: str,
+    table_location: str,
+    timeout_seconds: float,
+    poll_interval_seconds: float,
+) -> None:
+    """Run all three official managed optimizer types through the service scheduler.
+
+    Source: https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html
+    """
+
+    configurations = {
+        "compaction": {
+            "enabled": True,
+            "compactionConfiguration": {
+                "icebergConfiguration": {
+                    "strategy": "binpack",
+                    "minInputFiles": 1,
+                    "deleteFileThreshold": 1,
+                }
+            },
+        },
+        "retention": {
+            "enabled": True,
+            "retentionConfiguration": {
+                "icebergConfiguration": {
+                    "snapshotRetentionPeriodInDays": 1,
+                    "numberOfSnapshotsToRetain": 1,
+                    "cleanExpiredFiles": False,
+                    "runRateInHours": 24,
+                }
+            },
+        },
+        "orphan_file_deletion": {
+            "enabled": True,
+            "orphanFileDeletionConfiguration": {
+                "icebergConfiguration": {
+                    "orphanFileRetentionPeriodInDays": 1,
+                    "location": table_location,
+                    "runRateInHours": 24,
+                }
+            },
+        },
+    }
+    for optimizer_type, configuration in configurations.items():
+        glue.create_table_optimizer(
+            CatalogId="000000000000",
+            DatabaseName=database,
+            TableName=table,
+            Type=optimizer_type,
+            TableOptimizerConfiguration=configuration,
+        )
+        run = _wait_for_table_optimizer(
+            glue,
+            database=database,
+            table=table,
+            optimizer_type=optimizer_type,
+            deadline=time.monotonic() + timeout_seconds,
+            poll_interval_seconds=poll_interval_seconds,
+        )
+        assert run["eventType"] == "completed", run.get("error")
+        metric_key = {
+            "compaction": "compactionMetrics",
+            "retention": "retentionMetrics",
+            "orphan_file_deletion": "orphanFileDeletionMetrics",
+        }[optimizer_type]
+        assert "IcebergMetrics" in run[metric_key]
+        glue.delete_table_optimizer(
+            CatalogId="000000000000",
+            DatabaseName=database,
+            TableName=table,
+            Type=optimizer_type,
+        )
+
+
+def _wait_for_table_optimizer(
+    glue,
+    *,
+    database: str,
+    table: str,
+    optimizer_type: str,
+    deadline: float,
+    poll_interval_seconds: float,
+) -> dict[str, Any]:
+    while time.monotonic() < deadline:
+        runs = glue.list_table_optimizer_runs(
+            CatalogId="000000000000",
+            DatabaseName=database,
+            TableName=table,
+            Type=optimizer_type,
+            MaxResults=1,
+        )["TableOptimizerRuns"]
+        if runs and runs[0]["eventType"] in {"completed", "failed"}:
+            return runs[0]
+        time.sleep(poll_interval_seconds)
+    raise AssertionError(f"Managed Glue optimizer {optimizer_type} exceeded E2E timeout")
 
 
 def _assert_iceberg_evolution_metadata(metadata: IcebergMetadataDocument) -> None:

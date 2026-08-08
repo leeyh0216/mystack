@@ -58,7 +58,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Verify through the public Proxy that successful, failed-preparation, and cancelled Steps publish
   the exact gzip Step/application key set to LocalStack S3 and that the management API exposes the
   same publication evidence. The layout follows the [official EMR log paths](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-debugging.html).
-- Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
+- Exercise all 13 implemented EMR and all 28 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
 - Create an Iceberg v2 table through boto3 `OpenTableFormatInput`, load/append it through the real
@@ -76,6 +76,10 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
   same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
   matrix](compatibility/client-matrix.md) records the exact scope.
+- Exercise all three managed Iceberg optimizer types through their public boto3 APIs and the real
+  Glue 5 scheduler/Spark worker. CI uploads each run's `work.json`, `stdout.log`, and `stderr.log`
+  with the Docker diagnostics. See the official AWS [table optimizer
+  guide](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html).
 - Drive both service-owned React UIs through Proxy with Playwright: create/terminate an EMR cluster, submit, track,
   cancel and inspect a Step, verify S3 log publication, explore a complex Glue schema and partition,
   and assert keyboard/ARIA behavior plus a clean browser console. Browser actions use

@@ -14,7 +14,7 @@ import re
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock
-from mystack.glue.application.state import database, name, rename_table_partitions, table
+from mystack.glue.application.state import database, name, rename_table_children, table
 from mystack.glue.domain import (
     AlreadyExistsError,
     CatalogTable,
@@ -111,12 +111,13 @@ class TableCommands:
                 state.tables.pop(old_key)
                 state.tables[new_key] = revised
                 if new_key != old_key:
-                    rename_table_partitions(
+                    rename_table_children(
                         state,
                         catalog_id,
                         normalized_database,
                         normalized_old,
                         revised.name,
+                        now=self._clock.now(),
                     )
                 if attempt is not None:
                     attempt.persisting(revised.version_id)
@@ -141,6 +142,8 @@ class TableCommands:
             state.tables.pop(key)
             for partition_key in [value for value in state.partitions if value[:3] == key]:
                 state.partitions.pop(partition_key)
+            for optimizer_key in [value for value in state.optimizers if value[:3] == key]:
+                state.optimizers.pop(optimizer_key)
 
 
 class TableQueries:

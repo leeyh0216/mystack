@@ -58,7 +58,7 @@
 - 성공, 준비 실패, 취소 Step이 정확한 gzip Step/application key 집합을 LocalStack S3에
   게시하는지 public Proxy로 검증하고 management API의 publication 증거와 일치하는지 확인합니다.
   배치는 [공식 EMR log 경로](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-debugging.html)를 따릅니다.
-- 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
+- 구현된 EMR 13개와 Glue 28개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
 - boto3 `OpenTableFormatInput`으로 Iceberg v2 table을 생성하고 실제 GlueCatalog로 load/append한 뒤
@@ -76,6 +76,10 @@
 - AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
   같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
   기록합니다.
+- Managed Iceberg optimizer 세 유형을 공개 boto3 API와 실제 Glue 5 scheduler/Spark worker로
+  검증합니다. CI는 각 run의 `work.json`, `stdout.log`, `stderr.log`를 Docker 진단 자료와 함께
+  올립니다. AWS 공식 [table optimizer 안내](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html)를
+  기준으로 합니다.
 - Playwright로 Proxy를 경유한 두 service 소유 React UI를 조작해 EMR cluster 생성·종료, Step 제출·추적·취소·조회,
   S3 log publication, 복합 Glue schema와 partition 탐색, keyboard/ARIA 동작과 깨끗한 browser
   console을 검증합니다. Browser action은 `tests.e2e.browser_action_timeout_seconds`를 사용하고

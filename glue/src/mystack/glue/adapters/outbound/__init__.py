@@ -17,6 +17,10 @@ from mystack.glue.adapters.outbound.repository import (
     VolatileCatalogStateStore,
 )
 from mystack.glue.adapters.outbound.system import SystemClock, SystemIdentifierGenerator
+from mystack.glue.adapters.outbound.table_optimizer_executor import (
+    SparkTableOptimizerExecutor,
+    SparkTableOptimizerExecutorSettings,
+)
 
 __all__ = [
     "CatalogStateStore",
@@ -27,6 +31,8 @@ __all__ = [
     "JsonCatalogStateStore",
     "LocalCatalogStateSynchronizer",
     "S3IcebergMetadataStore",
+    "SparkTableOptimizerExecutor",
+    "SparkTableOptimizerExecutorSettings",
     "SystemClock",
     "SystemIdentifierGenerator",
     "TransactionalCatalogRepository",

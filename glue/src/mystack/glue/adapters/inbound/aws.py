@@ -12,6 +12,7 @@ from mystack.glue.adapters.inbound.aws_database import DatabaseOperationFamily
 from mystack.glue.adapters.inbound.aws_errors import GlueErrorBoundary, GlueErrorTranslator
 from mystack.glue.adapters.inbound.aws_faults import GlueFaultInjector
 from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
+from mystack.glue.adapters.inbound.aws_optimizer import TableOptimizerOperationFamily
 from mystack.glue.adapters.inbound.aws_partition import PartitionOperationFamily
 from mystack.glue.adapters.inbound.aws_table import TableOperationFamily
 from mystack.glue.adapters.inbound.aws_version import VersionOperationFamily
@@ -40,6 +41,7 @@ class GlueAwsAdapter:
             VersionOperationFamily(context).family(),
             PartitionOperationFamily(context).family(),
             BatchOperationFamily(context).family(),
+            TableOptimizerOperationFamily(context).family(),
         )
 
     def dispatcher(self) -> OperationDispatcher:

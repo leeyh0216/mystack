@@ -21,6 +21,7 @@ import uvicorn
 from botocore.config import Config
 from mystack.aws_protocol import LoadedConfiguration, load_configuration
 from mystack.glue.app import create_app
+from mystack.glue.application.ports import TableOptimizerExecutionResult
 
 from test_support.glue_error_harness import (
     IncrementingIdentifierGenerator,
@@ -38,6 +39,8 @@ def glue_server(tmp_path: Path, glue_test_timeout: float) -> Iterator[str]:
     loaded = load_configuration("config/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
+    document["glue"]["table_optimizers"]["scheduler"]["initial_delay_seconds"] = 0
+    document["glue"]["table_optimizers"]["scheduler"]["poll_interval_seconds"] = 0.01
     configured = LoadedConfiguration(
         document=document,
         source=loaded.source,
@@ -51,6 +54,7 @@ def glue_server(tmp_path: Path, glue_test_timeout: float) -> Iterator[str]:
                 configuration=configured,
                 iceberg_metadata_store=InMemoryIcebergMetadataStore(),
                 identifier_generator=IncrementingIdentifierGenerator(),
+                table_optimizer_executor=ContractTableOptimizerExecutor(),
             ),
             host="127.0.0.1",
             port=port,
@@ -93,3 +97,17 @@ def _free_port() -> int:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
+
+
+class ContractTableOptimizerExecutor:
+    async def execute(self, work) -> TableOptimizerExecutionResult:
+        metrics = {
+            "compaction": {"NumberOfBytesCompacted": 128, "NumberOfFilesCompacted": 2},
+            "retention": {
+                "NumberOfDataFilesDeleted": 1,
+                "NumberOfManifestFilesDeleted": 1,
+                "NumberOfManifestListsDeleted": 1,
+            },
+            "orphan_file_deletion": {"NumberOfOrphanFilesDeleted": 1},
+        }[work.optimizer_type.value]
+        return TableOptimizerExecutionResult(metrics)

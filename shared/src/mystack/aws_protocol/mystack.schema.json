@@ -164,7 +164,7 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_lock", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "runtime_profile"],
+      "required": ["listen", "data_root", "state_file", "catalog_lock", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "table_optimizers", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
@@ -210,6 +210,44 @@
                   "error_code": {"enum": ["InternalServiceException", "OperationTimeoutException"]},
                   "message": {"$ref": "#/$defs/non_empty_string"}
                 }
+              }
+            }
+          }
+        },
+        "table_optimizers": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "work_root", "catalog_endpoint_url", "catalog_name", "scheduler", "worker"],
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "work_root": {"$ref": "#/$defs/non_empty_string"},
+            "catalog_endpoint_url": {"$ref": "#/$defs/uri"},
+            "catalog_name": {"$ref": "#/$defs/non_empty_string"},
+            "scheduler": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["poll_interval_seconds", "initial_delay_seconds", "max_concurrent_runs", "compaction_interval_seconds", "history_limit", "compaction_failure_limit"],
+              "properties": {
+                "poll_interval_seconds": {"$ref": "#/$defs/positive_number"},
+                "initial_delay_seconds": {"type": "number", "minimum": 0},
+                "max_concurrent_runs": {"type": "integer", "minimum": 1},
+                "compaction_interval_seconds": {"$ref": "#/$defs/positive_number"},
+                "history_limit": {"type": "integer", "minimum": 1},
+                "compaction_failure_limit": {"type": "integer", "minimum": 1}
+              }
+            },
+            "worker": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["spark_submit", "submit_args", "timeout_seconds", "terminate_grace_seconds"],
+              "properties": {
+                "spark_submit": {"$ref": "#/$defs/non_empty_string"},
+                "submit_args": {
+                  "type": "array",
+                  "items": {"$ref": "#/$defs/non_empty_string"}
+                },
+                "timeout_seconds": {"$ref": "#/$defs/positive_number"},
+                "terminate_grace_seconds": {"$ref": "#/$defs/positive_number"}
               }
             }
           }

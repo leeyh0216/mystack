@@ -15,7 +15,7 @@ from mystack.aws_protocol.configuration import (
     LoadedConfiguration,
     require_mapping,
 )
-from mystack.glue.application import CatalogPolicy
+from mystack.glue.application import CatalogPolicy, TableOptimizerPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
 from mystack.glue.application.policies import GlueFaultInjectionPolicy, GlueFaultRule
 
@@ -49,6 +49,40 @@ class GlueObjectStoreSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class GlueTableOptimizerWorkerSettings:
+    spark_submit: Path
+    submit_args: tuple[str, ...]
+    timeout_seconds: float
+    terminate_grace_seconds: float
+
+    def __post_init__(self) -> None:
+        if self.timeout_seconds <= 0 or self.terminate_grace_seconds <= 0:
+            raise ConfigurationError("Glue table optimizer worker timeouts must be positive")
+
+
+@dataclass(frozen=True, slots=True)
+class GlueTableOptimizerSettings:
+    enabled: bool
+    work_root: Path
+    catalog_endpoint_url: str
+    catalog_name: str
+    poll_interval_seconds: float
+    max_concurrent_runs: int
+    policy: TableOptimizerPolicy
+    worker: GlueTableOptimizerWorkerSettings
+
+    def __post_init__(self) -> None:
+        if self.poll_interval_seconds <= 0:
+            raise ConfigurationError("Glue table optimizer poll interval must be positive")
+        if self.max_concurrent_runs <= 0:
+            raise ConfigurationError("Glue table optimizer concurrency must be positive")
+        if not self.catalog_endpoint_url.startswith(("http://", "https://")):
+            raise ConfigurationError("Glue optimizer catalog endpoint must be an HTTP URL")
+        if not self.catalog_name.strip():
+            raise ConfigurationError("Glue optimizer catalog name cannot be empty")
+
+
+@dataclass(frozen=True, slots=True)
 class GlueSettings:
     listen_host: str
     listen_port: int
@@ -56,6 +90,7 @@ class GlueSettings:
     state_file: Path
     catalog_lock: GlueCatalogLockSettings
     object_store: GlueObjectStoreSettings
+    table_optimizers: GlueTableOptimizerSettings
     default_region: str
     runtime: GlueRuntimeProfile
     policy: CatalogPolicy
@@ -72,6 +107,9 @@ class GlueSettings:
         expression = require_mapping(glue, "partition_expressions")
         catalog_lock = require_mapping(glue, "catalog_lock")
         fault_injection = require_mapping(glue, "fault_injection")
+        table_optimizers = require_mapping(glue, "table_optimizers")
+        optimizer_scheduler = require_mapping(table_optimizers, "scheduler")
+        optimizer_worker = require_mapping(table_optimizers, "worker")
         try:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
@@ -90,6 +128,12 @@ class GlueSettings:
             )
             lock_timeout_seconds = float(catalog_lock["acquire_timeout_seconds"])
             lock_poll_interval_seconds = float(catalog_lock["poll_interval_seconds"])
+            configured_optimizer_root = Path(str(table_optimizers["work_root"]))
+            optimizer_root = (
+                configured_optimizer_root
+                if configured_optimizer_root.is_absolute()
+                else data_root / configured_optimizer_root
+            )
             if lock_file.resolve(strict=False) == state_file.resolve(strict=False):
                 raise ConfigurationError("glue.catalog_lock.file must differ from glue.state_file")
             if lock_poll_interval_seconds > lock_timeout_seconds:
@@ -113,6 +157,30 @@ class GlueSettings:
                     access_key_id=str(localstack["access_key_id"]),
                     secret_access_key=str(localstack["secret_access_key"]),
                     s3_path_style=bool(localstack["s3_path_style"]),
+                ),
+                table_optimizers=GlueTableOptimizerSettings(
+                    enabled=bool(table_optimizers["enabled"]),
+                    work_root=optimizer_root,
+                    catalog_endpoint_url=str(table_optimizers["catalog_endpoint_url"]),
+                    catalog_name=str(table_optimizers["catalog_name"]),
+                    poll_interval_seconds=float(optimizer_scheduler["poll_interval_seconds"]),
+                    max_concurrent_runs=int(optimizer_scheduler["max_concurrent_runs"]),
+                    policy=TableOptimizerPolicy(
+                        initial_delay_seconds=float(optimizer_scheduler["initial_delay_seconds"]),
+                        compaction_interval_seconds=float(
+                            optimizer_scheduler["compaction_interval_seconds"]
+                        ),
+                        history_limit=int(optimizer_scheduler["history_limit"]),
+                        compaction_failure_limit=int(
+                            optimizer_scheduler["compaction_failure_limit"]
+                        ),
+                    ),
+                    worker=GlueTableOptimizerWorkerSettings(
+                        spark_submit=Path(str(optimizer_worker["spark_submit"])),
+                        submit_args=tuple(map(str, optimizer_worker["submit_args"])),
+                        timeout_seconds=float(optimizer_worker["timeout_seconds"]),
+                        terminate_grace_seconds=float(optimizer_worker["terminate_grace_seconds"]),
+                    ),
                 ),
                 default_region=str(localstack["region"]),
                 runtime=GlueRuntimeProfile(

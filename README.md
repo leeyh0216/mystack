@@ -19,6 +19,8 @@ The current primary paths are:
 - Glue Data Catalog behavior, including documented validation and service exceptions
 - Spark 3.5.4 interoperability with Glue Data Catalog, Hive-compatible types, Iceberg 1.7.1, and
   documented [Open Table Format create/update inputs](docs/protocols/glue-open-table-format.md)
+- Glue managed Iceberg compaction, snapshot-retention, and orphan-file optimizers through six
+  boto3 APIs and bounded Glue 5 Spark workers
 - AWS SDK for pandas 3.17.0 partitioned-Parquet and Glue Catalog round trips
 - A reproducible local runtime based on Docker Compose
 
@@ -64,6 +66,7 @@ the [development guide](docs/development.md), not the normal user path.
 | Connect AWS CLI, boto3, or AWS SDK for pandas | [Client setup in the usage guide](docs/getting-started.md) |
 | Check supported EMR/Glue APIs and errors | [Support scope](docs/support-scope.md), [API coverage](docs/compatibility/api-coverage.md) |
 | Check Spark Glue Hive/Iceberg, Open Table Format, and library evidence | [Client compatibility matrix](docs/compatibility/client-matrix.md), [Open Table Format protocol](docs/protocols/glue-open-table-format.md) |
+| Configure or call managed Iceberg table optimizers | [Table optimizer protocol](docs/protocols/glue-table-optimizers.md) |
 | Change YAML, timeouts, ports, or Docker settings | [Configuration guide](docs/configuration.md) |
 | Install an enterprise CA or proxy before EMR starts | [EMR pre-start guide](docs/protocols/emr-prestart.md) |
 | Operate EMR, explore Glue, or inspect diagnostics | [Management console guide](docs/console.md) |
@@ -74,7 +77,7 @@ The [user guide](docs/index.md) provides the full recommended reading path.
 ## Current support level
 
 The repository is under active construction. EMR currently exposes 13 boto3-tested operations,
-and Glue exposes 22 boto3-tested Data Catalog operations. Spark 3.5.4 Hive/Iceberg and AWS SDK for
+and Glue exposes 28 boto3-tested Data Catalog operations. Spark 3.5.4 Hive/Iceberg and AWS SDK for
 pandas 3.17.0 are supported only along the documented E2E paths. Athena, Glue Jobs/JobRuns/Crawlers,
 production IAM, and YARN/HDFS environments are not currently supported.
 

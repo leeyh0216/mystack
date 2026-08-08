@@ -6,7 +6,11 @@ https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from mystack.glue.application.table_optimizer_contracts import TableOptimizerWork
 
 
 class Clock(Protocol):
@@ -27,3 +31,14 @@ class IcebergMetadataStore(Protocol):
     async def write(self, location: str, document: dict[str, Any]) -> None: ...
 
     async def delete(self, location: str) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class TableOptimizerExecutionResult:
+    metrics: dict[str, Any]
+
+
+class TableOptimizerExecutor(Protocol):
+    """Side-effect port for one bounded Spark optimizer invocation."""
+
+    async def execute(self, work: TableOptimizerWork) -> TableOptimizerExecutionResult: ...

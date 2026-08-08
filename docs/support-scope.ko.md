@@ -17,9 +17,9 @@
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
-| Glue Data Catalog | API 목록 일부 지원: boto3로 검증한 22개 operation의 database/table/version/partition/batch 결정적 오류와 선택적 timeout/internal injection 완성 | 더 넓은 Data Catalog API 목록 |
+| Glue Data Catalog | API 목록 일부 지원: boto3로 검증한 database/table/version/partition/batch/table-optimizer 28개 operation의 결정적 오류와 선택적 timeout/internal injection 완성 | 더 넓은 Data Catalog API 목록 |
 | Spark + Hive + Glue Catalog | 검증 완료: 공식 Glue 5 image, complex type, type 기반 pruning, partition DDL/repair, 지원하는 Hive V1 table ALTER metadata 의미론, 구현 operation 전체의 결정적 오류 | 더 넓은 Spark/Hive client variant |
-| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Open Table Format create/update 입력, create/read/write/evolution, COW/MOR DML, time travel, branch/tag write, 주요 metadata table, snapshot/maintenance procedure, rename/drop/추적 file purge, S3 orphan cleanup, 원자적 `VersionId` commit과 concurrent retry | Managed optimizer, metadata encryption action, 나머지 option/table과 더 넓은 Iceberg API |
+| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Open Table Format create/update 입력, create/read/write/evolution, COW/MOR DML, time travel, branch/tag write, 주요 metadata table, snapshot/maintenance procedure, managed compaction/retention/orphan-file optimizer, rename/drop/추적 file purge, S3 cleanup, 원자적 `VersionId` commit과 concurrent retry | Metadata encryption action, 나머지 option/table과 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
 | Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
 
@@ -27,9 +27,9 @@ EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다.
 `/_mystack/ui/emr/`, `/_mystack/ui/glue/`이며 호환 경로 `/_mystack/console`은 EMR로 redirect합니다.
 Glue metadata mutation은 직렬화한
 candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를
-모두 유지하고 database/table rename 또는 delete는 하위 table과 partition을 한 commit에
-포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema version 1은 다음
-mutation에서 migration합니다. Iceberg table에서는 process 간 file lock, 최신 state reload,
+모두 유지하고 database/table rename 또는 delete는 하위 table, partition, optimizer와 run history를
+한 commit에 포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema 1과 2는
+다음 mutation에서 schema 3으로 migration합니다. Iceberg table에서는 process 간 file lock, 최신 state reload,
 원자적 `VersionId`/`metadata_location` compare-and-swap도 적용합니다. Data, manifest, metadata,
 snapshot과 retry는 계속 Iceberg가 소유합니다. 자세한 내용은 [Iceberg commit
 protocol](protocols/glue-iceberg-commits.ko.md)을 참고하세요.
@@ -43,6 +43,8 @@ protocol](protocols/glue-iceberg-evolution.ko.md)에 기록합니다. 고정된 
 `OpenTableFormatInput`과 `UpdateOpenTableFormatInput`을 통한 service 소유 Iceberg v2 metadata
 materialization, S3 보상, catalog CAS는 [Open Table Format 입력
 protocol](protocols/glue-open-table-format.ko.md)에 있습니다.
+Managed optimizer API, 기본값, scheduling, Spark procedure mapping, 오류, log와 제외 범위는
+[table optimizer protocol](protocols/glue-table-optimizers.ko.md)에 고정했습니다.
 `GetPartitions`는 type이 있는 key, 우선순위,
 pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIKE`·null predicate를
 지원합니다. 문법과 limit은 [partition expression
@@ -59,7 +61,7 @@ Database/table/version의 validation, conflict, version, archive, rename, cascad
 Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`, rollback은
 [partition/batch 오류 계약](protocols/glue-partition-batch-errors.ko.md)에 고정했습니다.
 
-현재 구현된 control-plane operation 전부(EMR 13개, Glue 22개)는 public Proxy boto3 E2E를
+현재 구현된 control-plane operation 전부(EMR 13개, Glue 28개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
 Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process

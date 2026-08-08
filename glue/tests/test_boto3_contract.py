@@ -5,6 +5,8 @@ API reference: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.h
 
 from __future__ import annotations
 
+import time
+
 import httpx
 import pytest
 
@@ -41,7 +43,7 @@ def test_management_read_model_lists_catalog_tree(
     document = response.json()
 
     assert response.status_code == 200
-    assert document["compatibility"]["implemented_operation_count"] == 22
+    assert document["compatibility"]["implemented_operation_count"] == 28
     database = next(
         value for value in document["resources"]["databases"] if value["id"] == "console"
     )
@@ -114,3 +116,49 @@ def test_get_partitions_combines_typed_expression_paging_and_segments(glue_clien
         segmented.append({tuple(value["Values"]) for value in response["Partitions"]})
     assert segmented[0].isdisjoint(segmented[1])
     assert segmented[0] | segmented[1] == expected
+
+
+@pytest.mark.contract
+def test_managed_optimizer_run_shapes_through_boto3(
+    glue_client,
+    glue_test_timeout: float,
+) -> None:
+    glue_client.create_database(DatabaseInput={"Name": "optimizer_runs"})
+    glue_client.create_table(
+        DatabaseName="optimizer_runs",
+        TableInput={
+            "Name": "events",
+            "Parameters": {
+                "table_type": "ICEBERG",
+                "metadata_location": "s3://warehouse/optimizer/events/metadata/v1.json",
+            },
+            "StorageDescriptor": {"Location": "s3://warehouse/optimizer/events"},
+        },
+    )
+    expected_metric_keys = {
+        "compaction": "compactionMetrics",
+        "retention": "retentionMetrics",
+        "orphan_file_deletion": "orphanFileDeletionMetrics",
+    }
+    for optimizer_type, metric_key in expected_metric_keys.items():
+        glue_client.create_table_optimizer(
+            CatalogId="000000000000",
+            DatabaseName="optimizer_runs",
+            TableName="events",
+            Type=optimizer_type,
+            TableOptimizerConfiguration={"enabled": True},
+        )
+        deadline = time.monotonic() + glue_test_timeout
+        while time.monotonic() < deadline:
+            runs = glue_client.list_table_optimizer_runs(
+                CatalogId="000000000000",
+                DatabaseName="optimizer_runs",
+                TableName="events",
+                Type=optimizer_type,
+            )["TableOptimizerRuns"]
+            if runs and runs[0]["eventType"] == "completed":
+                break
+            time.sleep(0.01)
+        else:
+            raise AssertionError(f"Optimizer {optimizer_type} exceeded contract timeout")
+        assert runs[0][metric_key]["IcebergMetrics"]

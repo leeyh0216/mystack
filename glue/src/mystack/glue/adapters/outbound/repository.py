@@ -31,10 +31,12 @@ from mystack.glue.domain import (
     CatalogState,
     CatalogTable,
     CatalogTableVersion,
+    TableOptimizer,
+    TableOptimizerRun,
 )
 
 _LOGGER = logging.getLogger(__name__)
-_CURRENT_SCHEMA_VERSION = 2
+_CURRENT_SCHEMA_VERSION = 3
 
 
 class CatalogStateStore(Protocol):
@@ -253,7 +255,7 @@ class JsonCatalogStateStore:
                 "glue.repository.load.failed",
                 state_file=str(self._state_file),
                 fix_hint=(
-                    "Restore a catalog state file with schema_version 1 or 2; update "
+                    "Restore a catalog state file with schema_version 1, 2, or 3; update "
                     "JsonCatalogStateStore migration code for a newly supported schema."
                 ),
                 side_effect=True,
@@ -278,6 +280,7 @@ class JsonCatalogStateStore:
             database_count=len(state.databases),
             table_count=len(state.tables),
             partition_count=len(state.partitions),
+            optimizer_count=len(state.optimizers),
             side_effect=True,
         )
         return state
@@ -300,6 +303,7 @@ class JsonCatalogStateStore:
             database_count=len(candidate.databases),
             table_count=len(candidate.tables),
             partition_count=len(candidate.partitions),
+            optimizer_count=len(candidate.optimizers),
             side_effect=True,
         )
         try:
@@ -388,6 +392,7 @@ class TransactionalCatalogRepository:
             database_count=len(snapshot.databases),
             table_count=len(snapshot.tables),
             partition_count=len(snapshot.partitions),
+            optimizer_count=len(snapshot.optimizers),
         )
         return snapshot
 
@@ -464,6 +469,7 @@ class TransactionalCatalogRepository:
                     database_count=len(candidate.databases),
                     table_count=len(candidate.tables),
                     partition_count=len(candidate.partitions),
+                    optimizer_count=len(candidate.optimizers),
                     side_effect=True,
                 )
                 if cancellation is not None:
@@ -493,6 +499,7 @@ class TransactionalCatalogRepository:
             database_count=len(refreshed.databases),
             table_count=len(refreshed.tables),
             partition_count=len(refreshed.partitions),
+            optimizer_count=len(refreshed.optimizers),
         )
 
     @staticmethod
@@ -579,12 +586,13 @@ def _state_document(state: CatalogState) -> dict[str, Any]:
         "databases": [_database_document(value) for _, value in sorted(state.databases.items())],
         "tables": [_table_document(value) for _, value in sorted(state.tables.items())],
         "partitions": [_partition_document(value) for _, value in sorted(state.partitions.items())],
+        "optimizers": [_optimizer_document(value) for _, value in sorted(state.optimizers.items())],
     }
 
 
 def _state_from_document(document: dict[str, Any]) -> tuple[CatalogState, int]:
     schema_version = int(document.get("schema_version", 0))
-    if schema_version not in {1, _CURRENT_SCHEMA_VERSION}:
+    if schema_version not in {1, 2, _CURRENT_SCHEMA_VERSION}:
         raise ValueError(f"Unsupported catalog state schema_version {schema_version}")
     revision = int(document.get("state_revision", 0))
     if revision < 0:
@@ -600,6 +608,9 @@ def _state_from_document(document: dict[str, Any]) -> tuple[CatalogState, int]:
     for raw in document.get("partitions", ()):
         value = _partition_from_document(raw)
         _insert_unique(state.partitions, _partition_key(value), value, "partition")
+    for raw in document.get("optimizers", ()):
+        value = _optimizer_from_document(raw)
+        _insert_unique(state.optimizers, value.key, value, "optimizer")
     _validate_references(state)
     return state, schema_version
 
@@ -617,6 +628,9 @@ def _validate_references(state: CatalogState) -> None:
     for catalog_id, database, table, _ in state.partitions:
         if (catalog_id, database, table) not in state.tables:
             raise ValueError("Catalog state partition references a missing table")
+    for catalog_id, database, table, _ in state.optimizers:
+        if (catalog_id, database, table) not in state.tables:
+            raise ValueError("Catalog state optimizer references a missing table")
 
 
 def _resource_fingerprint(resource_key: tuple[object, ...]) -> str:
@@ -713,4 +727,66 @@ def _partition_from_document(value: dict[str, Any]) -> CatalogPartition:
         definition=dict(value["definition"]),
         creation_time=float(value["creation_time"]),
         update_time=float(value["update_time"]),
+    )
+
+
+def _optimizer_document(value: TableOptimizer) -> dict[str, Any]:
+    return {
+        "catalog_id": value.catalog_id,
+        "database_name": value.database_name,
+        "table_name": value.table_name,
+        "optimizer_type": value.optimizer_type.value,
+        "configuration": value.configuration.document,
+        "create_time": value.create_time,
+        "update_time": value.update_time,
+        "next_run_time": value.next_run_time,
+        "revision": value.revision,
+        "consecutive_failures": value.consecutive_failures,
+        "runs": [
+            {
+                "run_id": run.run_id,
+                "event_type": run.event_type.value,
+                "start_timestamp": run.start_timestamp,
+                "end_timestamp": run.end_timestamp,
+                "configuration": run.configuration,
+                "metrics": run.metrics,
+                "error": run.error,
+            }
+            for run in value.runs
+        ],
+    }
+
+
+def _optimizer_from_document(value: dict[str, Any]) -> TableOptimizer:
+    return TableOptimizer.restore(
+        catalog_id=str(value["catalog_id"]),
+        database_name=str(value["database_name"]),
+        table_name=str(value["table_name"]),
+        optimizer_type=str(value["optimizer_type"]),
+        configuration=dict(value["configuration"]),
+        create_time=float(value["create_time"]),
+        update_time=float(value["update_time"]),
+        next_run_time=(
+            None if value.get("next_run_time") is None else float(value["next_run_time"])
+        ),
+        revision=int(value.get("revision", 0)),
+        consecutive_failures=int(value.get("consecutive_failures", 0)),
+        runs=tuple(
+            TableOptimizerRun.restore(
+                run_id=str(run["run_id"]),
+                event_type=str(run["event_type"]),
+                start_timestamp=float(run["start_timestamp"]),
+                end_timestamp=(
+                    None if run.get("end_timestamp") is None else float(run["end_timestamp"])
+                ),
+                configuration=(
+                    dict(run["configuration"])
+                    if run.get("configuration") is not None
+                    else dict(value["configuration"])
+                ),
+                metrics=None if run.get("metrics") is None else dict(run["metrics"]),
+                error=None if run.get("error") is None else str(run["error"]),
+            )
+            for run in value.get("runs", ())
+        ),
     )

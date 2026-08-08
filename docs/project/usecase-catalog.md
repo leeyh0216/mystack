@@ -162,7 +162,7 @@
   client `UpdatePartition` path.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and per-item ErrorDetail.
 - Observability: safe batch before/item/after and expression phase logs, focused deterministic wire
-  contracts, and all 22 Glue operations through public Proxy E2E.
+  contracts, and all 28 Glue operations through public Proxy E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/inbound/aws.py`,
   `docs/protocols/glue-partition-batch-errors.md`
@@ -256,7 +256,7 @@
 
 - Purpose/actor/trigger: maintainer enables a YAML fault rule before starting the Glue emulator and
   sends an otherwise valid boto3/CLI request for that operation.
-- Input: unique rule ID, one of 22 implemented operations, `OperationTimeoutException` or
+- Input: unique rule ID, one of 28 implemented operations, `OperationTimeoutException` or
   `InternalServiceException`, and response message.
 - Output: modeled AWS JSON error with deterministic code/status/message and request ID.
 - Stored/changed data: none; the handler and catalog repository are not called.
@@ -298,3 +298,31 @@
   `glue/tests/test_database_table_error_semantics.py`,
   `contracts/glue-error-conditions.yaml`
 - Confidence: High
+
+<!-- section: uc-015 -->
+## UC-015: Manage and execute Glue Iceberg table optimizers
+
+- Purpose/actor/trigger: boto3 manages one compaction, retention, or orphan-file optimizer and the
+  service scheduler claims a due run.
+- Input: catalog/database/table/type, official `TableOptimizerConfiguration`, pagination, and
+  file-configured scheduler/process limits.
+- Output: six AWS API responses, partial batch failures, bounded run history, typed metrics, and
+  per-run Spark stdout/stderr.
+- Stored/changed data: optimizer configuration, revision, next-run time, consecutive failures, and
+  run history inside catalog schema 3; Iceberg procedures may commit metadata and change LocalStack
+  S3 objects.
+- Responsibility: optimizer domain owns defaults and transitions; application command/query
+  handlers own aggregate mutation; runtime owns tasks; outbound adapter owns subprocess/files;
+  Spark entrypoint owns Iceberg procedure calls.
+- Preconditions/rules: existing Iceberg table and location, Parquet for compaction, 3–168-hour
+  retention/orphan rate, table-contained orphan location, configured concurrency and timeouts.
+- Failures: InvalidInput, EntityNotFound, AlreadyExists, per-item batch errors, deterministic
+  process timeout/failure, and four-failure compaction suspension. IAM/authorization is absent.
+- Observability: before/after/stale/failure events at claims, transitions, scheduler, process, and
+  result decoding, with repair hints and no raw configuration or credentials.
+- Evidence: `glue/src/mystack/glue/application/table_optimizer.py`,
+  `glue/src/mystack/glue/application/table_optimizer_runtime.py`,
+  `glue/src/mystack/glue/adapters/outbound/table_optimizer_executor.py`,
+  `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`, and
+  `docs/protocols/glue-table-optimizers.md`.
+- Confidence: High for the documented Glue 5/Spark 3.5.4/Iceberg 1.7.1 path.

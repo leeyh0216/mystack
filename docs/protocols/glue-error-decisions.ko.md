@@ -7,7 +7,7 @@
 
 Mystack은 공개 API 문서, 고정한 botocore model, 내부 catalog invariant로 Glue 오류를 정의하며 실
 AWS 계정을 조회하지 않습니다. Source of truth는 `contracts/glue-error-conditions.yaml`입니다.
-`scripts/glue_error_contracts.py`는 구현한 22개 operation 모두에 순서가 있는 계약을 요구하고
+`scripts/glue_error_contracts.py`는 구현한 28개 operation 모두에 순서가 있는 계약을 요구하고
 [영문](../compatibility/glue-errors.generated.md)과
 [한글](../compatibility/glue-errors.ko.generated.md) matrix를 생성합니다.
 

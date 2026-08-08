@@ -10,7 +10,7 @@ References:
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Self
 
 from mystack.glue.domain.errors import InvalidInputError, VersionMismatchError
@@ -438,13 +438,3 @@ class CatalogPartition:
             self.creation_time,
             self.update_time,
         )
-
-
-@dataclass(slots=True)
-class CatalogState:
-    """One isolated candidate or committed Data Catalog collection."""
-
-    revision: int = 0
-    databases: dict[DatabaseKey, CatalogDatabase] = field(default_factory=dict)
-    tables: dict[TableKey, CatalogTable] = field(default_factory=dict)
-    partitions: dict[PartitionKey, CatalogPartition] = field(default_factory=dict)

@@ -113,6 +113,26 @@ glue:
   fault_injection:
     enabled: false
     rules: []
+  # AWS Glue managed optimizer API and behavior:
+  # https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html
+  table_optimizers:
+    enabled: true
+    # Relative paths resolve below glue.data_root.
+    work_root: table-optimizer-runs
+    catalog_endpoint_url: http://127.0.0.1:8080
+    catalog_name: mystack
+    scheduler:
+      poll_interval_seconds: 2
+      initial_delay_seconds: 2
+      max_concurrent_runs: 1
+      compaction_interval_seconds: 86400
+      history_limit: 100
+      compaction_failure_limit: 4
+    worker:
+      spark_submit: /opt/mystack/bin/spark-submit
+      submit_args: [--master, "local[*]"]
+      timeout_seconds: 1800
+      terminate_grace_seconds: 10
   runtime_profile: glue-5.0
 
 runtime_profiles:

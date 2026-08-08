@@ -9,7 +9,7 @@ botocore: `1.43.66`
 | Service | COMPATIBLE | PARTIAL | PROTOCOL_ONLY | NOT_PLANNED | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | EMR | 13 | 0 | 52 | 0 | 65 |
-| GLUE | 22 | 0 | 249 | 28 | 299 |
+| GLUE | 28 | 0 | 243 | 28 | 299 |
 
 | 서비스 | Operation | 상태 | 설명 |
 | --- | --- | --- | --- |
@@ -93,7 +93,7 @@ botocore: `1.43.66`
 | GLUE | `BatchGetIterableForms` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `BatchGetJobs` | `NOT_PLANNED` | Glue Job/JobRun/Crawler 범위 제외 |
 | GLUE | `BatchGetPartition` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
-| GLUE | `BatchGetTableOptimizer` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `BatchGetTableOptimizer` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `BatchGetTriggers` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `BatchGetWorkflows` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `BatchPutDataQualityStatisticAnnotation` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
@@ -130,7 +130,7 @@ botocore: `1.43.66`
 | GLUE | `CreateSecurityConfiguration` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `CreateSession` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `CreateTable` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
-| GLUE | `CreateTableOptimizer` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `CreateTableOptimizer` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `CreateTrigger` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `CreateUsageProfile` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `CreateUserDefinedFunction` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
@@ -169,7 +169,7 @@ botocore: `1.43.66`
 | GLUE | `DeleteSecurityConfiguration` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `DeleteSession` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `DeleteTable` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
-| GLUE | `DeleteTableOptimizer` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `DeleteTableOptimizer` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `DeleteTableVersion` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `DeleteTrigger` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `DeleteUsageProfile` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
@@ -250,7 +250,7 @@ botocore: `1.43.66`
 | GLUE | `GetSessionEndpoint` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `GetStatement` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `GetTable` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
-| GLUE | `GetTableOptimizer` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `GetTableOptimizer` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `GetTableVersion` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `GetTableVersions` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `GetTables` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
@@ -296,7 +296,7 @@ botocore: `1.43.66`
 | GLUE | `ListSchemas` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `ListSessions` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `ListStatements` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
-| GLUE | `ListTableOptimizerRuns` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `ListTableOptimizerRuns` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `ListTriggers` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `ListUsageProfiles` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `ListWorkflows` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
@@ -372,7 +372,7 @@ botocore: `1.43.66`
 | GLUE | `UpdateSchema` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `UpdateSourceControlFromJob` | `NOT_PLANNED` | Glue Job/JobRun/Crawler 범위 제외 |
 | GLUE | `UpdateTable` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
-| GLUE | `UpdateTableOptimizer` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
+| GLUE | `UpdateTableOptimizer` | `COMPATIBLE` | boto3 계약 및 public Proxy E2E 구현 |
 | GLUE | `UpdateTrigger` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `UpdateUsageProfile` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |
 | GLUE | `UpdateUserDefinedFunction` | `PROTOCOL_ONLY` | 고정 wire model만 추적, 의미 구현 대기 |

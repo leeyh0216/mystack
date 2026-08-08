@@ -17,9 +17,9 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
 | EMR control plane | Partial: 13 boto3-tested operations plus versioned startup-file provisioning through the same use case | Broad public EMR API compatibility |
 | EMR bootstrap/Spark | Implemented vertical slice: trusted root pre-start with inventory, final `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
-| Glue Data Catalog | Partial API inventory: 22 boto3-tested operations with complete deterministic database/table/version/partition/batch errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
+| Glue Data Catalog | Partial API inventory: 28 boto3-tested database/table/version/partition/batch/table-optimizer operations with deterministic errors and opt-in timeout/internal injection | Broader Data Catalog API inventory |
 | Spark + Hive + Glue Catalog | Implemented: official Glue 5 image, complex types, typed pruning, partition DDL/repair, supported Hive V1 table ALTER metadata semantics, and deterministic errors for every implemented operation | Broader Spark/Hive client variants |
-| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Open Table Format create/update inputs, create/read/write/evolution, COW/MOR DML, time travel, branch/tag writes, principal metadata tables, snapshot/maintenance procedures, rename/drop/tracked-file purge, S3 orphan cleanup, atomic `VersionId` commits, and concurrent retry | Managed optimizers, metadata encryption actions, remaining options/tables, and broader Iceberg APIs |
+| Spark + Iceberg + Glue Catalog | Implemented vertical slice: Open Table Format create/update inputs, create/read/write/evolution, COW/MOR DML, time travel, branch/tag writes, principal metadata tables, snapshot/maintenance procedures, managed compaction/retention/orphan-file optimizers, rename/drop/tracked-file purge, S3 cleanup, atomic `VersionId` commits, and concurrent retry | Metadata encryption actions, remaining options/tables, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions used by this client |
 | Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
@@ -27,8 +27,9 @@ EMR and Glue serve their UIs directly at `/_mystack/ui/`; Proxy exposes them at
 `/_mystack/ui/emr/` and `/_mystack/ui/glue/`. The compatibility path `/_mystack/console` redirects
 to EMR. Glue metadata mutations use serialized
 candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
-database/table rename or deletion includes child tables and partitions in one commit. The versioned
-JSON document is stored at `glue.state_file`; schema version 1 is migrated on the next mutation.
+database/table rename or deletion includes child tables, partitions, optimizers, and run history in
+one commit. The versioned JSON document is stored at `glue.state_file`; schemas 1 and 2 migrate to
+schema 3 on the next mutation.
 For Iceberg tables, this transaction now includes inter-process file locking, latest-state reload,
 and an atomic `VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
 metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
@@ -43,6 +44,8 @@ in the [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md).
 Service-owned Iceberg v2 metadata materialization for `OpenTableFormatInput` and
 `UpdateOpenTableFormatInput`, including S3 compensation and catalog CAS, is defined in the
 [Open Table Format input protocol](protocols/glue-open-table-format.md).
+Managed optimizer APIs, defaults, scheduling, Spark procedure mapping, errors, logs, and exclusions
+are fixed by the [table optimizer protocol](protocols/glue-table-optimizers.md).
 `GetPartitions` supports the documented comparison, logical, `IN`,
 `BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.
@@ -58,7 +61,7 @@ is fixed by the [resource error contract](protocols/glue-database-table-errors.m
 Partition value, list, update, batch order, item error, `UnprocessedKeys`, and rollback behavior is
 fixed by the [partition/batch error contract](protocols/glue-partition-batch-errors.md).
 
-Every currently implemented control-plane operation (EMR 13, Glue 22) has public-Proxy boto3
+Every currently implemented control-plane operation (EMR 13, Glue 28) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations
 are supported; the exact upstream classification is generated from the pinned botocore model.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are

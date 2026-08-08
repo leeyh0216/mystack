@@ -99,6 +99,38 @@ name, and the configured S3 bucket must already exist. Create/update ordering, c
 and exclusions are in the [Open Table Format input protocol](protocols/glue-open-table-format.md).
 The endpoint and credentials follow the official [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html).
 
+`glue.table_optimizers` configures the managed Iceberg optimizer scheduler and its bounded Glue 5
+Spark subprocess. A relative `work_root` resolves below `glue.data_root`. `catalog_endpoint_url` is
+the endpoint visible from the Glue container itself; `catalog_name` is the Iceberg Spark catalog.
+All intervals, concurrency, retained run count, failure suspension threshold, executable, submit
+arguments, process timeout, and terminate grace period are file values:
+
+```yaml
+glue:
+  table_optimizers:
+    enabled: true
+    work_root: table-optimizer-runs
+    catalog_endpoint_url: http://127.0.0.1:8080
+    catalog_name: mystack
+    scheduler:
+      poll_interval_seconds: 2
+      initial_delay_seconds: 2
+      max_concurrent_runs: 1
+      compaction_interval_seconds: 86400
+      history_limit: 100
+      compaction_failure_limit: 4
+    worker:
+      spark_submit: /opt/mystack/bin/spark-submit
+      submit_args: [--master, "local[*]"]
+      timeout_seconds: 1800
+      terminate_grace_seconds: 10
+```
+
+The S3 endpoint, region, and local credentials come from `localstack`; S3 catalog locations stay
+as `s3://` URIs. See the [managed optimizer protocol](protocols/glue-table-optimizers.md) for API,
+lifecycle, logs, and repair boundaries. AWS documents the three managed types in its
+[table optimizer guide](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html).
+
 `glue.fault_injection` is disabled by default. When enabled, each rule selects one implemented
 operation and either `OperationTimeoutException` or `InternalServiceException`; only one rule may
 select an operation. Shared modeled shape and value validation run first, then the configured failure stops the

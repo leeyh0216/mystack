@@ -29,7 +29,7 @@
 
 | Client | 고정 버전 | 상태 | 검증 경로 |
 | --- | --- | --- | --- |
-| boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | EMR 13개와 Glue Catalog 22개 operation, S3 시험 데이터 |
+| boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | EMR 13개와 Glue Catalog 28개 operation, S3 시험 데이터 |
 | AWS SDK for pandas | 3.17.0 | `E2E` | partitioned Parquet write/read, Glue database/table/partition 등록과 조회, S3 HEAD |
 | Spark Glue Hive client | Glue 5.0 / Spark 3.5.4 | `E2E` | complex type Parquet table create/insert/read |
 | Apache Iceberg Java GlueCatalog | 1.7.1 | `E2E` | create/read/write/evolution, COW/MOR DML, time travel, ref, metadata/maintenance procedure, concurrent retry |

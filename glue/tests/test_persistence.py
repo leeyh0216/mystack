@@ -25,6 +25,9 @@ from mystack.glue.application.partition_expression import PartitionExpressionPol
 from mystack.glue.domain import (
     CatalogState,
     EntityNotFoundError,
+    TableOptimizer,
+    TableOptimizerConfiguration,
+    TableOptimizerType,
     VersionMismatchError,
 )
 
@@ -346,12 +349,17 @@ async def test_delete_database_cascades_in_one_durable_commit(tmp_path: Path) ->
     assert document["partitions"] == []
 
 
-async def test_schema_one_state_is_migrated_on_next_commit(tmp_path: Path) -> None:
+@pytest.mark.parametrize("source_schema", [1, 2])
+async def test_legacy_state_is_migrated_to_schema_three_on_next_commit(
+    tmp_path: Path,
+    source_schema: int,
+) -> None:
     state_file = tmp_path / "catalog.json"
     state_file.write_text(
         json.dumps(
             {
-                "schema_version": 1,
+                "schema_version": source_schema,
+                "state_revision": 0,
                 "databases": [
                     {
                         "catalog_id": "account",
@@ -371,6 +379,53 @@ async def test_schema_one_state_is_migrated_on_next_commit(tmp_path: Path) -> No
     await application.create_database("account", {"Name": "new"})
 
     document = json.loads(state_file.read_text(encoding="utf-8"))
-    assert document["schema_version"] == 2
+    assert document["schema_version"] == 3
     assert document["state_revision"] == 1
+    assert document["optimizers"] == []
     assert {value["name"] for value in document["databases"]} == {"legacy", "new"}
+
+
+async def test_optimizer_state_and_run_history_survive_repository_restart(tmp_path: Path) -> None:
+    state_file = tmp_path / "catalog.json"
+    repository = JsonCatalogRepository(state_file)
+    application = _application(repository)
+    await application.create_database("account", {"Name": "db"})
+    await application.create_table(
+        "account",
+        "db",
+        {
+            "Name": "table",
+            "Parameters": {"table_type": "ICEBERG", "metadata_location": "s3://b/m/v1.json"},
+            "StorageDescriptor": {"Location": "s3://b/t", "InputFormat": "parquet"},
+        },
+    )
+    configuration = TableOptimizerConfiguration.parse(
+        TableOptimizerType.COMPACTION,
+        {},
+        table_location="s3://b/t",
+    )
+    optimizer = TableOptimizer.create(
+        catalog_id="account",
+        database_name="db",
+        table_name="table",
+        optimizer_type=TableOptimizerType.COMPACTION,
+        configuration=configuration,
+        now=1.0,
+        initial_delay_seconds=0.0,
+    ).claim("run-1", 1.0, history_limit=10)
+    optimizer = optimizer.mark_in_progress("run-1").complete_run(
+        "run-1",
+        now=2.0,
+        metrics={"NumberOfFilesCompacted": "3"},
+        compaction_interval_seconds=3600.0,
+    )
+    async with repository.transaction(
+        operation="test-create-optimizer",
+        resource_key=optimizer.key,
+    ) as state:
+        state.optimizers[optimizer.key] = optimizer
+
+    restored = await JsonCatalogRepository(state_file).snapshot()
+
+    assert restored.optimizers[optimizer.key] == optimizer
+    assert json.loads(state_file.read_text(encoding="utf-8"))["schema_version"] == 3

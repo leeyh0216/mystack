@@ -24,6 +24,7 @@ from mystack.glue.application.partition import (
     PartitionTargetResolver,
 )
 from mystack.glue.application.table import TableCommands, TableQueries, TableVersionQueries
+from mystack.glue.application.table_optimizer import TableOptimizerCommands, TableOptimizerQueries
 
 
 def _public_methods(value: type) -> set[str]:
@@ -47,6 +48,22 @@ def test_application_handlers_have_one_explicit_responsibility() -> None:
     assert _public_methods(PartitionBatchHandler) == {"create", "delete", "get", "update"}
     assert _public_methods(CatalogInitializer) == {"initialize"}
     assert _public_methods(Paginator) == {"page", "prepare"}
+    assert _public_methods(TableOptimizerCommands) == {
+        "claim_due",
+        "complete",
+        "create",
+        "delete",
+        "fail",
+        "mark_in_progress",
+        "recover_interrupted",
+        "update",
+    }
+    assert _public_methods(TableOptimizerQueries) == {
+        "batch_get",
+        "get",
+        "is_current",
+        "list_runs",
+    }
 
 
 def test_repositories_expose_collection_transaction_capabilities_only() -> None:
