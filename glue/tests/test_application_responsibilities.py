@@ -39,7 +39,7 @@ def test_application_handlers_have_one_explicit_responsibility() -> None:
     assert _public_methods(PartitionQueries) == {"get", "list"}
     assert _public_methods(PartitionBatchHandler) == {"create", "delete", "get", "update"}
     assert _public_methods(CatalogInitializer) == {"initialize"}
-    assert _public_methods(Paginator) == {"page"}
+    assert _public_methods(Paginator) == {"page", "prepare"}
 
 
 def test_repositories_expose_collection_transaction_capabilities_only() -> None:
