@@ -23,9 +23,12 @@ accepted directly.
 
 Identifiers may be unquoted names or backtick-quoted names. String literals accept single or
 double quotes, doubled delimiters such as `'it''s'`, and backslash escaping. `LIKE` uses `%` for any
-sequence and `_` for one character. Numeric literals may be signed and decimal. A syntax error
-returns modeled `InvalidInputException`; the message reports a position and reason but never logs
-the expression value.
+sequence and `_` for one character. It also recognizes the `.*` wildcard emitted for `Contains`,
+`StartsWith`, and `EndsWith` by Spark 3.5's official
+[`HiveShim.convertFilters`](https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala).
+Other regular-expression syntax remains literal. Numeric literals may be signed and decimal. A
+syntax error returns modeled `InvalidInputException`; the message reports a position and reason but
+never logs the expression value.
 
 <!-- section: types -->
 ## Typed evaluation
@@ -56,9 +59,11 @@ parses expressions nor owns filtering policy.
 `glue.partition_expressions.max_length`, `max_tokens`, and `supported_key_types` in the mounted
 Mystack YAML control resource bounds and the compatibility profile. The default length matches the
 official API model; the token bound is a local denial-of-service guard. Structured events
-`glue.partition_expression.parse.*` and `glue.partition_expression.evaluate.*` include only a
-short SHA-256 fingerprint, lengths, and counts. If a future boto3, Spark Hive client, or Glue API
-change breaks pruning, inspect these events, then update
+`glue.partition_expression.parse.*`, `glue.partition_expression.evaluate.*`, and
+`glue.partition_expression.segment.*` are emitted at `INFO`. They include only a short SHA-256
+fingerprint, an operator-only AST shape, key types, segment coordinates, lengths, counts, and a
+targeted fix hint. They never include expression literals or partition values. If a future boto3,
+Spark Hive client, or Glue API change breaks pruning, inspect these events, then update
 `glue/grammar/GluePartitionExpression.g4`, the parse-tree adapter, typed evaluator, or YAML policy
 independently. `tools/antlr/glue-partition-expression.lock.json` pins the generator URL, version,
 digest and timeouts; `make antlr-generate` updates generated sources and `make antlr-check` rejects
@@ -79,4 +84,5 @@ client. All test processes use the deadlines in `config/mystack.yaml`.
 - [AWS Glue GetPartitions API](https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html)
 - [AWS Glue Partition API and ordered values](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
 - [Using the Glue Data Catalog as the Hive metastore](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
+- [Spark 3.5.4 Hive metastore filter conversion](https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala)
 - [ANTLR4 getting started guide](https://github.com/antlr/antlr4/blob/4.13.2/doc/getting-started.md)

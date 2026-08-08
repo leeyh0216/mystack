@@ -15,9 +15,16 @@ from mystack.glue.application.partition_expression.evaluator import (
     PartitionRow,
 )
 from mystack.glue.application.partition_expression.model import (
+    Comparison,
     Expression,
+    Logical,
+    Membership,
+    Negation,
+    NullCheck,
     PartitionExpressionPolicy,
     PartitionKey,
+    Pattern,
+    Range,
 )
 from mystack.glue.application.partition_expression.parser import PartitionExpressionParser
 
@@ -54,11 +61,16 @@ class PartitionExpressionCompiler:
         fingerprint = hashlib.sha256(source.encode()).hexdigest()[:16]
         log_event(
             _LOGGER,
-            logging.DEBUG,
+            logging.INFO,
             "glue.partition_expression.parse.before",
             expression_length=len(source),
             expression_fingerprint=fingerprint,
             partition_key_count=len(keys),
+            partition_key_types=[key.type_name for key in keys],
+            fix_hint=(
+                "Compare the caller dialect with GluePartitionExpression.g4, parser.py, "
+                "and evaluator.py; do not add repository parsing."
+            ),
         )
         try:
             expression = self._parser.parse(source)
@@ -75,9 +87,33 @@ class PartitionExpressionCompiler:
             raise
         log_event(
             _LOGGER,
-            logging.DEBUG,
+            logging.INFO,
             "glue.partition_expression.parse.after",
             expression_fingerprint=fingerprint,
             ast_type=type(expression).__name__,
+            ast_shape=_expression_shape(expression),
         )
         return CompiledPartitionExpression(expression, keys, self._evaluator, fingerprint)
+
+
+def _expression_shape(expression: Expression) -> str:
+    """Return an operator-only diagnostic tree without fields or literal values."""
+
+    if isinstance(expression, Logical):
+        return (
+            f"{expression.operator.name}("
+            f"{_expression_shape(expression.left)},{_expression_shape(expression.right)})"
+        )
+    if isinstance(expression, Negation):
+        return f"NOT({_expression_shape(expression.operand)})"
+    if isinstance(expression, Comparison):
+        return f"COMPARISON:{expression.operator.name}"
+    if isinstance(expression, Membership):
+        return "NOT_IN" if expression.negated else "IN"
+    if isinstance(expression, Range):
+        return "NOT_BETWEEN" if expression.negated else "BETWEEN"
+    if isinstance(expression, Pattern):
+        return "NOT_LIKE" if expression.negated else "LIKE"
+    if isinstance(expression, NullCheck):
+        return "IS_NOT_NULL" if expression.negated else "IS_NULL"
+    raise TypeError(f"Unhandled partition expression node: {type(expression).__name__}")

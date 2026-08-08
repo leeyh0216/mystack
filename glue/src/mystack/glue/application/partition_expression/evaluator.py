@@ -34,6 +34,40 @@ _INTEGER_TYPES = {"int", "bigint", "long", "tinyint", "smallint"}
 _DECIMAL_TYPE = re.compile(r"^decimal(?:\(\d+\s*,\s*\d+\))?$")
 
 
+class LikePatternCompiler:
+    """Compile Glue SQL and Spark Hive metastore ``LIKE`` pattern dialects.
+
+    Spark 3.5 converts ``StartsWith``, ``EndsWith`` and ``Contains`` partition
+    predicates to ``.*`` patterns before the Glue Hive client submits them:
+    https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala
+    """
+
+    def compile(self, value: str) -> str:
+        parts: list[str] = []
+        position = 0
+        escaped = False
+        while position < len(value):
+            character = value[position]
+            if escaped:
+                parts.append(re.escape(character))
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == "%":
+                parts.append(".*")
+            elif character == "_":
+                parts.append(".")
+            elif character == "." and position + 1 < len(value) and value[position + 1] == "*":
+                parts.append(".*")
+                position += 1
+            else:
+                parts.append(re.escape(character))
+            position += 1
+        if escaped:
+            parts.append(re.escape("\\"))
+        return "".join(parts)
+
+
 class TruthValue(Enum):
     FALSE = 0
     TRUE = 1
@@ -118,6 +152,7 @@ class PartitionExpressionEvaluator:
 
     def __init__(self, policy: PartitionExpressionPolicy) -> None:
         self._codec = PartitionValueCodec(policy)
+        self._like_patterns = LikePatternCompiler()
 
     def validate(self, expression: Expression, keys: tuple[PartitionKey, ...]) -> None:
         schema = PartitionRow.create(keys, (None,) * len(keys)).schema
@@ -185,7 +220,7 @@ class PartitionExpressionEvaluator:
             if actual is None or expected is None:
                 return TruthValue.UNKNOWN
             result = self._truth(
-                bool(re.fullmatch(self._like_pattern(expected), actual, re.DOTALL))
+                bool(re.fullmatch(self._like_patterns.compile(expected), actual, re.DOTALL))
             )
             return result.negate() if expression.negated else result
         raise TypeError(f"Unhandled partition expression node: {type(expression).__name__}")
@@ -203,26 +238,6 @@ class PartitionExpressionEvaluator:
     @staticmethod
     def _truth(value: bool) -> TruthValue:
         return TruthValue.TRUE if value else TruthValue.FALSE
-
-    @staticmethod
-    def _like_pattern(value: str) -> str:
-        parts: list[str] = []
-        escaped = False
-        for character in value:
-            if escaped:
-                parts.append(re.escape(character))
-                escaped = False
-            elif character == "\\":
-                escaped = True
-            elif character == "%":
-                parts.append(".*")
-            elif character == "_":
-                parts.append(".")
-            else:
-                parts.append(re.escape(character))
-        if escaped:
-            parts.append(re.escape("\\"))
-        return "".join(parts)
 
     @classmethod
     def _fields(cls, expression: Expression) -> tuple[str, ...]:

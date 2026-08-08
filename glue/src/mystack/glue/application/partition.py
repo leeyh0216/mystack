@@ -177,10 +177,16 @@ class PartitionQueries:
         candidate_count = len(values)
         log_event(
             _LOGGER,
-            logging.DEBUG,
+            logging.INFO,
             "glue.partition_expression.evaluate.before",
             expression_fingerprint=predicate.fingerprint,
             candidate_count=candidate_count,
+            segment_number=segment[0] if segment is not None else None,
+            total_segments=segment[1] if segment is not None else None,
+            fix_hint=(
+                "If a client upgrade changes matched_count, inspect the parse event and update "
+                "the isolated grammar, parser, evaluator, or configured type policy."
+            ),
         )
         try:
             values = [value for value in values if predicate.matches(value.values)]
@@ -196,7 +202,7 @@ class PartitionQueries:
             raise
         log_event(
             _LOGGER,
-            logging.DEBUG,
+            logging.INFO,
             "glue.partition_expression.evaluate.after",
             expression_fingerprint=predicate.fingerprint,
             candidate_count=candidate_count,
@@ -211,6 +217,15 @@ class PartitionQueries:
                 for value in values
                 if _stable_segment(value.values, total_segments) == segment_number
             ]
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.partition_expression.segment.after",
+                expression_fingerprint=predicate.fingerprint,
+                matched_count=len(values),
+                segment_number=segment_number,
+                total_segments=total_segments,
+            )
         return self._paginator.page(values, next_token, max_results)
 
 

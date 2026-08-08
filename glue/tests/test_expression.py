@@ -1,9 +1,13 @@
 """Glue GetPartitions SQL expression grammar and typed evaluation contracts.
 
-Reference: https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html
+References:
+- https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html
+- https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala
 """
 
 from __future__ import annotations
+
+import logging
 
 import pytest
 from mystack.glue.application.partition_expression import (
@@ -82,6 +86,49 @@ def test_precedence_parentheses_and_negation() -> None:
 )
 def test_documented_logical_predicates(expression: str) -> None:
     assert _matches(expression, ("2026-08-09", "ap-northeast-2"))
+
+
+@pytest.mark.parametrize(
+    "expression",
+    (
+        "region LIKE 'ap-.*'",
+        "region LIKE '.*northeast-2'",
+        "region LIKE '.*northeast.*'",
+    ),
+)
+def test_spark_hive_like_patterns(expression: str) -> None:
+    """Spark HiveShim uses ``.*`` for StartsWith, EndsWith, and Contains."""
+
+    assert _matches(expression, ("2026-08-09", "ap-northeast-2"))
+
+
+def test_spark_3_5_partition_pruning_expression() -> None:
+    expression = "event_date >= '2026-08-08' and event_date <= '2026-08-31' and region like 'ap-.*'"
+    keys = (
+        PartitionKey("event_date", "date"),
+        PartitionKey("region", "string"),
+    )
+    predicate = _compiler().compile(expression, keys)
+
+    assert predicate.matches(("2026-08-08", "ap-northeast-2"))
+    assert predicate.matches(("2026-08-09", "ap-southeast-1"))
+    assert not predicate.matches(("2025-01-01", "us-east-1"))
+
+
+def test_expression_logs_are_value_safe_and_actionable(caplog) -> None:
+    expression = "region LIKE 'private-partition-.*'"
+    with caplog.at_level(logging.INFO):
+        _compiler().compile(expression, (PartitionKey("region", "string"),))
+
+    fields = [
+        getattr(record, "mystack_fields", {})
+        for record in caplog.records
+        if str(record.msg).startswith("glue.partition_expression.parse.")
+    ]
+    assert fields
+    assert any(value.get("ast_shape") == "LIKE" for value in fields)
+    assert any("fix_hint" in value for value in fields)
+    assert all("private-partition" not in repr(value) for value in fields)
 
 
 def test_is_null_and_sql_unknown_semantics() -> None:
