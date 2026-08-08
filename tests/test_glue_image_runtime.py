@@ -10,7 +10,13 @@ from pathlib import Path
 
 
 def test_glue_spark_uses_the_hash_locked_service_virtualenv() -> None:
-    dockerfile = (Path(__file__).parents[1] / "glue" / "Dockerfile").read_text(encoding="utf-8")
+    repository = Path(__file__).parents[1]
+    dockerfile = (repository / "glue" / "Dockerfile").read_text(encoding="utf-8")
+    wrapper = (repository / "glue" / "bin" / "mystack-spark-submit").read_text(encoding="utf-8")
 
     assert "PYSPARK_PYTHON=/opt/mystack/venv/bin/python" in dockerfile
     assert "PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python" in dockerfile
+    assert "PATH=/opt/mystack/bin:/opt/mystack/venv/bin:${PATH}" in dockerfile
+    assert '--conf "spark.pyspark.driver.python=${driver_python}"' in wrapper
+    assert '--conf "spark.pyspark.python=${worker_python}"' in wrapper
+    assert 'exec "${spark_submit_binary}"' in wrapper

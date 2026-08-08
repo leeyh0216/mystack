@@ -129,8 +129,12 @@ existing single Glue 5 Spark E2E process creates through boto3 over the public P
 through Iceberg GlueCatalog, evolves through `UpdateOpenTableFormatInput`, reloads/appends, and then
 checks Glue and LocalStack S3 metadata. This adds no second Spark startup. The image sets both
 `PYSPARK_PYTHON` and `PYSPARK_DRIVER_PYTHON` to the hash-locked Mystack virtual environment so the
-Spark driver validates the same pinned boto3 model as the service. This follows Spark's official
-[Python interpreter environment-variable contract](https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables).
+Spark driver validates the same pinned boto3 model as the service. Because the upstream Glue image
+can preconfigure its system interpreter, Mystack's `spark-submit` wrapper also supplies the matching
+`spark.pyspark.python` and `spark.pyspark.driver.python` properties. The underlying binary remains
+replaceable through `MYSTACK_GLUE_SPARK_SUBMIT_BINARY`, and later command-line `--conf` values can
+override these defaults. This follows Spark's official [PySpark property
+contract](https://spark.apache.org/docs/3.5.4/configuration.html#available-properties).
 
 The profile is Iceberg v2 only. Iceberg REST, PyIceberg, Flink, Trino, encryption-key management,
 managed optimizers, authentication/authorization, Lake Formation, cross-account, and cross-Region

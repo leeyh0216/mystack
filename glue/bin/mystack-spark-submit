@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Spark PySpark configuration reference:
+# https://spark.apache.org/docs/3.5.4/configuration.html#available-properties
+set -euo pipefail
+
+spark_submit_binary=${MYSTACK_GLUE_SPARK_SUBMIT_BINARY:?MYSTACK_GLUE_SPARK_SUBMIT_BINARY is required}
+driver_python=${PYSPARK_DRIVER_PYTHON:?PYSPARK_DRIVER_PYTHON is required}
+worker_python=${PYSPARK_PYTHON:?PYSPARK_PYTHON is required}
+
+exec "${spark_submit_binary}" \
+  --conf "spark.pyspark.driver.python=${driver_python}" \
+  --conf "spark.pyspark.python=${worker_python}" \
+  "$@"

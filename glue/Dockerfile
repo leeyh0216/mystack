@@ -37,14 +37,16 @@ USER root
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MYSTACK_CONFIG_FILE=/etc/mystack/mystack.yaml \
+    MYSTACK_GLUE_SPARK_SUBMIT_BINARY=/home/hadoop/spark/bin/spark-submit \
     PYSPARK_PYTHON=/opt/mystack/venv/bin/python \
     PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python \
-    PATH=/opt/mystack/venv/bin:${PATH}
+    PATH=/opt/mystack/bin:/opt/mystack/venv/bin:${PATH}
 
 WORKDIR /opt/mystack
 COPY requirements/glue.txt /opt/requirements.txt
 COPY shared /opt/src/shared
 COPY glue /opt/src/glue
+COPY glue/bin/mystack-spark-submit /opt/mystack/bin/spark-submit
 COPY --from=ui-builder /workspace/glue/src/mystack/glue/static/ui /opt/src/glue/src/mystack/glue/static/ui
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
 COPY glue/scripts/e2e /opt/mystack/e2e
@@ -54,6 +56,7 @@ RUN python3 -m venv /opt/mystack/venv \
     && /opt/mystack/venv/bin/python -m pip install --no-cache-dir --no-deps \
       /opt/src/shared /opt/src/glue \
     && rm -rf /opt/src /opt/requirements.txt \
+    && chmod 0755 /opt/mystack/bin/spark-submit \
     && mkdir -p /var/lib/mystack/glue \
     && chown -R hadoop:hadoop /var/lib/mystack /opt/mystack
 

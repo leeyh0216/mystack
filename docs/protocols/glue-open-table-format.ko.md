@@ -127,9 +127,12 @@ process에서 public Proxy를 거쳐 boto3로 생성하고 Iceberg GlueCatalog�
 `UpdateOpenTableFormatInput`으로 evolve하고 다시 load/append합니다. 마지막으로 Glue와 LocalStack S3
 metadata를 확인합니다. 두 번째 Spark startup은 추가하지 않습니다. Image는 `PYSPARK_PYTHON`과
 `PYSPARK_DRIVER_PYTHON`을 모두 hash-lock된 Mystack virtualenv로 지정하므로 Spark driver도 service와
-동일한 고정 boto3 model을 검증합니다. 이 선택은 Spark 공식
-[Python interpreter 환경 변수 계약](https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables)을
-따릅니다.
+동일한 고정 boto3 model을 검증합니다. Upstream Glue image가 system interpreter를 미리 설정할 수
+있으므로 Mystack `spark-submit` wrapper는 동일한 `spark.pyspark.python`과
+`spark.pyspark.driver.python` property도 전달합니다. 실제 binary는
+`MYSTACK_GLUE_SPARK_SUBMIT_BINARY`로 교체할 수 있고, 뒤에 전달한 command-line `--conf`로 default를
+재정의할 수 있습니다. 이 선택은 Spark 공식 [PySpark property
+계약](https://spark.apache.org/docs/3.5.4/configuration.html#available-properties)을 따릅니다.
 
 이 profile은 Iceberg v2만 지원합니다. Iceberg REST, PyIceberg, Flink, Trino, encryption-key 관리,
 managed optimizer, 인증/인가, Lake Formation, cross-account, cross-Region은 제외합니다.
