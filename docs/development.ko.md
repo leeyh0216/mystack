@@ -126,6 +126,9 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - Glue aggregate invariant: `glue/src/mystack/glue/domain/model.py`; focused handler:
   `application/database.py`, `table.py`, `partition.py`, `batch.py`, `initialization.py`
 - Inbound use case의 최소 Protocol: 각 service의 `application/use_cases.py`
+- AWS operation mapping: 각 service의 `adapters/inbound/aws_{family}.py`; 검토한 구현 inventory:
+  `aws_operations.py`; 중복·누락·미분류 차단:
+  `shared/src/mystack/aws_protocol/operation_registry.py`
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만
 

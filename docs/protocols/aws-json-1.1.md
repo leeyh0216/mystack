@@ -72,6 +72,13 @@ Method, path, query string, request body, content type, authorization, tracing h
 - The codec validates required members, primitive kinds, enums, list/map members and documented length/range/pattern constraints before invoking a use case.
 - Unknown request members are rejected according to AWS JSON server behavior; botocore often rejects the same input client-side first.
 
+After modeled input validation, dispatch uses explicit service operation families. EMR and Glue
+each publish a reviewed implemented-operation set; a shared registry refuses duplicate family
+ownership and any missing or unclassified handler. The union is contract-checked against the
+exhaustive classification whose inventory comes from the official [botocore service
+models](https://github.com/boto/botocore/tree/develop/botocore/data). Family selection does not add
+a second wire parser or serializer.
+
 Botocore's client `ParamValidator` supplies structural/type/length/range checks but does not
 enforce every modeled enum or pattern. The server codec therefore walks the same pinned shapes
 and adds those constraints. Patterns use the documented [Smithy pattern

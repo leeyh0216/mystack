@@ -41,10 +41,14 @@
 - Output: modeled JSON 200 response or AWS-compatible error body/status/headers.
 - Side effects: invokes exactly one explicitly registered built-in handler.
 - Preconditions/rules: recognized official operation; unsupported recognized operations return 501.
+- Registration rules: each handler belongs to one service-specific family; the registry requires its
+  union to equal reviewed implemented coverage exactly before constructing the dispatcher.
 - Failures: unknown operation, serialization/validation error, domain error, protected internal error.
 - Observability: service/operation/model fingerprint, input/output member names, request ID, duration.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/endpoint.py:49`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/dispatcher.py:38`
+- Evidence: `shared/src/mystack/aws_protocol/endpoint.py`,
+  `shared/src/mystack/aws_protocol/operation_registry.py`,
+  `emr/src/mystack/emr/adapters/inbound/aws.py`,
+  `glue/src/mystack/glue/adapters/inbound/aws.py`
 - Confidence: High
 
 <!-- section: uc-003 -->

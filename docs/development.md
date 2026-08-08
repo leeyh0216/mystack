@@ -128,6 +128,9 @@ contract](https://pre-commit.com/#install).
 - Glue aggregate invariants: `glue/src/mystack/glue/domain/model.py`; focused handlers:
   `application/database.py`, `table.py`, `partition.py`, `batch.py`, and `initialization.py`
 - Minimal inbound use-case Protocols: each service's `application/use_cases.py`
+- AWS operation mapping: each service's `adapters/inbound/aws_{family}.py`; reviewed implemented
+  inventory: `aws_operations.py`; duplicate/missing/unclassified enforcement:
+  `shared/src/mystack/aws_protocol/operation_registry.py`
 - S3, process, database, FastAPI: service `adapters`
 - Dependency wiring only: service composition root
 

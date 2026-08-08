@@ -37,6 +37,8 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   거부하며 mutation test로 각 금지 방향을 확인합니다.
 - Protocol 경계는 pinned botocore model, AWS JSON 1.1 입력 검증, modeled response/error, 명시적
   operation dispatch, model/API fingerprint를 제공합니다.
+- Inbound mapping은 EMR 5개와 Glue 5개 operation-family module을 shared registry로 합칩니다.
+  Registry가 handler 중복·누락·미분류를 거부하며 구현 호환성 범위와 양방향으로 검사합니다.
 - Proxy는 YAML route registry의 target/signing/host 근거로 service를 찾고 service별 branch 없이
   알 수 없는 service를 LocalStack으로 보냅니다. Typed runtime이 shared HTTP client를 소유하고
   application state 내부 접근 없이 AWS request와 management forwarding capability를 분리해
@@ -60,7 +62,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 93개입니다. Fast suite는 88개를 선택해 86개가 통과하고 real-AWS
+- 최종 test inventory는 101개입니다. Fast suite는 96개를 선택해 94개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
@@ -127,6 +129,6 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. 큰 inbound AWS adapter를 operation family별로 분리합니다.
-2. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
-3. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
+1. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
+2. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
+3. 이전 SPI에서 남은 관측·시험 문서를 제거합니다.

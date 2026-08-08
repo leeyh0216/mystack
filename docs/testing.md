@@ -32,6 +32,10 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - EMR lifecycle tests inject partial startup and driver failure, close the scheduler twice, and run a
   real child process to prove reverse-order cleanup, no task/process/lock leaks, and deadline use.
   Handler responsibility tests also pin the public cluster-command, Step-command, and query surfaces.
+- Operation-family tests instantiate every EMR and Glue family without the service adapter, assert
+  disjoint ownership, compare their union to the implemented compatibility coverage in both
+  directions, and verify family-local modeled error translation. Generic registry mutation tests
+  prove duplicate, missing, and unexpected handlers fail before request dispatch.
 
 <!-- section: e2e -->
 ## Real-runtime E2E

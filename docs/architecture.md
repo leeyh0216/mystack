@@ -73,6 +73,14 @@ deadline, and removes per-cluster driver locks after each run. This follows Pyth
 [task cancellation](https://docs.python.org/3/library/asyncio-task.html#task-cancellation) and
 [async subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) contracts.
 
+Inbound AWS mapping is organized by operation family. EMR owns cluster, Step, control, tag, and
+query families; Glue owns database, table, version, partition, and batch families. A shared validated
+registry merges them and fails startup on duplicate ownership, a missing implemented operation, or
+an unexpected unclassified handler. The registry is checked bidirectionally against the exhaustive
+compatibility classification derived from the official [botocore service
+models](https://github.com/boto/botocore/tree/develop/botocore/data). Parsing and output-model
+validation remain in the single shared AWS JSON endpoint.
+
 <!-- section: enforcement -->
 ## Executable architecture contract
 

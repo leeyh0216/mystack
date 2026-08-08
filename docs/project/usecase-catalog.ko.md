@@ -41,10 +41,14 @@
 - 출력: modeled JSON 200 또는 AWS-compatible error body/status/header입니다.
 - 부수효과: 명시적으로 등록된 built-in handler 하나를 정확히 한 번 실행합니다.
 - 선행조건/규칙: 공식 recognized operation이며 recognized 미지원 operation은 501입니다.
+- 등록 규칙: 각 handler는 service별 family 하나에 속하며 registry는 dispatcher 생성 전에 그
+  합집합이 검토한 구현 범위와 정확히 같은지 확인합니다.
 - 실패: unknown operation, serialization/validation, domain error, 보호된 internal error.
 - 관측: service/operation/model fingerprint, input/output member, request ID, duration.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/endpoint.py:49`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/dispatcher.py:38`
+- 근거: `shared/src/mystack/aws_protocol/endpoint.py`,
+  `shared/src/mystack/aws_protocol/operation_registry.py`,
+  `emr/src/mystack/emr/adapters/inbound/aws.py`,
+  `glue/src/mystack/glue/adapters/inbound/aws.py`
 - 신뢰도: High
 
 <!-- section: uc-003 -->

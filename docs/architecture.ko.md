@@ -65,6 +65,14 @@ cluster별 driver lock을 제거합니다. 이 생명주기는 Python 공식 [ta
 cancellation](https://docs.python.org/3/library/asyncio-task.html#task-cancellation)과 [async
 subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) 계약을 따릅니다.
 
+Inbound AWS mapping은 operation family별로 구성합니다. EMR은 cluster, Step, control, tag, query,
+Glue는 database, table, version, partition, batch family를 소유합니다. Shared 검증 registry가 이를
+합치며 소유권 중복, 구현 operation 누락, 분류되지 않은 예상 밖 handler가 있으면 시작을
+중단합니다. Registry는 공식 [botocore service
+model](https://github.com/boto/botocore/tree/develop/botocore/data)에서 유도한 전체 호환성 분류와
+양방향으로 검사합니다. Parsing과 output-model 검증은 하나의 shared AWS JSON endpoint에
+그대로 둡니다.
+
 <!-- section: enforcement -->
 ## 실행 가능한 아키텍처 계약
 

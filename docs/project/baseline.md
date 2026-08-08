@@ -39,6 +39,9 @@ contracts.
   and cycles, and proves each prohibited direction with mutation tests.
 - Protocol boundary: pinned botocore models, AWS JSON 1.1 input validation, modeled responses/errors,
   explicit operation dispatch, and model/API fingerprints.
+- Inbound mapping: five EMR and five Glue operation-family modules compose through a shared registry
+  that rejects duplicate, missing, or unclassified handlers and is bidirectionally checked against
+  implemented compatibility coverage.
 - Proxy boundary: YAML route registry detects target/signing/host evidence; unknown services fall back
   to LocalStack without service-specific branches. A typed runtime owns the shared HTTP client and
   exposes separate AWS-request and management-forwarding capabilities without application-state
@@ -62,7 +65,7 @@ contracts.
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 93 collected. The fast suite selects 88, passes 86, and skips two real-AWS
+- Final test inventory: 101 collected. The fast suite selects 96, passes 94, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 
@@ -126,6 +129,6 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Split large inbound AWS adapters by operation family.
-2. Generate client/runtime compatibility jobs from a versioned manifest.
-3. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
+1. Generate client/runtime compatibility jobs from a versioned manifest.
+2. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
+3. Remove stale SPI-era observability and test documentation.

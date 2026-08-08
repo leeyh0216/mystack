@@ -7,6 +7,7 @@ from .dispatcher import OperationDispatcher
 from .endpoint import AwsJsonRpcEndpoint
 from .errors import AwsServiceError
 from .model import AwsServiceModel
+from .operation_registry import OperationFamily, OperationFamilyRegistry
 
 __all__ = [
     "AwsJsonRpcEndpoint",
@@ -17,6 +18,8 @@ __all__ = [
     "DiagnosticsSettings",
     "LoadedConfiguration",
     "OperationDispatcher",
+    "OperationFamily",
+    "OperationFamilyRegistry",
     "authorize_management",
     "create_diagnostics_router",
     "load_configuration",

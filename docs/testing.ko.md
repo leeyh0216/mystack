@@ -32,6 +32,10 @@
 - EMR lifecycle test는 부분 startup과 driver 실패를 주입하고 scheduler를 두 번 닫으며 실제 child
   process를 실행해 역순 cleanup, task/process/lock 무누수, deadline 사용을 검증합니다. 책임 test는
   cluster-command, Step-command, query handler의 public surface도 고정합니다.
+- Operation-family test는 service adapter 없이 모든 EMR·Glue family를 생성해 소유권이 겹치지
+  않는지, 그 합집합이 구현 호환성 범위와 양방향으로 같은지, family-local modeled error 변환이
+  유지되는지 확인합니다. 공통 registry mutation test는 중복·누락·예상 밖 handler를 request
+  dispatch 전에 거부함을 검증합니다.
 
 <!-- section: e2e -->
 ## 실제 runtime E2E

@@ -60,6 +60,12 @@ Proxy는 target prefix, SigV4 credential scope, host pattern 순으로 route reg
 - 필수 member, primitive, enum, collection member, length/range/pattern을 use case 호출 전에 검증합니다.
 - 모델 지문과 작업별 데이터 구조 폐쇄 지문을 기록하여 botocore 변경을 탐지합니다.
 
+Modeled input 검증 뒤에는 명시적인 service operation family로 dispatch합니다. EMR과 Glue가
+각각 검토한 구현 operation 집합을 제공하고 shared registry가 family 소유권 중복, 누락 handler,
+분류되지 않은 예상 밖 handler를 거부합니다. Family 합집합은 공식 [botocore service
+model](https://github.com/boto/botocore/tree/develop/botocore/data) inventory의 전체 분류와
+contract test로 비교합니다. Family 분리는 두 번째 wire parser나 serializer를 만들지 않습니다.
+
 Botocore client의 `ParamValidator`가 structure/type/length/range 검사를 담당하고, 누락된
 모델 열거형과 pattern 검사는 server codec이 같은 고정 데이터 구조를 순회하며 보완합니다. Pattern은
 implicit anchor가 없는 공식 [Smithy pattern
