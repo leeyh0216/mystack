@@ -16,7 +16,7 @@
 | AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
-| EMR bootstrap/Spark | 세로 경로 구현: `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency resource local materialize, Spark 3.5.4 local S3A write와 실행 중 취소 E2E | 더 많은 EMR step 유형과 runtime 정합성 |
+| EMR bootstrap/Spark | 세로 경로 구현: `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |

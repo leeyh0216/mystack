@@ -167,6 +167,9 @@ change.
 - Persistence is composed behind the repository transaction; the JSON repository does not inherit
   in-memory mutation behavior. EMR cluster state remains process-local.
 - Work directories and logs are stored on named Docker volumes.
+- A lifecycle-owned outbound log publisher projects terminal local Spark process streams into the
+  documented EMR Step S3 layout. Its application/container identifiers are explicitly synthetic;
+  publication failure is recorded outside the aggregate and never rewrites the RuntimeResult.
 - S3 primary applications and Spark dependency options are materialized through an object-store
   adapter configured for path-style LocalStack access.
 - Spark is launched without a shell and receives an explicit argument vector.

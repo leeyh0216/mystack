@@ -16,7 +16,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | AWS JSON 1.1 codec/model validation | Implemented, unit tested | EMR and Glue modeled request/response/error coverage |
 | LocalStack fallback | Implemented, unit tested | Transparent non-EMR/Glue forwarding |
 | EMR control plane | Partial: 13 boto3-tested operations | Broad public EMR API compatibility |
-| EMR bootstrap/Spark | Implemented vertical slice: `hadoop` user, S3 bootstrap virtualenv, local materialization of Python/JAR/dependency resources, Spark 3.5.4 local S3A write and running cancellation E2E | More EMR step types and runtime fidelity |
+| EMR bootstrap/Spark | Implemented vertical slice: `hadoop` user, S3 bootstrap virtualenv, Python/JAR/dependency materialization, Spark 3.5.4 local S3A write, cancellation, and gzip Step/local-driver LogUri archives | More EMR step types, YARN/executor logs, and distributed runtime fidelity |
 | Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |

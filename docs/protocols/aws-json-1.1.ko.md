@@ -51,6 +51,14 @@ Authorization: AWS4-HMAC-SHA256 Credential=test/20260808/ap-northeast-2/glue/aws
 
 Proxy는 target prefix, SigV4 credential scope, host pattern 순으로 route registry를 검색하고 일치하지 않으면 LocalStack으로 전달합니다. method, path, query, body byte, content type, authorization, tracing metadata를 보존하며 hop-by-hop header만 제거합니다.
 
+Response는 HTTPX가 decode한 content가 아니라 raw encoded stream을 buffer해 전달합니다.
+`Content-Encoding`과 AWS checksum header를 보존하고 HEAD가 아닌 응답의 `Content-Length`만
+제거해 outward server가 encoded wire 길이를 계산하게 하며 HEAD representation metadata는
+유지합니다. Boto/botocore가 S3 gzip object checksum을 검증하려면 이 동작이 필요합니다. 구현은
+[HTTPX raw streaming](https://www.python-httpx.org/async/#streaming-responses), [RFC 9110 hop-by-hop
+field](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1),
+[S3 HeadObject 계약](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)을 따릅니다.
+
 <!-- section: serialization -->
 ## 직렬화와 검증
 

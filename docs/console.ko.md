@@ -25,6 +25,11 @@ log tail을 제공합니다. Glue는 설정 catalog의 database/table/partition 
 필요한 type/storage field, parameter, table version을 제공합니다. API가 emulator mode와
 구현/upstream operation 수를 명시하므로 UI가 AWS 완전 호환으로 오해하게 만들지 않습니다.
 
+EMR Step을 선택하면 local stdout/stderr와 versioned S3 LogUri publication record를 함께
+표시합니다. Record는 pending, skipped, published, failed, unreadable 상태를 구분하고 성공 시
+Step 및 synthetic local-driver object key 전체를 보여 줍니다. `containers/`를 YARN output으로
+해석하기 전에 [EMR log 배치](protocols/emr-log-layout.ko.md)를 확인하세요.
+
 각 service management adapter는 자기 Application/Domain read model을 import해 JSON으로
 변환할 수 있습니다. Proxy와 UI는 이 JSON 계약만 압니다. 따라서 새 emulator는 backend
 resource endpoint와 일반 Proxy route만 제공하면 되고 UI가 그 service Python package를

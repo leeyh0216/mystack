@@ -61,6 +61,14 @@ The proxy resolves a service in this order:
 
 Method, path, query string, request body, content type, authorization, tracing headers and custom metadata are forwarded. Hop-by-hop headers are removed. The byte body is never parsed and re-serialized by the proxy.
 
+Response forwarding buffers HTTPX's raw encoded stream rather than its decoded content. It retains
+`Content-Encoding` and AWS checksum headers, drops only the non-HEAD `Content-Length` so the outward
+server can calculate the encoded wire length, and preserves HEAD representation metadata. This is
+required for boto/botocore to validate S3 gzip-object checksums. The implementation follows
+[HTTPX raw streaming](https://www.python-httpx.org/async/#streaming-responses), [RFC 9110 hop-by-hop
+fields](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1), and the
+[S3 HeadObject contract](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html).
+
 <!-- section: serialization -->
 ## Serialization rules
 

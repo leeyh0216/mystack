@@ -60,6 +60,7 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
         application=_CloseRecorder("application", events, fail_start=True),  # type: ignore[arg-type]
         _executor=_CloseRecorder("executor", events),  # type: ignore[arg-type]
         _artifacts=_CloseRecorder("artifacts", events),  # type: ignore[arg-type]
+        _logs=_CloseRecorder("logs", events),  # type: ignore[arg-type]
         _settings=SimpleNamespace(work_root=tmp_path),  # type: ignore[arg-type]
     )
 
@@ -71,6 +72,7 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
         "start:application",
         "close:application",
         "close:executor",
+        "close:logs",
         "close:artifacts",
     ]
     assert runtime.state is RuntimeState.CLOSED

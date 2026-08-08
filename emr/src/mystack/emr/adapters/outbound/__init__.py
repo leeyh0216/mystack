@@ -4,6 +4,7 @@ Architecture reference:
 https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html
 """
 
+from .logs import S3StepLogPublisher
 from .repository import InMemoryClusterRepository
 from .runtime import (
     LocalBootstrapRunner,
@@ -21,5 +22,6 @@ __all__ = [
     "LocalSparkStepRunner",
     "RandomAwsIds",
     "S3ArtifactStore",
+    "S3StepLogPublisher",
     "SystemClock",
 ]

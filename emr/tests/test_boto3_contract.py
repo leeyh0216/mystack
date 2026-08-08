@@ -79,6 +79,7 @@ def test_boto3_cluster_step_and_control_operations(
     ).json()
     assert logs["step_state"] == "COMPLETED"
     assert logs["tail_limit_bytes"] > 0
+    assert logs["log_publication"]["status"] == "pending"
 
     emr_client.add_tags(ResourceId=cluster_id, Tags=[{"Key": "owner", "Value": "mystack"}])
     assert {

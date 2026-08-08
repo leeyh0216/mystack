@@ -79,7 +79,8 @@ variables.
 
 `emr.shutdown_timeout_seconds` bounds service shutdown after scheduling has stopped. Within that
 deadline, EMR cancels and awaits owned driver tasks, terminates or kills bootstrap/Spark children
-using `emr.terminate_grace_seconds`, and closes the artifact client. It is distinct from the
+using `emr.terminate_grace_seconds`, and closes the lifecycle-owned log publisher and artifact
+clients. It is distinct from the
 per-bootstrap and per-Step execution deadlines. Python documents the underlying behavior in
 [`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for).
 
@@ -90,6 +91,11 @@ runtime profile controls the allowed submit aliases and options; the artifact ad
 the primary application and `--py-files`, `--files`, `--jars`, and `--archives` remote resources.
 Amazon EMR documents the [Hadoop bootstrap identity](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html)
 and Spark documents these [submission options](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
+
+S3 log publication has no separate hard-coded bucket or prefix. Each cluster supplies the standard
+`RunJobFlow.LogUri`; the publisher reuses `localstack.endpoint_url`, region, credentials, and
+path-style setting. This keeps image deployments configurable and lets the same boto3 S3 route
+reach LocalStack. See the [exact log protocol](protocols/emr-log-layout.md).
 
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed

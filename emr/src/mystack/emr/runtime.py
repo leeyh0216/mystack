@@ -38,7 +38,7 @@ class ProcessExecutorLifecycle(Protocol):
     async def close(self) -> None: ...
 
 
-class ArtifactStoreLifecycle(Protocol):
+class AsyncCloseable(Protocol):
     async def close(self) -> None: ...
 
 
@@ -48,7 +48,8 @@ class EmrRuntime:
 
     application: EmrApplication
     _executor: ProcessExecutorLifecycle
-    _artifacts: ArtifactStoreLifecycle
+    _artifacts: AsyncCloseable
+    _logs: AsyncCloseable
     _settings: RuntimeSettings
     _state: RuntimeState = RuntimeState.BUILT
 
@@ -57,7 +58,8 @@ class EmrRuntime:
         cls,
         application: EmrApplication,
         executor: ProcessExecutorLifecycle,
-        artifacts: ArtifactStoreLifecycle,
+        artifacts: AsyncCloseable,
+        logs: AsyncCloseable,
         settings: RuntimeSettings,
     ) -> EmrRuntime:
         log_event(
@@ -68,7 +70,7 @@ class EmrRuntime:
             shutdown_timeout_seconds=settings.shutdown_timeout_seconds,
             side_effect=False,
         )
-        return cls(application, executor, artifacts, settings)
+        return cls(application, executor, artifacts, logs, settings)
 
     @property
     def state(self) -> RuntimeState:
@@ -131,6 +133,7 @@ class EmrRuntime:
         for resource_name, close in (
             ("application", self.application.close),
             ("process_executor", self._executor.close),
+            ("step_log_publisher", self._logs.close),
             ("artifact_store", self._artifacts.close),
         ):
             try:

@@ -76,8 +76,9 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 
 `emr.shutdown_timeout_seconds`는 새 scheduling을 멈춘 뒤 service 종료 전체를 제한합니다. 이
 deadline 안에서 EMR은 소유한 driver task를 cancel/await하고,
-`emr.terminate_grace_seconds`로 bootstrap/Spark child를 terminate 또는 kill한 뒤 artifact client를
-닫습니다. Bootstrap별·Step별 실행 timeout과는 별도 값입니다. 기반 동작은 Python 공식
+`emr.terminate_grace_seconds`로 bootstrap/Spark child를 terminate 또는 kill한 뒤 lifecycle이
+소유한 log publisher와 artifact client를 닫습니다. Bootstrap별·Step별 실행 timeout과는 별도
+값입니다. 기반 동작은 Python 공식
 [`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for) 문서를
 따릅니다.
 
@@ -88,6 +89,11 @@ Runtime profile이 허용 submit alias와 option을 제어하고 artifact adapte
 `--py-files`, `--files`, `--jars`, `--archives` remote resource를 materialize합니다. Amazon EMR은
 [Hadoop bootstrap identity](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html)를,
 Spark는 [제출 option](https://spark.apache.org/docs/3.5.4/submitting-applications.html)을 문서화합니다.
+
+S3 log 게시에는 별도로 hard-code한 bucket이나 prefix가 없습니다. 각 cluster가 표준
+`RunJobFlow.LogUri`를 제공하며 publisher는 `localstack.endpoint_url`, region, credential,
+path-style 설정을 재사용합니다. 따라서 image 배포도 설정 가능하며 같은 boto3 S3 route로
+LocalStack에 접근합니다. 정확한 내용은 [log protocol](protocols/emr-log-layout.ko.md)을 참고하세요.
 
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두

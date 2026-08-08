@@ -26,6 +26,11 @@ Hive/Iceberg-relevant type and storage fields, parameters, and table versions. T
 the emulator mode and the exact implemented/upstream operation counts so the UI cannot imply full
 AWS compatibility.
 
+Selecting an EMR Step shows local stdout/stderr plus its versioned S3 LogUri publication record.
+The record distinguishes pending, skipped, published, failed, and unreadable states; published
+records list the exact Step and synthetic local-driver object keys. See the
+[EMR log layout](protocols/emr-log-layout.md) before interpreting `containers/` as YARN output.
+
 Service management adapters may import their own Application/Domain read models and translate
 them to JSON. Proxy and UI code know only this JSON contract. Adding a new emulator therefore
 requires implementing the backend resource endpoint and registering a normal Proxy route; the UI

@@ -8,6 +8,7 @@ References:
 
 from __future__ import annotations
 
+import gzip
 import json
 import subprocess
 import time
@@ -15,6 +16,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 
 
@@ -43,6 +45,7 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
             "KeepJobFlowAliveWhenNoSteps": True,
         },
         Applications=[{"Name": "Spark"}],
+        LogUri=f"s3://{bucket}/logs/",
         BootstrapActions=[
             {
                 "Name": "write-s3-marker",
@@ -119,6 +122,14 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     for step_id in step_ids:
         step = _wait_for_step(emr, cluster_id, step_id, {"COMPLETED", "FAILED"}, e2e_settings)
         assert step["Status"]["State"] == "COMPLETED", step["Status"]
+        _assert_step_log_archive(
+            s3,
+            bucket,
+            cluster_id,
+            step_id,
+            e2e_settings,
+            process_started=True,
+        )
 
     listed_ids = {
         step["Id"] for step in emr.list_steps(ClusterId=cluster_id, StepIds=step_ids)["Steps"]
@@ -139,6 +150,29 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
 
     jar_row = _first_s3_json_row(s3, bucket, "results/spark-jar-json/")
     assert jar_row["spark_version"].startswith(e2e_settings.emr_expected_spark_version_prefix)
+
+    failed_step_id = emr.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[
+            {
+                "Name": "missing-s3-entrypoint",
+                "ActionOnFailure": "CONTINUE",
+                "HadoopJarStep": {
+                    "Jar": "command-runner.jar",
+                    "Args": ["spark-submit", f"s3://{bucket}/inputs/missing.py"],
+                },
+            }
+        ],
+    )["StepIds"][0]
+    _wait_for_step(emr, cluster_id, failed_step_id, {"FAILED"}, e2e_settings)
+    _assert_step_log_archive(
+        s3,
+        bucket,
+        cluster_id,
+        failed_step_id,
+        e2e_settings,
+        process_started=False,
+    )
 
     cancel_step_id = emr.add_job_flow_steps(
         JobFlowId=cluster_id,
@@ -176,6 +210,14 @@ def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     cancelled = emr.cancel_steps(ClusterId=cluster_id, StepIds=[cancel_step_id])
     assert cancelled["CancelStepsInfoList"] == [{"StepId": cancel_step_id, "Status": "SUBMITTED"}]
     _wait_for_step(emr, cluster_id, cancel_step_id, {"CANCELLED"}, e2e_settings)
+    _assert_step_log_archive(
+        s3,
+        bucket,
+        cluster_id,
+        cancel_step_id,
+        e2e_settings,
+        process_started=True,
+    )
 
     emr.set_termination_protection(JobFlowIds=[cluster_id], TerminationProtected=True)
     emr.terminate_job_flows(JobFlowIds=[cluster_id])
@@ -214,6 +256,56 @@ def _first_s3_json_row(client: Any, bucket: str, prefix: str) -> dict[str, Any]:
     assert f"{prefix}_SUCCESS" in keys
     data_key = next(key for key in keys if key.endswith(".json"))
     return json.loads(client.get_object(Bucket=bucket, Key=data_key)["Body"].read().splitlines()[0])
+
+
+def _assert_step_log_archive(
+    client: Any,
+    bucket: str,
+    cluster_id: str,
+    step_id: str,
+    settings: Any,
+    *,
+    process_started: bool,
+) -> None:
+    step_prefix = f"logs/{cluster_id}/steps/{step_id}"
+    objects = client.list_objects_v2(Bucket=bucket, Prefix=step_prefix)
+    step_keys = {value["Key"] for value in objects.get("Contents", ())}
+    assert step_keys == {
+        f"{step_prefix}/controller.gz",
+        f"{step_prefix}/stderr.gz",
+        f"{step_prefix}/stdout.gz",
+        f"{step_prefix}/syslog.gz",
+    }
+    controller = gzip.decompress(
+        client.get_object(Bucket=bucket, Key=f"{step_prefix}/controller.gz")["Body"].read()
+    ).decode()
+    assert f"cluster_id={cluster_id}" in controller
+    assert f"step_id={step_id}" in controller
+    assert f"process_started={str(process_started).lower()}" in controller
+
+    application_objects = client.list_objects_v2(
+        Bucket=bucket,
+        Prefix=f"logs/{cluster_id}/containers/application_local_",
+    )
+    application_keys = {
+        value["Key"]
+        for value in application_objects.get("Contents", ())
+        if step_id.replace("-", "_") in value["Key"]
+    }
+    assert len(application_keys) == 2
+    assert {key.rsplit("/", 1)[-1] for key in application_keys} == {"stdout.gz", "stderr.gz"}
+
+    response = httpx.get(
+        f"{settings.endpoint_url}/_mystack/components/emr/logs",
+        params={"cluster_id": cluster_id, "step_id": step_id},
+        timeout=settings.timeout_seconds,
+    )
+    response.raise_for_status()
+    publication = response.json()["log_publication"]
+    assert publication["status"] == "published"
+    assert publication["process_started"] is process_started
+    assert set(publication["published_keys"]) == step_keys | application_keys
+    assert publication["runtime_mode"].startswith("Spark local/client mode")
 
 
 def _wait_for_cluster(

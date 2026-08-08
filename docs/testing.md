@@ -46,6 +46,9 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   primary/dependency artifact materialization and cancellation while the subprocess is running. JAR
   submission follows Spark's official
   [`spark-submit --class` contract](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
+- Verify through the public Proxy that successful, failed-preparation, and cancelled Steps publish
+  the exact gzip Step/application key set to LocalStack S3 and that the management API exposes the
+  same publication evidence. The layout follows the [official EMR log paths](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-debugging.html).
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.

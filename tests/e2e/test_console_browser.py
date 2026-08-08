@@ -9,6 +9,9 @@ References:
 from __future__ import annotations
 
 import os
+import time
+import uuid
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -18,7 +21,43 @@ from playwright.sync_api import expect, sync_playwright
 
 @pytest.mark.e2e
 @pytest.mark.browser
-def test_console_resource_navigation_and_accessibility(e2e_settings: Any) -> None:
+def test_console_resource_navigation_and_accessibility(
+    aws_clients: dict[str, Any],
+    e2e_settings: Any,
+) -> None:
+    emr = aws_clients["emr"]
+    s3 = aws_clients["s3"]
+    bucket = f"mystack-console-{uuid.uuid4().hex}"
+    s3.create_bucket(Bucket=bucket)
+    cluster_id = emr.run_job_flow(
+        Name="console-log-cluster",
+        LogUri=f"s3://{bucket}/logs/",
+        Instances={"InstanceCount": 1, "KeepJobFlowAliveWhenNoSteps": True},
+    )["JobFlowId"]
+    _wait_for_state(
+        lambda: emr.describe_cluster(ClusterId=cluster_id)["Cluster"]["Status"]["State"],
+        {"WAITING"},
+        e2e_settings,
+    )
+    step_id = emr.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[
+            {
+                "Name": "console-log-step",
+                "ActionOnFailure": "CONTINUE",
+                "HadoopJarStep": {
+                    "Jar": "command-runner.jar",
+                    "Args": ["spark-submit", f"s3://{bucket}/missing.py"],
+                },
+            }
+        ],
+    )["StepIds"][0]
+    _wait_for_state(
+        lambda: emr.describe_step(ClusterId=cluster_id, StepId=step_id)["Step"]["Status"]["State"],
+        {"FAILED"},
+        e2e_settings,
+    )
+
     required = os.getenv(e2e_settings.browser_required_environment_variable, "").lower() in {
         "1",
         "true",
@@ -50,6 +89,15 @@ def test_console_resource_navigation_and_accessibility(e2e_settings: Any) -> Non
             expect(component).to_be_visible()
             expect(page.get_by_role("textbox", name="Management token", exact=True)).to_be_visible()
 
+            component.select_option("emr")
+            expect(page.get_by_role("status")).to_have_text("Healthy")
+            page.get_by_role("button", name="Step console-log-step").click()
+            page.get_by_role("tab", name="Logs").click()
+            expect(page.get_by_role("heading", name="S3 LogUri publication")).to_be_visible()
+            expect(page.locator("#logPublicationDetail")).to_contain_text('"status": "published"')
+            expect(page.locator("#logPublicationDetail")).to_contain_text("controller.gz")
+            page.get_by_role("tab", name="Resources").click()
+
             component.select_option("glue")
             expect(page.get_by_role("status")).to_have_text("Healthy")
             expect(page.get_by_text("Glue Data Catalog", exact=True)).to_be_visible()
@@ -76,3 +124,13 @@ def test_console_resource_navigation_and_accessibility(e2e_settings: Any) -> Non
             )
         finally:
             browser.close()
+
+
+def _wait_for_state(read_state: Callable[[], str], expected: set[str], settings: Any) -> str:
+    deadline = time.monotonic() + settings.timeout_seconds
+    while time.monotonic() < deadline:
+        state = read_state()
+        if state in expected:
+            return state
+        time.sleep(settings.poll_interval_seconds)
+    raise TimeoutError(f"Resource did not enter {sorted(expected)}")

@@ -173,6 +173,12 @@ fragments are preserved. Other Spark options pass through unchanged. This implem
 [S3 application-location contract](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)
 without relying on Spark to resolve the main entrypoint remotely.
 
+Set `LogUri="s3://an-existing-bucket/prefix/"` on `run_job_flow` to archive gzip Step
+`controller`/`syslog`/`stdout`/`stderr` objects and local Spark driver streams. The Console Logs tab
+shows whether publication was `published`, `failed`, or `skipped` and lists every object key. See
+the [EMR LogUri layout](protocols/emr-log-layout.md) for copy-paste boto3 usage, exact paths, failure
+semantics, and the explicit local-mode/YARN gap.
+
 <!-- section: overlays -->
 ## Compose overlays and configuration
 

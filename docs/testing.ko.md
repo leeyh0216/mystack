@@ -46,6 +46,9 @@
 - 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 주/dependency
   artifact materialize, 실행 중 subprocess 취소를 검증합니다. JAR 제출은 Spark 공식
   [`spark-submit --class` 계약](https://spark.apache.org/docs/3.5.4/submitting-applications.html)을 따릅니다.
+- 성공, 준비 실패, 취소 Step이 정확한 gzip Step/application key 집합을 LocalStack S3에
+  게시하는지 public Proxy로 검증하고 management API의 publication 증거와 일치하는지 확인합니다.
+  배치는 [공식 EMR log 경로](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-debugging.html)를 따릅니다.
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.

@@ -6,6 +6,9 @@ https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1
 HEAD representation metadata follows RFC 9110 section 9.3.2 and S3 HeadObject:
 https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2
 https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
+
+Raw encoded response iteration follows the HTTPX async streaming contract:
+https://www.python-httpx.org/async/#streaming-responses
 """
 
 from __future__ import annotations
@@ -108,12 +111,25 @@ class AwsRequestForwarder:
             payload_fingerprint=payload_fingerprint(body),
             **protocol_evidence,
         )
+        response: httpx.Response | None = None
         try:
-            response = await self._client.request(
+            upstream_request = self._client.build_request(
                 method=request.method,
                 url=target_url,
                 headers=self._request_headers(request.headers),
                 content=body,
+            )
+            response = await self._client.send(upstream_request, stream=True)
+            response_content_encoding = response.headers.get("content-encoding", "")
+            response_body_decoded = (
+                request.method != "HEAD"
+                and response.is_stream_consumed
+                and bool(response_content_encoding)
+            )
+            response_content = (
+                response.content
+                if response.is_stream_consumed
+                else b"".join([chunk async for chunk in response.aiter_raw()])
             )
         except Exception:
             _log(
@@ -129,21 +145,27 @@ class AwsRequestForwarder:
                 exc_info=True,
             )
             raise
+        finally:
+            if response is not None:
+                await response.aclose()
         _log(
             logging.INFO,
             "proxy.forward.completed",
             route=route_name,
             backend_origin=base_url,
             status_code=response.status_code,
-            response_bytes=len(response.content),
+            response_bytes=len(response_content),
+            response_content_encoding=response_content_encoding,
+            response_body_decoded=response_body_decoded,
             duration_ms=round((time.monotonic() - started) * 1000, 3),
         )
         return Response(
-            content=response.content,
+            content=response_content,
             status_code=response.status_code,
             headers=self._response_headers(
                 response.headers,
                 preserve_representation_headers=request.method == "HEAD",
+                body_decoded=response_body_decoded,
             ),
         )
 
@@ -160,13 +182,21 @@ class AwsRequestForwarder:
         headers: Mapping[str, str],
         *,
         preserve_representation_headers: bool,
+        body_decoded: bool,
     ) -> dict[str, str]:
         removed = set(_HOP_BY_HOP_HEADERS)
         if not preserve_representation_headers:
-            # httpx has decoded a normal response body. Starlette must calculate
-            # the new byte length and must not advertise the upstream encoding.
-            removed.update({"content-length", "content-encoding"})
-        return {key: value for key, value in headers.items() if key.lower() not in removed}
+            # The raw encoded body is preserved. Starlette recalculates only its wire length;
+            # content encoding and AWS checksum headers must continue to describe these bytes.
+            removed.add("content-length")
+        if body_decoded:
+            removed.add("content-encoding")
+        return {
+            key: value
+            for key, value in headers.items()
+            if key.lower() not in removed
+            and not (body_decoded and key.lower().startswith("x-amz-checksum-"))
+        }
 
 
 class HttpManagementForwarder:

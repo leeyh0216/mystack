@@ -177,6 +177,12 @@ option은 그대로 전달합니다. 이는 Spark가 주 entrypoint를 remote에
 [S3 application location 계약](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)을
 구현합니다.
 
+`run_job_flow`에 `LogUri="s3://이미-존재하는-bucket/prefix/"`를 지정하면 gzip Step
+`controller`/`syslog`/`stdout`/`stderr` object와 local Spark driver stream을 보관합니다. Console
+Logs tab에서 게시 상태가 `published`, `failed`, `skipped`인지와 전체 object key를 확인할 수
+있습니다. 복사해 쓸 수 있는 boto3 사용법, 정확한 경로, 실패 의미와 local-mode/YARN 차이는
+[EMR LogUri 배치](protocols/emr-log-layout.ko.md)를 참고하세요.
+
 <!-- section: overlays -->
 ## Compose 조합과 설정
 

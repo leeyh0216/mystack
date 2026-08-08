@@ -7,11 +7,17 @@ References:
 
 from __future__ import annotations
 
+import gzip
+
 import httpx
+import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 from mystack.aws_protocol import DiagnosticsSettings
 from mystack.proxy.app import create_app
 from mystack.proxy.config import ProxySettings, ServiceRoute
+from mystack.proxy.forwarder import AwsRequestForwarder
+from mystack.proxy.routing import AwsServiceDetector
 
 _DIAGNOSTICS = DiagnosticsSettings(enabled=True, management_token=None, stack_limit=20)
 
@@ -124,6 +130,58 @@ def test_recalculates_content_length_for_buffered_entity_response() -> None:
 
     assert response.content == b"data"
     assert response.headers["content-length"] == "4"
+
+
+@pytest.mark.asyncio
+async def test_preserves_content_encoded_wire_bytes_and_aws_checksum_headers() -> None:
+    compressed = gzip.compress(b"archived EMR log\n", mtime=0)
+
+    class EncodedStream(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield compressed
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        return httpx.Response(
+            200,
+            stream=EncodedStream(),
+            headers={
+                "content-encoding": "gzip",
+                "content-length": str(len(compressed)),
+                "x-amz-checksum-crc32": "upstream-checksum",
+            },
+        )
+
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    async def receive() -> dict[str, object]:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    request = Request(
+        {
+            "type": "http",
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "http",
+            "path": "/bucket/log.gz",
+            "raw_path": b"/bucket/log.gz",
+            "query_string": b"",
+            "headers": [(b"host", b"localhost")],
+            "client": ("127.0.0.1", 12345),
+            "server": ("localhost", 80),
+        },
+        receive,
+    )
+    forwarder = AwsRequestForwarder(async_client, settings(), AwsServiceDetector(()))
+    try:
+        response = await forwarder.forward(request)
+    finally:
+        await async_client.aclose()
+
+    assert response.body == compressed
+    assert response.headers["content-encoding"] == "gzip"
+    assert response.headers["content-length"] == str(len(compressed))
+    assert response.headers["x-amz-checksum-crc32"] == "upstream-checksum"
 
 
 def test_console_and_component_diagnostics_are_registry_driven() -> None:

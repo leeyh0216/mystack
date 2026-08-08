@@ -19,6 +19,11 @@ Mystack은 Controller, component 경계, 상태 전이, 모든 외부 side effec
 
 Repository, S3, process, container, outbound HTTP adapter는 해당 단계를 모두 기록해야 합니다.
 
+EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 object 전후에
+`emr.step_log_object.put.*`를 기록합니다. 실패 event는 cluster/Step, 안전한 bucket/key 정보,
+부분 게시 object 수와 `fix_hint`를 포함하며 local publication record는 management endpoint에서
+확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr-log-layout.ko.md)에 있습니다.
+
 <!-- section: fields -->
 ## 공통 field
 
@@ -46,3 +51,8 @@ YAML `management.diagnostics.enabled`, `stack_limit`, 선택적 `token`을 따�
 `proxy.routing.fallback`은 credential이나 전체 User-Agent 없이 target prefix, SigV4 signing
 name, host prefix, content type, parse한 SDK version을 기록합니다. `fix_hint`는 YAML route
 metadata만 고칠 상황과 `routing.py`의 evidence parser를 고칠 상황을 구분합니다.
+
+`proxy.forward.completed`는 raw response byte 길이, upstream content encoding, 주입한 client가
+이미 body를 decode했는지 나타내는 `response_body_decoded`(일반적으로 `false`)를 기록합니다.
+SDK가 S3 flexible checksum 불일치를 보고하면 service emulator나 object payload를 바꾸기 전에
+이 event와 `mystack.proxy.forwarder`를 확인합니다.

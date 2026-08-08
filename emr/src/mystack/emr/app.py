@@ -32,6 +32,7 @@ from .adapters.outbound import (
     LocalSparkStepRunner,
     RandomAwsIds,
     S3ArtifactStore,
+    S3StepLogPublisher,
     SystemClock,
 )
 from .application import EmrApplication
@@ -67,16 +68,17 @@ def create_app(
         repository = InMemoryClusterRepository()
         executor = LocalProcessExecutor(settings)
         artifacts = S3ArtifactStore(settings.object_store)
+        logs = S3StepLogPublisher(settings.object_store)
         application = EmrApplication(
             repository=repository,
             clock=SystemClock(),
             ids=RandomAwsIds(),
             bootstrap_runner=LocalBootstrapRunner(settings, artifacts, executor),
-            step_runner=LocalSparkStepRunner(settings, artifacts, executor),
+            step_runner=LocalSparkStepRunner(settings, artifacts, executor, logs),
             scheduler=AsyncioTaskScheduler(settings.shutdown_timeout_seconds),
             policy=settings.policy,
         )
-        owned_runtime = EmrRuntime.build(application, executor, artifacts, settings)
+        owned_runtime = EmrRuntime.build(application, executor, artifacts, logs, settings)
         application = owned_runtime.application
     adapter = EmrAwsAdapter(application, application, application)
     dispatcher = adapter.dispatcher()

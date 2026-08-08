@@ -8,6 +8,7 @@ https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-f
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
@@ -86,6 +87,7 @@ class EmrManagementAdapter:
             asyncio.to_thread(_tail, work_dir / "stdout.log", self._output_tail_bytes),
             asyncio.to_thread(_tail, work_dir / "stderr.log", self._output_tail_bytes),
         )
+        publication = await asyncio.to_thread(_publication, work_dir / "log-publication.json")
         log_event(
             _LOGGER,
             logging.INFO,
@@ -94,6 +96,7 @@ class EmrManagementAdapter:
             step_id=step.id,
             stdout_bytes=stdout[1],
             stderr_bytes=stderr[1],
+            log_publication_status=publication["status"],
             side_effect=True,
         )
         return {
@@ -108,6 +111,7 @@ class EmrManagementAdapter:
             "stdout_truncated": stdout[2],
             "stderr_truncated": stderr[2],
             "tail_limit_bytes": self._output_tail_bytes,
+            "log_publication": publication,
         }
 
 
@@ -165,3 +169,18 @@ def _tail(path: Path, limit: int) -> tuple[str, int, bool]:
             stream.seek(-limit, 2)
         content = stream.read()
     return content.decode("utf-8", errors="replace"), len(content), size > limit
+
+
+def _publication(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"schema_version": 1, "status": "pending"}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return {
+            "schema_version": 1,
+            "status": "unreadable",
+            "error_type": type(error).__name__,
+            "fix_hint": "Inspect the local EMR Step log-publication.json record.",
+        }
+    return value if isinstance(value, dict) else {"schema_version": 1, "status": "unreadable"}
