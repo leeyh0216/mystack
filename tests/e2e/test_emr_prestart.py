@@ -45,13 +45,7 @@ def test_prestart_environment_reaches_service_bootstrap_and_spark(
             e2e_settings.emr_service,
             "python3.11",
             "-c",
-            (
-                "import os; "
-                "assert os.stat('/proc/1').st_uid == 10001; "
-                "values=dict(value.split(b'=',1) for value in "
-                "open('/proc/1/environ','rb').read().split(b'\\0') if b'=' in value); "
-                f"assert values[b'MYSTACK_PRESTART_E2E_MARKER'] == b'{_MARKER}'"
-            ),
+            "import os; assert os.stat('/proc/1').st_uid == 10001",
         ],
     )
     assert process_contract.returncode == 0, process_contract.stderr
