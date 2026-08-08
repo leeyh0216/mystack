@@ -1,6 +1,12 @@
+<!-- doc-id: api-coverage -->
+<!-- lang: en -->
+
+[한국어](api-coverage.ko.md) | [English](api-coverage.md)
+
 # API compatibility coverage
 
-[한국어](api-coverage.ko.md) | English
+<!-- section: overview -->
+## Overview
 
 Compatibility is measured against the pinned botocore service models, not a handwritten operation list.
 
@@ -11,6 +17,7 @@ Compatibility is measured against the pinned botocore service models, not a hand
 | `PROTOCOL_ONLY` | Target/shape is recognized; semantic implementation is pending |
 | `NOT_PLANNED` | Explicitly outside project scope |
 
+<!-- section: policy -->
 ## Policy
 
 - Every EMR public API operation is a compatibility target.
@@ -24,6 +31,7 @@ Initial vertical slices prioritize the APIs needed to execute workloads:
 - EMR: `RunJobFlow`, `DescribeCluster`, `ListClusters`, `AddJobFlowSteps`, `DescribeStep`, `ListSteps`, `CancelSteps`, `TerminateJobFlows`, bootstrap actions and tags.
 - Glue catalog: databases, tables, table versions, partitions, batch partition APIs and user-defined functions.
 
+<!-- section: operations -->
 ## Implemented operations
 
 The following operations currently have boto3 black-box contracts through a real TCP server.
@@ -45,6 +53,7 @@ stores a status and operation-shape fingerprint for each entry. A new upstream o
 assigned a default during `--check`; it is reported as unclassified and fails CI. Shape changes and
 removals are reported separately with adapter, test, and documentation fix hints.
 
+<!-- section: differential -->
 ## Optional real-AWS differential contracts
 
 `contracts/differential-cases.json` defines read-only calls, normalization rules, region, endpoint,

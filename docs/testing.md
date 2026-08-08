@@ -1,7 +1,11 @@
+<!-- doc-id: testing -->
+<!-- lang: en -->
+
+[한국어](testing.ko.md) | [English](testing.md)
+
 # Testing strategy
 
-[한국어](testing.ko.md) | English
-
+<!-- section: layers -->
 ## Layers
 
 | Layer | Purpose | External runtime | Timeout source |
@@ -13,14 +17,20 @@
 
 Every pytest invocation uses `pytest-timeout` with the thread method so a hang produces Python thread stacks. Spark/bootstrap adapters also receive service-specific process timeouts from YAML.
 
+<!-- section: contracts -->
 ## Contract rules
 
 - boto3 talks only to the public Proxy endpoint.
 - Tests assert both successful results and modeled AWS error code/HTTP status/side effects.
 - Every implemented operation receives boto3 coverage.
 - Glue partition duplication must return `AlreadyExistsException`, following [CreatePartition](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html).
+- One boto3 duplicate-partition contract proves stable, application, and unsafe contexts inspect
+  the same managed state and compose one modeled error translation.
+- Extension chain tests cover ordering, replacement, single-use next, configured timeouts,
+  startup permission/version failures, and final output-model validation.
 - EMR tests poll documented states rather than sleeping fixed durations; lifecycle follows the [EMR cluster model](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-overview.html).
 
+<!-- section: e2e -->
 ## Real-runtime E2E
 
 - Upload bootstrap/application/input data through boto3 S3 to LocalStack.
@@ -34,6 +44,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
 - The current Iceberg scenario covers create, append, read, and schema evolution. Partition and transaction scenarios remain target scope, using the [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
+<!-- section: reproducibility -->
 ## Reproducibility
 
 The lockfile, hash-locked container exports, YAML runtime profile, immutable container-base
@@ -42,6 +53,7 @@ any one requires corresponding manifest/profile documentation and E2E evidence. 
 `requirements/*.txt` export that does not match `uv.lock`; generation follows the official
 [uv export command](https://docs.astral.sh/uv/reference/cli/#uv-export).
 
+<!-- section: differential -->
 ## Optional differential layer
 
 Real-AWS comparisons are read-only, normalized, file-configured, and disabled by default. Run

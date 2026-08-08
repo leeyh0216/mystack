@@ -2,8 +2,10 @@
 CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
+MYSTACK_VERSION ?= 0.1.0
+MYSTACK_MINOR_VERSION ?= $(basename $(MYSTACK_VERSION))
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check coverage-check registry-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs devcontainer-check devcontainer-verify-images model-check coverage-check registry-check extension-example extension-e2e test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -28,8 +30,15 @@ format: ## Format source and apply safe lint fixes.
 	@uv run ruff check --fix .
 	@uv run ruff format .
 
-docs: ## Validate bilingual pairs, backlinks, and official references.
+docs: ## Validate bilingual identity, section order, links, sources, and Korean style.
 	@uv run python scripts/check_docs.py
+
+devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycle setup.
+	@uv run python scripts/check_devcontainer.py
+	@bash -n scripts/devcontainer-setup.sh
+
+devcontainer-verify-images: ## Compare Dev Container image tags with locked registry digests.
+	@uv run python scripts/check_devcontainer.py --verify-images
 
 model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
@@ -44,6 +53,20 @@ registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
 	@uv run python scripts/registry_release.py check-config
 	@uv run ruff check scripts/registry_release.py tests/test_registry_release.py
 	@uv run pytest tests/test_registry_release.py --timeout 60 --timeout-method thread -vv
+
+extension-example: ## Build the example Glue extension wheel for a read-only Docker mount.
+	@uv build --wheel --no-create-gitignore examples/glue-extension --out-dir extensions
+
+extension-e2e: extension-example ## Install a named-volume wheel and test all three Glue SPIs.
+	@providers='[{"id":"example-stable","spi":"stable","api_version":1,"entry_point":"example-stable","operations":["CreatePartition"],"priority":10,"timeout_seconds":5},{"id":"example-application","spi":"application","api_version":1,"entry_point":"example-application","operations":["CreatePartition"],"priority":20,"timeout_seconds":5,"mystack_minor_version":"$(MYSTACK_MINOR_VERSION)"},{"id":"example-unsafe","spi":"unsafe","api_version":1,"entry_point":"example-unsafe","operations":["CreatePartition"],"priority":30,"timeout_seconds":5,"mystack_version":"$(MYSTACK_VERSION)"}]'; \
+	export COMPOSE_PROJECT_NAME=mystack-extension-e2e MYSTACK_PORT=4567 MYSTACK_VERSION="$(MYSTACK_VERSION)"; \
+	compose='docker compose -f compose.yaml -f compose.extensions.yaml -f compose.extension-e2e.yaml'; \
+	mkdir -p test-artifacts; \
+	cleanup() { $$compose logs --no-color > test-artifacts/extension-compose.log 2>&1 || true; $$compose down --volumes --remove-orphans || true; }; \
+	trap cleanup EXIT; \
+	MYSTACK_GLUE_EXTENSION_PROVIDERS="$$providers" $$compose up --build --detach --wait; \
+	timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.e2e_timeout_seconds); \
+	MYSTACK_GLUE_EXTENSION_E2E=1 MYSTACK__TESTS__E2E__ENDPOINT_URL=http://127.0.0.1:4567 uv run pytest tests/e2e/test_glue_extensions.py -m e2e --timeout "$$timeout" --timeout-method thread -vv
 
 test: ## Run unit, architecture, and protocol tests with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \

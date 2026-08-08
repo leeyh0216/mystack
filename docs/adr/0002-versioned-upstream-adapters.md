@@ -1,14 +1,19 @@
-# ADR 0002: Versioned upstream adapters and file-driven configuration
+<!-- doc-id: adr-0002-versioned-upstream-adapters -->
+<!-- lang: en -->
 
-[한국어](0002-versioned-upstream-adapters.ko.md) | English
+[한국어](0002-versioned-upstream-adapters.ko.md) | [English](0002-versioned-upstream-adapters.md)
+
+# ADR 0002: Versioned upstream adapters and file-driven configuration
 
 - Status: Accepted
 - Date: 2026-08-08
 
+<!-- section: context -->
 ## Context
 
 AWS protocols, botocore models, Spark, Hive, Iceberg, and container bases evolve independently. Hardcoded routes, endpoints, versions, and timeouts make upgrades risky and Docker deployment inflexible.
 
+<!-- section: decision -->
 ## Decision
 
 - Commit one schema-versioned YAML configuration and mount it read-only in containers.
@@ -18,6 +23,7 @@ AWS protocols, botocore models, Spark, Hive, Iceberg, and container bases evolve
 - Detect upstream model drift in a scheduled workflow and report exact changed operations.
 - Never log configuration secret values; log source, fingerprint, and redacted override paths.
 
+<!-- section: consequences -->
 ## Consequences
 
 - New emulator routes require configuration, not Proxy code.
@@ -25,9 +31,9 @@ AWS protocols, botocore models, Spark, Hive, Iceberg, and container bases evolve
 - Invalid configuration fails at startup with an actionable path.
 - Configuration schema migrations require an ADR and bilingual migration notes.
 
+<!-- section: sources -->
 ## Official references
 
 - [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/)
 - [Official botocore models](https://github.com/boto/botocore/tree/develop/botocore/data)
 - [AWS guidance for adapting hexagonal systems](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/adapt-to-change.html)
-

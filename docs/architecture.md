@@ -1,11 +1,16 @@
+<!-- doc-id: architecture -->
+<!-- lang: en -->
+
+[한국어](architecture.ko.md) | [English](architecture.md)
+
 # Architecture
 
-[한국어](architecture.ko.md) | English
-
+<!-- section: goals -->
 ## Goals
 
 Mystack emulates EMR and Glue observable behavior at the AWS API boundary while executing real Spark work locally. Protocol compatibility, state transitions, validation, errors, logs, and side effects are first-class contracts.
 
+<!-- section: boundaries -->
 ## System boundaries
 
 | Component | Responsibility | Must not know |
@@ -16,7 +21,11 @@ Mystack emulates EMR and Glue observable behavior at the AWS API boundary while 
 | `shared` | AWS JSON 1.1 codec, official service-model access, request validation primitives | Any EMR/Glue business rule |
 
 Business abstractions are not placed in `shared`. Sharing is limited to the wire protocol boundary.
+The composition root discovers user providers and injects one of three service-owned Glue
+contexts. The common operation chain knows only `OperationMiddleware`; it never imports Glue
+capabilities or plugin packages. See the [extension SPI guide](extensions.md).
 
+<!-- section: dependencies -->
 ## Dependency rule
 
 Both emulators use the same inward dependency direction:
@@ -41,6 +50,7 @@ bootstrap / FastAPI app
 
 Architecture tests reject imports from an inner layer to an outer layer.
 
+<!-- section: topology -->
 ## Runtime topology
 
 The public endpoint is the proxy. A single endpoint lets existing CLI/SDK clients use `--endpoint-url` or `AWS_ENDPOINT_URL`; request headers determine the target service. Unknown services are passed to LocalStack.
@@ -59,6 +69,7 @@ adapter translates its Application/Domain resources to versioned JSON; the Proxy
 and the packaged browser UI renders it without importing service internals. See the
 [management console contract](console.md).
 
+<!-- section: compatibility -->
 ## Compatibility strategy
 
 1. Pin the official AWS SDK service-model version used to define operation names, shapes, enums and declared exceptions.
@@ -69,6 +80,16 @@ and the packaged browser UI renders it without importing service internals. See 
 
 “Compatible error” means the documented exception type, HTTP status, error code, relevant message fields, and absence/presence of side effects match. It does not mean reproducing AWS implementation bugs.
 
+<!-- section: logging -->
+## Logging
+
+Controllers, routing decisions, state transitions, and side effects emit structured before,
+after, and failure events. Logs exclude authorization values and raw request bodies. They include
+request IDs, operations, model versions and fingerprints, body lengths or hashes, duration, and
+status. Model mismatch events include a `fix_hint` that identifies the adapter and document to
+change.
+
+<!-- section: persistence -->
 ## Persistence and execution
 
 - Resource metadata is accessed through repository ports. Glue currently uses an atomically
@@ -79,6 +100,10 @@ and the packaged browser UI renders it without importing service internals. See 
 - Spark is launched without a shell and receives an explicit argument vector.
 - User bootstrap scripts are intentionally executable code and run inside the EMR container boundary, never in the proxy process.
 
+Glue's JSON persistence adapter uses Python's atomic
+[`os.replace`](https://docs.python.org/3/library/os.html#os.replace) operation.
+
+<!-- section: non-goals -->
 ## Non-goals
 
 - Glue Jobs and JobRuns
@@ -87,6 +112,7 @@ and the packaged browser UI renders it without importing service internals. See 
 - IAM policy evaluation unless an authentication-enforcement mode is enabled
 - reproduction of undocumented AWS bugs
 
+<!-- section: sources -->
 ## Official references
 
 - [AWS Prescriptive Guidance: Hexagonal architecture](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)

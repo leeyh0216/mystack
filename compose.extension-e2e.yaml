@@ -1,0 +1,23 @@
+# The seed container avoids host bind-mount permissions in CI and Docker Desktop.
+# Docker copies image contents into a newly created empty named volume:
+# https://docs.docker.com/engine/storage/volumes/#mounting-a-volume-over-existing-data
+services:
+  glue-extension-seed:
+    image: mystack/glue-extension-seed:e2e
+    build:
+      context: .
+      dockerfile: examples/glue-extension/Dockerfile.seed
+      args:
+        PYTHON_BASE: ${PYTHON_BASE:-public.ecr.aws/docker/library/python:3.11-slim-bookworm@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3}
+    restart: "no"
+    volumes:
+      - glue-extension-wheels:/opt/mystack/extensions
+
+  glue:
+    depends_on:
+      glue-extension-seed: {condition: service_completed_successfully}
+    volumes:
+      - glue-extension-wheels:/opt/mystack/extensions:ro
+
+volumes:
+  glue-extension-wheels:

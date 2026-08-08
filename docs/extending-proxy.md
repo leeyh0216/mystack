@@ -1,9 +1,13 @@
-# Add another emulator without changing Proxy code
+<!-- doc-id: extending-proxy -->
+<!-- lang: en -->
 
-[한국어](extending-proxy.ko.md) | English
+[한국어](extending-proxy.ko.md) | [English](extending-proxy.md)
+
+# Add another emulator without changing Proxy code
 
 The Proxy route registry uses official AWS request evidence: `X-Amz-Target`, the SigV4 credential-scope service, and service host prefixes. See [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html) and [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data).
 
+<!-- section: procedure -->
 ## Procedure
 
 1. Read the official service model metadata: `targetPrefix`, `endpointPrefix`, signing name, protocol, JSON version, and API version.
@@ -27,6 +31,7 @@ proxy:
 
 No Proxy `if service == ...` branch is allowed. Duplicate target/signing/host claims fail configuration validation at startup.
 
+<!-- section: evolution -->
 ## Protocol change versus service change
 
 - Generic AWS JSON serialization changes belong in `shared`.
@@ -35,4 +40,3 @@ No Proxy `if service == ...` branch is allowed. Duplicate target/signing/host cl
 - Endpoint and deployment values belong only in YAML or deployment overrides.
 
 Clients select the same public URL using the [official custom endpoint mechanism](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html).
-

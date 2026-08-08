@@ -1,6 +1,9 @@
-# Configuration and reproducible containers
+<!-- doc-id: configuration -->
+<!-- lang: en -->
 
-[한국어](configuration.ko.md) | English
+[한국어](configuration.ko.md) | [English](configuration.md)
+
+# Configuration and reproducible containers
 
 Mystack keeps runtime behavior in the versioned `config/mystack.yaml` document. The application
 does not contain fallback service endpoints, credentials, release mappings, process deadlines,
@@ -10,6 +13,7 @@ secrets; Mystack uses each only at its corresponding boundary. See [Docker build
 [Compose interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/),
 and [Compose configs](https://docs.docker.com/reference/compose-file/configs/).
 
+<!-- section: resolution -->
 ## Resolution order
 
 1. `--config PATH`, then `MYSTACK_CONFIG_FILE`, then `config/mystack.yaml` selects the base file.
@@ -30,6 +34,7 @@ Sensitive override paths are redacted in logs. Do not put production credentials
 tokens in a committed YAML file; inject them at deployment time. Docker documents the difference
 between ordinary environment configuration and [secrets](https://docs.docker.com/compose/how-tos/use-secrets/).
 
+<!-- section: docker-modes -->
 ## Docker modes
 
 The default `make up CONFIG=config/mystack.yaml` passes `CONFIG` as the
@@ -47,6 +52,7 @@ docker compose -f compose.yaml -f compose.mount-config.yaml up --detach --wait
 Restart the affected container after editing the mounted file. Configuration is intentionally
 loaded once at process startup; no partially applied hot reload is performed.
 
+<!-- section: sections -->
 ## Main sections
 
 | Path | Responsibility |
@@ -57,6 +63,7 @@ loaded once at process startup; no partially applied hot reload is performed.
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
 | `glue` | Durable catalog state, catalog ID, paging, and runtime profile |
+| `glue.extensions` | SPI permission, wheel/install directories, provider order, and deadlines |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -73,12 +80,18 @@ Browser interaction deadlines and whether missing Chromium is fatal are configur
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
 
+Mounted Glue extensions are disabled by default. Enable them only in the selected YAML, then add
+`compose.extensions.yaml` to the Docker Compose command. Provider invocation and wheel installation
+deadlines are independent. An `application` provider declares `mystack_minor_version`; an `unsafe`
+provider declares `mystack_version`. See the [extension SPI guide](extensions.md).
+
 After environment overrides, every process validates the complete document against the packaged
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,
 missing members, invalid URLs/account IDs/ports, and non-positive deadlines fail before startup
 with the exact dotted path. The schema uses the official
 [JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core).
 
+<!-- section: reproducibility -->
 ## Reproducible build inputs
 
 - `uv.lock` is the development dependency lock.

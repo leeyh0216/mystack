@@ -1,6 +1,9 @@
-# 설정과 재현 가능한 컨테이너
+<!-- doc-id: configuration -->
+<!-- lang: ko -->
 
-한국어 | [English](configuration.md)
+[한국어](configuration.ko.md) | [English](configuration.md)
+
+# 설정과 재현 가능한 컨테이너
 
 Mystack의 runtime 동작은 versioned `config/mystack.yaml`에 둡니다. Service endpoint,
 credential, release mapping, process deadline, Spark submit parsing table, route 등록, test
@@ -10,6 +13,7 @@ build argument, runtime environment variable, read-only config, secret을 각 �
 [Compose interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/),
 [Compose configs](https://docs.docker.com/reference/compose-file/configs/)를 참고하세요.
 
+<!-- section: resolution -->
 ## 적용 순서
 
 1. `--config PATH`, `MYSTACK_CONFIG_FILE`, `config/mystack.yaml` 순으로 base file을 선택합니다.
@@ -28,6 +32,7 @@ mystack-proxy
 commit된 YAML에 넣지 말고 배포 시 주입합니다. Docker의 일반 환경 설정과
 [secret](https://docs.docker.com/compose/how-tos/use-secrets/) 구분을 따르세요.
 
+<!-- section: docker-modes -->
 ## Docker 실행 방식
 
 기본 `make up CONFIG=config/mystack.yaml`은 `CONFIG`를 `MYSTACK_CONFIG_SOURCE` build
@@ -46,6 +51,7 @@ docker compose -f compose.yaml -f compose.mount-config.yaml up --detach --wait
 Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 process 시작 시 한 번만
 읽으며 일부 값만 적용된 hot reload는 하지 않습니다.
 
+<!-- section: sections -->
 ## 주요 section
 
 | 경로 | 책임 |
@@ -56,6 +62,7 @@ Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
 | `glue` | durable catalog state, catalog ID, paging, runtime profile |
+| `glue.extensions` | SPI 권한, wheel·설치 directory, provider 순서, 제한 시간 |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -64,13 +71,19 @@ mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 D
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
 
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
-`tests.emr_jar_fixture_container_path`에서 미리 build된 Java fixture를 복사합니다. 두 값 모두
+`tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할
 필요가 없습니다. JAR와 main class 제출 방식은 Spark 공식
 [application submission guide](https://spark.apache.org/docs/3.5.4/submitting-applications.html)를 따릅니다.
 Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
+
+Mount한 Glue 확장은 기본적으로 비활성화되어 있습니다. 선택한 YAML에서 활성화한 뒤 Docker
+Compose 명령에 `compose.extensions.yaml`을 추가합니다. Provider 호출과 wheel 설치는 서로
+다른 제한 시간을 사용합니다. `application` provider는 `mystack_minor_version`, `unsafe`는
+`mystack_version`을 선언해야 합니다. 자세한 내용은 [확장 SPI 안내](extensions.ko.md)를
+참고합니다.
 
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.
@@ -79,6 +92,7 @@ dotted path와 함께 실패합니다. Schema는 공식
 [JSON Schema 2020-12 specification](https://json-schema.org/draft/2020-12/json-schema-core)을
 사용합니다.
 
+<!-- section: reproducibility -->
 ## 재현 가능한 build 입력
 
 - `uv.lock`: 개발 dependency lock

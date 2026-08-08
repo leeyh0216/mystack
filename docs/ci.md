@@ -1,22 +1,30 @@
+<!-- doc-id: ci -->
+<!-- lang: en -->
+
+[한국어](ci.ko.md) | [English](ci.md)
+
 # CI, dependency, and release automation
 
-[한국어](ci.ko.md) | English
-
+<!-- section: workflows -->
 ## Workflows
 
 | Workflow | Trigger | Contract |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, manual | Python 3.11/3.12, lint, formatting, docs, model/requirements drift, Compose, unit/architecture/contract tests, packages |
+| `ci.yml` | push, pull request, manual | Python 3.11/3.12 contracts and an actual Dev Container build with the frozen feature lock |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg and required Chromium console accessibility E2E with logs retained |
 | `container-publish.yml` | version tag, manual | private GHCR amd64/arm64 publish, SBOM/provenance, OCI and Trivy evidence |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
+The Dev Container job uses the [official CLI](https://github.com/devcontainers/cli) with
+`--frozen-lockfile` to reject feature digest drift and build the image to completion.
 
+<!-- section: branch-protection -->
 ## Branch protection expectations
 
 Require the Python contract matrix and Docker E2E for changes to runtime paths. Require reviewed pull requests, resolved conversations, and linear history. Direct real-AWS credentials are never required for normal CI.
 
+<!-- section: dependencies -->
 ## Dependency updates
 
 Dependabot checks Python, GitHub Actions, and Docker weekly using the [official configuration mechanism](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configuring-dependabot-version-updates). boto3/botocore updates are grouped because protocol and client serialization must be reviewed together.
@@ -28,6 +36,7 @@ three component files, and CI rejects stale exports using the official
 [uv export mechanism](https://docs.astral.sh/uv/reference/cli/#uv-export). Default image bases are
 immutable multi-architecture digests rather than mutable tags.
 
+<!-- section: publication -->
 ## GHCR publication
 
 Follow the complete [private GHCR image runbook](container-release.md). The publication job uses the
@@ -39,6 +48,7 @@ Version tags are append-only by workflow policy and `latest` is intentionally ab
 the verified OCI index digest. Rollback selects a prior verified digest and does not mutate registry
 history.
 
+<!-- section: artifacts -->
 ## Failure artifacts
 
 CI always attempts to preserve coverage, model drift, Docker logs, and test artifacts. Logs must retain component boundary and side-effect events but never secrets.

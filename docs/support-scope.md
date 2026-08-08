@@ -1,6 +1,12 @@
+<!-- doc-id: support-scope -->
+<!-- lang: en -->
+
+[한국어](support-scope.ko.md) | [English](support-scope.md)
+
 # Support scope
 
-[한국어](support-scope.ko.md) | English
+<!-- section: overview -->
+## Overview
 
 This document distinguishes implemented behavior from long-term targets. “Target” never means that the current build is already compatible.
 
@@ -12,6 +18,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | EMR control plane | Partial: 13 boto3-tested operations | Broad public EMR API compatibility |
 | EMR bootstrap/Spark | Implemented vertical slice: boto3, S3 bootstrap, Python/JAR Spark 3.5.4 local S3A write and running cancellation E2E | More EMR step types and runtime fidelity |
 | Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
+| Glue user extensions | Implemented: stable/application/unsafe v1, mounted wheels, modeled output validation, boto3 contracts | More service contexts and optional remote isolation |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
 | Web console | Implemented: EMR/Glue resources, status/detail, EMR logs, route/thread/task views, keyboard/browser E2E | Additional service-specific visualizations |
@@ -25,6 +32,7 @@ Every currently implemented control-plane operation (EMR 13, Glue 22) has public
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations
 are supported; the exact upstream classification is generated from the pinned botocore model.
 
+<!-- section: exclusions -->
 ## Explicit exclusions
 
 - AWS Glue Job and JobRun APIs
@@ -33,6 +41,7 @@ are supported; the exact upstream classification is generated from the pinned bo
 - production IAM authorization semantics in default local mode
 - physical EC2/YARN/HDFS distribution fidelity
 
+<!-- section: versions -->
 ## Version baseline
 
 - Python API services: Python 3.11, tested on 3.11 and 3.12

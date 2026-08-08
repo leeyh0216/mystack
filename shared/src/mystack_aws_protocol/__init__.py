@@ -6,6 +6,12 @@ from .diagnostics import DiagnosticsSettings, authorize_management, create_diagn
 from .dispatcher import OperationDispatcher
 from .endpoint import AwsJsonRpcEndpoint
 from .errors import AwsServiceError
+from .extensions import (
+    OperationCall,
+    OperationExtensionBinding,
+    OperationMiddleware,
+    OperationNext,
+)
 from .model import AwsServiceModel
 
 __all__ = [
@@ -16,7 +22,11 @@ __all__ = [
     "ConfigurationError",
     "DiagnosticsSettings",
     "LoadedConfiguration",
+    "OperationCall",
     "OperationDispatcher",
+    "OperationExtensionBinding",
+    "OperationMiddleware",
+    "OperationNext",
     "authorize_management",
     "create_diagnostics_router",
     "load_configuration",

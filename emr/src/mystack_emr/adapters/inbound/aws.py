@@ -348,7 +348,7 @@ def _cluster_status(cluster: Cluster) -> dict[str, Any]:
 def _step(step: Step) -> dict[str, Any]:
     status: dict[str, Any] = {
         "State": step.state.value,
-        "StateChangeReason": _state_reason(step.reason.code, step.reason.message),
+        "StateChangeReason": _step_state_reason(step.reason.code, step.reason.message),
         "Timeline": {"CreationDateTime": step.timeline.creation},
     }
     if step.timeline.start is not None:
@@ -394,6 +394,14 @@ def _ec2_attributes(instances: Mapping[str, Any]) -> dict[str, Any]:
 
 def _state_reason(code: str, message: str) -> dict[str, str]:
     return {key: value for key, value in (("Code", code), ("Message", message)) if value}
+
+
+def _step_state_reason(code: str, message: str) -> dict[str, str]:
+    # The official EMR StepStateChangeReasonCode model currently permits only NONE.
+    # Keep richer internal cancellation reasons in domain logs and map the public
+    # response at this adapter boundary.
+    # https://docs.aws.amazon.com/emr/latest/APIReference/API_StepStateChangeReason.html
+    return _state_reason("NONE" if code else "", message)
 
 
 def _resource_id(payload: Mapping[str, Any]) -> str:

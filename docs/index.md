@@ -1,21 +1,32 @@
+<!-- doc-id: docs-index -->
+<!-- lang: en -->
+
+[한국어](index.ko.md) | [English](index.md)
+
 # Documentation portal
 
-[한국어](index.ko.md) | English
+<!-- section: guides -->
+## Guides
 
 Start here when maintaining Mystack:
 
-1. [Development and ten-minute setup](development.md)
-2. [Configuration and reproducible containers](configuration.md)
-3. [Support scope](support-scope.md)
-4. [Architecture](architecture.md) and [ADRs](adr/0001-hexagonal-service-boundaries.md)
-5. [AWS JSON protocol analysis](protocols/aws-json-1.1.md)
-6. [Testing strategy](testing.md)
-7. [Observability and thread diagnostics](observability.md)
-8. [Management console and resource API](console.md)
-9. [CI and release automation](ci.md)
-10. [Private GHCR image publication](container-release.md)
-11. [Upstream evolution policy](evolution.md)
-12. [Adding another emulator route](extending-proxy.md)
-13. [Implementation-derived UseCases](project/usecase-catalog.md)
+1. [Docker Compose and Dev Container usage](getting-started.md)
+2. [Development and ten-minute setup](development.md)
+3. [Configuration and reproducible containers](configuration.md)
+4. [Support scope](support-scope.md)
+5. [Architecture](architecture.md), [service-boundary ADR](adr/0001-hexagonal-service-boundaries.md),
+   and [extension SPI ADR](adr/0003-tiered-extension-spis.md)
+6. [AWS JSON protocol analysis](protocols/aws-json-1.1.md)
+7. [Testing strategy](testing.md)
+8. [Contributing guide](../CONTRIBUTING.md)
+9. [Korean technical writing standard](korean-writing-style.md)
+10. [Glue extension SPIs](extensions.md)
+11. [Observability and thread diagnostics](observability.md)
+12. [Management console and resource API](console.md)
+13. [CI and release automation](ci.md)
+14. [Private GHCR image publication](container-release.md)
+15. [Upstream evolution policy](evolution.md)
+16. [Adding another emulator route](extending-proxy.md)
+17. [Implementation-derived UseCases](project/usecase-catalog.md)
 
 Architecture and automated-test policy follows [AWS Prescriptive Guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html). Every behavior document must link a direct official AWS, SDK, Python, Docker, or GitHub source.

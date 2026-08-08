@@ -130,7 +130,7 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "runtime_profile"],
+      "required": ["listen", "data_root", "state_file", "catalog_id", "api_page_size", "create_default_database", "runtime_profile", "extensions"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
@@ -138,7 +138,8 @@
         "catalog_id": {"type": "string", "pattern": "^[0-9]{12}$"},
         "api_page_size": {"type": "integer", "minimum": 1},
         "create_default_database": {"type": "boolean"},
-        "runtime_profile": {"$ref": "#/$defs/non_empty_string"}
+        "runtime_profile": {"$ref": "#/$defs/non_empty_string"},
+        "extensions": {"$ref": "#/$defs/glue_extensions"}
       }
     },
     "runtime_profiles": {
@@ -265,6 +266,48 @@
         "java_version": {"$ref": "#/$defs/non_empty_string"},
         "iceberg_version": {"$ref": "#/$defs/non_empty_string"}
       }
+    },
+    "glue_extensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "allow_unsafe", "wheels_directory", "install_directory", "install_timeout_seconds", "providers"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "allow_unsafe": {"type": "boolean"},
+        "wheels_directory": {"$ref": "#/$defs/non_empty_string"},
+        "install_directory": {"$ref": "#/$defs/non_empty_string"},
+        "install_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "providers": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/glue_extension_provider"}
+        }
+      }
+    },
+    "glue_extension_provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "spi", "api_version", "entry_point", "operations", "priority", "timeout_seconds"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "spi": {"enum": ["stable", "application", "unsafe"]},
+        "api_version": {"type": "integer", "minimum": 1},
+        "entry_point": {"$ref": "#/$defs/non_empty_string"},
+        "operations": {"$ref": "#/$defs/non_empty_string_array"},
+        "priority": {"type": "integer"},
+        "timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "mystack_minor_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+$"},
+        "mystack_version": {"$ref": "#/$defs/non_empty_string"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"spi": {"const": "application"}}, "required": ["spi"]},
+          "then": {"required": ["mystack_minor_version"]}
+        },
+        {
+          "if": {"properties": {"spi": {"const": "unsafe"}}, "required": ["spi"]},
+          "then": {"required": ["mystack_version"]}
+        }
+      ]
     }
   }
 }

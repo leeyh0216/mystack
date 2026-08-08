@@ -1,6 +1,9 @@
-# Private GHCR image 게시
+<!-- doc-id: container-release -->
+<!-- lang: ko -->
 
-한국어 | [English](container-release.md)
+[한국어](container-release.ko.md) | [English](container-release.md)
+
+# 비공개 GHCR 이미지 게시
 
 Mystack은 Proxy, EMR, Glue를 private multi-platform OCI image로 GitHub Container Registry에
 게시합니다. AWS/GCP account, cloud role, personal access token, repository secret이 필요하지
@@ -8,6 +11,7 @@ Mystack은 Proxy, EMR, Glue를 private multi-platform OCI image로 GitHub Contai
 workflow repository와 연결된 package를 `GITHUB_TOKEN`으로 게시할 수 있고 최초 package는
 기본적으로 private이라고 정의합니다.
 
+<!-- section: images -->
 ## Image와 소유권
 
 | Component | Package |
@@ -26,6 +30,7 @@ Owner는 실행 시 `github.repository_owner`를 소문자로 변환해 결정�
 따라 일회성 `GITHUB_TOKEN`으로 `ghcr.io`에 로그인합니다. Registry credential은 log나 secret으로
 별도 저장하지 않습니다.
 
+<!-- section: contract -->
 ## 게시 계약
 
 - `vMAJOR.MINOR.PATCH` tag는 세 component를 모두 게시합니다.
@@ -52,6 +57,7 @@ BuildKit provenance/SBOM descriptor는 `unknown/unknown`일 수 있습니다. Va
 attestation을 제외하고 설정된 runtime platform 둘을 반드시 요구합니다. Mystack은 OCI 출력을
 검증할 뿐 OCI registry나 image format protocol을 구현하지 않습니다.
 
+<!-- section: publish -->
 ## 게시
 
 Semantic release는 다음과 같습니다.
@@ -85,6 +91,7 @@ docker pull ghcr.io/leeyh0216/mystack-proxy@sha256:FULL_INDEX_DIGEST
 Local private pull에는 `read:packages`만 가진 classic PAT를 사용하고 account password는 사용하지
 않습니다.
 
+<!-- section: vulnerability -->
 ## 취약점 결과와 rollback 의미
 
 GHCR에는 ECR 같은 scan-on-push API가 없습니다. 따라서 Trivy는 Buildx가 index를 게시한 직후
@@ -96,6 +103,7 @@ Rollback에는 registry 변경이 필요하지 않습니다. Consumer를 이전�
 `image@sha256:...` identity로 되돌립니다. Tag는 사람이 읽는 release label이고 digest가 배포
 identity입니다.
 
+<!-- section: failures -->
 ## 실패 대응표
 
 | Event 또는 실패 | 의미 | 변경 지점 |
@@ -110,6 +118,7 @@ identity입니다.
 Boundary event는 `registry.*.before`, `.after`, `.failed`를 사용하며 credential, image layer, 전체
 environment 값은 기록하지 않습니다.
 
+<!-- section: local-checks -->
 ## Local 검사
 
 ```bash

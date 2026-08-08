@@ -1,7 +1,11 @@
+<!-- doc-id: development -->
+<!-- lang: ko -->
+
+[한국어](development.ko.md) | [English](development.md)
+
 # 개발 환경 설정
 
-한국어 | [English](development.md)
-
+<!-- section: prerequisites -->
 ## 사전 요구사항
 
 - Private repository 접근 권한이 있는 Git과 GitHub CLI
@@ -10,6 +14,7 @@
 - 자동 환경 로딩을 위한 선택적 [direnv](https://direnv.net/)
 - Spark/Glue 호환 이미지와 테스트 데이터를 위한 12GB 이상 여유 공간
 
+<!-- section: setup -->
 ## 10분 설정
 
 ```bash
@@ -32,6 +37,19 @@ AWS_ENDPOINT_URL=http://localhost:4566 aws s3 ls
 
 AWS endpoint 환경변수는 [공식 SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)을 따릅니다.
 
+<!-- section: devcontainer -->
+## Dev Container 설정
+
+Host에 Docker와 VS Code Dev Containers extension이 있다면 별도 Python·uv·AWS CLI 설치 없이
+시작할 수 있습니다. Local clone을 연 다음 `Dev Containers: Reopen in Container`를 실행하세요.
+`.devcontainer/devcontainer.json`은 workspace를 Host와 같은 절대 경로에 mount하고 Host Docker
+daemon을 사용합니다. 생성이 끝나면 `make up`과 `make test`를 그대로 실행할 수 있습니다.
+
+상세 endpoint, bind mount 제약, 검증 명령은 [사용 안내](getting-started.ko.md)에 있습니다. 이
+구성은 공식 [Dev Container 생성
+안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)를 따릅니다.
+
+<!-- section: precedence -->
 ## 설정 우선순위
 
 1. executable `--config`, `MYSTACK_CONFIG_FILE`, 기본값 순으로 YAML file 선택
@@ -50,6 +68,7 @@ mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f comp
 추가합니다. 두 방식 모두 [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/)
 계약을 따릅니다. 공유 환경 management token과 실제 AWS credential은 commit하지 않습니다.
 
+<!-- section: commands -->
 ## 일상 명령
 
 전체 목록은 `make help`가 단일 기준입니다.
@@ -59,6 +78,7 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make extension-example
 make test
 make contract
 make e2e
@@ -74,22 +94,26 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
 
+<!-- section: locations -->
 ## 변경 위치
 
 - Wire metadata/공통 JSON 직렬화: `shared/src/mystack_aws_protocol`
 - Proxy route 동작: `proxy/src/mystack_proxy`; 새 서비스는 YAML 우선
 - EMR 상태/동작: `emr/src/mystack_emr/domain`, `application`
 - Glue Catalog 동작: `glue/src/mystack_glue/domain`, `application`
+- 공개 Glue 확장 계약: `glue/src/mystack_glue/extension_api`; 탐색과 연결:
+  `glue/src/mystack_glue/extensions.py`와 composition root
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만
 
 의존 방향은 [AWS Hexagonal architecture 모델](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에 맞춰 CI가 검사합니다.
 
+<!-- section: troubleshooting -->
 ## 문제 해결
 
 - `make bootstrap`: 도구, 문서, model drift, fast test 문제 진단
 - `make logs SERVICE=proxy`: JSON 경계 event 확인
 - `make threads`, `make tasks`: frame locals 없는 live stack 수집
 - `model-drift-report.json`: 변경 operation과 수정 위치
-- `api-coverage-drift-report.json`: 미분류·삭제·shape 변경·잘못 분류된 operation과 수정 경계
+- `api-coverage-drift-report.json`: 미분류·삭제·데이터 구조 변경·잘못 분류된 작업과 수정 경계
 - E2E artifact: 모든 container log

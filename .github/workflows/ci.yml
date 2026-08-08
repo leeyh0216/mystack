@@ -86,3 +86,23 @@ jobs:
             model-drift-report.json
             api-coverage-drift-report.json
           if-no-files-found: ignore
+
+  devcontainer:
+    name: Reproducible Dev Container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Validate configuration and image locks
+        run: make devcontainer-check devcontainer-verify-images
+      # Reference CLI and frozen feature lock:
+      # https://github.com/devcontainers/cli#pre-building
+      - name: Build with the official Dev Container CLI
+        run: >-
+          npx --yes @devcontainers/cli@0.88.0 build
+          --workspace-folder .
+          --frozen-lockfile

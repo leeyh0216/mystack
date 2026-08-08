@@ -1,0 +1,63 @@
+{
+  "$schema": "https://raw.githubusercontent.com/devcontainers/spec/main/schemas/devContainer.base.schema.json",
+  "name": "Mystack",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1.10.0": {
+      "version": "28.1",
+      "dockerDashComposeVersion": "v2"
+    },
+    "ghcr.io/devcontainers/features/aws-cli:1.1.4": {
+      "version": "2.36.19"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1.1.0": {
+      "version": "2.92.0"
+    }
+  },
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=cached",
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+    "MYSTACK_CONFIG_FILE": "config/mystack.yaml",
+    "AWS_ENDPOINT_URL": "http://host.docker.internal:4566",
+    "AWS_DEFAULT_REGION": "us-east-1",
+    "AWS_ACCESS_KEY_ID": "test",
+    "AWS_SECRET_ACCESS_KEY": "test",
+    "AWS_EC2_METADATA_DISABLED": "true"
+  },
+  "runArgs": [
+    "--add-host=host.docker.internal:host-gateway"
+  ],
+  "forwardPorts": [
+    4566
+  ],
+  "portsAttributes": {
+    "4566": {
+      "label": "Mystack AWS endpoint and console",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash scripts/devcontainer-setup.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "-m",
+          "not e2e"
+        ]
+      }
+    }
+  }
+}

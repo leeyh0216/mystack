@@ -1,6 +1,12 @@
+<!-- doc-id: support-scope -->
+<!-- lang: ko -->
+
+[한국어](support-scope.ko.md) | [English](support-scope.md)
+
 # 지원 범위
 
-한국어 | [English](support-scope.md)
+<!-- section: overview -->
+## 개요
 
 이 문서는 현재 구현과 장기 목표를 구분합니다. “목표”는 현재 빌드가 이미 호환된다는 뜻이 아닙니다.
 
@@ -10,10 +16,11 @@
 | AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
-| EMR bootstrap/Spark | Vertical slice 구현: boto3, S3 bootstrap, Python/JAR Spark 3.5.4 local S3A write와 실행 중 취소 E2E | 더 많은 EMR step 유형과 runtime 정합성 |
+| EMR bootstrap/Spark | 세로 경로 구현: boto3, S3 bootstrap, Python/JAR Spark 3.5.4 local S3A write와 실행 중 취소 E2E | 더 많은 EMR step 유형과 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
-| Spark + Hive + Glue Catalog | Vertical slice 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
-| Spark + Iceberg + Glue Catalog | Vertical slice 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
+| Glue 사용자 확장 | 구현: stable/application/unsafe v1, mount한 wheel, modeled output 검증, boto3 계약 | 더 많은 서비스 context와 선택적 원격 격리 |
+| Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
+| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | Web console | 구현: EMR/Glue resource·상태·상세, EMR log, route/thread/task, keyboard/browser E2E | 추가 service별 시각화 |
 
 관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata는 설정된
@@ -25,6 +32,7 @@
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
 
+<!-- section: exclusions -->
 ## 명시적 제외
 
 - AWS Glue Job과 JobRun API
@@ -33,6 +41,7 @@
 - 기본 local mode의 production IAM authorization 의미론
 - EC2/YARN/HDFS 물리적 분산 환경 재현
 
+<!-- section: versions -->
 ## 버전 기준선
 
 - Python API 서비스: Python 3.11, CI에서 3.11/3.12 검증

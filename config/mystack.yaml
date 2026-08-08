@@ -70,6 +70,13 @@ glue:
   api_page_size: 100
   create_default_database: true
   runtime_profile: glue-5.0
+  extensions:
+    enabled: false
+    allow_unsafe: false
+    wheels_directory: /opt/mystack/extensions
+    install_directory: /tmp/mystack/extensions
+    install_timeout_seconds: 120
+    providers: []
 
 runtime_profiles:
   spark-3.5.4:

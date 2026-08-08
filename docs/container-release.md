@@ -1,6 +1,9 @@
-# Private GHCR image publication
+<!-- doc-id: container-release -->
+<!-- lang: en -->
 
-[한국어](container-release.ko.md) | English
+[한국어](container-release.ko.md) | [English](container-release.md)
+
+# Private GHCR image publication
 
 Mystack publishes Proxy, EMR, and Glue as private multi-platform OCI images in GitHub Container
 Registry. Publication needs no AWS/GCP account, cloud role, personal access token, or repository
@@ -8,6 +11,7 @@ secret. GitHub's official [Container registry documentation](https://docs.github
 supports `GITHUB_TOKEN` for a package associated with its workflow repository and makes a newly
 published package private by default.
 
+<!-- section: images -->
 ## Images and ownership
 
 | Component | Package |
@@ -26,6 +30,7 @@ The workflow grants only `contents: read` and `packages: write` to the publishin
 [Docker image publishing example](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images).
 No registry credential is logged or stored.
 
+<!-- section: contract -->
 ## Publication contract
 
 - A `vMAJOR.MINOR.PATCH` tag publishes all three components.
@@ -49,6 +54,7 @@ BuildKit provenance/SBOM descriptors may use `unknown/unknown`; the validator ig
 attestations while requiring both configured runtime platforms. Mystack validates the OCI output but
 does not implement the OCI registry or image format protocol.
 
+<!-- section: publish -->
 ## Publish
 
 For a semantic release:
@@ -82,6 +88,7 @@ docker pull ghcr.io/leeyh0216/mystack-proxy@sha256:FULL_INDEX_DIGEST
 
 Use a classic PAT with only `read:packages` for local private pulls. Do not use an account password.
 
+<!-- section: vulnerability -->
 ## Vulnerability result and rollback semantics
 
 GHCR has no ECR-style scan-on-push API. Trivy therefore scans immediately after Buildx pushes the
@@ -92,6 +99,7 @@ both platform reports for diagnosis.
 Rollback does not require a registry mutation: change the consumer back to an earlier verified
 `image@sha256:...` identity. Tags are human release labels; digests are deployment identities.
 
+<!-- section: failures -->
 ## Failure map
 
 | Event or failure | Meaning | Change point |
@@ -106,6 +114,7 @@ Rollback does not require a registry mutation: change the consumer back to an ea
 Boundary events use `registry.*.before`, `.after`, and `.failed`; credentials, image layers, and full
 environment values are never logged.
 
+<!-- section: local-checks -->
 ## Local checks
 
 ```bash

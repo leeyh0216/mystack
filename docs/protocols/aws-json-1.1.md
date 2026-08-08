@@ -1,7 +1,11 @@
+<!-- doc-id: aws-json-1.1 -->
+<!-- lang: en -->
+
+[한국어](aws-json-1.1.ko.md) | [English](aws-json-1.1.md)
+
 # EMR and Glue wire protocol analysis
 
-[한국어](aws-json-1.1.ko.md) | English
-
+<!-- section: sources -->
 ## Sources of truth
 
 The implementation uses these sources in descending order:
@@ -19,6 +23,7 @@ Relevant official references:
 - [Service-specific SDK endpoints](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Official botocore SDK models](https://github.com/boto/botocore/tree/develop/botocore/data)
 
+<!-- section: metadata -->
 ## Service metadata
 
 The pinned botocore model reports:
@@ -32,6 +37,7 @@ The pinned botocore model reports:
 | SigV4 service | `elasticmapreduce` | `glue` |
 | Endpoint prefix | `elasticmapreduce` | `glue` |
 
+<!-- section: request -->
 ## HTTP request contract
 
 SDK requests use `POST /` with a JSON object body. The operation is selected by `X-Amz-Target`:
@@ -55,6 +61,7 @@ The proxy resolves a service in this order:
 
 Method, path, query string, request body, content type, authorization, tracing headers and custom metadata are forwarded. Hop-by-hop headers are removed. The byte body is never parsed and re-serialized by the proxy.
 
+<!-- section: serialization -->
 ## Serialization rules
 
 - Structures are JSON objects and lists are JSON arrays.
@@ -73,6 +80,7 @@ of implicit anchors. A startup dialect audit rejects a future model pattern that
 layer cannot interpret and logs `shared/model.py` as the repair boundary. Validation logs contain
 only shape paths and counts, never rejected values.
 
+<!-- section: errors -->
 ## HTTP response and errors
 
 Successful operations return the operation's modeled JSON output and HTTP 200. Responses include `Content-Type: application/x-amz-json-1.1` and `x-amzn-RequestId`.
@@ -92,12 +100,14 @@ Example semantic contract for `CreatePartition`:
 
 This follows the [CreatePartition API errors](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html). It deliberately reproduces the service contract, not a Glue bug.
 
+<!-- section: sigv4 -->
 ## SigV4 behavior
 
 Development mode accepts SDK-signed requests without validating the key, matching common local AWS tooling. Strict mode validates the SigV4 structure and configured test credentials. Regardless of mode, service and region are extracted from the credential scope for routing and request context.
 
 The proxy must not validate a signature and then mutate a signed component. Backends receive the original body and signature metadata; authentication policy belongs to the target adapter.
 
+<!-- section: emr -->
 ## EMR execution mapping
 
 - `RunJobFlow` creates a cluster and enters `STARTING`.
@@ -108,6 +118,7 @@ The proxy must not validate a signature and then mutate a signed component. Back
 
 See the official [bootstrap action lifecycle](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html) and [Spark step mapping](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html).
 
+<!-- section: glue -->
 ## Glue Catalog runtime mapping
 
 Glue Job and JobRun APIs are out of scope. Spark interoperability uses a versioned Glue-compatible profile: Spark 3.5.4, Python 3.11, Java 17, and Iceberg 1.7.1. The test/runtime image derives from `public.ecr.aws/glue/aws-glue-libs:5`, which AWS documents for local Glue 5.0 development and testing.

@@ -10,10 +10,15 @@ References:
 from __future__ import annotations
 
 import copy
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from typing import Any
 
-from mystack_aws_protocol import AwsRequestContext, AwsServiceError, OperationDispatcher
+from mystack_aws_protocol import (
+    AwsRequestContext,
+    AwsServiceError,
+    OperationDispatcher,
+    OperationExtensionBinding,
+)
 
 from mystack_glue.application import CatalogApplication
 from mystack_glue.domain import (
@@ -36,7 +41,10 @@ class GlueAwsAdapter:
         self._application = application
         self._default_catalog_id = default_catalog_id
 
-    def dispatcher(self) -> OperationDispatcher:
+    def dispatcher(
+        self,
+        extensions: Iterable[OperationExtensionBinding] = (),
+    ) -> OperationDispatcher:
         handlers: dict[str, Handler] = {
             "BatchCreatePartition": self.batch_create_partition,
             "BatchDeletePartition": self.batch_delete_partition,
@@ -62,7 +70,8 @@ class GlueAwsAdapter:
             "UpdateTable": self.update_table,
         }
         return OperationDispatcher(
-            {name: self._translate_errors(handler) for name, handler in handlers.items()}
+            {name: self._translate_errors(handler) for name, handler in handlers.items()},
+            extensions=extensions,
         )
 
     async def create_database(self, payload, context):

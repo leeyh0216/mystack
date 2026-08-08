@@ -14,6 +14,7 @@ import json
 import logging
 import re
 import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, ClassVar
@@ -166,12 +167,59 @@ class AwsServiceModel:
             )
             self._invalid(operation.name, report)
 
+    def validate_output(self, operation: OperationModel, payload: Any) -> None:
+        """Reject protocol-incompatible handler or extension output before serialization."""
+
+        if not isinstance(payload, dict | Mapping):
+            self._invalid_output(operation.name, "Response must be a mapping")
+        output_shape = operation.output_shape
+        if output_shape is None:
+            if payload:
+                self._invalid_output(operation.name, "Response must be empty")
+            return
+        errors = ParamValidator().validate(dict(payload), output_shape)
+        constraint_errors = _constraint_errors(payload, output_shape, path="output")
+        if not errors.has_errors() and not constraint_errors:
+            return
+        base_report = errors.generate_report() if errors.has_errors() else ""
+        report = "\n".join(part for part in (base_report, *constraint_errors) if part)
+        log_event(
+            _LOGGER,
+            logging.ERROR,
+            "protocol.output_validation.failed",
+            service=self._service_name,
+            operation=operation.name,
+            output_shape=output_shape.name,
+            botocore_version=botocore.__version__,
+            api_version=self.metadata.api_version,
+            model_fingerprint=self.fingerprint,
+            validation_error_count=len(report.splitlines()),
+            fix_hint=(
+                "Inspect the built-in handler or configured operation extension that produced "
+                "the response; compare it with the pinned operation output shape."
+            ),
+        )
+        self._invalid_output(operation.name, report)
+
     def _invalid(self, operation: str, message: str) -> None:
         error_code = self._INVALID_INPUT_ERRORS.get(self._service_name, "ValidationException")
         raise AwsServiceError(
             error_code,
             f"{operation}: {message}",
             fix_hint="Review the operation input shape in the pinned botocore service model.",
+        )
+
+    @staticmethod
+    def _invalid_output(operation: str, message: str) -> None:
+        del message
+        raise AwsServiceError(
+            "InternalServiceException",
+            f"{operation}: an internal handler produced an invalid modeled response",
+            http_status=500,
+            fix_hint=(
+                "Review the pinned operation output shape and the redacted output-validation "
+                "event; inspect configured extensions before the built-in handler."
+            ),
         )
 
 

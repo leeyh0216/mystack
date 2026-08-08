@@ -1,0 +1,13 @@
+# Read-only bind mounts follow the Docker Compose volume specification:
+# https://docs.docker.com/reference/compose-file/services/#volumes
+services:
+  glue:
+    volumes:
+      - type: bind
+        source: ${MYSTACK_GLUE_EXTENSIONS_DIR:-./extensions}
+        target: /opt/mystack/extensions
+        read_only: true
+    environment:
+      MYSTACK__GLUE__EXTENSIONS__ENABLED: "${MYSTACK_GLUE_EXTENSIONS_ENABLED:-true}"
+      MYSTACK__GLUE__EXTENSIONS__ALLOW_UNSAFE: "${MYSTACK_GLUE_EXTENSIONS_ALLOW_UNSAFE:-true}"
+      MYSTACK__GLUE__EXTENSIONS__PROVIDERS: "${MYSTACK_GLUE_EXTENSION_PROVIDERS:-[]}"

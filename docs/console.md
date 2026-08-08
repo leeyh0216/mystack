@@ -1,12 +1,16 @@
-# Management console and resource API
+<!-- doc-id: console -->
+<!-- lang: en -->
 
-[한국어](console.ko.md) | English
+[한국어](console.ko.md) | [English](console.md)
+
+# Management console and resource API
 
 The AWS-console-inspired UI is served at `/_mystack/console` on the public Proxy endpoint. It is a
 dependency-free packaged HTML asset and never imports EMR or Glue Domain code. The UI consumes a
 versioned JSON management boundary, following the same outward-adapter rule as the AWS protocol
 controllers. The visual vocabulary follows the [AWS Management Console](https://aws.amazon.com/console/).
 
+<!-- section: resource-boundary -->
 ## Resource boundary
 
 | Public Proxy API | Backend API | Purpose |
@@ -27,6 +31,7 @@ them to JSON. Proxy and UI code know only this JSON contract. Adding a new emula
 requires implementing the backend resource endpoint and registering a normal Proxy route; the UI
 does not need the new service's Python package.
 
+<!-- section: security -->
 ## Security and logging
 
 Resource and log endpoints reuse `management.diagnostics.enabled` and its optional bearer token.
@@ -36,6 +41,7 @@ structured before/after/failure events. Step arguments are summarized by count r
 stdout/stderr can still contain workload data and should be protected in shared environments.
 AWS documents the sensitivity and lifecycle of [EMR log files](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html).
 
+<!-- section: browser-e2e -->
 ## Accessibility and browser E2E
 
 The console provides a skip link, explicit form labels, a polite live status region, named controls,

@@ -24,6 +24,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: devcontainer-contract
+        name: Reproducible Dev Container contract
+        entry: make devcontainer-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: requirement-locks
         name: Container requirement lock drift
         entry: uv run python scripts/export_requirements.py --check

@@ -138,3 +138,34 @@ def test_validation_logs_never_include_payload_values(caplog) -> None:
         default=str,
     )
     assert secret not in emitted
+
+
+def test_rejects_protocol_incompatible_handler_output_without_logging_values(caplog) -> None:
+    secret = "never-log-this-extension-output"
+
+    async def get_database(payload, context):
+        return {"NotInTheModeledOutput": secret}
+
+    client = TestClient(app_for(OperationDispatcher({"GetDatabase": get_database})))
+
+    with caplog.at_level(logging.INFO):
+        response = client.post(
+            "/",
+            headers={"X-Amz-Target": "AWSGlue.GetDatabase"},
+            json={"Name": "analytics"},
+        )
+
+    assert response.status_code == 500
+    assert response.json()["__type"] == "InternalServiceException"
+    assert "NotInTheModeledOutput" not in response.text
+    emitted = json.dumps(
+        [
+            {
+                "message": record.getMessage(),
+                "fields": getattr(record, "mystack_fields", {}),
+            }
+            for record in caplog.records
+        ],
+        default=str,
+    )
+    assert secret not in emitted

@@ -1,9 +1,13 @@
-# Proxy 코드 변경 없이 새 emulator 추가
+<!-- doc-id: extending-proxy -->
+<!-- lang: ko -->
 
-한국어 | [English](extending-proxy.md)
+[한국어](extending-proxy.ko.md) | [English](extending-proxy.md)
+
+# Proxy 코드 변경 없이 새 에뮬레이터 추가
 
 Proxy route registry는 공식 AWS request 근거인 `X-Amz-Target`, SigV4 credential-scope service, service host prefix를 사용합니다. [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html)와 [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data)을 참고하세요.
 
+<!-- section: procedure -->
 ## 절차
 
 1. 공식 service model에서 `targetPrefix`, `endpointPrefix`, signing name, protocol, JSON/API version을 확인합니다.
@@ -27,12 +31,12 @@ proxy:
 
 Proxy의 `if service == ...` 분기는 허용하지 않습니다. 중복 target/signing/host claim은 시작 시 설정 검증에서 실패합니다.
 
+<!-- section: evolution -->
 ## Protocol 변경과 서비스 변경
 
 - 공통 AWS JSON 직렬화 변경은 `shared`
-- 서비스별 shape mapping은 새 inbound adapter
+- 서비스별 요청·응답 구조 변환은 새 입력 adapter
 - 비즈니스 상태와 규칙은 Domain/Application
 - Endpoint와 배포 값은 YAML 또는 deployment override만
 
 Client는 [공식 custom endpoint 방식](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)으로 같은 public URL을 선택합니다.
-

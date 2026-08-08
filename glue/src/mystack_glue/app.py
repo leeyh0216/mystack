@@ -26,7 +26,10 @@ from mystack_aws_protocol.observability import configure_logging, log_event
 from .adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
 from .adapters.outbound import JsonCatalogRepository, SystemClock
 from .application import CatalogApplication
+from .application.ports import Clock
 from .config import GlueSettings
+from .domain.repositories import CatalogRepository
+from .extensions import ExtensionRegistry, load_glue_extensions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,6 +39,9 @@ def create_app(
     *,
     configuration: LoadedConfiguration | None = None,
     application: CatalogApplication | None = None,
+    repository: CatalogRepository | None = None,
+    clock: Clock | None = None,
+    extension_registry: ExtensionRegistry | None = None,
     diagnostics_settings: DiagnosticsSettings | None = None,
     log_level: str | None = None,
 ) -> FastAPI:
@@ -51,14 +57,35 @@ def create_app(
     if log_level is None and loaded is not None:
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
 
-    application = application or CatalogApplication(
-        repository=JsonCatalogRepository(settings.state_file),
-        clock=SystemClock(),
-        policy=settings.policy,
+    configure_logging("glue", log_level)
+    repository_supplied = repository is not None
+    repository = repository or JsonCatalogRepository(settings.state_file)
+    clock = clock or SystemClock()
+    if application is None:
+        application = CatalogApplication(
+            repository=repository,
+            clock=clock,
+            policy=settings.policy,
+        )
+    elif (
+        settings.extensions.enabled
+        and any(provider.spi == "unsafe" for provider in settings.extensions.providers)
+        and not repository_supplied
+    ):
+        raise ValueError(
+            "create_app requires the application's repository when unsafe extensions are enabled"
+        )
+    service_model = AwsServiceModel("glue")
+    extensions = load_glue_extensions(
+        settings=settings,
+        service_model=service_model,
+        application=application,
+        repository=repository,
+        clock=clock,
+        registry=extension_registry,
     )
     adapter = GlueAwsAdapter(application, settings.policy.default_catalog_id)
-    dispatcher = adapter.dispatcher()
-    service_model = AwsServiceModel("glue")
+    dispatcher = adapter.dispatcher(extensions)
     endpoint = AwsJsonRpcEndpoint(
         service_model,
         dispatcher,
@@ -77,7 +104,6 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        configure_logging("glue", log_level)
         settings.data_root.mkdir(parents=True, exist_ok=True)
         await application.initialize()
         log_event(
@@ -90,6 +116,8 @@ def create_app(
             state_file=str(settings.state_file),
             operation_count=len(dispatcher.operations),
             operations=sorted(dispatcher.operations),
+            extension_count=len(extensions),
+            extension_ids=[extension.extension_id for extension in extensions],
             runtime_profile={
                 "name": settings.runtime.name,
                 "spark_version": settings.runtime.spark_version,

@@ -1,7 +1,11 @@
+<!-- doc-id: development -->
+<!-- lang: en -->
+
+[한국어](development.ko.md) | [English](development.md)
+
 # Development setup
 
-[한국어](development.ko.md) | English
-
+<!-- section: prerequisites -->
 ## Prerequisites
 
 - Git and GitHub CLI authenticated for the private repository
@@ -10,6 +14,7 @@
 - Optional [direnv](https://direnv.net/) for automatic local environment loading
 - At least 12 GB free disk space for Spark/Glue-compatible images and test data
 
+<!-- section: setup -->
 ## Ten-minute setup
 
 ```bash
@@ -32,6 +37,19 @@ AWS_ENDPOINT_URL=http://localhost:4566 aws s3 ls
 
 The AWS endpoint environment follows the [official SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html).
 
+<!-- section: devcontainer -->
+## Dev Container setup
+
+When Docker and the VS Code Dev Containers extension are available on the host, no separate Python,
+uv, or AWS CLI installation is required. Open a local clone and run `Dev Containers: Reopen in
+Container`. `.devcontainer/devcontainer.json` mounts the workspace at the same absolute host path and
+uses the host Docker daemon. Run `make up` and `make test` after creation completes.
+
+The [usage guide](getting-started.md) documents endpoints, bind-mount constraints, and verification
+commands. This setup follows the official [Dev Container creation
+guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container).
+
+<!-- section: precedence -->
 ## Configuration precedence
 
 1. executable `--config`, `MYSTACK_CONFIG_FILE`, or the default selects a YAML file
@@ -52,6 +70,7 @@ mount, add `-f compose.mount-config.yaml` as described in the [configuration gui
 Both modes follow [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/).
 Never commit shared-environment management tokens or real AWS credentials.
 
+<!-- section: commands -->
 ## Daily commands
 
 Run `make help` for the source of truth. Common flows:
@@ -61,6 +80,7 @@ make format
 make pre-commit
 make requirements
 make coverage-check
+make extension-example
 make test
 make contract
 make e2e
@@ -76,17 +96,21 @@ lint/format, bilingual documentation, container requirement lock, and botocore m
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 
+<!-- section: locations -->
 ## Where to make changes
 
 - Wire metadata or generic JSON serialization: `shared/src/mystack_aws_protocol`
 - Proxy route behavior: `proxy/src/mystack_proxy`; add services through YAML first
 - EMR state/behavior: `emr/src/mystack_emr/domain` and `application`
 - Glue Catalog behavior: `glue/src/mystack_glue/domain` and `application`
+- Public Glue extension contracts: `glue/src/mystack_glue/extension_api`; discovery and wiring:
+  `glue/src/mystack_glue/extensions.py` and the composition root
 - S3, process, database, FastAPI: service `adapters`
 - Dependency wiring only: service composition root
 
 The dependency direction is enforced using the [AWS hexagonal architecture model](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html).
 
+<!-- section: troubleshooting -->
 ## Troubleshooting
 
 - `make bootstrap` reports missing tools, broken docs, model drift, or fast-test failures.

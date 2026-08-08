@@ -1,12 +1,16 @@
-# 관리 Console과 Resource API
+<!-- doc-id: console -->
+<!-- lang: ko -->
 
-한국어 | [English](console.md)
+[한국어](console.ko.md) | [English](console.md)
+
+# 관리 Console과 Resource API
 
 AWS Console 스타일 UI는 public Proxy의 `/_mystack/console`에서 제공합니다. Dependency가
 없는 package 내 HTML asset이며 EMR/Glue Domain code를 import하지 않습니다. UI는 AWS
 protocol controller와 같은 outward adapter 원칙으로 versioned JSON management 경계만
 사용합니다. 시각 체계는 [AWS Management Console](https://aws.amazon.com/console/)을 참고합니다.
 
+<!-- section: resource-boundary -->
 ## Resource 경계
 
 | Public Proxy API | Backend API | 목적 |
@@ -26,6 +30,7 @@ log tail을 제공합니다. Glue는 설정 catalog의 database/table/partition 
 resource endpoint와 일반 Proxy route만 제공하면 되고 UI가 그 service Python package를
 알 필요가 없습니다.
 
+<!-- section: security -->
 ## 보안과 로깅
 
 Resource/log endpoint는 `management.diagnostics.enabled`와 선택적 bearer token을 함께
@@ -36,6 +41,7 @@ event를 기록합니다. Step argument는 값 대신 개수만 노출하지만 
 [EMR log file 지침](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html)을
 기준으로 합니다.
 
+<!-- section: browser-e2e -->
 ## 접근성과 Browser E2E
 
 Skip link, 명시적 form label, polite live status, 이름 있는 control, responsive layout, 보이는

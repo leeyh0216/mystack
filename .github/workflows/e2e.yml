@@ -9,10 +9,14 @@ on:
       - "emr/**"
       - "glue/**"
       - "tests/e2e/**"
+      - "examples/glue-extension/**"
+      - "extensions/**"
       - "requirements/**"
       - "config/**"
       - "compose.yaml"
       - "compose.mount-config.yaml"
+      - "compose.extensions.yaml"
+      - "compose.extension-e2e.yaml"
       - "Makefile"
       - "**/Dockerfile"
       - ".github/workflows/e2e.yml"
@@ -47,6 +51,9 @@ jobs:
         env:
           MYSTACK_BROWSER_E2E_REQUIRED: "1"
         run: make e2e
+      - name: Build, mount, install, and test all Glue extension SPIs
+        if: success()
+        run: make extension-e2e
       - name: Collect component logs
         if: always()
         run: docker compose logs --no-color > docker-compose.log

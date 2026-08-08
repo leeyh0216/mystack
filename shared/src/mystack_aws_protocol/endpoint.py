@@ -71,6 +71,7 @@ class AwsJsonRpcEndpoint:
             self._model.validate(operation, payload)
             context = self._context(request, request_id, operation_name)
             result = await self._dispatcher.dispatch(operation_name, payload, context)
+            self._model.validate_output(operation, result)
             response = self._success(result, request_id)
             log_event(
                 _LOGGER,
