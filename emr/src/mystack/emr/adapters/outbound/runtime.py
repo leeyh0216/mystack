@@ -60,6 +60,7 @@ class EmrRuntimeConfiguration(Protocol):
     bootstrap_timeout_seconds: float
     bootstrap_shell: str
     terminate_grace_seconds: float
+    shutdown_timeout_seconds: float
     command_runner_jars: frozenset[str]
     object_store: ObjectStoreConfiguration
     runtimes: Mapping[str, SparkRuntimeConfiguration]
@@ -79,8 +80,11 @@ class S3ArtifactStore:
             aws_secret_access_key=settings.secret_access_key,
             config=Config(s3={"addressing_style": "path" if settings.s3_path_style else "auto"}),
         )
+        self._closed = False
 
     async def materialize(self, uri: str, destination: Path) -> Path:
+        if self._closed:
+            raise RuntimeError("EMR artifact store is closed")
         parsed = urlparse(uri)
         destination.mkdir(parents=True, exist_ok=True)
         name = Path(parsed.path).name or "artifact"
@@ -134,6 +138,24 @@ class S3ArtifactStore:
         )
         return target
 
+    async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.artifact_store.close.before",
+            side_effect=True,
+        )
+        await asyncio.to_thread(self._client.close)
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.artifact_store.close.after",
+            side_effect=True,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class _ProcessOutcome:
@@ -148,6 +170,11 @@ class LocalProcessExecutor:
         self._processes: dict[tuple[str, str], asyncio.subprocess.Process] = {}
         self._cancellations: set[tuple[str, str]] = set()
         self._lock = asyncio.Lock()
+        self._closed = False
+
+    @property
+    def active_process_count(self) -> int:
+        return len(self._processes)
 
     async def execute(
         self,
@@ -159,6 +186,9 @@ class LocalProcessExecutor:
         timeout_seconds: float,
         environment: dict[str, str],
     ) -> _ProcessOutcome:
+        async with self._lock:
+            if self._closed:
+                raise RuntimeError("EMR process executor is closed")
         work_dir.mkdir(parents=True, exist_ok=True)
         stdout_file = work_dir / "stdout.log"
         stderr_file = work_dir / "stderr.log"
@@ -189,6 +219,7 @@ class LocalProcessExecutor:
                 self._processes[key] = process
                 cancellation_requested = key in self._cancellations
                 self._cancellations.discard(key)
+                executor_closed = self._closed
             log_event(
                 _LOGGER,
                 logging.INFO,
@@ -198,7 +229,7 @@ class LocalProcessExecutor:
                 pid=process.pid,
                 side_effect=True,
             )
-            if cancellation_requested:
+            if cancellation_requested or executor_closed:
                 log_event(
                     _LOGGER,
                     logging.INFO,
@@ -211,6 +242,18 @@ class LocalProcessExecutor:
                 await self._stop(process)
             try:
                 exit_code = await asyncio.wait_for(process.wait(), timeout=timeout_seconds)
+            except asyncio.CancelledError:
+                log_event(
+                    _LOGGER,
+                    logging.INFO,
+                    "emr.process.owner.cancelled",
+                    cluster_id=cluster_id,
+                    operation_id=operation_id,
+                    pid=process.pid,
+                    side_effect=True,
+                )
+                await self._stop(process)
+                raise
             except TimeoutError:
                 log_event(
                     _LOGGER,
@@ -249,7 +292,10 @@ class LocalProcessExecutor:
         async with self._lock:
             key = (cluster_id, operation_id)
             process = self._processes.get(key)
+            executor_closed = self._closed
             if process is None:
+                if executor_closed:
+                    return
                 self._cancellations.add(key)
         if process is None:
             log_event(
@@ -290,6 +336,56 @@ class LocalProcessExecutor:
             operations = [key[1] for key in self._processes if key[0] == cluster_id]
         for operation_id in operations:
             await self.cancel(cluster_id, operation_id)
+
+    async def close(self) -> None:
+        async with self._lock:
+            if self._closed:
+                return
+            self._closed = True
+            processes = list(reversed(self._processes.values()))
+            self._cancellations.clear()
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.process_executor.close.before",
+            active_process_count=len(processes),
+            shutdown_timeout_seconds=self._settings.shutdown_timeout_seconds,
+            side_effect=True,
+        )
+        if processes:
+            try:
+                await asyncio.wait_for(
+                    self._stop_all(processes),
+                    timeout=self._settings.shutdown_timeout_seconds,
+                )
+            except TimeoutError:
+                for process in processes:
+                    if process.returncode is None:
+                        process.kill()
+                await asyncio.gather(*(process.wait() for process in processes))
+                log_event(
+                    _LOGGER,
+                    logging.ERROR,
+                    "emr.process_executor.close.timeout",
+                    shutdown_timeout_seconds=self._settings.shutdown_timeout_seconds,
+                    fix_hint=(
+                        "Inspect child-process signal handling and the configured terminate grace."
+                    ),
+                )
+                raise
+        async with self._lock:
+            self._processes.clear()
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.process_executor.close.after",
+            active_process_count=self.active_process_count,
+            side_effect=True,
+        )
+
+    async def _stop_all(self, processes: list[asyncio.subprocess.Process]) -> None:
+        for process in processes:
+            await self._stop(process)
 
     async def _stop(self, process: asyncio.subprocess.Process) -> None:
         if process.returncode is not None:

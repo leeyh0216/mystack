@@ -56,6 +56,15 @@ command/query, 부분 성공 partition batch, pagination, initialization handler
 cascade policy는 이 handler가 소유하며 repository는 snapshot과 candidate transaction capability만
 노출합니다.
 
+EMR Application은 cluster command, Step command, read-only query, opaque pagination, queue
+완료/실패 policy, 비동기 cluster driver를 분리합니다. Inbound adapter는 concrete facade가 아니라
+각각의 최소 command/query Protocol을 선언합니다. Typed EMR runtime은 작업을 시작하지 않은 상태로
+build되고 FastAPI lifespan이 start한 뒤 scheduler task, bootstrap/Spark child process, S3 artifact
+client 순서로 닫습니다. Close는 설정 deadline을 사용하고 여러 번 호출해도 안전하며, 각 실행 후
+cluster별 driver lock을 제거합니다. 이 생명주기는 Python 공식 [task
+cancellation](https://docs.python.org/3/library/asyncio-task.html#task-cancellation)과 [async
+subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) 계약을 따릅니다.
+
 <!-- section: enforcement -->
 ## 실행 가능한 아키텍처 계약
 

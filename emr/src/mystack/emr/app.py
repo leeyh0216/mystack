@@ -37,6 +37,7 @@ from .adapters.outbound import (
 from .application import EmrApplication
 from .config import EmrSettings
 from .domain.errors import EmrDomainError
+from .runtime import EmrRuntime
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ def create_app(
     if log_level is None and loaded is not None:
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
 
+    owned_runtime: EmrRuntime | None = None
     if application is None:
         repository = InMemoryClusterRepository()
         executor = LocalProcessExecutor(settings)
@@ -71,10 +73,12 @@ def create_app(
             ids=RandomAwsIds(),
             bootstrap_runner=LocalBootstrapRunner(settings, artifacts, executor),
             step_runner=LocalSparkStepRunner(settings, artifacts, executor),
-            scheduler=AsyncioTaskScheduler(),
+            scheduler=AsyncioTaskScheduler(settings.shutdown_timeout_seconds),
             policy=settings.policy,
         )
-    adapter = EmrAwsAdapter(application)
+        owned_runtime = EmrRuntime.build(application, executor, artifacts, settings)
+        application = owned_runtime.application
+    adapter = EmrAwsAdapter(application, application, application)
     dispatcher = adapter.dispatcher()
     service_model = AwsServiceModel("emr")
     endpoint = AwsJsonRpcEndpoint(
@@ -94,27 +98,38 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        del app
         configure_logging("emr", log_level)
-        settings.work_root.mkdir(parents=True, exist_ok=True)
-        log_event(
-            _LOGGER,
-            logging.INFO,
-            "emr.started",
-            config_source=settings.config_source,
-            config_fingerprint=settings.config_fingerprint,
-            work_root=str(settings.work_root),
-            operation_count=len(dispatcher.operations),
-            operations=sorted(dispatcher.operations),
-            release_profiles={
-                key: {
-                    "runtime_profile": value.runtime_profile,
-                    "aws_spark_version": value.aws_spark_version,
-                }
-                for key, value in settings.policy.release_profiles.items()
-            },
-        )
-        yield
-        log_event(_LOGGER, logging.INFO, "emr.stopping")
+        try:
+            if owned_runtime is not None:
+                await owned_runtime.start()
+            else:
+                settings.work_root.mkdir(parents=True, exist_ok=True)
+                await application.start()
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "emr.started",
+                config_source=settings.config_source,
+                config_fingerprint=settings.config_fingerprint,
+                work_root=str(settings.work_root),
+                operation_count=len(dispatcher.operations),
+                operations=sorted(dispatcher.operations),
+                release_profiles={
+                    key: {
+                        "runtime_profile": value.runtime_profile,
+                        "aws_spark_version": value.aws_spark_version,
+                    }
+                    for key, value in settings.policy.release_profiles.items()
+                },
+            )
+            yield
+        finally:
+            log_event(_LOGGER, logging.INFO, "emr.stopping")
+            if owned_runtime is not None:
+                await owned_runtime.close()
+            else:
+                await application.close()
 
     app = FastAPI(title="Mystack EMR Emulator", version="0.1.0", lifespan=lifespan)
     app.include_router(create_diagnostics_router("emr", diagnostics_settings))

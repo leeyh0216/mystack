@@ -60,8 +60,11 @@
 - Preconditions/rules: documented cluster/step transitions, failure actions, single-cluster queue policy.
 - Failures: validation, not found, invalid state, termination protection, bad marker.
 - Observability: transitions, scheduling, process lifecycle, public boto3 contract and E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/inbound/aws.py:40`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/application/service.py:65`
+- Responsibility: cluster commands, Step commands, and queries use independent minimal ports;
+  only the queue driver owns asynchronous runners and scheduling.
+- Evidence: `emr/src/mystack/emr/application/cluster.py`,
+  `emr/src/mystack/emr/application/step.py`, `emr/src/mystack/emr/application/queries.py`,
+  `emr/src/mystack/emr/application/driver.py`
 - Confidence: High
 
 <!-- section: uc-004 -->
@@ -74,11 +77,13 @@
 - Stored/changed data: work/log directories and EMR state transitions.
 - Side effects: S3 downloads and subprocess start/signal/kill/cleanup, always without a shell.
 - Preconditions/rules: allowed URI/scheme and step runner; cancellation is idempotent, including pre-start.
+  Runtime Build performs no background work; Start enables scheduling; Close cancels and awaits tasks
+  and children before closing artifacts with a configured deadline.
 - Failures: missing artifact, bootstrap failure, process timeout/exit, cancellation, invalid application args.
 - Observability: S3/process before/after/failure events; Python and JAR Spark S3A/cancel E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:46`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:282`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:326`
+- Evidence: `emr/src/mystack/emr/runtime.py`,
+  `emr/src/mystack/emr/adapters/outbound/runtime.py`,
+  `emr/src/mystack/emr/adapters/outbound/system.py`
 - Confidence: High
 
 <!-- section: uc-005 -->

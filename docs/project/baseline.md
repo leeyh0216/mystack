@@ -45,6 +45,10 @@ contracts.
   reach-through.
 - EMR: 13 operations, cluster/step state machines, bootstrap materialization from LocalStack S3,
   Python/JAR Spark execution, cancellation, logs, and management read models.
+- EMR responsibilities: focused cluster-command, Step-command, query, pagination, failure-policy,
+  and queue-driver components sit behind minimal inbound Protocols. A typed Build/Start/Close runtime
+  cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
+  closes artifacts, and releases driver locks.
 - Glue: 22 operations covering database, table/version, and partition/batch behavior. Serialized
   candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
   schema 1, and keep rename/cascade/version checks atomic; documented domain errors translate at the
@@ -58,7 +62,7 @@ contracts.
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 86 collected. The fast suite selects 81, passes 79, and skips two real-AWS
+- Final test inventory: 93 collected. The fast suite selects 88, passes 86, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 
@@ -122,6 +126,6 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Separate EMR command, query, and lifecycle responsibilities.
-2. Split large inbound AWS adapters by operation family.
-3. Generate client/runtime compatibility jobs from a versioned manifest.
+1. Split large inbound AWS adapters by operation family.
+2. Generate client/runtime compatibility jobs from a versioned manifest.
+3. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.

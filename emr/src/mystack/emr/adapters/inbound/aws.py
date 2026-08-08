@@ -14,7 +14,7 @@ from typing import Any
 
 from mystack.aws_protocol import AwsRequestContext, AwsServiceError, OperationDispatcher
 from mystack.emr.application.commands import AddSteps, CreateCluster
-from mystack.emr.application.use_cases import EmrControlPlaneUseCases
+from mystack.emr.application.use_cases import EmrClusterCommands, EmrQueries, EmrStepCommands
 from mystack.emr.domain import (
     ActionOnFailure,
     BootstrapAction,
@@ -33,8 +33,15 @@ Handler = Callable[[Mapping[str, Any], AwsRequestContext], Awaitable[Mapping[str
 class EmrAwsAdapter:
     """Explicit operation mapping; this is the sole AWS-to-domain translation boundary."""
 
-    def __init__(self, application: EmrControlPlaneUseCases) -> None:
-        self._application = application
+    def __init__(
+        self,
+        cluster_commands: EmrClusterCommands,
+        step_commands: EmrStepCommands,
+        queries: EmrQueries,
+    ) -> None:
+        self._cluster_commands = cluster_commands
+        self._step_commands = step_commands
+        self._queries = queries
 
     def dispatcher(self) -> OperationDispatcher:
         operations: dict[str, Handler] = {
@@ -81,7 +88,7 @@ class EmrAwsAdapter:
             log_uri=_optional_string(payload.get("LogUri")),
             service_role=_optional_string(payload.get("ServiceRole")),
         )
-        cluster = await self._application.create_cluster(
+        cluster = await self._cluster_commands.create_cluster(
             command,
             region=context.region,
             account_id=context.account_id,
@@ -94,7 +101,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        cluster = await self._application.describe_cluster(str(payload["ClusterId"]))
+        cluster = await self._queries.describe_cluster(str(payload["ClusterId"]))
         return {"Cluster": _cluster(cluster)}
 
     async def list_clusters(
@@ -108,7 +115,7 @@ class EmrAwsAdapter:
             if payload.get("ClusterStates")
             else None
         )
-        clusters, marker = await self._application.list_clusters(
+        clusters, marker = await self._queries.list_clusters(
             states=states,
             created_after=_optional_float(payload.get("CreatedAfter")),
             created_before=_optional_float(payload.get("CreatedBefore")),
@@ -126,7 +133,7 @@ class EmrAwsAdapter:
             cluster_id=str(payload["JobFlowId"]),
             steps=tuple(_step_spec(value) for value in payload["Steps"]),
         )
-        steps = await self._application.add_steps(command)
+        steps = await self._step_commands.add_steps(command)
         return {"StepIds": [step.id for step in steps]}
 
     async def describe_step(
@@ -135,7 +142,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        step = await self._application.describe_step(
+        step = await self._queries.describe_step(
             str(payload["ClusterId"]),
             str(payload["StepId"]),
         )
@@ -153,7 +160,7 @@ class EmrAwsAdapter:
             else None
         )
         step_ids = set(map(str, payload["StepIds"])) if payload.get("StepIds") else None
-        steps, marker = await self._application.list_steps(
+        steps, marker = await self._queries.list_steps(
             str(payload["ClusterId"]),
             states=states,
             step_ids=step_ids,
@@ -167,7 +174,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        results = await self._application.cancel_steps(
+        results = await self._step_commands.cancel_steps(
             str(payload["ClusterId"]),
             map(str, payload["StepIds"]),
         )
@@ -183,7 +190,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        await self._application.terminate_clusters(map(str, payload["JobFlowIds"]))
+        await self._cluster_commands.terminate_clusters(map(str, payload["JobFlowIds"]))
         return {}
 
     async def list_bootstrap_actions(
@@ -192,7 +199,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        actions, marker = await self._application.list_bootstrap_actions(
+        actions, marker = await self._queries.list_bootstrap_actions(
             str(payload["ClusterId"]),
             marker=_optional_string(payload.get("Marker")),
         )
@@ -210,7 +217,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        await self._application.add_tags(
+        await self._cluster_commands.add_tags(
             _resource_id(payload),
             dict(_tag(value) for value in payload["Tags"]),
         )
@@ -222,7 +229,9 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        await self._application.remove_tags(_resource_id(payload), map(str, payload["TagKeys"]))
+        await self._cluster_commands.remove_tags(
+            _resource_id(payload), map(str, payload["TagKeys"])
+        )
         return {}
 
     async def set_termination_protection(
@@ -231,7 +240,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        await self._application.set_termination_protection(
+        await self._cluster_commands.set_termination_protection(
             map(str, payload["JobFlowIds"]),
             bool(payload["TerminationProtected"]),
         )
@@ -243,7 +252,7 @@ class EmrAwsAdapter:
         context: AwsRequestContext,
     ) -> Mapping[str, Any]:
         del context
-        await self._application.set_visible_to_all_users(
+        await self._cluster_commands.set_visible_to_all_users(
             map(str, payload["JobFlowIds"]),
             bool(payload["VisibleToAllUsers"]),
         )

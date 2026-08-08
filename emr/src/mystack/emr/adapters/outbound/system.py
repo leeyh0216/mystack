@@ -32,12 +32,36 @@ class RandomAwsIds:
 
 
 class AsyncioTaskScheduler:
-    def __init__(self) -> None:
-        self._tasks: set[asyncio.Task[None]] = set()
+    def __init__(self, shutdown_timeout_seconds: float) -> None:
+        self._shutdown_timeout_seconds = shutdown_timeout_seconds
+        self._tasks: list[asyncio.Task[None]] = []
+        self._started = False
+        self._closed = False
 
-    def start(self, work: Coroutine[Any, Any, None], name: str) -> None:
+    @property
+    def active_task_count(self) -> int:
+        return len(self._tasks)
+
+    async def start(self) -> None:
+        if self._closed:
+            raise RuntimeError("EMR task scheduler is closed")
+        if self._started:
+            return
+        self._started = True
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.scheduler.started",
+            shutdown_timeout_seconds=self._shutdown_timeout_seconds,
+            side_effect=True,
+        )
+
+    def schedule(self, work: Coroutine[Any, Any, None], name: str) -> None:
+        if not self._started or self._closed:
+            work.close()
+            raise RuntimeError("EMR task scheduler must be started before scheduling work")
         task = asyncio.create_task(work, name=name)
-        self._tasks.add(task)
+        self._tasks.append(task)
         task.add_done_callback(self._done)
         log_event(
             _LOGGER,
@@ -48,8 +72,53 @@ class AsyncioTaskScheduler:
             side_effect=True,
         )
 
+    async def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        tasks = list(reversed(self._tasks))
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.scheduler.close.before",
+            active_task_count=len(tasks),
+            shutdown_timeout_seconds=self._shutdown_timeout_seconds,
+            side_effect=True,
+        )
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=self._shutdown_timeout_seconds,
+                )
+            except TimeoutError:
+                remaining = [task.get_name() for task in tasks if not task.done()]
+                log_event(
+                    _LOGGER,
+                    logging.ERROR,
+                    "emr.scheduler.close.timeout",
+                    remaining_task_names=remaining,
+                    shutdown_timeout_seconds=self._shutdown_timeout_seconds,
+                    fix_hint=(
+                        "Inspect runner cancellation handling and increase "
+                        "emr.shutdown_timeout_seconds only when cleanup is expected to be slower."
+                    ),
+                )
+                raise
+        self._started = False
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.scheduler.close.after",
+            active_task_count=len(self._tasks),
+            side_effect=True,
+        )
+
     def _done(self, task: asyncio.Task[None]) -> None:
-        self._tasks.discard(task)
+        if task in self._tasks:
+            self._tasks.remove(task)
         if task.cancelled():
             outcome = "cancelled"
         elif task.exception() is not None:

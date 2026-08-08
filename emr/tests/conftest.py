@@ -88,7 +88,7 @@ def emr_server(
         ids=RandomAwsIds(),
         bootstrap_runner=runtime,
         step_runner=runtime,
-        scheduler=AsyncioTaskScheduler(),
+        scheduler=AsyncioTaskScheduler(settings.shutdown_timeout_seconds),
         policy=settings.policy,
     )
     app = create_app(configuration=configured, application=application)

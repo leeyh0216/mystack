@@ -71,6 +71,12 @@ adapter, covered by a typed configuration test, and documented in both languages
 and Application modules receive typed policy/value objects and never read files or environment
 variables.
 
+`emr.shutdown_timeout_seconds` bounds service shutdown after scheduling has stopped. Within that
+deadline, EMR cancels and awaits owned driver tasks, terminates or kills bootstrap/Spark children
+using `emr.terminate_grace_seconds`, and closes the artifact client. It is distinct from the
+per-bootstrap and per-Step execution deadlines. Python documents the underlying behavior in
+[`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for).
+
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
 Compose service or custom runtime image needs no test-code change. Spark documents JAR and main

@@ -43,6 +43,10 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   제공합니다.
 - EMR은 13개 operation, cluster/step state machine, LocalStack S3 bootstrap materialization,
   Python/JAR Spark 실행, 취소, log, management read model을 구현합니다.
+- EMR 책임은 최소 inbound Protocol 뒤에 focused cluster-command, Step-command, query, pagination,
+  failure-policy, queue-driver component로 분리했습니다. Typed Build/Start/Close runtime은 파일로
+  설정한 shutdown deadline 안에서 scheduler task와 child process를 cancel/await하고 artifact를
+  닫으며 driver lock을 해제합니다.
 - Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. 직렬화한 candidate
   transaction이 visible publish 전에 schema-2 JSON을 persist/fsync/replace하고 schema 1을
   migration하며 rename/cascade/version check를 한 commit으로 처리합니다. Inbound adapter는 domain
@@ -56,7 +60,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 86개입니다. Fast suite는 81개를 선택해 79개가 통과하고 real-AWS
+- 최종 test inventory는 93개입니다. Fast suite는 88개를 선택해 86개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
@@ -123,6 +127,6 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. EMR command, query, lifecycle 책임을 분리합니다.
-2. 큰 inbound AWS adapter를 operation family별로 분리합니다.
-3. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
+1. 큰 inbound AWS adapter를 operation family별로 분리합니다.
+2. Versioned manifest에서 client/runtime compatibility job을 생성합니다.
+3. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.

@@ -64,6 +64,15 @@ batches, pagination, and initialization. `CatalogApplication` is a delegation-on
 facade for inbound ports. Rename and cascade policy belongs to these handlers; repositories expose
 only snapshot and candidate-transaction capabilities.
 
+EMR Application separates cluster commands, Step commands, read-only queries, opaque pagination,
+queue-completion/failure policy, and the asynchronous cluster driver. The inbound adapter declares
+those minimal command/query Protocols instead of depending on the concrete facade. The typed EMR
+runtime is built without starting work; FastAPI lifespan starts it and closes scheduler tasks,
+bootstrap/Spark child processes, then the S3 artifact client. Close is idempotent, uses the configured
+deadline, and removes per-cluster driver locks after each run. This follows Python's documented
+[task cancellation](https://docs.python.org/3/library/asyncio-task.html#task-cancellation) and
+[async subprocess](https://docs.python.org/3/library/asyncio-subprocess.html) contracts.
+
 <!-- section: enforcement -->
 ## Executable architecture contract
 

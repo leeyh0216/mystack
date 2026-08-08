@@ -120,7 +120,8 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - Wire metadata/공통 JSON 직렬화: `shared/src/mystack/aws_protocol`
 - Proxy route 동작: `proxy/src/mystack/proxy/routing.py`; 새 서비스는 YAML 우선
 - Proxy controller capability와 HTTP lifecycle: `proxy/src/mystack/proxy/ports.py`, `runtime.py`
-- EMR 상태/동작: `emr/src/mystack/emr/domain`, `application`
+- EMR 상태/동작: `emr/src/mystack/emr/domain`; focused command/query/failure policy/queue driver:
+  `emr/src/mystack/emr/application`; Build/Start/Close 소유권: `emr/src/mystack/emr/runtime.py`
 - Glue Catalog 동작: `glue/src/mystack/glue/domain`, `application`
 - Glue aggregate invariant: `glue/src/mystack/glue/domain/model.py`; focused handler:
   `application/database.py`, `table.py`, `partition.py`, `batch.py`, `initialization.py`

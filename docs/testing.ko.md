@@ -29,6 +29,9 @@
 - 확장 chain 시험은 실행 순서, 완전 교체, 다음 handler 1회 호출, 설정 제한 시간, 시작 권한과
   버전 실패, 최종 출력 모델 검증을 포함합니다.
 - EMR 테스트는 고정 sleep이 아니라 설정 deadline까지 문서화된 상태를 poll하며 [EMR cluster lifecycle](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-overview.html)을 따릅니다.
+- EMR lifecycle test는 부분 startup과 driver 실패를 주입하고 scheduler를 두 번 닫으며 실제 child
+  process를 실행해 역순 cleanup, task/process/lock 무누수, deadline 사용을 검증합니다. 책임 test는
+  cluster-command, Step-command, query handler의 public surface도 고정합니다.
 
 <!-- section: e2e -->
 ## 실제 runtime E2E

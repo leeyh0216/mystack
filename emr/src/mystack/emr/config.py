@@ -49,6 +49,7 @@ class EmrSettings:
     bootstrap_timeout_seconds: float
     bootstrap_shell: str
     terminate_grace_seconds: float
+    shutdown_timeout_seconds: float
     output_tail_bytes: int
     command_runner_jars: frozenset[str]
     account_id: str
@@ -97,6 +98,7 @@ class EmrSettings:
                 bootstrap_timeout_seconds=float(emr["bootstrap_timeout_seconds"]),
                 bootstrap_shell=str(emr["bootstrap_shell"]),
                 terminate_grace_seconds=float(emr["terminate_grace_seconds"]),
+                shutdown_timeout_seconds=float(emr["shutdown_timeout_seconds"]),
                 output_tail_bytes=int(emr["output_tail_bytes"]),
                 command_runner_jars=frozenset(map(str, emr["command_runner_jars"])),
                 account_id=str(localstack["account_id"]),

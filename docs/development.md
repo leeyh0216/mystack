@@ -122,7 +122,8 @@ contract](https://pre-commit.com/#install).
 - Proxy route behavior: `proxy/src/mystack/proxy/routing.py`; add services through YAML first
 - Proxy controller capabilities and HTTP lifecycle: `proxy/src/mystack/proxy/ports.py` and
   `runtime.py`
-- EMR state/behavior: `emr/src/mystack/emr/domain` and `application`
+- EMR state/behavior: `emr/src/mystack/emr/domain`; focused commands, queries, failure policy, and
+  queue driver: `emr/src/mystack/emr/application`; Build/Start/Close ownership: `emr/src/mystack/emr/runtime.py`
 - Glue Catalog behavior: `glue/src/mystack/glue/domain` and `application`
 - Glue aggregate invariants: `glue/src/mystack/glue/domain/model.py`; focused handlers:
   `application/database.py`, `table.py`, `partition.py`, `batch.py`, and `initialization.py`

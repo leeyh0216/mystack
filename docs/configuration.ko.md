@@ -69,6 +69,13 @@ Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 
 mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 Domain/Application module은
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
 
+`emr.shutdown_timeout_seconds`는 새 scheduling을 멈춘 뒤 service 종료 전체를 제한합니다. 이
+deadline 안에서 EMR은 소유한 driver task를 cancel/await하고,
+`emr.terminate_grace_seconds`로 bootstrap/Spark child를 terminate 또는 kill한 뒤 artifact client를
+닫습니다. Bootstrap별·Step별 실행 timeout과는 별도 값입니다. 기반 동작은 Python 공식
+[`asyncio.wait_for`](https://docs.python.org/3/library/asyncio-task.html#asyncio.wait_for) 문서를
+따릅니다.
+
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할

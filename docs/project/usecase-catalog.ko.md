@@ -59,8 +59,11 @@
 - 선행조건/규칙: 문서화된 state transition, failure action, cluster별 queue 정책.
 - 실패: validation, not found, invalid state, termination protection, bad marker.
 - 관측: transition, scheduling, process lifecycle, public boto3 contract/E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/inbound/aws.py:40`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/application/service.py:65`
+- 책임: cluster command, Step command, query가 독립된 최소 port를 사용하며 비동기 runner와
+  scheduling은 queue driver만 소유합니다.
+- 근거: `emr/src/mystack/emr/application/cluster.py`,
+  `emr/src/mystack/emr/application/step.py`, `emr/src/mystack/emr/application/queries.py`,
+  `emr/src/mystack/emr/application/driver.py`
 - 신뢰도: High
 
 <!-- section: uc-004 -->
@@ -72,12 +75,14 @@
 - 출력: runtime exit code/reason, stdout/stderr log이며 Spark가 LocalStack S3 object를 쓸 수 있습니다.
 - 저장/변경: work/log directory와 EMR state transition입니다.
 - 부수효과: shell 없이 S3 download와 subprocess start/signal/kill/cleanup을 수행합니다.
-- 선행조건/규칙: 허용 URI/scheme과 runner, 시작 전을 포함한 idempotent cancel.
+- 선행조건/규칙: 허용 URI/scheme과 runner, 시작 전을 포함한 idempotent cancel. Runtime Build는
+  background 작업을 시작하지 않고 Start가 scheduling을 활성화하며 Close가 설정 deadline으로
+  task와 child를 cancel/await한 뒤 artifact를 닫습니다.
 - 실패: artifact 없음, bootstrap 실패, process timeout/exit, cancel, 잘못된 application args.
 - 관측: S3/process 전/후/실패 event, Python/JAR Spark S3A/cancel E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:46`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:282`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/adapters/outbound/runtime.py:326`
+- 근거: `emr/src/mystack/emr/runtime.py`,
+  `emr/src/mystack/emr/adapters/outbound/runtime.py`,
+  `emr/src/mystack/emr/adapters/outbound/system.py`
 - 신뢰도: High
 
 <!-- section: uc-005 -->

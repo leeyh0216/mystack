@@ -49,6 +49,7 @@ emr:
   bootstrap_timeout_seconds: 900
   bootstrap_shell: /bin/bash
   terminate_grace_seconds: 10
+  shutdown_timeout_seconds: 30
   output_tail_bytes: 32768
   command_runner_jars: [command-runner.jar]
   api_page_size: 50
