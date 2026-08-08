@@ -88,10 +88,10 @@ If an upgraded client breaks this profile, inspect:
 <!-- section: limits -->
 ## Limits
 
-This contract does not guarantee snapshot time travel, rollback, branch/tag writes, metadata-table
-queries or procedures; rename/drop/purge; compaction, orphan cleanup, or snapshot retention. It
-also excludes authentication, authorization, IAM, Lake Formation, cross-account/cross-Region,
-Open Table Format APIs, PyIceberg, Flink, and Trino.
+Snapshot time travel, branch/tag writes, metadata tables, and procedures are covered by the
+[snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md). This row-level
+contract does not guarantee rename/drop/purge. It also excludes authentication, authorization, IAM,
+Lake Formation, cross-account/cross-Region, Open Table Format APIs, PyIceberg, Flink, and Trino.
 
 <!-- section: sources -->
 ## Official sources

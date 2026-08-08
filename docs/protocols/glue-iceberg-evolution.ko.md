@@ -91,10 +91,11 @@ field, 안전하게 넓어진 type, identifier field, 전체 sort order를 검�
 ## 한계
 
 Row-level write는 별도 [Iceberg row-level DML 계약](glue-iceberg-row-level-dml.ko.md)이 다룹니다.
-이 evolution 계약은 snapshot, time-travel, rollback, branch, tag, procedure, metadata table,
-rename/drop/purge, compaction, orphan cleanup, snapshot retention을 보장하지 않습니다. 인증, 인가,
-IAM, Lake Formation, cross-account/cross-Region,
-Open Table Format API, PyIceberg, Flink, Trino는 계속 명시적인 프로젝트 제외 범위입니다.
+Snapshot, reference, metadata table, procedure 동작은 [snapshot/reference/procedure
+계약](glue-iceberg-snapshots-refs-procedures.ko.md)이 다룹니다. 이 evolution 계약은
+rename/drop/purge를 보장하지 않습니다. 인증, 인가, IAM, Lake Formation,
+cross-account/cross-Region, Open Table Format API, PyIceberg, Flink, Trino는 계속 명시적인 프로젝트
+제외 범위입니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

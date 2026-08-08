@@ -19,7 +19,7 @@
 | EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
 | Glue Data Catalog | API 목록 일부 지원: boto3로 검증한 22개 operation의 database/table/version/partition/batch 결정적 오류와 선택적 timeout/internal injection 완성 | 더 넓은 Data Catalog API 목록 |
 | Spark + Hive + Glue Catalog | 검증 완료: 공식 Glue 5 image, complex type, type 기반 pruning, partition DDL/repair, 지원하는 Hive V1 table ALTER metadata 의미론, 구현 operation 전체의 결정적 오류 | 더 넓은 Spark/Hive client variant |
-| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read, dynamic overwrite, COW/MOR row-level DML, hidden partition/schema/sort/identifier evolution, 원자적 `VersionId` pointer commit과 concurrent-writer retry E2E | Snapshot/ref/procedure, lifecycle operation과 더 넓은 Iceberg API |
+| Spark + Iceberg + Glue Catalog | 세로 경로 구현: create/read/write/evolution, COW/MOR DML, time travel, branch/tag write, 주요 metadata table, snapshot/maintenance procedure, S3 orphan cleanup, 원자적 `VersionId` commit과 concurrent retry | Rename/drop/purge lifecycle, managed optimizer, 나머지 option/table과 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
 | Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
 
@@ -36,6 +36,8 @@ protocol](protocols/glue-iceberg-commits.ko.md)을 참고하세요.
 고정된 partition, schema, sort, identifier 동작은 별도 [Iceberg evolution
 protocol](protocols/glue-iceberg-evolution.ko.md)에 기록합니다. 고정된 `INSERT`/`UPDATE`/`DELETE`/`MERGE`
 동작과 COW/MOR 근거는 [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.ko.md)에
+있습니다. Time travel, reference, metadata table, snapshot/maintenance procedure, S3 cleanup은
+[Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.ko.md)에
 있습니다. `GetPartitions`는 type이 있는 key, 우선순위,
 pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIKE`·null predicate를
 지원합니다. 문법과 limit은 [partition expression

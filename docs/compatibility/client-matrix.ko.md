@@ -32,7 +32,7 @@
 | boto3/botocore | 1.43.66 | `CONTRACT`, `E2E` | EMR 13개와 Glue Catalog 22개 operation, S3 시험 데이터 |
 | AWS SDK for pandas | 3.17.0 | `E2E` | partitioned Parquet write/read, Glue database/table/partition 등록과 조회, S3 HEAD |
 | Spark Glue Hive client | Glue 5.0 / Spark 3.5.4 | `E2E` | complex type Parquet table create/insert/read |
-| Apache Iceberg Java GlueCatalog | 1.7.1 | `E2E` | namespace/table create, append, read, schema evolution |
+| Apache Iceberg Java GlueCatalog | 1.7.1 | `E2E` | create/read/write/evolution, COW/MOR DML, time travel, ref, metadata/maintenance procedure, concurrent retry |
 
 AWS SDK for pandas 시험은 `AWS_ENDPOINT_URL_GLUE`와 `AWS_ENDPOINT_URL_S3`를 모두 공개 Proxy로
 지정합니다. `wr.catalog.create_database`, `wr.catalog.get_table_types`, `wr.s3.to_parquet`,

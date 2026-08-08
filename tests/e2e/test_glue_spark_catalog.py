@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from botocore.exceptions import ClientError
 
 from test_support.iceberg_metadata import IcebergMetadataDocument
 
@@ -118,6 +119,7 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         {"id": 13, "category": "south", "amount": 130},
     ]
     assert result["iceberg_row_cow_invalid_merge_error"]
+    _assert_iceberg_snapshot_result(result)
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
     contention = _run_iceberg_contention(
         s3,
@@ -167,6 +169,24 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         expected_snapshots=4,
         expect_delete_files=True,
     )
+    snapshot_table = glue.get_table(
+        DatabaseName=result["iceberg_database"],
+        Name=result["iceberg_snapshot_table"],
+    )["Table"]
+    assert int(snapshot_table["VersionId"]) >= 16
+    snapshot_metadata = IcebergMetadataDocument.load_from_s3(
+        s3,
+        snapshot_table["Parameters"]["metadata_location"],
+    )
+    assert snapshot_metadata.reference_names() == {"main"}
+    assert (
+        snapshot_metadata.reference_snapshot_id("main") == snapshot_metadata.current_snapshot_id()
+    )
+    assert result["iceberg_snapshot_branch"] not in snapshot_metadata.snapshot_ids()
+    assert snapshot_metadata.snapshot_count() >= 7
+    with pytest.raises(ClientError) as orphan_error:
+        s3.head_object(Bucket=bucket, Key=result["iceberg_snapshot_orphan_key"])
+    assert orphan_error.value.response["Error"]["Code"] in {"404", "NoSuchKey"}
 
     altered_table = glue.get_table(
         DatabaseName=result["hive_database"],
@@ -295,6 +315,61 @@ def _assert_iceberg_evolution_metadata(metadata: IcebergMetadataDocument) -> Non
             "null_order": "nulls-first",
         },
     ]
+
+
+def _assert_iceberg_snapshot_result(result: dict[str, Any]) -> None:
+    first = [{"id": 1, "category": "main", "payload": "one"}]
+    main_two = [
+        {"id": 1, "category": "main", "payload": "one"},
+        {"id": 2, "category": "main", "payload": "two"},
+    ]
+    branch = [
+        {"id": 1, "category": "main", "payload": "one"},
+        {"id": 10, "category": "branch", "payload": "ten"},
+    ]
+    final = [
+        {"id": 1, "category": "main", "payload": "one"},
+        {"id": 2, "category": "main", "payload": "two"},
+        {"id": 3, "category": "main", "payload": "value-3"},
+        {"id": 4, "category": "main", "payload": "value-4"},
+        {"id": 5, "category": "main", "payload": "value-5"},
+        {"id": 10, "category": "branch", "payload": "ten"},
+    ]
+    assert result["iceberg_snapshot_version_rows"] == first
+    assert result["iceberg_snapshot_timestamp_rows"] == first
+    assert result["iceberg_snapshot_tag_rows"] == first
+    assert result["iceberg_snapshot_main_before_cherry_pick"] == main_two
+    assert result["iceberg_snapshot_branch_rows"] == branch
+    assert result["iceberg_snapshot_rows_after_rollback"] == first
+    assert result["iceberg_snapshot_final_rows"] == final
+    assert result["iceberg_snapshot_rows_after_maintenance"] == final
+    assert all(int(count) > 0 for count in result["iceberg_snapshot_metadata_counts"].values())
+    assert result["iceberg_snapshot_rollback"] == {
+        "previous_snapshot_id": result["iceberg_snapshot_two"],
+        "current_snapshot_id": result["iceberg_snapshot_one"],
+    }
+    assert result["iceberg_snapshot_set_current"] == {
+        "previous_snapshot_id": result["iceberg_snapshot_one"],
+        "current_snapshot_id": result["iceberg_snapshot_two"],
+    }
+    assert int(result["iceberg_snapshot_cherry_pick"]["current_snapshot_id"]) not in {
+        result["iceberg_snapshot_one"],
+        result["iceberg_snapshot_two"],
+    }
+    assert int(result["iceberg_snapshot_rewrite_data_files"]["rewritten_data_files_count"]) >= 2
+    assert int(result["iceberg_snapshot_rewrite_data_files"]["added_data_files_count"]) >= 1
+    assert int(result["iceberg_snapshot_rewrite_manifests"]["rewritten_manifests_count"]) >= 1
+    assert sum(int(value or 0) for value in result["iceberg_snapshot_expire"].values()) >= 1
+    assert result["iceberg_snapshot_orphan_dry_run"]
+    assert result["iceberg_snapshot_orphan_removed"]
+    assert all(
+        str(value["orphan_file_location"]).endswith(result["iceberg_snapshot_orphan_key"])
+        for value in (
+            result["iceberg_snapshot_orphan_dry_run"] + result["iceberg_snapshot_orphan_removed"]
+        )
+    )
+    assert result["iceberg_snapshot_orphan_exists_after_dry_run"] is True
+    assert result["iceberg_snapshot_orphan_exists_after_remove"] is False
 
 
 def _assert_iceberg_row_level_table(

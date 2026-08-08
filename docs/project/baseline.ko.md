@@ -60,7 +60,8 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   소유하며 repository는 collection snapshot과 candidate transaction만 노출하도록 분리했습니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
   create/append/read, dynamic overwrite, COW/MOR row-level DML, partition/schema/sort/identifier
-  evolution, concurrent `VersionId` commit retry, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를
+  evolution, time travel, branch/tag write, metadata/snapshot/maintenance procedure, S3 orphan
+  cleanup, concurrent `VersionId` commit retry, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를
   포함합니다.
 - 운영 기능은 EMR cluster/Step command와 Glue metadata 탐색을 제공하는 service-aware Console,
   resource/log view, route/thread/task 진단, authorization과 payload 내용을 제외한 구조화 boundary

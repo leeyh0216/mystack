@@ -92,11 +92,11 @@ logging table bodies or S3 paths. If a Spark or Iceberg upgrade breaks this prof
 ## Limits
 
 Row-level writes are covered separately by the [Iceberg row-level DML
-contract](glue-iceberg-row-level-dml.md). This evolution contract does not guarantee snapshot,
-time-travel, rollback, branch, tag, procedure, and metadata-table behavior; rename/drop/purge;
-compaction, orphan cleanup, or snapshot retention. Authentication, authorization, IAM, Lake
-Formation, cross-account/cross-Region behavior, Open Table Format APIs, PyIceberg, Flink, and Trino
-remain explicit project exclusions.
+contract](glue-iceberg-row-level-dml.md). Snapshot, reference, metadata-table, and procedure behavior
+is covered by the [snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md).
+This evolution contract does not guarantee rename/drop/purge. Authentication, authorization, IAM,
+Lake Formation, cross-account/cross-Region behavior, Open Table Format APIs, PyIceberg, Flink, and
+Trino remain explicit project exclusions.
 
 <!-- section: sources -->
 ## Official sources

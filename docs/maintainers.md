@@ -39,6 +39,8 @@ Mystack from an application, start with the [user guide](index.md).
   [Iceberg evolution contract](protocols/glue-iceberg-evolution.md)
 - Iceberg COW/MOR row-level writes, failed-commit evidence, and repair locations:
   [Iceberg row-level DML contract](protocols/glue-iceberg-row-level-dml.md)
+- Iceberg time travel, refs, metadata/maintenance procedures, S3 effects, and repair locations:
+  [Iceberg snapshot/reference/procedure contract](protocols/glue-iceberg-snapshots-refs-procedures.md)
 - Pinned botocore models and implementation status: [API coverage](compatibility/api-coverage.md)
 - E2E claims by external client: [client compatibility matrix](compatibility/client-matrix.md)
 - AWS, boto, and Spark evolution plus automated repair locations: [evolution policy](evolution.md)

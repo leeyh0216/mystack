@@ -100,16 +100,28 @@ class IcebergMetadataDocument:
     def snapshot_count(self) -> int:
         return len(self.document.get("snapshots", ()))
 
+    def snapshot_ids(self) -> set[int]:
+        return {int(snapshot["snapshot-id"]) for snapshot in self.document.get("snapshots", ())}
+
     def current_snapshot_id(self) -> int:
         return int(self.document["current-snapshot-id"])
 
     def current_snapshot_summary(self) -> dict[str, str]:
-        snapshot = self._by_id(
-            "snapshots",
-            "snapshot-id",
-            self.current_snapshot_id(),
-        )
+        return self.snapshot_summary(self.current_snapshot_id())
+
+    def snapshot_summary(self, snapshot_id: int) -> dict[str, str]:
+        snapshot = self._by_id("snapshots", "snapshot-id", snapshot_id)
         return {str(key): str(value) for key, value in snapshot["summary"].items()}
+
+    def reference_names(self) -> set[str]:
+        return {str(name) for name in self.document.get("refs", {})}
+
+    def reference_snapshot_id(self, name: str) -> int:
+        try:
+            reference = self.document["refs"][name]
+        except KeyError as error:
+            raise KeyError(f"Missing Iceberg snapshot reference {name!r}") from error
+        return int(reference["snapshot-id"])
 
     def _field(self, dotted_name: str) -> dict[str, Any]:
         fields = self.current_schema()["fields"]

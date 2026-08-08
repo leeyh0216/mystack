@@ -748,7 +748,13 @@
             "iceberg-dynamic-overwrite",
             "iceberg-copy-on-write",
             "iceberg-merge-on-read",
-            "iceberg-concurrent-commit-retry"
+            "iceberg-concurrent-commit-retry",
+            "iceberg-time-travel",
+            "iceberg-branches-tags",
+            "iceberg-metadata-tables",
+            "iceberg-snapshot-procedures",
+            "iceberg-maintenance-procedures",
+            "iceberg-orphan-s3-cleanup"
           ],
           "client": "spark-glue-catalog",
           "model_fingerprints": {
@@ -760,7 +766,11 @@
             "glue-iceberg",
             "iceberg-evolution",
             "iceberg-spark-writes",
-            "iceberg-configuration"
+            "iceberg-configuration",
+            "iceberg-spark-queries",
+            "iceberg-spark-ddl",
+            "iceberg-spark-procedures",
+            "iceberg-branching"
           ],
           "operation_ids": {
             "glue": [
@@ -785,7 +795,7 @@
           }
         }
       },
-      "evidence_sha256": "d11caac707b607fcd63a16c8ce3b00fbcfa44d6ac7eab8172ff19998c26fabd3",
+      "evidence_sha256": "7337a8e6ba2142ee70321724bf0ce994e305e00f844f870da99bb5e207101b2e",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -826,6 +836,7 @@
           "iceberg-create-append-read-evolve",
           "iceberg-partition-schema-sort-evolution",
           "iceberg-row-level-dml",
+          "iceberg-snapshots-refs-procedures",
           "iceberg-multi-container-contention"
         ],
         "test_nodes": [
@@ -889,7 +900,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "d11caac707b607fcd63a16c8ce3b00fbcfa44d6ac7eab8172ff19998c26fabd3",
+          "evidence_sha256": "7337a8e6ba2142ee70321724bf0ce994e305e00f844f870da99bb5e207101b2e",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -966,6 +977,10 @@
       "title": "AWS Glue libraries public ECR image",
       "url": "https://gallery.ecr.aws/glue/aws-glue-libs"
     },
+    "iceberg-branching": {
+      "title": "Apache Iceberg 1.7.1 branching and tagging",
+      "url": "https://iceberg.apache.org/docs/1.7.1/branching/"
+    },
     "iceberg-configuration": {
       "title": "Apache Iceberg 1.7.1 configuration",
       "url": "https://iceberg.apache.org/docs/1.7.1/configuration/"
@@ -973,6 +988,18 @@
     "iceberg-evolution": {
       "title": "Apache Iceberg 1.7.1 evolution",
       "url": "https://iceberg.apache.org/docs/1.7.1/evolution/"
+    },
+    "iceberg-spark-ddl": {
+      "title": "Apache Iceberg 1.7.1 Spark DDL",
+      "url": "https://iceberg.apache.org/docs/1.7.1/spark-ddl/"
+    },
+    "iceberg-spark-procedures": {
+      "title": "Apache Iceberg 1.7.1 Spark procedures",
+      "url": "https://iceberg.apache.org/docs/1.7.1/spark-procedures/"
+    },
+    "iceberg-spark-queries": {
+      "title": "Apache Iceberg 1.7.1 Spark queries",
+      "url": "https://iceberg.apache.org/docs/1.7.1/spark-queries/"
     },
     "iceberg-spark-writes": {
       "title": "Apache Iceberg 1.7.1 Spark writes",
@@ -992,5 +1019,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "104b635fdf689aab59b33fc478e92f166aca4cc2b16afd43097d2fca0d635f46"
+  "source_sha256": "ae2304608de39265baed6e6318e7a022f209637fc9961fb7450d08682382c1a2"
 }

@@ -122,16 +122,20 @@
 - Side effects: one candidate commit for table rename, archived version, and child partition keys.
   Iceberg updates atomically swap the supplied `metadata_location`; Mystack does not implement or
   parse the Iceberg metadata format. Real-client E2E proves Iceberg-owned partition/schema/sort/
-  identifier evolution and COW/MOR row-level commits survive this lossless pointer path.
+  identifier evolution, COW/MOR row-level commits, refs, and snapshot/maintenance procedure commits
+  survive this lossless pointer path.
 - Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
   JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
   modeled `ConcurrentModificationException`; open-table-format input excluded.
 - Observability: safe Iceberg commit/version/conflict/persistence events, spawned-process CAS tests,
-  COW/MOR snapshot evidence, and two-container real Spark/Iceberg retry E2E.
+  COW/MOR snapshot evidence, snapshot/ref/procedure evidence, and two-container real Spark/Iceberg
+  retry E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
   `glue/tests/test_iceberg_commit.py`, `glue/tests/test_iceberg_evolution_catalog.py`,
-  `glue/tests/test_iceberg_row_level_catalog.py`, `docs/protocols/glue-iceberg-row-level-dml.md`
+  `glue/tests/test_iceberg_row_level_catalog.py`,
+  `glue/tests/test_iceberg_snapshot_ref_catalog.py`,
+  `docs/protocols/glue-iceberg-snapshots-refs-procedures.md`
 - Confidence: High
 
 <!-- section: uc-007 -->

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from iceberg_evolution import exercise_iceberg_evolution
 from iceberg_row_level import exercise_iceberg_row_level_writes
+from iceberg_snapshot_refs import exercise_iceberg_snapshots_and_procedures
 from pyspark.sql import SparkSession
 from spark_catalog_session import GlueSparkCatalogSettings
 
@@ -157,6 +158,13 @@ def main() -> None:
             catalog_name=args.catalog_name,
             database=iceberg_database,
         )
+        iceberg_snapshots = exercise_iceberg_snapshots_and_procedures(
+            spark,
+            catalog_name=args.catalog_name,
+            database=iceberg_database,
+            bucket=args.bucket,
+            object_store_endpoint=args.object_store_endpoint,
+        )
         print(
             "MYSTACK_E2E_RESULT="
             + json.dumps(
@@ -175,6 +183,7 @@ def main() -> None:
                     "iceberg_count": iceberg_count,
                     **iceberg_evolution,
                     **iceberg_row_level,
+                    **iceberg_snapshots,
                 },
                 sort_keys=True,
             )
@@ -209,6 +218,16 @@ def main() -> None:
                 {"id": 13, "category": "south", "amount": 130},
             ]
             or not iceberg_row_level["iceberg_row_cow_invalid_merge_error"]
+            or iceberg_snapshots["iceberg_snapshot_version_rows"]
+            != [{"id": 1, "category": "main", "payload": "one"}]
+            or iceberg_snapshots["iceberg_snapshot_timestamp_rows"]
+            != [{"id": 1, "category": "main", "payload": "one"}]
+            or iceberg_snapshots["iceberg_snapshot_rows_after_rollback"]
+            != [{"id": 1, "category": "main", "payload": "one"}]
+            or iceberg_snapshots["iceberg_snapshot_final_rows"]
+            != iceberg_snapshots["iceberg_snapshot_rows_after_maintenance"]
+            or not iceberg_snapshots["iceberg_snapshot_orphan_exists_after_dry_run"]
+            or iceberg_snapshots["iceberg_snapshot_orphan_exists_after_remove"]
         ):
             raise RuntimeError("Unexpected Glue Spark catalog E2E result")
     finally:

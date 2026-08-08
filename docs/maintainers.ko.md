@@ -38,6 +38,8 @@
   계약](protocols/glue-iceberg-evolution.ko.md)
 - Iceberg COW/MOR row-level write, 실패한 commit 근거와 수정 위치: [Iceberg row-level DML
   계약](protocols/glue-iceberg-row-level-dml.ko.md)
+- Iceberg time travel, ref, metadata/maintenance procedure, S3 영향과 수정 위치: [Iceberg
+  snapshot/reference/procedure 계약](protocols/glue-iceberg-snapshots-refs-procedures.ko.md)
 - 고정 botocore model과 구현 상태: [API coverage](compatibility/api-coverage.ko.md)
 - 외부 client별 E2E claim: [Client 호환성 표](compatibility/client-matrix.ko.md)
 - AWS, boto, Spark 변경 대응 위치와 자동 검사: [변경 대응 정책](evolution.ko.md)

@@ -98,10 +98,12 @@ Partition, schema, sort, and identifier evolution reuse this exact pointer commi
 by the separate [Iceberg evolution contract](glue-iceberg-evolution.md).
 Row-level COW/MOR commits reuse it as verified by the
 [Iceberg row-level DML contract](glue-iceberg-row-level-dml.md).
+Snapshot/reference/procedure commits reuse it as verified by the
+[Iceberg snapshot/reference/procedure contract](glue-iceberg-snapshots-refs-procedures.md).
 
-This contract does not cover snapshots/refs/procedures,
-rename/drop/purge, managed optimizers, Open Table Format inputs, Lake Formation, authentication,
-cross-account/cross-Region behavior, PyIceberg, Flink, or Trino.
+This contract does not itself define Iceberg SQL semantics. Rename/drop/purge, managed optimizers,
+Open Table Format inputs, Lake Formation, authentication, cross-account/cross-Region behavior,
+PyIceberg, Flink, and Trino are excluded.
 
 <!-- section: sources -->
 ## Official sources
