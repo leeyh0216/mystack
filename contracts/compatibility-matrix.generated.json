@@ -740,6 +740,10 @@
             "table-alter",
             "iceberg-glue-catalog",
             "schema-evolution",
+            "iceberg-hidden-partitioning",
+            "iceberg-partition-evolution",
+            "iceberg-sort-evolution",
+            "iceberg-identifier-fields",
             "iceberg-concurrent-commit-retry"
           ],
           "client": "spark-glue-catalog",
@@ -749,7 +753,8 @@
           "official_sources": [
             "glue-5.0",
             "glue-hive",
-            "glue-iceberg"
+            "glue-iceberg",
+            "iceberg-evolution"
           ],
           "operation_ids": {
             "glue": [
@@ -774,7 +779,7 @@
           }
         }
       },
-      "evidence_sha256": "524db84679c2f2caa61c404e3be2ab37320d89c483099a8c0841b10adb219a9e",
+      "evidence_sha256": "ba7519b7de48da679998e0ddd699624c3f4f570f8012866af064a81bba3db316",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
@@ -813,6 +818,7 @@
           "hive-partition-ddl-repair",
           "hive-table-alter",
           "iceberg-create-append-read-evolve",
+          "iceberg-partition-schema-sort-evolution",
           "iceberg-multi-container-contention"
         ],
         "test_nodes": [
@@ -876,7 +882,7 @@
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "524db84679c2f2caa61c404e3be2ab37320d89c483099a8c0841b10adb219a9e",
+          "evidence_sha256": "ba7519b7de48da679998e0ddd699624c3f4f570f8012866af064a81bba3db316",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -953,6 +959,10 @@
       "title": "AWS Glue libraries public ECR image",
       "url": "https://gallery.ecr.aws/glue/aws-glue-libs"
     },
+    "iceberg-evolution": {
+      "title": "Apache Iceberg 1.7.1 evolution",
+      "url": "https://iceberg.apache.org/docs/1.7.1/evolution/"
+    },
     "pypi-file-api": {
       "title": "Python Package Index file API",
       "url": "https://docs.pypi.org/api/json/"
@@ -967,5 +977,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "4c7203aed7ebb76bd3d1d626d2ceee622f0e11036b0a97d79cd124fde5eda2a6"
+  "source_sha256": "41e7fcd161d698ed32991ebc710e9e2c6d30cda34d2fc73d2dc4a5481fe24a3d"
 }

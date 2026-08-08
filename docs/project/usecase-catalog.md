@@ -121,7 +121,8 @@
   handlers are independent.
 - Side effects: one candidate commit for table rename, archived version, and child partition keys.
   Iceberg updates atomically swap the supplied `metadata_location`; Mystack does not implement or
-  parse the Iceberg metadata format.
+  parse the Iceberg metadata format. Real-client E2E proves Iceberg-owned partition/schema/sort/
+  identifier evolution survives this lossless pointer path.
 - Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
   JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
@@ -129,7 +130,8 @@
 - Observability: safe Iceberg commit/version/conflict/persistence events, spawned-process CAS tests,
   and two-container real Spark/Iceberg retry E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
-  `glue/tests/test_iceberg_commit.py`, `docs/protocols/glue-iceberg-commits.md`
+  `glue/tests/test_iceberg_commit.py`, `glue/tests/test_iceberg_evolution_catalog.py`,
+  `docs/protocols/glue-iceberg-evolution.md`
 - Confidence: High
 
 <!-- section: uc-007 -->

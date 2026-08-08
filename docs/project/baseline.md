@@ -62,8 +62,8 @@ contracts.
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
   policy; repositories expose collection snapshots and candidate transactions only.
 - Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
-  1.7.1 create/append/read/schema-evolution plus concurrent `VersionId` commit retry, and AWS SDK for
-  pandas 3.17.0 Parquet/Glue E2E.
+  1.7.1 create/append/read plus partition/schema/sort/identifier evolution and concurrent `VersionId`
+  commit retry, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
 - Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
   resource/log views, route/thread/task diagnostics, and structured boundary logs without
   authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.

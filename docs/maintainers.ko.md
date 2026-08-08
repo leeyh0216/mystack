@@ -34,6 +34,8 @@
   계약](protocols/glue-partition-batch-errors.ko.md)
 - Iceberg `VersionId` pointer CAS, process lock, retry 검증과 수정 위치: [Iceberg GlueCatalog
   commit 계약](protocols/glue-iceberg-commits.ko.md)
+- Iceberg partition/schema/sort/identifier 보장과 client 변경 수정 위치: [Iceberg evolution
+  계약](protocols/glue-iceberg-evolution.ko.md)
 - 고정 botocore model과 구현 상태: [API coverage](compatibility/api-coverage.ko.md)
 - 외부 client별 E2E claim: [Client 호환성 표](compatibility/client-matrix.ko.md)
 - AWS, boto, Spark 변경 대응 위치와 자동 검사: [변경 대응 정책](evolution.ko.md)

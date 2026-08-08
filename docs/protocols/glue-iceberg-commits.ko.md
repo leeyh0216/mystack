@@ -91,8 +91,10 @@ Spark/Iceberg client 변경으로 이 경로가 깨지면 다음 순서로 확�
 writer를 public Proxy로 실행하고 retry된 append 둘이 모두 보존되는지 확인합니다. One-off container
 동작은 Docker Compose 공식 [`run` 문서](https://docs.docker.com/reference/cli/docker/compose/run/)를
 따릅니다.
+Partition, schema, sort, identifier evolution도 이 pointer commit을 그대로 사용하며 별도
+[Iceberg evolution 계약](glue-iceberg-evolution.ko.md)으로 검증합니다.
 
-Partition evolution, row-level DML, snapshot/ref/procedure, rename/drop/purge, managed optimizer,
+Row-level DML, snapshot/ref/procedure, rename/drop/purge, managed optimizer,
 Open Table Format input, Lake Formation, 인증·인가, cross-account/cross-Region, PyIceberg, Flink,
 Trino는 이 계약의 범위가 아닙니다.
 

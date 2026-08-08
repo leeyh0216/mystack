@@ -94,8 +94,10 @@ policy, and bounded lock timeout. CI additionally starts two separate Glue-image
 real Spark 3.5.4/Iceberg 1.7.1 writers through the public Proxy, and requires both retried appends to
 remain visible. Docker Compose defines the one-off container behavior in its
 [`run` reference](https://docs.docker.com/reference/cli/docker/compose/run/).
+Partition, schema, sort, and identifier evolution reuse this exact pointer commit and are verified
+by the separate [Iceberg evolution contract](glue-iceberg-evolution.md).
 
-This contract does not cover partition evolution, row-level DML, snapshots/refs/procedures,
+This contract does not cover row-level DML, snapshots/refs/procedures,
 rename/drop/purge, managed optimizers, Open Table Format inputs, Lake Formation, authentication,
 cross-account/cross-Region behavior, PyIceberg, Flink, or Trino.
 

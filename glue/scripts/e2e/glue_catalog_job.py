@@ -13,6 +13,7 @@ import argparse
 import json
 from dataclasses import dataclass
 
+from iceberg_evolution import exercise_iceberg_evolution
 from pyspark.sql import SparkSession
 from spark_catalog_session import GlueSparkCatalogSettings
 
@@ -145,6 +146,11 @@ def main() -> None:
         )
         spark.sql(f"ALTER TABLE {qualified_table} ADD COLUMN note STRING")
         iceberg_count = spark.table(qualified_table).count()
+        iceberg_evolution = exercise_iceberg_evolution(
+            spark,
+            catalog_name=args.catalog_name,
+            database=iceberg_database,
+        )
         print(
             "MYSTACK_E2E_RESULT="
             + json.dumps(
@@ -161,6 +167,7 @@ def main() -> None:
                     "hive_alter_failures": hive_alter_failures,
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
+                    **iceberg_evolution,
                 },
                 sort_keys=True,
             )
@@ -173,6 +180,8 @@ def main() -> None:
             or set(hive_alter_failures)
             != {"drop-column", "rename-column", "change-column-type", "rename-table"}
             or iceberg_count != 2
+            or iceberg_evolution["iceberg_evolution_count"] != 2
+            or iceberg_evolution["iceberg_evolution_filtered_count"] != 1
         ):
             raise RuntimeError("Unexpected catalog row counts")
     finally:

@@ -17,6 +17,8 @@ from typing import Any
 
 import pytest
 
+from test_support.iceberg_metadata import IcebergMetadataDocument
+
 
 @pytest.mark.e2e
 def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
@@ -81,6 +83,18 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         "rename-table",
     }
     assert result["iceberg_count"] == 2
+    assert result["iceberg_evolution_count"] == 2
+    assert result["iceberg_evolution_filtered_count"] == 1
+    assert result["iceberg_evolution_columns"] == [
+        "id",
+        "category_name",
+        "metric",
+        "ratio",
+        "amount",
+        "ts",
+        "event",
+        "note",
+    ]
     assert result["spark_version"].startswith(e2e_settings.glue_expected_spark_version_prefix)
     contention = _run_iceberg_contention(
         s3,
@@ -99,6 +113,17 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     assert hive_table["StorageDescriptor"]["Columns"][2]["Type"] == "array<string>"
     assert iceberg_table["Parameters"]["table_type"].upper() == "ICEBERG"
     assert int(iceberg_table["VersionId"]) >= 4
+    evolution_table = glue.get_table(
+        DatabaseName=result["iceberg_database"],
+        Name=result["iceberg_evolution_table"],
+    )["Table"]
+    assert evolution_table["Parameters"]["table_type"].upper() == "ICEBERG"
+    assert not evolution_table.get("PartitionKeys")
+    evolution_metadata = IcebergMetadataDocument.load_from_s3(
+        s3,
+        evolution_table["Parameters"]["metadata_location"],
+    )
+    _assert_iceberg_evolution_metadata(evolution_metadata)
 
     altered_table = glue.get_table(
         DatabaseName=result["hive_database"],
@@ -172,6 +197,61 @@ def _write_diagnostics(
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     (artifacts_dir / "glue-spark.stdout.log").write_text(completed.stdout, encoding="utf-8")
     (artifacts_dir / "glue-spark.stderr.log").write_text(completed.stderr, encoding="utf-8")
+
+
+def _assert_iceberg_evolution_metadata(metadata: IcebergMetadataDocument) -> None:
+    assert metadata.all_partition_transforms() >= {
+        "identity",
+        "bucket[8]",
+        "truncate[3]",
+        "year",
+        "month",
+        "day",
+        "hour",
+        "bucket[16]",
+    }
+    assert metadata.current_partition_transforms() == {
+        "bucket[8]",
+        "truncate[3]",
+        "year",
+        "month",
+        "day",
+        "bucket[16]",
+    }
+    assert metadata.top_level_field_names() == [
+        "id",
+        "category_name",
+        "metric",
+        "ratio",
+        "amount",
+        "ts",
+        "event",
+        "note",
+    ]
+    assert metadata.field_type("metric") == "long"
+    assert metadata.field_type("ratio") == "double"
+    assert str(metadata.field_type("amount")).replace(" ", "") == "decimal(12,2)"
+    assert metadata.field_type("event.details.status_code") == "int"
+    assert metadata.field_type("event.details.message") == "string"
+    assert not metadata.has_field("category")
+    assert not metadata.has_field("obsolete")
+    assert not metadata.has_field("event.details.code")
+    assert not metadata.has_field("event.details.temporary")
+    assert metadata.identifier_field_names() == {"id"}
+    assert metadata.current_sort_fields() == [
+        {
+            "source_name": "category_name",
+            "transform": "identity",
+            "direction": "asc",
+            "null_order": "nulls-last",
+        },
+        {
+            "source_name": "id",
+            "transform": "identity",
+            "direction": "desc",
+            "null_order": "nulls-first",
+        },
+    ]
 
 
 def _run_iceberg_contention(
