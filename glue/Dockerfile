@@ -37,7 +37,7 @@ USER root
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MYSTACK_CONFIG_FILE=/etc/mystack/mystack.yaml \
-    MYSTACK_GLUE_SPARK_SUBMIT_BINARY=/home/hadoop/spark/bin/spark-submit \
+    MYSTACK_GLUE_SPARK_SUBMIT_BINARY=/usr/local/bin/spark-submit \
     PYSPARK_PYTHON=/opt/mystack/venv/bin/python \
     PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python \
     PATH=/opt/mystack/bin:/opt/mystack/venv/bin:${PATH}

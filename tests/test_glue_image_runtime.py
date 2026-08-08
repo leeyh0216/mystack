@@ -16,6 +16,7 @@ def test_glue_spark_uses_the_hash_locked_service_virtualenv() -> None:
 
     assert "PYSPARK_PYTHON=/opt/mystack/venv/bin/python" in dockerfile
     assert "PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python" in dockerfile
+    assert "MYSTACK_GLUE_SPARK_SUBMIT_BINARY=/usr/local/bin/spark-submit" in dockerfile
     assert "PATH=/opt/mystack/bin:/opt/mystack/venv/bin:${PATH}" in dockerfile
     assert '--conf "spark.pyspark.driver.python=${driver_python}"' in wrapper
     assert '--conf "spark.pyspark.python=${worker_python}"' in wrapper
