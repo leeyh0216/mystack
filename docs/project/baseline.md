@@ -40,7 +40,9 @@ contracts.
 - Protocol boundary: pinned botocore models, AWS JSON 1.1 input validation, modeled responses/errors,
   explicit operation dispatch, and model/API fingerprints.
 - Proxy boundary: YAML route registry detects target/signing/host evidence; unknown services fall back
-  to LocalStack without service-specific branches.
+  to LocalStack without service-specific branches. A typed runtime owns the shared HTTP client and
+  exposes separate AWS-request and management-forwarding capabilities without application-state
+  reach-through.
 - EMR: 13 operations, cluster/step state machines, bootstrap materialization from LocalStack S3,
   Python/JAR Spark execution, cancellation, logs, and management read models.
 - Glue: 22 operations covering database, table/version, and partition/batch behavior; JSON persistence
@@ -51,7 +53,7 @@ contracts.
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 67 collected. The fast suite selects 62, passes 60, and skips two real-AWS
+- Final test inventory: 71 collected. The fast suite selects 66, passes 64, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 
@@ -117,4 +119,4 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 
 1. Move Glue state updates behind a transactional repository boundary.
 2. Split Glue aggregates and use cases around explicit responsibilities.
-3. Drive client and runtime compatibility from a versioned manifest.
+3. Separate EMR command, query, and lifecycle responsibilities.

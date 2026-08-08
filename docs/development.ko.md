@@ -118,7 +118,8 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 ## 변경 위치
 
 - Wire metadata/공통 JSON 직렬화: `shared/src/mystack/aws_protocol`
-- Proxy route 동작: `proxy/src/mystack/proxy`; 새 서비스는 YAML 우선
+- Proxy route 동작: `proxy/src/mystack/proxy/routing.py`; 새 서비스는 YAML 우선
+- Proxy controller capability와 HTTP lifecycle: `proxy/src/mystack/proxy/ports.py`, `runtime.py`
 - EMR 상태/동작: `emr/src/mystack/emr/domain`, `application`
 - Glue Catalog 동작: `glue/src/mystack/glue/domain`, `application`
 - Inbound use case의 최소 Protocol: 각 service의 `application/use_cases.py`

@@ -119,7 +119,9 @@ contract](https://pre-commit.com/#install).
 ## Where to make changes
 
 - Wire metadata or generic JSON serialization: `shared/src/mystack/aws_protocol`
-- Proxy route behavior: `proxy/src/mystack/proxy`; add services through YAML first
+- Proxy route behavior: `proxy/src/mystack/proxy/routing.py`; add services through YAML first
+- Proxy controller capabilities and HTTP lifecycle: `proxy/src/mystack/proxy/ports.py` and
+  `runtime.py`
 - EMR state/behavior: `emr/src/mystack/emr/domain` and `application`
 - Glue Catalog behavior: `glue/src/mystack/glue/domain` and `application`
 - Minimal inbound use-case Protocols: each service's `application/use_cases.py`

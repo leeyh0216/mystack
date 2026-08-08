@@ -13,15 +13,20 @@ from __future__ import annotations
 import logging
 import re
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 import httpx
 from fastapi import Request
 from fastapi.responses import Response
 from mystack.aws_protocol.observability import log_event, payload_fingerprint
 
-from .config import ProxySettings
-from .routing import AwsServiceDetector
+from .config import ProxySettings, ServiceRoute
+from .ports import (
+    ManagementBackendUnavailableError,
+    ManagementResponse,
+    RouteDetector,
+    UnknownManagementComponentError,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,17 +51,11 @@ class AwsRequestForwarder:
         self,
         client: httpx.AsyncClient,
         settings: ProxySettings,
-        detector: AwsServiceDetector | None = None,
+        detector: RouteDetector,
     ) -> None:
         self._client = client
         self._settings = settings
-        self._detector = detector or AwsServiceDetector(settings.routes)
-
-    @property
-    def client(self) -> httpx.AsyncClient:
-        """Expose the shared pool to composition-root management requests."""
-
-        return self._client
+        self._detector = detector
 
     async def forward(self, request: Request) -> Response:
         started = time.monotonic()
@@ -168,6 +167,73 @@ class AwsRequestForwarder:
             # the new byte length and must not advertise the upstream encoding.
             removed.update({"content-length", "content-encoding"})
         return {key: value for key, value in headers.items() if key.lower() not in removed}
+
+
+class HttpManagementForwarder:
+    """Forward management reads without exposing the shared HTTP client."""
+
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        routes: Sequence[ServiceRoute],
+    ) -> None:
+        self._client = client
+        self._routes = {route.name: route for route in routes}
+
+    async def forward(
+        self,
+        *,
+        component: str,
+        backend_path: str,
+        capability: str,
+        authorization: str | None,
+        query_params: Sequence[tuple[str, str]],
+    ) -> ManagementResponse:
+        route = self._routes.get(component)
+        if route is None:
+            raise UnknownManagementComponentError(component)
+        headers = {"authorization": authorization} if authorization else {}
+        started = time.monotonic()
+        _log(
+            logging.INFO,
+            "proxy.management.forward.before",
+            component=component,
+            capability=capability,
+            backend_url=route.backend_url,
+            side_effect=True,
+        )
+        try:
+            response = await self._client.get(
+                f"{route.backend_url}{backend_path}",
+                headers=headers,
+                params=query_params,
+            )
+        except httpx.HTTPError as error:
+            _log(
+                logging.ERROR,
+                "proxy.management.forward.failed",
+                component=component,
+                capability=capability,
+                duration_ms=round((time.monotonic() - started) * 1000, 3),
+                fix_hint="Check the component health and proxy route backend_url.",
+                side_effect=True,
+                exc_info=True,
+            )
+            raise ManagementBackendUnavailableError(component) from error
+        _log(
+            logging.INFO,
+            "proxy.management.forward.after",
+            component=component,
+            capability=capability,
+            status_code=response.status_code,
+            duration_ms=round((time.monotonic() - started) * 1000, 3),
+            side_effect=True,
+        )
+        return ManagementResponse(
+            content=response.content,
+            status_code=response.status_code,
+            content_type=response.headers.get("content-type", "application/json"),
+        )
 
 
 def _log(level: int, event: str, *, exc_info: bool = False, **fields: object) -> None:

@@ -9,24 +9,14 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 
 from .config import ServiceRoute
+from .ports import RouteMatch
 
 _CREDENTIAL_SCOPE = re.compile(
     r"Credential=[^/]+/\d{8}/[^/]+/(?P<service>[^/]+)/aws4_request",
     flags=re.IGNORECASE,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class RouteMatch:
-    route: ServiceRoute | None
-    evidence: str
-    matched_value: str
-    target_prefix: str
-    signing_name: str
-    host_prefix: str
 
 
 class AwsServiceDetector:

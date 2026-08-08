@@ -38,7 +38,9 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - Protocol 경계는 pinned botocore model, AWS JSON 1.1 입력 검증, modeled response/error, 명시적
   operation dispatch, model/API fingerprint를 제공합니다.
 - Proxy는 YAML route registry의 target/signing/host 근거로 service를 찾고 service별 branch 없이
-  알 수 없는 service를 LocalStack으로 보냅니다.
+  알 수 없는 service를 LocalStack으로 보냅니다. Typed runtime이 shared HTTP client를 소유하고
+  application state 내부 접근 없이 AWS request와 management forwarding capability를 분리해
+  제공합니다.
 - EMR은 13개 operation, cluster/step state machine, LocalStack S3 bootstrap materialization,
   Python/JAR Spark 실행, 취소, log, management read model을 구현합니다.
 - Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. JSON persistence는
@@ -49,7 +51,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 67개입니다. Fast suite는 62개를 선택해 60개가 통과하고 real-AWS
+- 최종 test inventory는 71개입니다. Fast suite는 66개를 선택해 64개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
@@ -118,4 +120,4 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 
 1. Glue state 변경을 transactional repository 경계 뒤로 옮깁니다.
 2. Glue aggregate와 use case를 명시적인 책임 단위로 분리합니다.
-3. Client와 runtime 호환성 검증을 versioned manifest에서 생성합니다.
+3. EMR command, query, lifecycle 책임을 분리합니다.

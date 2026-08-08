@@ -194,3 +194,29 @@ def test_resource_and_log_management_are_forwarded_without_domain_coupling() -> 
         ("/_mystack/management/resources", ""),
         ("/_mystack/management/logs", "cluster_id=j-1&step_id=s-1"),
     ]
+
+
+def test_management_backend_failure_is_mapped_without_exposing_client_state() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("backend unavailable", request=request)
+
+    route = ServiceRoute(
+        name="emr",
+        backend_url="http://emr:8080",
+        target_prefixes=("ElasticMapReduce",),
+        signing_names=("elasticmapreduce",),
+        host_prefixes=("emr",),
+    )
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    app = create_app(
+        settings((route,)),
+        client=async_client,
+        diagnostics_settings=_DIAGNOSTICS,
+    )
+    with TestClient(app) as client:
+        response = client.get("/_mystack/components/emr/resources")
+        assert not hasattr(app.state, "forwarder")
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Component management API unavailable"}
+    assert async_client.is_closed

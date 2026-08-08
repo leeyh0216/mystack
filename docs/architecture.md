@@ -100,6 +100,12 @@ adapter translates its Application/Domain resources to versioned JSON; the Proxy
 and the packaged browser UI renders it without importing service internals. See the
 [management console contract](console.md).
 
+Proxy controllers receive only typed AWS-request and management-forwarding capabilities from a
+runtime context. The context owns one shared HTTP pool, closes it exactly once on normal shutdown or
+partial startup failure, and never exposes the client through FastAPI application state. Route
+detection is a Protocol implemented by the configuration-driven detector. This lifecycle follows
+HTTPX's [official client guidance](https://www.python-httpx.org/advanced/clients/#opening-and-closing-clients).
+
 <!-- section: compatibility -->
 ## Compatibility strategy
 

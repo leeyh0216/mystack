@@ -89,6 +89,12 @@ management adapter가 Application/Domain resource를 versioned JSON으로 변환
 전달하며 browser UI는 service 내부를 import하지 않고 렌더링합니다. 자세한 내용은
 [관리 Console 계약](console.ko.md)을 참고하세요.
 
+Proxy controller는 runtime context가 제공하는 typed AWS request·management forwarding
+capability에만 의존합니다. Runtime context는 하나의 shared HTTP pool을 소유하고 정상 종료와 일부
+startup 실패에서 정확히 한 번 닫으며 FastAPI application state로 client를 노출하지 않습니다.
+Route detection은 설정 기반 detector가 구현하는 Protocol입니다. 이 lifecycle은 HTTPX의 [공식
+client 안내](https://www.python-httpx.org/advanced/clients/#opening-and-closing-clients)를 따릅니다.
+
 <!-- section: compatibility -->
 ## 호환성 전략
 
