@@ -95,6 +95,36 @@ services:
 This mapping uses Docker's special [host-gateway
 value](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host).
 
+AWS SDK for pandas (`awswrangler`) needs the per-service Glue and S3 endpoints to point at the same
+Proxy. This example creates a bucket and database, registers partitioned Parquet data and a Glue
+table, and reads the dataset back:
+
+```bash
+export AWS_ENDPOINT_URL_GLUE=http://localhost:4566
+export AWS_ENDPOINT_URL_S3=http://localhost:4566
+```
+
+```python
+import awswrangler as wr
+import boto3
+import pandas as pd
+
+boto3.client("s3").create_bucket(Bucket="mystack-example")
+wr.catalog.create_database(name="demo")
+wr.s3.to_parquet(
+    df=pd.DataFrame({"id": [1, 2], "day": ["2026-08-08", "2026-08-09"]}),
+    path="s3://mystack-example/events/",
+    dataset=True,
+    database="demo",
+    table="events",
+    partition_cols=["day"],
+)
+print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
+```
+
+See the [client compatibility matrix](compatibility/client-matrix.md) for the verified functions and
+excluded services. In particular, `wr.athena.*` is currently out of scope.
+
 <!-- section: overlays -->
 ## Compose overlays and configuration
 
@@ -185,6 +215,7 @@ See the [observability guide](observability.md) for management endpoints and str
 - [Compose file merge](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+- [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
 - [Dev Container creation guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container)
 - [Docker-outside-of-Docker feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)
 - [uv Docker guide](https://docs.astral.sh/uv/guides/integration/docker/)

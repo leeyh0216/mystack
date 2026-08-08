@@ -47,15 +47,15 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 시작 단계는 mount된 wheel을 network와 dependency resolution 없이 설치하고 Python entry point로
   provider를 찾습니다. `unsafe`는 명시적 허용과 설치된 Mystack 정확한 버전이 필요합니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
-  create/append/read/schema evolution E2E를 포함합니다.
+  create/append/read/schema evolution, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
 - 운영 기능은 resource/log console, route/thread/task 진단, authorization과 payload 내용을 제외한
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
 - Extension Docker E2E는 실제 wheel 설치, 세 SPI context의 동일 Catalog 접근, 우선순위 합성,
   boto3의 `AlreadyExistsException`을 검증합니다.
-- 최종 test inventory는 63개입니다. Fast suite는 56개 통과와 real-AWS opt-in 2개 skip,
-  기본 Docker/browser/Spark/Hive/Iceberg E2E는 4개 통과와 extension 전용 1개 skip,
+- 최종 test inventory는 66개입니다. Fast suite는 58개 통과와 real-AWS opt-in 2개 skip,
+  기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E는 5개 통과와 extension 전용 1개 skip,
   별도 extension Docker E2E는 1개 통과입니다.
 
 <!-- section: entry-points -->

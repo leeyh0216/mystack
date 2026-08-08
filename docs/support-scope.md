@@ -21,6 +21,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | Glue user extensions | Implemented: stable/application/unsafe v1, mounted wheels, modeled output validation, boto3 contracts | More service contexts and optional remote isolation |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
+| AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions and additional clients |
 | Web console | Implemented: EMR/Glue resources, status/detail, EMR logs, route/thread/task views, keyboard/browser E2E | Additional service-specific visualizations |
 
 The management console is served at `/_mystack/console`. Glue metadata is atomically
@@ -49,6 +50,7 @@ are supported; the exact upstream classification is generated from the pinned bo
 - Spark: 3.5.x; Glue interoperability profile uses Spark 3.5.4
 - Java: 17
 - Iceberg: 1.7.1 for the Glue 5.0 profile
+- AWS SDK for pandas: 3.17.0
 
 The Glue runtime versions follow [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html) and the [official Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html). EMR semantics follow the [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html).
 

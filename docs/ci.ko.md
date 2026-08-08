@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | `ci.yml` | push, PR, manual | Python 3.11/3.12 계약과 frozen feature lock을 사용한 실제 Dev Container build |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
-| `e2e.yml` | 관련 PR, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg와 필수 Chromium console 접근성 E2E, 로그 보존 |
+| `e2e.yml` | 관련 PR, nightly, manual | Docker black-box boto3/AWS SDK for pandas/Spark/Hive/Iceberg와 필수 Chromium console 접근성 E2E, 로그 보존 |
 | `container-publish.yml` | version tag, manual | private GHCR amd64/arm64 게시, SBOM/provenance, OCI·Trivy 증거 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.

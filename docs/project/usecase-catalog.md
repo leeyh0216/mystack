@@ -227,3 +227,24 @@
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_glue_extensions.py`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/compose.extension-e2e.yaml`
 - Confidence: High
+
+<!-- section: uc-014 -->
+## UC-014: Round-trip data and metadata with AWS SDK for pandas
+
+- Purpose/actor/trigger: a Python application uses AWS SDK for pandas 3.17.0 to manage an S3 Parquet
+  dataset and Glue Catalog metadata together.
+- Input: DataFrame, S3 dataset URI, database/table names, partition columns, and a boto3 session.
+- Output: written object paths, Glue types/table/partitions, and the restored DataFrame.
+- Stored/changed data: partitioned Parquet objects in LocalStack S3 and a database/table/partitions in
+  the Glue emulator.
+- Side effects: sends every S3 and Glue call through one public Proxy endpoint.
+- Preconditions/rules: `AWS_ENDPOINT_URL_S3` and `AWS_ENDPOINT_URL_GLUE` point at the same Proxy; the
+  Proxy preserves representation `Content-Length` from `HeadObject`.
+- Failures: lost S3 metadata, unsupported Glue operation, corrupt Parquet data, or explicit E2E timeout.
+- Observability: Proxy route/forward before/after/failure events and Glue operation/repository events;
+  the test cleans up created resources.
+- Verification: writes and reads two partitions, then checks Glue table types and partitions plus S3
+  [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html).
+- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py`
+- Confidence: High

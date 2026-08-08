@@ -227,3 +227,23 @@
   `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_glue_extensions.py`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/compose.extension-e2e.yaml`
 - 신뢰도: High
+
+<!-- section: uc-014 -->
+## UC-014: AWS SDK for pandas data와 metadata 왕복
+
+- 목적/actor/trigger: Python application이 AWS SDK for pandas 3.17.0으로 S3 Parquet dataset과
+  Glue Catalog metadata를 함께 관리합니다.
+- 입력: DataFrame, S3 dataset URI, database/table 이름, partition column과 boto3 session입니다.
+- 출력: 기록한 object 경로, Glue type/table/partition, 다시 읽은 DataFrame입니다.
+- 저장/변경: LocalStack S3의 partitioned Parquet object와 Glue emulator의 database/table/partition입니다.
+- 부수효과: 모든 S3와 Glue 호출을 하나의 공개 Proxy endpoint로 보냅니다.
+- 선행조건/규칙: `AWS_ENDPOINT_URL_S3`와 `AWS_ENDPOINT_URL_GLUE`를 같은 Proxy로 지정하며
+  `HeadObject`의 representation `Content-Length`를 보존합니다.
+- 실패: S3 metadata 손실, 지원하지 않는 Glue operation, Parquet data 손상, 명시적 E2E timeout입니다.
+- 관측: Proxy route/forward 전·후·실패 event와 Glue operation/repository event를 남기며 test는
+  생성한 resource를 정리합니다.
+- 검증: partition 두 개의 write/read, Glue table type과 partition, S3
+  [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)를 확인합니다.
+- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_awswrangler.py`,
+  `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack_proxy/forwarder.py`
+- 신뢰도: High

@@ -47,7 +47,7 @@ jobs:
         run: uv run playwright install --with-deps chromium
       - name: Build and start Mystack
         run: make up
-      - name: Run boto3 and real runtime E2E tests
+      - name: Run boto3, AWS SDK for pandas, and real runtime E2E tests
         env:
           MYSTACK_BROWSER_E2E_REQUIRED: "1"
         run: make e2e

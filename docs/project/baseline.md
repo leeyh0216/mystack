@@ -48,17 +48,17 @@ contracts.
   composes validated operation calls and revalidates final success output against botocore output shapes.
 - Startup installs mounted wheels without network or dependency resolution and discovers providers by
   Python entry points. `unsafe` requires explicit permission and the exact installed Mystack version.
-- Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, and Apache Iceberg
-  1.7.1 create/append/read/schema-evolution E2E.
+- Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
+  1.7.1 create/append/read/schema-evolution, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
 - Operations: resource/log console, route/thread/task diagnostics, structured boundary logs without
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
 - Extension Docker E2E verifies a real wheel install, identical Catalog access through all three SPI
   contexts, priority composition, and boto3 `AlreadyExistsException` behavior.
-- Final test inventory: 63 collected. The fast suite passes 56 with two real-AWS opt-in skips; default
-  Docker/browser/Spark/Hive/Iceberg E2E passes four with one extension-only skip; the separate
-  extension Docker E2E passes its one test.
+- Final test inventory: 66 collected. The fast suite passes 58 with two real-AWS opt-in skips; default
+  Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes five with one extension-only skip;
+  the separate extension Docker E2E passes its one test.
 
 <!-- section: entry-points -->
 ## Entry points and commands

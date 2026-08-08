@@ -1,6 +1,8 @@
 """Byte-preserving Proxy HTTP boundary tests.
 
-Reference: https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+References:
+- https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html
+- https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
 """
 
 from __future__ import annotations
@@ -83,6 +85,45 @@ def test_forwards_path_query_and_unknown_service_to_localstack() -> None:
 
     assert response.status_code == 204
     assert observed["url"] == "http://localstack:4566/bucket/key?versionId=1"
+
+
+def test_preserves_head_object_representation_length() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "HEAD"
+        return httpx.Response(
+            200,
+            headers={
+                "content-length": "12",
+                "content-type": "application/octet-stream",
+                "content-encoding": "identity",
+            },
+        )
+
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(
+        create_app(settings(), client=async_client, diagnostics_settings=_DIAGNOSTICS)
+    ) as client:
+        response = client.head("/bucket/key")
+
+    assert response.status_code == 200
+    assert response.content == b""
+    assert response.headers["content-length"] == "12"
+    assert response.headers["content-encoding"] == "identity"
+
+
+def test_recalculates_content_length_for_buffered_entity_response() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        return httpx.Response(200, content=b"data", headers={"content-length": "999"})
+
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(
+        create_app(settings(), client=async_client, diagnostics_settings=_DIAGNOSTICS)
+    ) as client:
+        response = client.get("/bucket/key")
+
+    assert response.content == b"data"
+    assert response.headers["content-length"] == "4"
 
 
 def test_console_and_component_diagnostics_are_registry_driven() -> None:

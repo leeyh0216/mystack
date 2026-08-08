@@ -98,6 +98,36 @@ services:
 값](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)을
 사용합니다.
 
+AWS SDK for pandas(`awswrangler`)는 Glue와 S3의 service별 endpoint를 같은 Proxy로 지정합니다.
+아래 예제는 bucket과 database를 만든 뒤 partitioned Parquet data와 Glue table을 함께 등록하고
+다시 읽습니다.
+
+```bash
+export AWS_ENDPOINT_URL_GLUE=http://localhost:4566
+export AWS_ENDPOINT_URL_S3=http://localhost:4566
+```
+
+```python
+import awswrangler as wr
+import boto3
+import pandas as pd
+
+boto3.client("s3").create_bucket(Bucket="mystack-example")
+wr.catalog.create_database(name="demo")
+wr.s3.to_parquet(
+    df=pd.DataFrame({"id": [1, 2], "day": ["2026-08-08", "2026-08-09"]}),
+    path="s3://mystack-example/events/",
+    dataset=True,
+    database="demo",
+    table="events",
+    partition_cols=["day"],
+)
+print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
+```
+
+현재 검증한 함수와 제외한 service는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
+있습니다. 특히 `wr.athena.*`는 현재 지원 범위가 아닙니다.
+
 <!-- section: overlays -->
 ## Compose 조합과 설정
 
@@ -188,6 +218,7 @@ open http://localhost:4566/_mystack/console
 - [Compose file 병합](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)
 - [Docker host-gateway](https://docs.docker.com/reference/cli/docker/container/run/#add-entries-to-container-hosts-file---add-host)
 - [AWS SDK endpoint 구성](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
+- [AWS SDK for pandas API](https://aws-sdk-pandas.readthedocs.io/en/stable/api.html)
 - [Dev Container 생성 안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)
 - [Docker-outside-of-Docker feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)
 - [uv Docker 안내](https://docs.astral.sh/uv/guides/integration/docker/)

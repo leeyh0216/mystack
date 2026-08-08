@@ -13,7 +13,7 @@
 | Unit | Domain 상태, codec, routing, 설정 | 없음 | `tests.unit_timeout_seconds` |
 | Architecture | 안쪽 import와 도메인 경계 | 없음 | unit timeout |
 | Contract | boto3 직렬화, 응답, modeled error | API process | `tests.contract_timeout_seconds` |
-| E2E | Public Proxy, LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg | Docker | `tests.e2e_timeout_seconds` |
+| E2E | Public Proxy, LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg, AWS SDK for pandas | Docker | `tests.e2e_timeout_seconds` |
 
 모든 pytest 실행은 thread 방식의 `pytest-timeout`을 사용해 hang 시 Python thread stack을 출력합니다. Spark/bootstrap adapter도 YAML의 서비스별 process timeout을 받습니다.
 
@@ -42,6 +42,9 @@
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
+- AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
+  같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
+  기록합니다.
 - 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
 
 <!-- section: reproducibility -->

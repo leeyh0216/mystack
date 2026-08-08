@@ -85,7 +85,7 @@ up: ## Build and start the Docker stack with the selected YAML config.
 	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.compose_wait_timeout_seconds); \
 	MYSTACK_CONFIG_SOURCE="$(CONFIG)" docker compose up --build --detach --wait --wait-timeout "$$wait_timeout"
 
-e2e: ## Run black-box boto3, Spark, Hive, and Iceberg E2E tests.
+e2e: ## Run black-box boto3, AWS SDK for pandas, Spark, Hive, and Iceberg E2E tests.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.e2e_timeout_seconds); \
 	uv run pytest tests/e2e -m e2e --timeout "$$timeout" --timeout-method thread -vv
 

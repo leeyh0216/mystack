@@ -14,6 +14,7 @@ The project targets:
 - real Spark 3.5.x execution in local mode with LocalStack S3 access
 - Glue Data Catalog behavior, including documented validation and service exceptions
 - Spark 3.5.4 interoperability with Glue Data Catalog, Hive-compatible types, and Iceberg 1.7.1
+- AWS SDK for pandas 3.17.0 partitioned-Parquet and Glue Catalog round trips
 - tiered `stable`, `application`, and exact-version `unsafe` Glue extension SPIs
 - Versioned multi-platform Docker images published privately to GHCR
 
@@ -68,5 +69,7 @@ User extension packaging, contexts, configuration, and Docker mounts are documen
 The repository is under active construction. EMR currently exposes 13 boto3-tested operations,
 and Glue exposes 22 boto3-tested Data Catalog operations. The baseline and
 implementation-derived UseCase catalog live under [`docs/project`](docs/project).
+See the [client compatibility matrix](docs/compatibility/client-matrix.md) for exact verified paths
+and exclusions by external library.
 
 Official behavior sources include the [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html), [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html), [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data), and [AWS Glue type-system documentation](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).

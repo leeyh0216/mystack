@@ -21,6 +21,7 @@
 | Glue 사용자 확장 | 구현: stable/application/unsafe v1, mount한 wheel, modeled output 검증, boto3 계약 | 더 많은 서비스 context와 선택적 원격 격리 |
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
+| AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
 | Web console | 구현: EMR/Glue resource·상태·상세, EMR log, route/thread/task, keyboard/browser E2E | 추가 service별 시각화 |
 
 관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata는 설정된
@@ -49,6 +50,7 @@
 - Spark: 3.5.x, Glue 상호운용 profile은 Spark 3.5.4
 - Java: 17
 - Iceberg: Glue 5.0 profile 기준 1.7.1
+- AWS SDK for pandas: 3.17.0
 
 Glue 버전은 [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html)와 [공식 Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), EMR 의미론은 [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)를 기준으로 합니다.
 

@@ -14,6 +14,7 @@ Mystack은 Amazon EMR과 AWS Glue Data Catalog를 공식 프로토콜에 맞춰 
 - LocalStack S3와 연결된 실제 Spark 3.5.x local mode 실행
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
 - Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1 상호운용성
+- AWS SDK for pandas 3.17.0 기반 partitioned Parquet와 Glue Catalog 왕복
 - `stable`, `application`, 정확한 버전에 결합되는 `unsafe` Glue 확장 SPI
 - GHCR에 비공개 게시되는 versioned multi-platform Docker 이미지
 
@@ -69,5 +70,6 @@ domain <- application <- inbound/outbound adapters <- composition root
 현재 적극적으로 구현 중입니다. EMR은 boto3로 검증한 13개 operation, Glue는 boto3로
 검증한 Data Catalog 22개 operation을 제공합니다. 기준선과 구현 기반 UseCase는
 [`docs/project`](docs/project)에 있습니다.
+외부 library별 정확한 검증 경로와 미지원 범위는 [Client 호환성 표](docs/compatibility/client-matrix.ko.md)에 있습니다.
 
 동작 기준은 [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html), [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html), [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data), [AWS Glue 타입 문서](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html)입니다.

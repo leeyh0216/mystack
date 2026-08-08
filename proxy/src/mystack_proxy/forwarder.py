@@ -2,6 +2,10 @@
 
 Hop-by-hop handling follows RFC 9110 section 7.6.1:
 https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1
+
+HEAD representation metadata follows RFC 9110 section 9.3.2 and S3 HeadObject:
+https://www.rfc-editor.org/rfc/rfc9110.html#section-9.3.2
+https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html
 """
 
 from __future__ import annotations
@@ -138,7 +142,10 @@ class AwsRequestForwarder:
         return Response(
             content=response.content,
             status_code=response.status_code,
-            headers=self._response_headers(response.headers),
+            headers=self._response_headers(
+                response.headers,
+                preserve_representation_headers=request.method == "HEAD",
+            ),
         )
 
     @staticmethod
@@ -150,12 +157,17 @@ class AwsRequestForwarder:
         }
 
     @staticmethod
-    def _response_headers(headers: Mapping[str, str]) -> dict[str, str]:
-        return {
-            key: value
-            for key, value in headers.items()
-            if key.lower() not in _HOP_BY_HOP_HEADERS | {"content-length", "content-encoding"}
-        }
+    def _response_headers(
+        headers: Mapping[str, str],
+        *,
+        preserve_representation_headers: bool,
+    ) -> dict[str, str]:
+        removed = set(_HOP_BY_HOP_HEADERS)
+        if not preserve_representation_headers:
+            # httpx has decoded a normal response body. Starlette must calculate
+            # the new byte length and must not advertise the upstream encoding.
+            removed.update({"content-length", "content-encoding"})
+        return {key: value for key, value in headers.items() if key.lower() not in removed}
 
 
 def _log(level: int, event: str, *, exc_info: bool = False, **fields: object) -> None:

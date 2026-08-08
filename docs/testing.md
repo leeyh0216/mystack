@@ -13,7 +13,7 @@
 | Unit | Domain states, codecs, routing, configuration | None | `tests.unit_timeout_seconds` |
 | Architecture | Inward-only imports and bounded contexts | None | unit timeout |
 | Contract | boto3 serialization, response and modeled errors | API process | `tests.contract_timeout_seconds` |
-| E2E | Public Proxy to LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg | Docker | `tests.e2e_timeout_seconds` |
+| E2E | Public Proxy to LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg, AWS SDK for pandas | Docker | `tests.e2e_timeout_seconds` |
 
 Every pytest invocation uses `pytest-timeout` with the thread method so a hang produces Python thread stacks. Spark/bootstrap adapters also receive service-specific process timeouts from YAML.
 
@@ -42,6 +42,9 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
+- Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
+  same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
+  matrix](compatibility/client-matrix.md) records the exact scope.
 - The current Iceberg scenario covers create, append, read, and schema evolution. Partition and transaction scenarios remain target scope, using the [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
 <!-- section: reproducibility -->
