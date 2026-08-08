@@ -14,7 +14,7 @@ from typing import Any
 
 import httpx
 import pytest
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, ClientError
 
 
 @pytest.mark.e2e
@@ -82,6 +82,13 @@ def _wait_for_named_cluster(
             if len(matches) == 1 and matches[0]["Status"]["State"] == "WAITING":
                 return str(matches[0]["Id"])
         except BotoCoreError as error:  # service restart deliberately interrupts a request
+            last_error = error
+        except ClientError as error:
+            # Compose restart returns when PID 1 starts, before the pre-start boundary and EMR
+            # listener are ready. Proxy returns a temporary 500 while its configured backend is
+            # unavailable; other modeled service errors must still fail the contract immediately.
+            if error.response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 500:
+                raise
             last_error = error
         time.sleep(settings.poll_interval_seconds)
     raise TimeoutError(
