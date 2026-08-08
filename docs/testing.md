@@ -45,6 +45,9 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Inject Glue state-store failure, cancellation, concurrent writers, stale table versions, restart,
   rename/cascade, and schema-1 migration. These contracts prove Data Catalog metadata atomicity;
   they do not claim the separate Iceberg table-transaction target is complete.
+- Mutate Glue input/output dictionaries around domain construction and assert that names, table
+  revision/archive/CAS, partition cardinality, and aggregate moves remain immutable. Executable
+  responsibility tests restrict every handler and repository to its documented public methods.
 - Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
   same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
   matrix](compatibility/client-matrix.md) records the exact scope.

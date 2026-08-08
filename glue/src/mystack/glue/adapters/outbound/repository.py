@@ -432,7 +432,7 @@ def _database_document(value: CatalogDatabase) -> dict[str, Any]:
 
 
 def _database_from_document(value: dict[str, Any]) -> CatalogDatabase:
-    return CatalogDatabase(
+    return CatalogDatabase.restore(
         catalog_id=str(value["catalog_id"]),
         name=str(value["name"]),
         definition=dict(value["definition"]),
@@ -462,7 +462,7 @@ def _table_document(value: CatalogTable) -> dict[str, Any]:
 
 
 def _table_from_document(value: dict[str, Any]) -> CatalogTable:
-    return CatalogTable(
+    return CatalogTable.restore(
         catalog_id=str(value["catalog_id"]),
         database_name=str(value["database_name"]),
         name=str(value["name"]),
@@ -470,15 +470,15 @@ def _table_from_document(value: dict[str, Any]) -> CatalogTable:
         create_time=float(value["create_time"]),
         update_time=float(value["update_time"]),
         version_id=str(value["version_id"]),
-        archived_versions=[
-            CatalogTableVersion(
+        archived_versions=tuple(
+            CatalogTableVersion.restore(
                 version_id=str(version["version_id"]),
                 definition=dict(version["definition"]),
                 create_time=float(version["create_time"]),
                 update_time=float(version["update_time"]),
             )
             for version in value.get("archived_versions", ())
-        ],
+        ),
     )
 
 
@@ -495,7 +495,7 @@ def _partition_document(value: CatalogPartition) -> dict[str, Any]:
 
 
 def _partition_from_document(value: dict[str, Any]) -> CatalogPartition:
-    return CatalogPartition(
+    return CatalogPartition.restore(
         catalog_id=str(value["catalog_id"]),
         database_name=str(value["database_name"]),
         table_name=str(value["table_name"]),

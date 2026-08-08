@@ -43,6 +43,19 @@ domain <- application <- adapters <- bootstrap / FastAPI app
 
 CI의 architecture test가 안쪽 계층에서 바깥 계층으로 향하는 import를 거부합니다. 이는 AWS의 [Hexagonal architecture 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)을 적용한 것입니다.
 
+Glue Domain은 normalized `CatalogName`, 방어적으로 복사한 lossless `CatalogDocument` snapshot,
+immutable database/table/partition value, table revision/archive/CAS, partition value 수 invariant를
+소유합니다. Transport dictionary는 진입과 반환 시 복사하므로 adapter나 caller가 committed
+aggregate state를 변경할 수 없습니다. AWS 문서상 [Data Catalog가 type 문자열을 검증하지 않는
+동작](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html)을 유지하면서 모든 공식 field를
+보존합니다.
+
+Glue Application은 database command/query, table command/query, table-version query, partition
+command/query, 부분 성공 partition batch, pagination, initialization handler로 책임을 나눕니다.
+`CatalogApplication`은 inbound port를 위한 delegation 전용 compatibility facade입니다. Rename과
+cascade policy는 이 handler가 소유하며 repository는 snapshot과 candidate transaction capability만
+노출합니다.
+
 <!-- section: enforcement -->
 ## 실행 가능한 아키텍처 계약
 
@@ -143,3 +156,4 @@ argument vector로 실행하며 bootstrap script는 Proxy가 아닌 EMR containe
 - [AWS SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Python 언어 참고서: package relative import](https://docs.python.org/3/reference/import.html#package-relative-imports)
 - [Python 표준 라이브러리: fsync](https://docs.python.org/3/library/os.html#os.fsync)
+- [AWS Glue type](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html)

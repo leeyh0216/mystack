@@ -52,6 +52,18 @@ bootstrap / FastAPI app
 
 Architecture tests reject imports from an inner layer to an outer layer.
 
+Glue's Domain owns normalized `CatalogName`, defensive lossless `CatalogDocument` snapshots,
+immutable database/table/partition values, table revision/archive/CAS behavior, and partition value
+cardinality. Transport dictionaries are copied on entry and exit, so an adapter or caller cannot
+mutate committed aggregate state. This preserves all documented Glue fields while respecting AWS's
+statement that the [Data Catalog does not validate type strings](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).
+
+Glue Application responsibilities are separate handlers for database commands/queries, table
+commands/queries, table-version queries, partition commands/queries, partial-success partition
+batches, pagination, and initialization. `CatalogApplication` is a delegation-only compatibility
+facade for inbound ports. Rename and cascade policy belongs to these handlers; repositories expose
+only snapshot and candidate-transaction capabilities.
+
 <!-- section: enforcement -->
 ## Executable architecture contract
 
@@ -163,3 +175,4 @@ Glue's JSON persistence adapter uses Python's atomic
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Python language reference: package relative imports](https://docs.python.org/3/reference/import.html#package-relative-imports)
 - [Python standard library: fsync](https://docs.python.org/3/library/os.html#os.fsync)
+- [AWS Glue types](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html)

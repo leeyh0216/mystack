@@ -15,6 +15,8 @@ from mystack.glue.domain import (
     CatalogTableVersion,
 )
 
+from .batch import PartitionBatchFailure
+
 
 class GlueCatalogUseCases(Protocol):
     async def create_database(
@@ -141,6 +143,38 @@ class GlueCatalogUseCases(Protocol):
         table: str,
         values: tuple[str, ...],
     ) -> None: ...
+
+    async def batch_create_partitions(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        definitions: list[dict],
+    ) -> list[PartitionBatchFailure]: ...
+
+    async def batch_get_partitions(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        value_groups: list[tuple[str, ...]],
+    ) -> list[CatalogPartition]: ...
+
+    async def batch_update_partitions(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        entries: list[tuple[tuple[str, ...], dict]],
+    ) -> list[PartitionBatchFailure]: ...
+
+    async def batch_delete_partitions(
+        self,
+        catalog_id: str,
+        database: str,
+        table: str,
+        value_groups: list[tuple[str, ...]],
+    ) -> list[PartitionBatchFailure]: ...
 
 
 class GlueManagementQueries(Protocol):

@@ -124,6 +124,8 @@ contract](https://pre-commit.com/#install).
   `runtime.py`
 - EMR state/behavior: `emr/src/mystack/emr/domain` and `application`
 - Glue Catalog behavior: `glue/src/mystack/glue/domain` and `application`
+- Glue aggregate invariants: `glue/src/mystack/glue/domain/model.py`; focused handlers:
+  `application/database.py`, `table.py`, `partition.py`, `batch.py`, and `initialization.py`
 - Minimal inbound use-case Protocols: each service's `application/use_cases.py`
 - S3, process, database, FastAPI: service `adapters`
 - Dependency wiring only: service composition root

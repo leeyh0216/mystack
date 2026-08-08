@@ -88,6 +88,8 @@
   name을 검증합니다.
 - 출력: modeled database document/list/next token 또는 빈 response입니다.
 - 저장/변경: JSON-backed database와 선택적 초기 default database입니다.
+- 책임: `CatalogDatabase`가 normalized name과 방어적 document snapshot을 소유하고
+  `DatabaseCommands`, `DatabaseQueries`, `CatalogInitializer`가 flow를 분리합니다.
 - 부수효과: persist/fsync/atomic replacement 뒤 visible candidate publish.
 - 선행조건/규칙: case-normalized key, uniqueness, child constraint, 직렬화한 candidate transaction,
   최대 크기가 정해진 pagination.
@@ -106,6 +108,8 @@
 - 입력: CatalogId, database/name, TableInput, expression/attribute, VersionId, SkipArchive, pagination.
 - 출력: table/version document, list/next token 또는 빈 modeled response입니다.
 - 저장/변경: current table, 단조 증가 version, 선택적 archive입니다.
+- 책임: `CatalogTable`이 revision/archive/CAS를 소유하고 table command, query, version-query
+  handler를 분리합니다.
 - 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit하며
   Mystack이 Iceberg metadata format을 구현하지 않습니다.
 - 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작.
@@ -123,6 +127,8 @@
 - 입력: Catalog/database/table, partition value/input, expression, segment, pagination/schema flag.
 - 출력: partition/list/batch document이며 batch error는 전체 실패가 아닌 entry별 결과입니다.
 - 저장/변경: catalog/database/table/value tuple key의 partition record입니다.
+- 책임: `CatalogPartition`이 immutable value와 cardinality를 소유하고 command, query,
+  부분 성공 batch handler를 분리합니다.
 - 부수효과: 각 성공 entry mutation 뒤 candidate를 원자적으로 persist하고 publish합니다.
 - 선행조건/규칙: table 존재, value 수와 partition key 수 일치, 지원 predicate/segment.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.

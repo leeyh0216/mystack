@@ -213,19 +213,21 @@ class GlueAwsAdapter:
 
     async def batch_create_partition(self, payload, context):
         del context
-        errors = []
-        for definition in payload["PartitionInputList"]:
-            values = list(map(str, _mapping(definition, "PartitionInput").get("Values", ())))
-            try:
-                await self._application.create_partition(
-                    self._catalog(payload),
-                    str(payload["DatabaseName"]),
-                    str(payload["TableName"]),
-                    dict(_mapping(definition, "PartitionInput")),
-                )
-            except GlueDomainError as error:
-                errors.append(_partition_error(values, error))
-        return {"Errors": errors}
+        definitions = [
+            dict(_mapping(definition, "PartitionInput"))
+            for definition in payload["PartitionInputList"]
+        ]
+        failures = await self._application.batch_create_partitions(
+            self._catalog(payload),
+            str(payload["DatabaseName"]),
+            str(payload["TableName"]),
+            definitions,
+        )
+        return {
+            "Errors": [
+                _partition_error(list(failure.values), failure.error) for failure in failures
+            ]
+        }
 
     async def get_partition(self, payload, context):
         del context
@@ -260,20 +262,20 @@ class GlueAwsAdapter:
 
     async def batch_get_partition(self, payload, context):
         del context
-        partitions = []
-        for key in payload["PartitionsToGet"]:
-            values = tuple(map(str, _mapping(key, "PartitionsToGet[]")["Values"]))
-            try:
-                value = await self._application.get_partition(
-                    self._catalog(payload),
-                    str(payload["DatabaseName"]),
-                    str(payload["TableName"]),
-                    values,
-                )
-            except EntityNotFoundError:
-                continue
-            partitions.append(_partition(value))
-        return {"Partitions": partitions, "UnprocessedKeys": []}
+        value_groups = [
+            tuple(map(str, _mapping(key, "PartitionsToGet[]")["Values"]))
+            for key in payload["PartitionsToGet"]
+        ]
+        partitions = await self._application.batch_get_partitions(
+            self._catalog(payload),
+            str(payload["DatabaseName"]),
+            str(payload["TableName"]),
+            value_groups,
+        )
+        return {
+            "Partitions": [_partition(value) for value in partitions],
+            "UnprocessedKeys": [],
+        }
 
     async def update_partition(self, payload, context):
         del context
@@ -288,26 +290,30 @@ class GlueAwsAdapter:
 
     async def batch_update_partition(self, payload, context):
         del context
-        errors = []
+        entries = []
         for entry in payload["Entries"]:
             item = _mapping(entry, "Entries[]")
-            old_values = list(map(str, item["PartitionValueList"]))
-            try:
-                await self._application.update_partition(
-                    self._catalog(payload),
-                    str(payload["DatabaseName"]),
-                    str(payload["TableName"]),
-                    tuple(old_values),
+            entries.append(
+                (
+                    tuple(map(str, item["PartitionValueList"])),
                     dict(_mapping(item["PartitionInput"], "PartitionInput")),
                 )
-            except GlueDomainError as error:
-                errors.append(
-                    {
-                        "PartitionValueList": old_values,
-                        "ErrorDetail": _error_detail(error),
-                    }
-                )
-        return {"Errors": errors}
+            )
+        failures = await self._application.batch_update_partitions(
+            self._catalog(payload),
+            str(payload["DatabaseName"]),
+            str(payload["TableName"]),
+            entries,
+        )
+        return {
+            "Errors": [
+                {
+                    "PartitionValueList": list(failure.values),
+                    "ErrorDetail": _error_detail(failure.error),
+                }
+                for failure in failures
+            ]
+        }
 
     async def delete_partition(self, payload, context):
         del context
@@ -321,19 +327,21 @@ class GlueAwsAdapter:
 
     async def batch_delete_partition(self, payload, context):
         del context
-        errors = []
-        for key in payload["PartitionsToDelete"]:
-            values = list(map(str, _mapping(key, "PartitionsToDelete[]")["Values"]))
-            try:
-                await self._application.delete_partition(
-                    self._catalog(payload),
-                    str(payload["DatabaseName"]),
-                    str(payload["TableName"]),
-                    tuple(values),
-                )
-            except GlueDomainError as error:
-                errors.append(_partition_error(values, error))
-        return {"Errors": errors}
+        value_groups = [
+            tuple(map(str, _mapping(key, "PartitionsToDelete[]")["Values"]))
+            for key in payload["PartitionsToDelete"]
+        ]
+        failures = await self._application.batch_delete_partitions(
+            self._catalog(payload),
+            str(payload["DatabaseName"]),
+            str(payload["TableName"]),
+            value_groups,
+        )
+        return {
+            "Errors": [
+                _partition_error(list(failure.values), failure.error) for failure in failures
+            ]
+        }
 
     async def get_catalog_import_status(self, payload, context):
         del context

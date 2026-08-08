@@ -122,6 +122,8 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - Proxy controller capability와 HTTP lifecycle: `proxy/src/mystack/proxy/ports.py`, `runtime.py`
 - EMR 상태/동작: `emr/src/mystack/emr/domain`, `application`
 - Glue Catalog 동작: `glue/src/mystack/glue/domain`, `application`
+- Glue aggregate invariant: `glue/src/mystack/glue/domain/model.py`; focused handler:
+  `application/database.py`, `table.py`, `partition.py`, `batch.py`, `initialization.py`
 - Inbound use case의 최소 Protocol: 각 service의 `application/use_cases.py`
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만

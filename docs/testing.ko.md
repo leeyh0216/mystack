@@ -45,6 +45,9 @@
 - Glue state store의 실패·cancellation·concurrent writer·stale table version·restart·rename/cascade·
   schema-1 migration을 주입합니다. 이 계약은 Data Catalog metadata 원자성을 검증하며 별도 Iceberg
   table transaction 목표의 완료를 의미하지 않습니다.
+- Glue domain 생성 전후 input/output dictionary를 변경해도 name, table revision/archive/CAS,
+  partition cardinality, aggregate move가 immutable인지 확인합니다. 실행 가능한 책임 test는 각
+  handler와 repository의 public method를 문서화된 범위로 제한합니다.
 - AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
   같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
   기록합니다.
