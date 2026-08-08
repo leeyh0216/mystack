@@ -3,7 +3,7 @@ CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync pre-commit requirements lint format docs model-check coverage-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,6 +34,12 @@ docs: ## Validate bilingual pairs, backlinks, and official references.
 model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 
+coverage-check: ## Verify exhaustive API statuses and bilingual generated matrices.
+	@uv run python scripts/api_coverage.py \
+	  --check contracts/api-coverage.json \
+	  --english docs/compatibility/api-coverage.generated.md \
+	  --korean docs/compatibility/api-coverage.ko.generated.md
+
 test: ## Run unit, architecture, and protocol tests with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \
 	uv run pytest -m "not e2e" --timeout "$$timeout" --timeout-method thread
@@ -41,6 +47,11 @@ test: ## Run unit, architecture, and protocol tests with configured timeout.
 contract: ## Run boto3 and wire protocol contracts with configured timeout.
 	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.contract_timeout_seconds); \
 	uv run pytest -m contract --timeout "$$timeout" --timeout-method thread -vv
+
+differential: ## Opt in to read-only normalized real-AWS comparisons.
+	@timeout=$$(uv run python -c 'import json; print(json.load(open("contracts/differential-cases.json"))["timeout_seconds"])'); \
+	MYSTACK_REAL_AWS_DIFFERENTIAL=1 uv run pytest -m differential \
+	  --timeout "$$timeout" --timeout-method thread -vv
 
 up: ## Build and start the Docker stack with the selected YAML config.
 	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.compose_wait_timeout_seconds); \

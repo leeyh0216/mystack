@@ -39,6 +39,11 @@ echo "[mystack] checking hash-locked container requirements"
 uv run python scripts/export_requirements.py --check
 echo "[mystack] checking pinned AWS service models"
 uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+echo "[mystack] checking exhaustive API classification and generated matrices"
+uv run python scripts/api_coverage.py \
+  --check contracts/api-coverage.json \
+  --english docs/compatibility/api-coverage.generated.md \
+  --korean docs/compatibility/api-coverage.ko.generated.md
 echo "[mystack] running fast tests with configured timeout"
 test_timeout=$(uv run python scripts/config_value.py tests.unit_timeout_seconds)
 uv run pytest shared/tests proxy/tests tests/architecture \

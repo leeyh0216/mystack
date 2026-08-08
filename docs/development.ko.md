@@ -58,6 +58,7 @@ mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f comp
 make format
 make pre-commit
 make requirements
+make coverage-check
 make test
 make contract
 make e2e
@@ -90,4 +91,5 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - `make logs SERVICE=proxy`: JSON 경계 event 확인
 - `make threads`, `make tasks`: frame locals 없는 live stack 수집
 - `model-drift-report.json`: 변경 operation과 수정 위치
+- `api-coverage-drift-report.json`: 미분류·삭제·shape 변경·잘못 분류된 operation과 수정 경계
 - E2E artifact: 모든 container log

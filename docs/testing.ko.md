@@ -42,4 +42,11 @@ botocore manifest, Spark checksum/version, Iceberg version은 모두 테스트 �
 다른 `requirements/*.txt` export를 거부하며 공식 [uv export 명령](https://docs.astral.sh/uv/reference/cli/#uv-export)을
 사용합니다.
 
+## 선택적 differential 계층
+
+Real AWS 비교는 read-only·정규화·파일 설정 방식이며 기본 비활성화입니다. 명시적으로
+허가된 AWS 환경에서만 `MYSTACK_REAL_AWS_DIFFERENTIAL=1 uv run pytest -m differential
+--timeout 60`을 실행하세요. SDK와 pytest deadline은 모두 설정 가능하며 일반 local/CI
+계약에서는 skip되어 cloud credential이 필요 없습니다.
+
 AWS의 [Hexagonal architecture 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)는 독립 core test와 E2E 자동화를 권장합니다.

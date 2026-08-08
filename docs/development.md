@@ -60,6 +60,7 @@ Run `make help` for the source of truth. Common flows:
 make format
 make pre-commit
 make requirements
+make coverage-check
 make test
 make contract
 make e2e
@@ -92,4 +93,6 @@ The dependency direction is enforced using the [AWS hexagonal architecture model
 - `make logs SERVICE=proxy` shows JSON boundary events.
 - `make threads` and `make tasks` capture live stacks without frame locals.
 - `model-drift-report.json` names changed operations and fix locations.
+- `api-coverage-drift-report.json` names unclassified, removed, shape-changed, or
+  misclassified operations and the owning boundary to update.
 - E2E failure artifacts include all container logs.

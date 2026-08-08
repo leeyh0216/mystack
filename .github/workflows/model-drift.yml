@@ -21,20 +21,52 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compare latest botocore with pinned contracts
-        id: drift
+        id: model_drift
         continue-on-error: true
         run: >-
           uv run --no-project --with botocore
           python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
+      - name: Detect unclassified operations and coverage drift
+        id: coverage_drift
+        continue-on-error: true
+        run: >-
+          uv run --no-project --with botocore
+          python scripts/api_coverage.py
+          --check contracts/api-coverage.json
+          --english docs/compatibility/api-coverage.generated.md
+          --korean docs/compatibility/api-coverage.ko.generated.md
+          --report api-coverage-drift-report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: aws-model-drift-report
-          path: model-drift-report.json
+          path: |
+            model-drift-report.json
+            api-coverage-drift-report.json
+      - name: Compose bilingual actionable issue body
+        if: steps.model_drift.outcome == 'failure' || steps.coverage_drift.outcome == 'failure'
+        run: |
+          {
+            echo '## English'
+            echo 'The official botocore model differs from the committed protocol or classification baseline. Review the fix hints and update adapters, tests, fingerprints, and both generated matrices together.'
+            echo
+            echo '## 한국어'
+            echo '공식 botocore 모델이 commit된 protocol 또는 분류 기준선과 다릅니다. 수정 안내에 따라 adapter, test, fingerprint, 한·영 생성 matrix를 함께 갱신하세요.'
+            echo
+            echo '## Model drift report / 모델 변경 보고서'
+            echo '```json'
+            cat model-drift-report.json
+            echo '```'
+            echo
+            echo '## Coverage drift report / 분류 변경 보고서'
+            echo '```json'
+            cat api-coverage-drift-report.json
+            echo '```'
+          } > drift-issue.md
       - name: Open one actionable drift issue
-        if: steps.drift.outcome == 'failure'
+        if: steps.model_drift.outcome == 'failure' || steps.coverage_drift.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -43,11 +75,10 @@ jobs:
             gh issue create \
               --title 'AWS SDK model drift detected' \
               --label 'area:protocol,type:compatibility' \
-              --body-file model-drift-report.json
+              --body-file drift-issue.md
           else
-            gh issue comment "$existing" --body-file model-drift-report.json
+            gh issue comment "$existing" --body-file drift-issue.md
           fi
       - name: Fail after preserving the report
-        if: steps.drift.outcome == 'failure'
+        if: steps.model_drift.outcome == 'failure' || steps.coverage_drift.outcome == 'failure'
         run: exit 1
-

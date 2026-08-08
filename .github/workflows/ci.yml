@@ -47,6 +47,13 @@ jobs:
           uv run python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
+      - name: Verify complete API classification and generated bilingual matrix
+        run: >-
+          uv run python scripts/api_coverage.py
+          --check contracts/api-coverage.json
+          --english docs/compatibility/api-coverage.generated.md
+          --korean docs/compatibility/api-coverage.ko.generated.md
+          --report api-coverage-drift-report.json
       - name: Verify contributor pre-commit gates
         run: uv run pre-commit run --all-files
       - name: Unit, architecture, and protocol contract tests
@@ -75,4 +82,5 @@ jobs:
           path: |
             coverage.xml
             model-drift-report.json
+            api-coverage-drift-report.json
           if-no-files-found: ignore

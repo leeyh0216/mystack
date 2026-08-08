@@ -119,4 +119,10 @@ Glue Job and JobRun APIs are out of scope. Spark interoperability uses a version
   and table versions. The real Glue 5 E2E covers Hive complex types plus Iceberg
   create/append/read/schema evolution on LocalStack S3.
 
+Mystack does **not** implement the Iceberg table format, manifests, snapshots, Spark extensions,
+or an Iceberg wire protocol. The unmodified Apache Iceberg 1.7.1 `SparkCatalog`, AWS
+`GlueCatalog`, and `S3FileIO` classes own those responsibilities. `GlueCatalog` sends ordinary
+Glue Data Catalog AWS JSON 1.1 calls through Mystack, while Iceberg metadata and data files go to
+LocalStack S3. This boundary follows the official [Iceberg AWS integration](https://iceberg.apache.org/docs/1.7.1/aws/).
+
 See [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html), [the official Glue 5.0 Docker image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), [Glue type systems](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), and [Iceberg in Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).

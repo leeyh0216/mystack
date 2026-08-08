@@ -15,6 +15,7 @@ build/
 data/
 logs/
 model-drift-report.json
+api-coverage-drift-report.json
 test-artifacts/
 .idea/
 .vscode/

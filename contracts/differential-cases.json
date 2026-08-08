@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "enabled": false,
+  "enable_environment_variable": "MYSTACK_REAL_AWS_DIFFERENTIAL",
+  "emulator_endpoint_url": "http://127.0.0.1:4566",
+  "emulator_endpoint_environment_variable": "MYSTACK_DIFFERENTIAL_EMULATOR_ENDPOINT",
+  "region": "us-east-1",
+  "region_environment_variable": "AWS_REGION",
+  "timeout_seconds": 30,
+  "timeout_environment_variable": "MYSTACK_DIFFERENTIAL_TIMEOUT_SECONDS",
+  "source_urls": [
+    "https://docs.aws.amazon.com/emr/latest/APIReference/API_ListClusters.html",
+    "https://docs.aws.amazon.com/glue/latest/webapi/API_GetCatalogImportStatus.html",
+    "https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html"
+  ],
+  "cases": [
+    {
+      "name": "emr-list-clusters-response-envelope",
+      "service": "emr",
+      "operation": "ListClusters",
+      "request": {},
+      "drop_keys": ["Clusters", "Marker", "ResponseMetadata"]
+    },
+    {
+      "name": "glue-catalog-import-status-envelope",
+      "service": "glue",
+      "operation": "GetCatalogImportStatus",
+      "request": {},
+      "drop_keys": [
+        "ImportCompleted",
+        "ImportedBy",
+        "ImportTime",
+        "ResponseMetadata"
+      ]
+    }
+  ]
+}

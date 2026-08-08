@@ -88,4 +88,10 @@ Glue Job/JobRun은 범위 밖입니다. Spark 상호운용성 profile은 Spark 3
   검증합니다. 실제 Glue 5 E2E는 Hive complex type과 LocalStack S3 기반 Iceberg
   create/append/read/schema evolution을 수행합니다.
 
+Mystack은 Iceberg table format, manifest, snapshot, Spark extension 또는 별도 Iceberg wire
+protocol을 구현하지 않습니다. 수정하지 않은 Apache Iceberg 1.7.1 `SparkCatalog`, AWS
+`GlueCatalog`, `S3FileIO`가 이 책임을 가집니다. `GlueCatalog`는 일반 Glue Data Catalog AWS
+JSON 1.1 호출을 Mystack으로 보내고 Iceberg metadata/data file은 LocalStack S3에 저장합니다.
+이 경계는 공식 [Iceberg AWS integration](https://iceberg.apache.org/docs/1.7.1/aws/)을 따릅니다.
+
 공식 기준: [Glue 5.0 이미지](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), [Glue 타입 시스템](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), [Glue Iceberg](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)

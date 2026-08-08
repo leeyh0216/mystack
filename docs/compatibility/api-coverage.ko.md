@@ -39,4 +39,19 @@
 [Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)와
 [Glue exception](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html)을 기준으로 합니다.
 
+전체 생성형 표는 [api-coverage.ko.generated.md](api-coverage.ko.generated.md)입니다. botocore
+1.43.66의 EMR 65개와 Glue 299개 operation을 모두 포함합니다. Commit된 JSON 기준선은
+각 operation의 상태와 shape fingerprint를 저장합니다. `--check`는 새 upstream operation에
+기본 상태를 자동 부여하지 않고 미분류로 보고해 CI를 실패시킵니다. Shape 변경과 삭제도
+adapter, test, 문서 수정 안내와 별도로 보고합니다.
+
+## 선택적 real-AWS differential 계약
+
+`contracts/differential-cases.json`이 read-only 호출, 정규화 규칙, region, endpoint, SDK
+timeout을 정의합니다. 기본적으로 skip하며 `MYSTACK_REAL_AWS_DIFFERENTIAL=1`일 때만
+활성화하므로 local contributor에게 AWS credential을 요구하지 않습니다. Real client는
+boto3 공식 [credential provider chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)을
+사용하고 emulator client는 별도 local credential을 사용합니다. 현재 EMR `ListClusters`와
+Glue `GetCatalogImportStatus`의 정규화된 성공 envelope를 비교합니다.
+
 공식 operation/shape 목록은 [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data), Glue 동작은 [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)를 기준으로 합니다.
