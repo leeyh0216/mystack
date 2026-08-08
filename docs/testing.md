@@ -42,6 +42,9 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise all 13 implemented EMR and all 22 implemented Glue operations through the public
   Proxy boundary; the same reusable Glue scenario also runs directly against the Glue service.
 - Exercise Glue Catalog through boto3 and Spark Hive/Iceberg adapters.
+- Inject Glue state-store failure, cancellation, concurrent writers, stale table versions, restart,
+  rename/cascade, and schema-1 migration. These contracts prove Data Catalog metadata atomicity;
+  they do not claim the separate Iceberg table-transaction target is complete.
 - Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
   same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
   matrix](compatibility/client-matrix.md) records the exact scope.

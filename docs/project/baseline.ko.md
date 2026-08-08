@@ -43,15 +43,17 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   제공합니다.
 - EMR은 13개 operation, cluster/step state machine, LocalStack S3 bootstrap materialization,
   Python/JAR Spark 실행, 취소, log, management read model을 구현합니다.
-- Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. JSON persistence는
-  atomic replacement를 사용하고 inbound adapter가 domain error를 문서화된 오류로 변환합니다.
+- Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. 직렬화한 candidate
+  transaction이 visible publish 전에 schema-2 JSON을 persist/fsync/replace하고 schema 1을
+  migration하며 rename/cascade/version check를 한 commit으로 처리합니다. Inbound adapter는 domain
+  error를 문서화된 오류로 변환합니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
   create/append/read/schema evolution, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
 - 운영 기능은 resource/log console, route/thread/task 진단, authorization과 payload 내용을 제외한
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- 최종 test inventory는 71개입니다. Fast suite는 66개를 선택해 64개가 통과하고 real-AWS
+- 최종 test inventory는 79개입니다. Fast suite는 74개를 선택해 72개가 통과하고 real-AWS
   opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
   5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
@@ -118,6 +120,6 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. Glue state 변경을 transactional repository 경계 뒤로 옮깁니다.
-2. Glue aggregate와 use case를 명시적인 책임 단위로 분리합니다.
-3. EMR command, query, lifecycle 책임을 분리합니다.
+1. Glue aggregate와 use case를 명시적인 책임 단위로 분리합니다.
+2. EMR command, query, lifecycle 책임을 분리합니다.
+3. 큰 inbound AWS adapter를 operation family별로 분리합니다.

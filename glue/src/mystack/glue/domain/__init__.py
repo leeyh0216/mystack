@@ -9,12 +9,19 @@ from .errors import (
     InvalidInputError,
     VersionMismatchError,
 )
-from .model import CatalogDatabase, CatalogPartition, CatalogTable, CatalogTableVersion
+from .model import (
+    CatalogDatabase,
+    CatalogPartition,
+    CatalogState,
+    CatalogTable,
+    CatalogTableVersion,
+)
 
 __all__ = [
     "AlreadyExistsError",
     "CatalogDatabase",
     "CatalogPartition",
+    "CatalogState",
     "CatalogTable",
     "CatalogTableVersion",
     "EntityNotFoundError",

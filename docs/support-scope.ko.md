@@ -23,8 +23,12 @@
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
 | Web console | 구현: EMR/Glue resource·상태·상세, EMR log, route/thread/task, keyboard/browser E2E | 추가 service별 시각화 |
 
-관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata는 설정된
-`glue.state_file`에 원자적으로 저장됩니다. 현재 partition expression evaluator는 따옴표로
+관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata mutation은 직렬화한
+candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를
+모두 유지하고 database/table rename 또는 delete는 하위 table과 partition을 한 commit에
+포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema version 1은 다음
+mutation에서 migration합니다. 이는 표에 남은 Iceberg table transaction 목표와 구분되는 Glue
+Data Catalog metadata transaction 동작입니다. 현재 partition expression evaluator는 따옴표로
 감싼 동등/부등 조건을 `AND`로 연결한 문법을 지원하며, 지원하지 않는 식은 잘못된 결과를
 조용히 반환하지 않고 `InvalidInputException`을 반환합니다.
 

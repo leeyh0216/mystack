@@ -23,8 +23,12 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions and additional clients |
 | Web console | Implemented: EMR/Glue resources, status/detail, EMR logs, route/thread/task views, keyboard/browser E2E | Additional service-specific visualizations |
 
-The management console is served at `/_mystack/console`. Glue metadata is atomically
-persisted to the configured `glue.state_file`. The current partition expression evaluator
+The management console is served at `/_mystack/console`. Glue metadata mutations use serialized
+candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
+database/table rename or deletion includes child tables and partitions in one commit. The versioned
+JSON document is stored at `glue.state_file`; schema version 1 is migrated on the next mutation.
+This is Glue Data Catalog metadata transaction behavior, distinct from the Iceberg table-transaction
+target in the matrix. The current partition expression evaluator
 supports quoted equality and inequality predicates joined by `AND`; unsupported expressions
 return `InvalidInputException` instead of silently producing an incorrect result.
 

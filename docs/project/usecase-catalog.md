@@ -89,12 +89,14 @@
   name rules.
 - Output: modeled database documents/list/next token or empty response.
 - Stored/changed data: JSON-backed database record; optional default database on initialization.
-- Side effects: atomic state-file replacement after mutations.
-- Preconditions/rules: case-normalized keys, uniqueness, child constraints, bounded pagination.
+- Side effects: persist/fsync/atomic replacement followed by visible candidate publication.
+- Preconditions/rules: case-normalized keys, uniqueness, child constraints, serialized candidate
+  transaction, and bounded pagination.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and invalid pagination token.
-- Observability: repository read/write and persistence boundary events; direct/public boto3 tests.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:60`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/outbound/repository.py:300`
+- Observability: transaction/persist before, after, rollback and migration events; direct/public boto3
+  tests plus injected failure/cancellation/restart tests.
+- Evidence: `glue/src/mystack/glue/application/service.py`,
+  `glue/src/mystack/glue/adapters/outbound/repository.py`
 - Confidence: High
 
 <!-- section: uc-006 -->
@@ -104,12 +106,13 @@
 - Input: CatalogId, database/name, TableInput, expression/attributes, VersionId, SkipArchive and pagination.
 - Output: table/version documents, lists/next token, or empty modeled response.
 - Stored/changed data: current table, monotonically incremented version and optional archive.
-- Side effects: atomic persistence; no Iceberg metadata-format implementation in Mystack.
+- Side effects: one candidate commit for table rename, archived version, and child partition keys; no
+  Iceberg metadata-format implementation in Mystack.
 - Preconditions/rules: database exists, unique normalized name, optimistic version and archive behavior.
 - Failures: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input excluded.
 - Observability: mapped domain errors and version/persistence tests; Spark Hive/Iceberg E2E consumes API.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:101`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:149`
+- Evidence: `glue/src/mystack/glue/application/service.py`,
+  `glue/tests/test_persistence.py`
 - Confidence: High
 
 <!-- section: uc-007 -->
@@ -119,12 +122,12 @@
 - Input: Catalog/database/table, partition values/input, expression, segment, pagination and schema flags.
 - Output: partition/list/batch documents; batch errors are per-entry rather than whole-call failure.
 - Stored/changed data: partition records keyed by catalog/database/table/value tuple.
-- Side effects: atomic state persistence after mutation.
+- Side effects: atomic candidate persistence and publication after each successful entry mutation.
 - Preconditions/rules: table exists; value count equals partition-key count; supported predicate/segment.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and per-item ErrorDetail.
 - Observability: operation/error logs and all 22 Glue operations through public Proxy E2E.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:213`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/inbound/aws.py:201`
+- Evidence: `glue/src/mystack/glue/application/service.py`,
+  `glue/src/mystack/glue/adapters/inbound/aws.py`
 - Confidence: High
 
 <!-- section: uc-008 -->

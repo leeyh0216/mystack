@@ -45,15 +45,17 @@ contracts.
   reach-through.
 - EMR: 13 operations, cluster/step state machines, bootstrap materialization from LocalStack S3,
   Python/JAR Spark execution, cancellation, logs, and management read models.
-- Glue: 22 operations covering database, table/version, and partition/batch behavior; JSON persistence
-  uses atomic replacement; documented domain errors translate at the inbound adapter.
+- Glue: 22 operations covering database, table/version, and partition/batch behavior. Serialized
+  candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
+  schema 1, and keep rename/cascade/version checks atomic; documented domain errors translate at the
+  inbound adapter.
 - Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
   1.7.1 create/append/read/schema-evolution, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
 - Operations: resource/log console, route/thread/task diagnostics, structured boundary logs without
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Final test inventory: 71 collected. The fast suite selects 66, passes 64, and skips two real-AWS
+- Final test inventory: 79 collected. The fast suite selects 74, passes 72, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.
 
@@ -117,6 +119,6 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Move Glue state updates behind a transactional repository boundary.
-2. Split Glue aggregates and use cases around explicit responsibilities.
-3. Separate EMR command, query, and lifecycle responsibilities.
+1. Split Glue aggregates and use cases around explicit responsibilities.
+2. Separate EMR command, query, and lifecycle responsibilities.
+3. Split large inbound AWS adapters by operation family.

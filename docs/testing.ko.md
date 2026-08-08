@@ -42,6 +42,9 @@
 - 구현된 EMR 13개와 Glue 22개 operation 전부를 public Proxy 경계로 검증하며, 같은
   재사용 Glue 시나리오를 Glue service 직접 경계에서도 실행합니다.
 - boto3와 Spark Hive/Iceberg adapter로 Glue Catalog를 검증합니다.
+- Glue state store의 실패·cancellation·concurrent writer·stale table version·restart·rename/cascade·
+  schema-1 migration을 주입합니다. 이 계약은 Data Catalog metadata 원자성을 검증하며 별도 Iceberg
+  table transaction 목표의 완료를 의미하지 않습니다.
 - AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
   같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
   기록합니다.

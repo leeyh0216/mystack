@@ -1,410 +1,64 @@
-"""Concurrency-safe Data Catalog repository with isolated aggregate copies.
+"""Candidate-state transactions and composed Glue Catalog persistence.
 
 References:
 - https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html
 - https://docs.aws.amazon.com/glue/latest/webapi/API_TableVersion.html
+- https://docs.python.org/3/library/os.html#os.replace
+- https://docs.python.org/3/library/os.html#os.fsync
 """
 
 from __future__ import annotations
 
 import asyncio
 import copy
+import hashlib
 import json
 import logging
+import os
+from collections.abc import AsyncIterator
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from mystack.aws_protocol.observability import log_event
 from mystack.glue.domain import (
-    AlreadyExistsError,
     CatalogDatabase,
     CatalogPartition,
+    CatalogState,
     CatalogTable,
     CatalogTableVersion,
-    EntityNotFoundError,
-    VersionMismatchError,
 )
 
 _LOGGER = logging.getLogger(__name__)
-_DatabaseKey = tuple[str, str]
-_TableKey = tuple[str, str, str]
-_PartitionKey = tuple[str, str, str, tuple[str, ...]]
+_CURRENT_SCHEMA_VERSION = 2
 
 
-class InMemoryCatalogRepository:
-    def __init__(self) -> None:
-        self._databases: dict[_DatabaseKey, CatalogDatabase] = {}
-        self._tables: dict[_TableKey, CatalogTable] = {}
-        self._partitions: dict[_PartitionKey, CatalogPartition] = {}
-        self._lock = asyncio.Lock()
+class CatalogStateStore(Protocol):
+    """Durability capability composed behind the repository transaction."""
 
-    async def create_database(self, database: CatalogDatabase) -> None:
-        key = (database.catalog_id, database.name)
-        async with self._lock:
-            if key in self._databases:
-                raise AlreadyExistsError(f"Database {database.name!r} already exists")
-            self._databases[key] = copy.deepcopy(database)
-        self._log("glue.repository.database.created", "database", key)
+    def load(self) -> CatalogState: ...
 
-    async def get_database(self, catalog_id: str, name: str) -> CatalogDatabase:
-        async with self._lock:
-            value = self._databases.get((catalog_id, name))
-            if value is None:
-                raise EntityNotFoundError(f"Database {name!r} does not exist")
-            return copy.deepcopy(value)
-
-    async def list_databases(self, catalog_id: str) -> list[CatalogDatabase]:
-        async with self._lock:
-            return copy.deepcopy(
-                [value for key, value in self._databases.items() if key[0] == catalog_id]
-            )
-
-    async def update_database(self, old_name: str, database: CatalogDatabase) -> None:
-        old_key = (database.catalog_id, old_name)
-        new_key = (database.catalog_id, database.name)
-        async with self._lock:
-            if old_key not in self._databases:
-                raise EntityNotFoundError(f"Database {old_name!r} does not exist")
-            if new_key != old_key and new_key in self._databases:
-                raise AlreadyExistsError(f"Database {database.name!r} already exists")
-            self._databases.pop(old_key)
-            self._databases[new_key] = copy.deepcopy(database)
-            if old_key != new_key:
-                self._rename_database_children(database.catalog_id, old_name, database.name)
-        self._log("glue.repository.database.updated", "database", new_key)
-
-    async def delete_database(self, catalog_id: str, name: str) -> None:
-        key = (catalog_id, name)
-        async with self._lock:
-            if self._databases.pop(key, None) is None:
-                raise EntityNotFoundError(f"Database {name!r} does not exist")
-            table_keys = [value for value in self._tables if value[:2] == key]
-            for table_key in table_keys:
-                self._tables.pop(table_key)
-            partition_keys = [value for value in self._partitions if value[:2] == key]
-            for partition_key in partition_keys:
-                self._partitions.pop(partition_key)
-        self._log("glue.repository.database.deleted", "database", key)
-
-    async def create_table(self, table: CatalogTable) -> None:
-        key = (table.catalog_id, table.database_name, table.name)
-        async with self._lock:
-            if key in self._tables:
-                raise AlreadyExistsError(f"Table {table.database_name}.{table.name} already exists")
-            self._tables[key] = copy.deepcopy(table)
-        self._log("glue.repository.table.created", "table", key)
-
-    async def get_table(self, catalog_id: str, database: str, name: str) -> CatalogTable:
-        key = (catalog_id, database, name)
-        async with self._lock:
-            value = self._tables.get(key)
-            if value is None:
-                raise EntityNotFoundError(f"Table {database}.{name} does not exist")
-            return copy.deepcopy(value)
-
-    async def list_tables(self, catalog_id: str, database: str) -> list[CatalogTable]:
-        async with self._lock:
-            return copy.deepcopy(
-                [value for key, value in self._tables.items() if key[:2] == (catalog_id, database)]
-            )
-
-    async def update_table(
-        self,
-        old_name: str,
-        table: CatalogTable,
-        *,
-        expected_version_id: str | None,
-        skip_archive: bool,
-    ) -> None:
-        old_key = (table.catalog_id, table.database_name, old_name)
-        new_key = (table.catalog_id, table.database_name, table.name)
-        async with self._lock:
-            current = self._tables.get(old_key)
-            if current is None:
-                raise EntityNotFoundError(f"Table {table.database_name}.{old_name} does not exist")
-            if expected_version_id is not None and current.version_id != expected_version_id:
-                raise VersionMismatchError(
-                    f"Expected table version {expected_version_id}, "
-                    f"current version is {current.version_id}"
-                )
-            if new_key != old_key and new_key in self._tables:
-                raise AlreadyExistsError(f"Table {table.database_name}.{table.name} already exists")
-            table.archived_versions = copy.deepcopy(current.archived_versions)
-            if not skip_archive:
-                table.archived_versions.append(_version(current))
-            self._tables.pop(old_key)
-            self._tables[new_key] = copy.deepcopy(table)
-            if new_key != old_key:
-                self._rename_table_partitions(
-                    table.catalog_id, table.database_name, old_name, table.name
-                )
-        self._log("glue.repository.table.updated", "table", new_key)
-
-    async def delete_table(self, catalog_id: str, database: str, name: str) -> None:
-        key = (catalog_id, database, name)
-        async with self._lock:
-            if self._tables.pop(key, None) is None:
-                raise EntityNotFoundError(f"Table {database}.{name} does not exist")
-            partition_keys = [value for value in self._partitions if value[:3] == key]
-            for partition_key in partition_keys:
-                self._partitions.pop(partition_key)
-        self._log("glue.repository.table.deleted", "table", key)
-
-    async def get_table_version(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-        version_id: str | None,
-    ) -> CatalogTableVersion:
-        current = await self.get_table(catalog_id, database, table)
-        versions = [*current.archived_versions, _version(current)]
-        if version_id is None:
-            return versions[-1]
-        for value in versions:
-            if value.version_id == version_id:
-                return value
-        raise EntityNotFoundError(f"Table version {database}.{table}@{version_id} does not exist")
-
-    async def list_table_versions(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-    ) -> list[CatalogTableVersion]:
-        current = await self.get_table(catalog_id, database, table)
-        return [*current.archived_versions, _version(current)]
-
-    async def create_partition(self, partition: CatalogPartition) -> None:
-        key = _partition_key(partition)
-        async with self._lock:
-            if key in self._partitions:
-                raise AlreadyExistsError(f"Partition {list(partition.values)!r} already exists")
-            self._partitions[key] = copy.deepcopy(partition)
-        self._log("glue.repository.partition.created", "partition", key)
-
-    async def get_partition(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-        values: tuple[str, ...],
-    ) -> CatalogPartition:
-        key = (catalog_id, database, table, values)
-        async with self._lock:
-            value = self._partitions.get(key)
-            if value is None:
-                raise EntityNotFoundError(f"Partition {list(values)!r} does not exist")
-            return copy.deepcopy(value)
-
-    async def list_partitions(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-    ) -> list[CatalogPartition]:
-        prefix = (catalog_id, database, table)
-        async with self._lock:
-            return copy.deepcopy(
-                [value for key, value in self._partitions.items() if key[:3] == prefix]
-            )
-
-    async def update_partition(
-        self,
-        old_values: tuple[str, ...],
-        partition: CatalogPartition,
-    ) -> None:
-        old_key = (
-            partition.catalog_id,
-            partition.database_name,
-            partition.table_name,
-            old_values,
-        )
-        new_key = _partition_key(partition)
-        async with self._lock:
-            if old_key not in self._partitions:
-                raise EntityNotFoundError(f"Partition {list(old_values)!r} does not exist")
-            if old_key != new_key and new_key in self._partitions:
-                raise AlreadyExistsError(f"Partition {list(partition.values)!r} already exists")
-            self._partitions.pop(old_key)
-            self._partitions[new_key] = copy.deepcopy(partition)
-        self._log("glue.repository.partition.updated", "partition", new_key)
-
-    async def delete_partition(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-        values: tuple[str, ...],
-    ) -> None:
-        key = (catalog_id, database, table, values)
-        async with self._lock:
-            if self._partitions.pop(key, None) is None:
-                raise EntityNotFoundError(f"Partition {list(values)!r} does not exist")
-        self._log("glue.repository.partition.deleted", "partition", key)
-
-    def _rename_database_children(self, catalog_id: str, old: str, new: str) -> None:
-        for key in [value for value in self._tables if value[:2] == (catalog_id, old)]:
-            table = self._tables.pop(key)
-            table.database_name = new
-            self._tables[(catalog_id, new, table.name)] = table
-        for key in [value for value in self._partitions if value[:2] == (catalog_id, old)]:
-            partition = self._partitions.pop(key)
-            partition.database_name = new
-            self._partitions[_partition_key(partition)] = partition
-
-    def _rename_table_partitions(
-        self,
-        catalog_id: str,
-        database: str,
-        old: str,
-        new: str,
-    ) -> None:
-        prefix = (catalog_id, database, old)
-        for key in [value for value in self._partitions if value[:3] == prefix]:
-            partition = self._partitions.pop(key)
-            partition.table_name = new
-            self._partitions[_partition_key(partition)] = partition
-
-    @staticmethod
-    def _log(event: str, resource_type: str, key: tuple) -> None:
-        log_event(
-            _LOGGER,
-            logging.INFO,
-            event,
-            resource_type=resource_type,
-            resource_key_fingerprint=hash(key),
-            side_effect=True,
-        )
+    async def save(self, candidate: CatalogState) -> None: ...
 
 
-def _partition_key(partition: CatalogPartition) -> _PartitionKey:
-    return (
-        partition.catalog_id,
-        partition.database_name,
-        partition.table_name,
-        partition.values,
-    )
+class VolatileCatalogStateStore:
+    def __init__(self, initial: CatalogState | None = None) -> None:
+        self._committed = copy.deepcopy(initial or CatalogState())
+
+    def load(self) -> CatalogState:
+        return copy.deepcopy(self._committed)
+
+    async def save(self, candidate: CatalogState) -> None:
+        self._committed = copy.deepcopy(candidate)
 
 
-def _version(table: CatalogTable) -> CatalogTableVersion:
-    return CatalogTableVersion(
-        version_id=table.version_id,
-        definition=copy.deepcopy(table.definition),
-        create_time=table.create_time,
-        update_time=table.update_time,
-    )
-
-
-class JsonCatalogRepository(InMemoryCatalogRepository):
-    """Durable JSON adapter using atomic same-directory replacement.
-
-    Atomic replacement reference:
-    https://docs.python.org/3/library/os.html#os.replace
-    """
+class JsonCatalogStateStore:
+    """Versioned JSON storage using fsync and same-directory atomic replacement."""
 
     def __init__(self, state_file: Path) -> None:
-        super().__init__()
         self._state_file = state_file
-        self._persist_lock = asyncio.Lock()
-        self._load()
 
-    async def create_database(self, database: CatalogDatabase) -> None:
-        await super().create_database(database)
-        await self._persist()
-
-    async def update_database(self, old_name: str, database: CatalogDatabase) -> None:
-        await super().update_database(old_name, database)
-        await self._persist()
-
-    async def delete_database(self, catalog_id: str, name: str) -> None:
-        await super().delete_database(catalog_id, name)
-        await self._persist()
-
-    async def create_table(self, table: CatalogTable) -> None:
-        await super().create_table(table)
-        await self._persist()
-
-    async def update_table(
-        self,
-        old_name: str,
-        table: CatalogTable,
-        *,
-        expected_version_id: str | None,
-        skip_archive: bool,
-    ) -> None:
-        await super().update_table(
-            old_name,
-            table,
-            expected_version_id=expected_version_id,
-            skip_archive=skip_archive,
-        )
-        await self._persist()
-
-    async def delete_table(self, catalog_id: str, database: str, name: str) -> None:
-        await super().delete_table(catalog_id, database, name)
-        await self._persist()
-
-    async def create_partition(self, partition: CatalogPartition) -> None:
-        await super().create_partition(partition)
-        await self._persist()
-
-    async def update_partition(
-        self,
-        old_values: tuple[str, ...],
-        partition: CatalogPartition,
-    ) -> None:
-        await super().update_partition(old_values, partition)
-        await self._persist()
-
-    async def delete_partition(
-        self,
-        catalog_id: str,
-        database: str,
-        table: str,
-        values: tuple[str, ...],
-    ) -> None:
-        await super().delete_partition(catalog_id, database, table, values)
-        await self._persist()
-
-    async def _persist(self) -> None:
-        async with self._persist_lock:
-            log_event(
-                _LOGGER,
-                logging.INFO,
-                "glue.repository.persist.before",
-                state_file=str(self._state_file),
-                side_effect=True,
-            )
-            async with self._lock:
-                document = {
-                    "schema_version": 1,
-                    "databases": [_database_document(value) for value in self._databases.values()],
-                    "tables": [_table_document(value) for value in self._tables.values()],
-                    "partitions": [
-                        _partition_document(value) for value in self._partitions.values()
-                    ],
-                }
-            serialized = json.dumps(
-                document,
-                sort_keys=True,
-                separators=(",", ":"),
-                ensure_ascii=False,
-            )
-            await asyncio.to_thread(self._write_atomic, serialized)
-            log_event(
-                _LOGGER,
-                logging.INFO,
-                "glue.repository.persist.after",
-                state_file=str(self._state_file),
-                size_bytes=len(serialized.encode()),
-                database_count=len(document["databases"]),
-                table_count=len(document["tables"]),
-                partition_count=len(document["partitions"]),
-                side_effect=True,
-            )
-
-    def _load(self) -> None:
+    def load(self) -> CatalogState:
         if not self._state_file.exists():
             log_event(
                 _LOGGER,
@@ -412,20 +66,17 @@ class JsonCatalogRepository(InMemoryCatalogRepository):
                 "glue.repository.load.empty",
                 state_file=str(self._state_file),
             )
-            return
+            return CatalogState()
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "glue.repository.load.before",
+            state_file=str(self._state_file),
+            side_effect=True,
+        )
         try:
             document = json.loads(self._state_file.read_text(encoding="utf-8"))
-            if document.get("schema_version") != 1:
-                raise ValueError("Unsupported catalog state schema_version")
-            for raw in document.get("databases", ()):
-                value = _database_from_document(raw)
-                self._databases[(value.catalog_id, value.name)] = value
-            for raw in document.get("tables", ()):
-                value = _table_from_document(raw)
-                self._tables[(value.catalog_id, value.database_name, value.name)] = value
-            for raw in document.get("partitions", ()):
-                value = _partition_from_document(raw)
-                self._partitions[_partition_key(value)] = value
+            state, source_schema = _state_from_document(document)
         except Exception:
             log_event(
                 _LOGGER,
@@ -433,27 +84,342 @@ class JsonCatalogRepository(InMemoryCatalogRepository):
                 "glue.repository.load.failed",
                 state_file=str(self._state_file),
                 fix_hint=(
-                    "Restore a catalog-state.json file with schema_version 1 or move the "
-                    "invalid file aside before restarting."
+                    "Restore a catalog state file with schema_version 1 or 2; update "
+                    "JsonCatalogStateStore migration code for a newly supported schema."
                 ),
+                side_effect=True,
+                exc_info=True,
+            )
+            raise
+        if source_schema != _CURRENT_SCHEMA_VERSION:
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.repository.load.migrated",
+                source_schema_version=source_schema,
+                target_schema_version=_CURRENT_SCHEMA_VERSION,
+                state_file=str(self._state_file),
+            )
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "glue.repository.load.after",
+            state_file=str(self._state_file),
+            state_revision=state.revision,
+            database_count=len(state.databases),
+            table_count=len(state.tables),
+            partition_count=len(state.partitions),
+            side_effect=True,
+        )
+        return state
+
+    async def save(self, candidate: CatalogState) -> None:
+        document = _state_document(candidate)
+        serialized = json.dumps(
+            document,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "glue.repository.persist.before",
+            state_file=str(self._state_file),
+            candidate_revision=candidate.revision,
+            size_bytes=len(serialized.encode()),
+            database_count=len(candidate.databases),
+            table_count=len(candidate.tables),
+            partition_count=len(candidate.partitions),
+            side_effect=True,
+        )
+        try:
+            await asyncio.to_thread(self._write_atomic, serialized)
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                "glue.repository.persist.failed",
+                state_file=str(self._state_file),
+                candidate_revision=candidate.revision,
+                fix_hint=(
+                    "Check state-file permissions, free space, and same-directory atomic "
+                    "replacement support; visible state was not published."
+                ),
+                side_effect=True,
                 exc_info=True,
             )
             raise
         log_event(
             _LOGGER,
             logging.INFO,
-            "glue.repository.load.completed",
+            "glue.repository.persist.after",
             state_file=str(self._state_file),
-            database_count=len(self._databases),
-            table_count=len(self._tables),
-            partition_count=len(self._partitions),
+            committed_revision=candidate.revision,
+            size_bytes=len(serialized.encode()),
+            side_effect=True,
         )
 
     def _write_atomic(self, serialized: str) -> None:
         self._state_file.parent.mkdir(parents=True, exist_ok=True)
-        temporary = self._state_file.with_suffix(f"{self._state_file.suffix}.tmp")
-        temporary.write_text(serialized, encoding="utf-8")
-        temporary.replace(self._state_file)
+        temporary = self._state_file.with_name(f".{self._state_file.name}.tmp")
+        try:
+            with temporary.open("w", encoding="utf-8") as stream:
+                stream.write(serialized)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, self._state_file)
+            try:
+                directory = os.open(self._state_file.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory)
+                finally:
+                    os.close(directory)
+            except OSError:
+                log_event(
+                    _LOGGER,
+                    logging.WARNING,
+                    "glue.repository.persist.directory_fsync_failed",
+                    state_file=str(self._state_file),
+                    commit_status="replacement-completed",
+                    fix_hint=(
+                        "The state file was replaced, but directory fsync is unavailable; "
+                        "inspect filesystem durability guarantees."
+                    ),
+                    side_effect=True,
+                    exc_info=True,
+                )
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
+class TransactionalCatalogRepository:
+    """Publish a candidate only after its composed state store commits successfully."""
+
+    def __init__(self, store: CatalogStateStore) -> None:
+        self._store = store
+        self._visible = copy.deepcopy(store.load())
+        self._transaction_lock = asyncio.Lock()
+
+    async def snapshot(self) -> CatalogState:
+        async with self._transaction_lock:
+            snapshot = copy.deepcopy(self._visible)
+        log_event(
+            _LOGGER,
+            logging.DEBUG,
+            "glue.repository.snapshot.after",
+            state_revision=snapshot.revision,
+            database_count=len(snapshot.databases),
+            table_count=len(snapshot.tables),
+            partition_count=len(snapshot.partitions),
+        )
+        return snapshot
+
+    @asynccontextmanager
+    async def transaction(
+        self,
+        *,
+        operation: str,
+        resource_key: tuple[object, ...],
+    ) -> AsyncIterator[CatalogState]:
+        async with self._transaction_lock:
+            base = self._visible
+            candidate = copy.deepcopy(base)
+            fingerprint = _resource_fingerprint(resource_key)
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.repository.transaction.before",
+                operation=operation,
+                resource_key_fingerprint=fingerprint,
+                visible_revision=base.revision,
+                side_effect=True,
+            )
+            try:
+                yield candidate
+            except BaseException:
+                log_event(
+                    _LOGGER,
+                    logging.WARNING,
+                    "glue.repository.transaction.rolled_back",
+                    operation=operation,
+                    resource_key_fingerprint=fingerprint,
+                    visible_revision=base.revision,
+                    rollback_reason="mutation-failed",
+                    side_effect=True,
+                    exc_info=True,
+                )
+                raise
+            candidate.revision = base.revision + 1
+            save_task = asyncio.create_task(self._store.save(copy.deepcopy(candidate)))
+            cancellation: asyncio.CancelledError | None = None
+            try:
+                await asyncio.shield(save_task)
+            except asyncio.CancelledError as error:
+                cancellation = error
+                try:
+                    await save_task
+                except BaseException:
+                    self._log_persistence_rollback(
+                        operation,
+                        fingerprint,
+                        base.revision,
+                        candidate.revision,
+                    )
+                    raise
+            except Exception:
+                self._log_persistence_rollback(
+                    operation,
+                    fingerprint,
+                    base.revision,
+                    candidate.revision,
+                )
+                raise
+            self._visible = copy.deepcopy(candidate)
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.repository.transaction.after",
+                operation=operation,
+                resource_key_fingerprint=fingerprint,
+                committed_revision=candidate.revision,
+                database_count=len(candidate.databases),
+                table_count=len(candidate.tables),
+                partition_count=len(candidate.partitions),
+                side_effect=True,
+            )
+            if cancellation is not None:
+                log_event(
+                    _LOGGER,
+                    logging.WARNING,
+                    "glue.repository.transaction.cancelled_after_commit",
+                    operation=operation,
+                    resource_key_fingerprint=fingerprint,
+                    committed_revision=candidate.revision,
+                    side_effect=True,
+                )
+                raise cancellation
+
+    @staticmethod
+    def _log_persistence_rollback(
+        operation: str,
+        fingerprint: str,
+        visible_revision: int,
+        candidate_revision: int,
+    ) -> None:
+        log_event(
+            _LOGGER,
+            logging.ERROR,
+            "glue.repository.transaction.rolled_back",
+            operation=operation,
+            resource_key_fingerprint=fingerprint,
+            visible_revision=visible_revision,
+            candidate_revision=candidate_revision,
+            rollback_reason="persistence-failed",
+            fix_hint=(
+                "Repair the composed CatalogStateStore; durable and visible state remain at "
+                "visible_revision."
+            ),
+            side_effect=True,
+            exc_info=True,
+        )
+
+
+class InMemoryCatalogRepository:
+    """In-memory repository composed from the same transaction coordinator."""
+
+    def __init__(self, initial: CatalogState | None = None) -> None:
+        self._delegate = TransactionalCatalogRepository(VolatileCatalogStateStore(initial))
+
+    async def snapshot(self) -> CatalogState:
+        return await self._delegate.snapshot()
+
+    def transaction(
+        self,
+        *,
+        operation: str,
+        resource_key: tuple[object, ...],
+    ) -> AbstractAsyncContextManager[CatalogState]:
+        return self._delegate.transaction(operation=operation, resource_key=resource_key)
+
+
+class JsonCatalogRepository:
+    """Durable repository composed with JSON storage rather than inherited behavior."""
+
+    def __init__(self, state_file: Path) -> None:
+        self._store = JsonCatalogStateStore(state_file)
+        self._delegate = TransactionalCatalogRepository(self._store)
+
+    async def snapshot(self) -> CatalogState:
+        return await self._delegate.snapshot()
+
+    def transaction(
+        self,
+        *,
+        operation: str,
+        resource_key: tuple[object, ...],
+    ) -> AbstractAsyncContextManager[CatalogState]:
+        return self._delegate.transaction(operation=operation, resource_key=resource_key)
+
+
+def _state_document(state: CatalogState) -> dict[str, Any]:
+    return {
+        "schema_version": _CURRENT_SCHEMA_VERSION,
+        "state_revision": state.revision,
+        "databases": [_database_document(value) for _, value in sorted(state.databases.items())],
+        "tables": [_table_document(value) for _, value in sorted(state.tables.items())],
+        "partitions": [_partition_document(value) for _, value in sorted(state.partitions.items())],
+    }
+
+
+def _state_from_document(document: dict[str, Any]) -> tuple[CatalogState, int]:
+    schema_version = int(document.get("schema_version", 0))
+    if schema_version not in {1, _CURRENT_SCHEMA_VERSION}:
+        raise ValueError(f"Unsupported catalog state schema_version {schema_version}")
+    revision = int(document.get("state_revision", 0))
+    if revision < 0:
+        raise ValueError("Catalog state_revision cannot be negative")
+    state = CatalogState(revision=revision)
+    for raw in document.get("databases", ()):
+        value = _database_from_document(raw)
+        _insert_unique(state.databases, (value.catalog_id, value.name), value, "database")
+    for raw in document.get("tables", ()):
+        value = _table_from_document(raw)
+        key = (value.catalog_id, value.database_name, value.name)
+        _insert_unique(state.tables, key, value, "table")
+    for raw in document.get("partitions", ()):
+        value = _partition_from_document(raw)
+        _insert_unique(state.partitions, _partition_key(value), value, "partition")
+    _validate_references(state)
+    return state, schema_version
+
+
+def _insert_unique(target: dict, key: tuple, value: object, kind: str) -> None:
+    if key in target:
+        raise ValueError(f"Duplicate {kind} key in catalog state")
+    target[key] = value
+
+
+def _validate_references(state: CatalogState) -> None:
+    for catalog_id, database, _ in state.tables:
+        if (catalog_id, database) not in state.databases:
+            raise ValueError("Catalog state table references a missing database")
+    for catalog_id, database, table, _ in state.partitions:
+        if (catalog_id, database, table) not in state.tables:
+            raise ValueError("Catalog state partition references a missing table")
+
+
+def _resource_fingerprint(resource_key: tuple[object, ...]) -> str:
+    return hashlib.sha256(repr(resource_key).encode()).hexdigest()[:16]
+
+
+def _partition_key(partition: CatalogPartition) -> tuple[str, str, str, tuple[str, ...]]:
+    return (
+        partition.catalog_id,
+        partition.database_name,
+        partition.table_name,
+        partition.values,
+    )
 
 
 def _database_document(value: CatalogDatabase) -> dict[str, Any]:

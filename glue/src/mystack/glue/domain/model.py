@@ -10,6 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+DatabaseKey = tuple[str, str]
+TableKey = tuple[str, str, str]
+PartitionKey = tuple[str, str, str, tuple[str, ...]]
+
 
 @dataclass(slots=True)
 class CatalogDatabase:
@@ -48,3 +52,13 @@ class CatalogPartition:
     definition: dict[str, Any]
     creation_time: float
     update_time: float
+
+
+@dataclass(slots=True)
+class CatalogState:
+    """One candidate or committed Data Catalog state."""
+
+    revision: int = 0
+    databases: dict[DatabaseKey, CatalogDatabase] = field(default_factory=dict)
+    tables: dict[TableKey, CatalogTable] = field(default_factory=dict)
+    partitions: dict[PartitionKey, CatalogPartition] = field(default_factory=dict)

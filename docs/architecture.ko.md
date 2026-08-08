@@ -115,12 +115,16 @@ Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side
 <!-- section: persistence -->
 ## 저장과 실행
 
-Resource metadata는 repository port를 통해 접근합니다. Glue는 named volume의 JSON
-document를 원자적으로 교체해 저장하고, EMR cluster state는 현재 process-local입니다.
-향후 durable adapter를 추가해도 Domain/Application을 변경하지 않도록 port를 유지합니다.
-Spark는 shell 없이 명시적 argument vector로 실행하며 bootstrap script는 Proxy가 아닌 EMR
-container 경계 안에서만 실행합니다. Python의 원자적 교체는 [os.replace](https://docs.python.org/3/library/os.html#os.replace)를
-사용합니다.
+Glue Application은 각 mutation을 격리된 `CatalogState` candidate에 적용하고 repository가
+transaction을 직렬화합니다. JSON state store는 schema version 2를 저장하고 fsync한 뒤 기존
+document를 원자적으로 교체하며, 성공한 뒤에만 candidate를 reader에게 공개합니다. Persistence
+실패는 candidate를 취소합니다. Durable commit 중 cancellation은 visible publish를 끝낸 다음
+cancellation을 반환합니다. Schema version 1은 읽을 수 있고 다음 mutation에서 migration합니다.
+Persistence는 repository transaction 뒤에 합성하며 JSON repository가 memory mutation 동작을
+상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Spark는 shell 없이 명시적
+argument vector로 실행하며 bootstrap script는 Proxy가 아닌 EMR container 경계 안에서만
+실행합니다. Python의 [os.replace](https://docs.python.org/3/library/os.html#os.replace)와
+[os.fsync](https://docs.python.org/3/library/os.html#os.fsync)를 사용합니다.
 
 <!-- section: non-goals -->
 ## 비목표
@@ -138,3 +142,4 @@ container 경계 안에서만 실행합니다. Python의 원자적 교체는 [os
 - [AWS Prescriptive Guidance: 테스트와 CI 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
 - [AWS SDK endpoint 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Python 언어 참고서: package relative import](https://docs.python.org/3/reference/import.html#package-relative-imports)
+- [Python 표준 라이브러리: fsync](https://docs.python.org/3/library/os.html#os.fsync)

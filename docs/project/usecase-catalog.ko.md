@@ -88,12 +88,14 @@
   name을 검증합니다.
 - 출력: modeled database document/list/next token 또는 빈 response입니다.
 - 저장/변경: JSON-backed database와 선택적 초기 default database입니다.
-- 부수효과: mutation 뒤 state file atomic replacement.
-- 선행조건/규칙: case-normalized key, uniqueness, child constraint, 최대 크기가 정해진 pagination.
+- 부수효과: persist/fsync/atomic replacement 뒤 visible candidate publish.
+- 선행조건/규칙: case-normalized key, uniqueness, child constraint, 직렬화한 candidate transaction,
+  최대 크기가 정해진 pagination.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, 잘못된 pagination token.
-- 관측: repository read/write/persistence event, direct/public boto3 test.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:60`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/outbound/repository.py:300`
+- 관측: transaction/persist 전·후·rollback·migration event, direct/public boto3 test,
+  failure/cancellation/restart 주입 test.
+- 근거: `glue/src/mystack/glue/application/service.py`,
+  `glue/src/mystack/glue/adapters/outbound/repository.py`
 - 신뢰도: High
 
 <!-- section: uc-006 -->
@@ -104,12 +106,13 @@
 - 입력: CatalogId, database/name, TableInput, expression/attribute, VersionId, SkipArchive, pagination.
 - 출력: table/version document, list/next token 또는 빈 modeled response입니다.
 - 저장/변경: current table, 단조 증가 version, 선택적 archive입니다.
-- 부수효과: atomic persistence이며 Mystack이 Iceberg metadata format을 구현하지 않습니다.
+- 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit하며
+  Mystack이 Iceberg metadata format을 구현하지 않습니다.
 - 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작.
 - 실패: AlreadyExists, EntityNotFound, VersionMismatch, InvalidInput; open-table-format input 제외.
 - 관측: mapped domain error/version/persistence test, Spark Hive/Iceberg E2E가 API 사용.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:101`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:149`
+- 근거: `glue/src/mystack/glue/application/service.py`,
+  `glue/tests/test_persistence.py`
 - 신뢰도: High
 
 <!-- section: uc-007 -->
@@ -120,12 +123,12 @@
 - 입력: Catalog/database/table, partition value/input, expression, segment, pagination/schema flag.
 - 출력: partition/list/batch document이며 batch error는 전체 실패가 아닌 entry별 결과입니다.
 - 저장/변경: catalog/database/table/value tuple key의 partition record입니다.
-- 부수효과: mutation 뒤 atomic state persistence.
+- 부수효과: 각 성공 entry mutation 뒤 candidate를 원자적으로 persist하고 publish합니다.
 - 선행조건/규칙: table 존재, value 수와 partition key 수 일치, 지원 predicate/segment.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.
 - 관측: operation/error log와 Glue 22개 전체 public Proxy E2E.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/application/service.py:213`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/adapters/inbound/aws.py:201`
+- 근거: `glue/src/mystack/glue/application/service.py`,
+  `glue/src/mystack/glue/adapters/inbound/aws.py`
 - 신뢰도: High
 
 <!-- section: uc-008 -->

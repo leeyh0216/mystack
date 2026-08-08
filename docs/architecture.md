@@ -129,16 +129,22 @@ change.
 <!-- section: persistence -->
 ## Persistence and execution
 
-- Resource metadata is accessed through repository ports. Glue currently uses an atomically
-  replaced JSON document on a named volume; EMR cluster state is process-local. The ports permit
-  later durable implementations without changing Domain/Application code.
+- Glue Application code applies each mutation to an isolated `CatalogState` candidate while the
+  repository serializes transactions. The JSON state store persists and fsyncs schema version 2,
+  atomically replaces the previous document, and only then publishes the candidate to readers.
+  Persistence failure rolls the candidate back, while cancellation during a successful durable
+  commit completes visible publication before cancellation is returned. Schema version 1 loads
+  read-only and migrates on the next successful mutation.
+- Persistence is composed behind the repository transaction; the JSON repository does not inherit
+  in-memory mutation behavior. EMR cluster state remains process-local.
 - Work directories and logs are stored on named Docker volumes.
 - S3 artifacts are resolved through an object-store port configured for path-style LocalStack access.
 - Spark is launched without a shell and receives an explicit argument vector.
 - User bootstrap scripts are intentionally executable code and run inside the EMR container boundary, never in the proxy process.
 
 Glue's JSON persistence adapter uses Python's atomic
-[`os.replace`](https://docs.python.org/3/library/os.html#os.replace) operation.
+[`os.replace`](https://docs.python.org/3/library/os.html#os.replace) and durable
+[`os.fsync`](https://docs.python.org/3/library/os.html#os.fsync) operations.
 
 <!-- section: non-goals -->
 ## Non-goals
@@ -156,3 +162,4 @@ Glue's JSON persistence adapter uses Python's atomic
 - [AWS Prescriptive Guidance: Best practices and CI testing](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)
 - [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
 - [Python language reference: package relative imports](https://docs.python.org/3/reference/import.html#package-relative-imports)
+- [Python standard library: fsync](https://docs.python.org/3/library/os.html#os.fsync)
