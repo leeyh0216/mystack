@@ -18,7 +18,6 @@ Docker 애플리케이션입니다. 사용자는 AWS CLI, boto3와 기존 클라
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
 - Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1 상호운용성
 - AWS SDK for pandas 3.17.0 기반 partitioned Parquet와 Glue Catalog 왕복
-- `stable`, `application`, 정확한 버전에 결합되는 `unsafe` Glue 확장 SPI
 - Docker Compose 기반의 재현 가능한 local 실행 환경
 
 Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. “일부 경로 E2E 통과”를 라이브러리
@@ -59,7 +58,6 @@ read-only mount할 수 있습니다. `MYSTACK__SECTION__KEY`는 배포별 overri
 | 지원하는 EMR/Glue API와 오류 확인 | [지원 범위](docs/support-scope.ko.md), [API coverage](docs/compatibility/api-coverage.ko.md) |
 | Spark Glue Hive/Iceberg와 라이브러리 검증 범위 확인 | [Client 호환성 표](docs/compatibility/client-matrix.ko.md) |
 | YAML, timeout, port, Docker 설정 변경 | [설정 안내](docs/configuration.ko.md) |
-| Glue의 일부 동작을 extension으로 교체 | [Glue 확장 SPI 안내](docs/extensions.ko.md) |
 | Resource, log, thread/task 진단 | [관리 Console 안내](docs/console.ko.md) |
 
 사용자 문서 전체의 권장 순서는 [사용자 안내](docs/index.ko.md)에 있습니다.

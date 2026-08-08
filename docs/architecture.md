@@ -21,9 +21,9 @@ Mystack emulates EMR and Glue observable behavior at the AWS API boundary while 
 | `shared` | AWS JSON 1.1 codec, official service-model access, request validation primitives | Any EMR/Glue business rule |
 
 Business abstractions are not placed in `shared`. Sharing is limited to the wire protocol boundary.
-The composition root discovers user providers and injects one of three service-owned Glue
-contexts. The common operation chain knows only `OperationMiddleware`; it never imports Glue
-capabilities or plugin packages. See the [extension SPI guide](extensions.md).
+Mystack does not expose an in-process user plugin API. Service behavior changes remain inside the
+owning bounded context, while new AWS service emulators join through Proxy's configuration-driven
+route registry.
 
 <!-- section: dependencies -->
 ## Dependency rule

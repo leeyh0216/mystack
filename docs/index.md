@@ -36,7 +36,6 @@ for operation-by-operation status from the pinned botocore models.
 - YAML, environment overrides, and Docker mounts: [configuration guide](configuration.md)
 - Resource, EMR log, route, and thread/task UI: [management console guide](console.md)
 - Structured logs and management endpoints: [observability guide](observability.md)
-- Replacing selected Glue behavior with extension wheels: [Glue extension SPI guide](extensions.md)
 
 <!-- section: limits -->
 ## Know the limits first

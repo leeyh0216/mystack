@@ -57,13 +57,12 @@ make test
 make up
 curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
 aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
-make extension-e2e
 ```
 
 The Dev Container uses the [Docker-outside-of-Docker
 feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker). Reopen a
 host-local clone; do not use `Clone Repository in Container Volume`. The host daemon resolves Compose
-configuration and extension bind mounts, so the workspace must have the same absolute path on the
+configuration bind mounts, so the workspace must have the same absolute path on the
 host and in the container. Keep both architectures equal on Apple Silicon. This setup follows the
 official [Dev Container creation
 guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container).
@@ -99,7 +98,6 @@ make format
 make pre-commit
 make requirements
 make coverage-check
-make extension-example
 make test
 make contract
 make e2e
@@ -122,8 +120,6 @@ contract](https://pre-commit.com/#install).
 - Proxy route behavior: `proxy/src/mystack_proxy`; add services through YAML first
 - EMR state/behavior: `emr/src/mystack_emr/domain` and `application`
 - Glue Catalog behavior: `glue/src/mystack_glue/domain` and `application`
-- Public Glue extension contracts: `glue/src/mystack_glue/extension_api`; discovery and wiring:
-  `glue/src/mystack_glue/extensions.py` and the composition root
 - S3, process, database, FastAPI: service `adapters`
 - Dependency wiring only: service composition root
 

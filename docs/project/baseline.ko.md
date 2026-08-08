@@ -42,27 +42,20 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   Python/JAR Spark 실행, 취소, log, management read model을 구현합니다.
 - Glue는 database, table/version, partition/batch의 22개 operation을 구현합니다. JSON persistence는
   atomic replacement를 사용하고 inbound adapter가 domain error를 문서화된 오류로 변환합니다.
-- Glue 확장은 `stable`, `application`, `unsafe`의 독립 SPI를 제공합니다. 검증된 operation call을
-  우선순위 chain으로 합성하고 최종 성공 응답을 공식 botocore 출력 구조로 다시 검증합니다.
-- 시작 단계는 mount된 wheel을 network와 dependency resolution 없이 설치하고 Python entry point로
-  provider를 찾습니다. `unsafe`는 명시적 허용과 설치된 Mystack 정확한 버전이 필요합니다.
 - 상호운용성은 Spark 3.5.4 + Java 17, Glue/Hive complex type과 S3 Parquet, Apache Iceberg 1.7.1
   create/append/read/schema evolution, AWS SDK for pandas 3.17.0 Parquet/Glue 왕복 E2E를 포함합니다.
 - 운영 기능은 resource/log console, route/thread/task 진단, authorization과 payload 내용을 제외한
   구조화 boundary log를 포함합니다.
 - 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, private GHCR
   multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
-- Extension Docker E2E는 실제 wheel 설치, 세 SPI context의 동일 Catalog 접근, 우선순위 합성,
-  boto3의 `AlreadyExistsException`을 검증합니다.
-- 최종 test inventory는 66개입니다. Fast suite는 58개 통과와 real-AWS opt-in 2개 skip,
-  기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E는 5개 통과와 extension 전용 1개 skip,
-  별도 extension Docker E2E는 1개 통과입니다.
+- 최종 test inventory는 55개입니다. Fast suite는 50개를 선택해 48개가 통과하고 real-AWS
+  opt-in 비교 2개를 건너뜁니다. 기본 Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E
+  5개가 통과하며 두 명령 모두 설정된 명시적 timeout을 적용합니다.
 
 <!-- section: entry-points -->
 ## Entry point와 명령
 
-- 실행 파일: `mystack-proxy`, `mystack-emr`, `mystack-glue`,
-  `mystack-glue-extension-bootstrap`
+- 실행 파일: `mystack-proxy`, `mystack-emr`, `mystack-glue`
 - 설정: `config/mystack.yaml`; release 설정: `config/registry-release.json`
 - 설정 시작: `./scripts/bootstrap.sh`, `direnv allow`, 또는 제공된 Dev Container
 - Fast 검증: `make test`, `make contract`, `make registry-check`, `make pre-commit`
@@ -81,8 +74,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 모든 동작 문서는 한·영 pair와 직접적인 공식 출처를 가집니다.
 - Side-effect 경계는 secret 없이 전/후/실패 event를 기록합니다.
 - Test는 명시적 설정 가능 timeout을 사용하고 구현 operation은 public-Proxy boto3 E2E가 있습니다.
-- 확장 사용자는 접근 범위와 호환성 수준에 따라 세 Glue SPI를 선택합니다. Domain과 Application
-  layer는 extension package를 알지 않고 composition root만 context를 구성합니다.
+- Service별 동작은 담당 영역 안에 두며 process 내부 사용자 plugin API는 공개하지 않습니다.
 
 이 규칙은 AWS [hexagonal architecture 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)을
 따릅니다.
@@ -110,20 +102,18 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: candidates -->
 ## 남은 후보 차이
 
-현재 확장은 신뢰할 수 있는 code를 Glue process 안에서 실행합니다. 별도 process 또는 remote
-sidecar 격리는 아직 구현하지 않았습니다. 공통 operation chain은 다른 emulator에도 재사용할 수
-있지만 EMR용 public SPI와 context는 별도 제품 결정 뒤에 추가합니다.
+새 emulator service는 설정 기반 Proxy route registry로 연결합니다. Service별 동작 변경은 담당
+영역 안에서 일반 source 변경과 review 절차로 관리합니다.
 
 <!-- section: confirmations -->
 ## 순차 확인 기록
 
-- 2026-08-08: 사용자가 A/B/C 세 수준을 모두 지원하고 각각 다른 SPI로 제공하기로 확정했습니다.
-- A는 snapshot과 capability 중심 `stable`, B는 application 직접 접근, C는 exact-version
-  `unsafe`로 반영했습니다.
+- 2026-08-08: 사용자가 이전 A/B/C 설계를 폐기하고 process 내부 SPI를 완전히 제거하되 Proxy route
+  확장성은 유지하기로 확정했습니다.
 
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. 실제 팀 extension을 `stable`로 작성하고 capability 누락을 수집합니다.
-2. SPI v1 호환성 test 묶음을 독립 package로 제공할지 평가합니다.
-3. 공통 chain의 운영 경험을 확인한 뒤 EMR과 다른 service의 public context를 별도 설계합니다.
+1. Relative import를 포함한 architecture boundary를 자동 test로 강제합니다.
+2. Glue state 변경을 transactional repository 경계 뒤로 옮깁니다.
+3. Client와 runtime 호환성 검증을 versioned manifest에서 생성합니다.

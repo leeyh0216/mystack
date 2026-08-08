@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
 
 from mystack_aws_protocol.configuration import (
     ConfigurationError,
@@ -30,32 +29,6 @@ class GlueRuntimeProfile:
     iceberg_version: str
 
 
-ExtensionSpi = Literal["stable", "application", "unsafe"]
-
-
-@dataclass(frozen=True, slots=True)
-class GlueExtensionProviderSettings:
-    extension_id: str
-    spi: ExtensionSpi
-    api_version: int
-    entry_point: str
-    operations: tuple[str, ...]
-    priority: int
-    timeout_seconds: float
-    mystack_minor_version: str | None
-    mystack_version: str | None
-
-
-@dataclass(frozen=True, slots=True)
-class GlueExtensionSettings:
-    enabled: bool
-    allow_unsafe: bool
-    wheels_directory: Path
-    install_directory: Path
-    install_timeout_seconds: float
-    providers: tuple[GlueExtensionProviderSettings, ...]
-
-
 @dataclass(frozen=True, slots=True)
 class GlueSettings:
     listen_host: str
@@ -64,7 +37,6 @@ class GlueSettings:
     state_file: Path
     default_region: str
     runtime: GlueRuntimeProfile
-    extensions: GlueExtensionSettings
     policy: CatalogPolicy
     config_source: str
     config_fingerprint: str
@@ -75,7 +47,6 @@ class GlueSettings:
         listen = require_mapping(glue, "listen")
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
-        extensions = require_mapping(glue, "extensions")
         try:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
@@ -100,16 +71,6 @@ class GlueSettings:
                     java_version=str(runtime["java_version"]),
                     iceberg_version=str(runtime["iceberg_version"]),
                 ),
-                extensions=GlueExtensionSettings(
-                    enabled=bool(extensions["enabled"]),
-                    allow_unsafe=bool(extensions["allow_unsafe"]),
-                    wheels_directory=Path(str(extensions["wheels_directory"])),
-                    install_directory=Path(str(extensions["install_directory"])),
-                    install_timeout_seconds=float(extensions["install_timeout_seconds"]),
-                    providers=tuple(
-                        _extension_provider(provider) for provider in extensions["providers"]
-                    ),
-                ),
                 policy=CatalogPolicy(
                     default_catalog_id=str(glue["catalog_id"]),
                     api_page_size=int(glue["api_page_size"]),
@@ -122,28 +83,3 @@ class GlueSettings:
             raise ConfigurationError(
                 f"Glue configuration is missing required key: {error.args[0]}"
             ) from error
-
-
-def _extension_provider(value: object) -> GlueExtensionProviderSettings:
-    if not isinstance(value, dict):
-        raise ConfigurationError("Each glue.extensions.providers item must be a mapping")
-    spi = str(value["spi"])
-    if spi not in {"stable", "application", "unsafe"}:
-        raise ConfigurationError(f"Unsupported Glue extension SPI: {spi}")
-    return GlueExtensionProviderSettings(
-        extension_id=str(value["id"]),
-        spi=cast(ExtensionSpi, spi),
-        api_version=int(value["api_version"]),
-        entry_point=str(value["entry_point"]),
-        operations=tuple(map(str, value["operations"])),
-        priority=int(value["priority"]),
-        timeout_seconds=float(value["timeout_seconds"]),
-        mystack_minor_version=(
-            str(value["mystack_minor_version"])
-            if value.get("mystack_minor_version") is not None
-            else None
-        ),
-        mystack_version=(
-            str(value["mystack_version"]) if value.get("mystack_version") is not None else None
-        ),
-    )

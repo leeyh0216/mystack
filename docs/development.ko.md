@@ -58,13 +58,12 @@ make test
 make up
 curl --fail "$AWS_ENDPOINT_URL/_mystack/health"
 aws --endpoint-url "$AWS_ENDPOINT_URL" glue get-databases
-make extension-e2e
 ```
 
 Dev Container는 [Docker-outside-of-Docker
 feature](https://github.com/devcontainers/features/tree/main/src/docker-outside-of-docker)를 사용합니다.
 `Clone Repository in Container Volume` 대신 Host의 local clone을 `Reopen in Container`로 여세요.
-Compose의 설정·extension bind mount를 Host daemon이 해석하므로 Host와 container의 workspace
+Compose의 설정 bind mount를 Host daemon이 해석하므로 Host와 container의 workspace
 절대 경로가 같아야 합니다. Apple Silicon에서는 두 환경의 architecture도 같게 유지합니다. 이
 구성은 공식 [Dev Container 생성
 안내](https://code.visualstudio.com/docs/devcontainers/create-dev-container)를 따릅니다.
@@ -98,7 +97,6 @@ make format
 make pre-commit
 make requirements
 make coverage-check
-make extension-example
 make test
 make contract
 make e2e
@@ -121,8 +119,6 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 - Proxy route 동작: `proxy/src/mystack_proxy`; 새 서비스는 YAML 우선
 - EMR 상태/동작: `emr/src/mystack_emr/domain`, `application`
 - Glue Catalog 동작: `glue/src/mystack_glue/domain`, `application`
-- 공개 Glue 확장 계약: `glue/src/mystack_glue/extension_api`; 탐색과 연결:
-  `glue/src/mystack_glue/extensions.py`와 composition root
 - S3, process, database, FastAPI: 각 서비스 `adapters`
 - Dependency wiring: composition root만
 

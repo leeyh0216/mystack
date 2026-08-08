@@ -22,9 +22,8 @@ Mystack은 AWS API 경계에서 관찰되는 EMR 및 Glue Data Catalog 동작을
 
 Proxy route registry는 설정 기반입니다. 새 emulator는 target prefix, SigV4 signing name, host prefix, backend URL만 등록하며 Proxy 코드를 변경하거나 새 서비스 패키지를 import하지 않습니다.
 
-Composition root는 사용자 provider를 찾고 Glue가 소유한 세 context 중 하나를 주입합니다.
-공통 작업 chain은 `OperationMiddleware`만 알며 Glue capability나 사용자 package를 import하지
-않습니다. 자세한 내용은 [확장 SPI 안내](extensions.ko.md)를 참고합니다.
+Mystack은 process 내부 사용자 plugin API를 공개하지 않습니다. Service 동작 변경은 담당 영역
+안에서 관리하고 새 AWS service emulator는 Proxy의 설정 기반 route registry로 연결합니다.
 
 <!-- section: dependencies -->
 ## 의존성 규칙

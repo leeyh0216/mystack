@@ -12,7 +12,7 @@
 - Updated: 2026-08-08
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 - Included: HTTP endpoints, application operations, runtime processes, management UI, release CLI/workflow
-- Excluded: remote extension sidecars, public EMR SPI, and Glue Jobs/JobRuns/Crawlers
+- Excluded: in-process user plugins and Glue Jobs/JobRuns/Crawlers
 - Evidence priority: code > tests > commits/issues > documents
 - Official inventory: [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data)
 
@@ -39,7 +39,7 @@
 - Input: required target and JSON object; optional SigV4 metadata. Pinned operation input shape,
   required/type/enum/pattern constraints are validated before dispatch.
 - Output: modeled JSON 200 response or AWS-compatible error body/status/headers.
-- Side effects: runs matching middleware and invokes the built-in handler at most once.
+- Side effects: invokes exactly one explicitly registered built-in handler.
 - Preconditions/rules: recognized official operation; unsupported recognized operations return 501.
 - Failures: unknown operation, serialization/validation error, domain error, protected internal error.
 - Observability: service/operation/model fingerprint, input/output member names, request ID, duration.
@@ -187,49 +187,7 @@
 - Confidence: High for implementation; first complete remote three-package run not yet confirmed.
 
 <!-- section: uc-012 -->
-## UC-012: Compose a Glue operation extension
-
-- Purpose/actor/trigger: an extension author wraps or replaces one Glue operation while retaining the
-  built-in behavior when desired.
-- Input: validated `OperationCall`, single-use `OperationNext`, tier-specific context, provider priority,
-  and timeout.
-- Output: mapping conforming to the official output shape or a documented `AwsServiceError`.
-- Stored/changed data: accesses snapshots/capabilities, `CatalogApplication`, or repository/settings by SPI.
-- Side effects: executes in-process middleware by priority and ID, optionally invoking the built-in handler.
-- Preconditions/rules: `stable`, `application`, and `unsafe` use separate [Python entry-point
-  groups](https://packaging.python.org/en/latest/specifications/entry-points/). `unsafe` requires explicit
-  permission and the exact installed version.
-- Failures: duplicate ID, unknown operation, missing entry point, version mismatch, timeout, repeated next
-  call, or invalid output.
-- Observability: provider-load and operation-invoke before/after/error events with API version, SPI,
-  extension ID, duration, and repair hint.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/dispatcher.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/extensions.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/tests/test_extensions.py`
-- Confidence: High
-
-<!-- section: uc-013 -->
-## UC-013: Install and verify Glue extension wheels
-
-- Purpose/actor/trigger: at Glue container startup, an operator supplies mounted wheel files.
-- Input: YAML wheel/install directories, install timeout, provider list, and read-only volume.
-- Output: target install and `.pth` file discoverable by the following process.
-- Stored/changed data: dedicated temporary install directory and virtual-environment path file.
-- Side effects: invokes `pip --no-index --no-deps` as a subprocess, then starts the application process.
-- Preconditions/rules: extension code is trusted; every dependency wheel must be mounted explicitly.
-- Failures: no wheels skips only when no providers require them; installation failure, timeout, or missing
-  provider rejects startup safely.
-- Observability: wheel names/count, install before/after/failure, and provider distribution/version; no pip
-  output or credentials.
-- Verification: places a real example wheel in an isolated named volume and checks boto3's documented
-  [CreatePartition error](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html).
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/extension_bootstrap.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_glue_extensions.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/compose.extension-e2e.yaml`
-- Confidence: High
-
-<!-- section: uc-014 -->
-## UC-014: Round-trip data and metadata with AWS SDK for pandas
+## UC-012: Round-trip data and metadata with AWS SDK for pandas
 
 - Purpose/actor/trigger: a Python application uses AWS SDK for pandas 3.17.0 to manage an S3 Parquet
   dataset and Glue Catalog metadata together.

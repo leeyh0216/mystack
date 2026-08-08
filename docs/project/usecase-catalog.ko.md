@@ -12,7 +12,7 @@
 - 갱신일: 2026-08-08
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 - 포함: HTTP endpoint, application operation, runtime process, management UI, release CLI/workflow
-- 제외: remote extension sidecar, EMR public SPI, Glue Job/JobRun/Crawler
+- 제외: process 내부 사용자 plugin, Glue Job/JobRun/Crawler
 - 근거 우선순위: 코드 > test > commit/issue > 문서
 - 공식 inventory: [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data)
 
@@ -39,7 +39,7 @@
 - 입력: target과 JSON object 필수, SigV4 metadata 선택. Dispatch 전에 고정 입력 구조의
   required/type/enum/pattern을 검증합니다.
 - 출력: modeled JSON 200 또는 AWS-compatible error body/status/header입니다.
-- 부수효과: 일치하는 middleware chain을 실행한 뒤 built-in handler를 최대 한 번 호출합니다.
+- 부수효과: 명시적으로 등록된 built-in handler 하나를 정확히 한 번 실행합니다.
 - 선행조건/규칙: 공식 recognized operation이며 recognized 미지원 operation은 501입니다.
 - 실패: unknown operation, serialization/validation, domain error, 보호된 internal error.
 - 관측: service/operation/model fingerprint, input/output member, request ID, duration.
@@ -187,49 +187,7 @@
 - 신뢰도: 구현 High; 최초 remote 세 package 전체 성공은 아직 미확정.
 
 <!-- section: uc-012 -->
-## UC-012: Glue operation 확장 합성
-
-- 목적/actor/trigger: extension 작성자가 Glue operation 하나를 built-in 동작과 감싸거나 교체합니다.
-- 입력: 검증된 `OperationCall`, 한 번만 호출할 수 있는 `OperationNext`, SPI별 context,
-  provider priority와 timeout입니다.
-- 출력: 공식 출력 구조에 맞는 mapping 또는 문서화된 `AwsServiceError`입니다.
-- 저장/변경: SPI에 따라 snapshot/capability, `CatalogApplication`, repository와 설정에 접근합니다.
-- 부수효과: priority와 ID 순서로 in-process middleware를 실행하고 선택적으로 built-in handler를
-  호출합니다.
-- 선행조건/규칙: `stable`, `application`, `unsafe`는 서로 다른 [Python entry point
-  group](https://packaging.python.org/en/latest/specifications/entry-points/)을 사용합니다. `unsafe`는
-  명시적 허용과 정확한 설치 버전이 필요합니다.
-- 실패: 중복 ID, 알 수 없는 operation, entry point 누락, 버전 불일치, timeout, 다음 handler
-  중복 호출, 잘못된 출력입니다.
-- 관측: provider load와 operation invoke 전·후·오류 event, API version, SPI, extension ID,
-  duration, 수정 위치 안내입니다.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack_aws_protocol/dispatcher.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/extensions.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/tests/test_extensions.py`
-- 신뢰도: High
-
-<!-- section: uc-013 -->
-## UC-013: Glue extension wheel 설치와 검증
-
-- 목적/actor/trigger: Glue container가 시작할 때 operator가 mount한 wheel을 설치합니다.
-- 입력: YAML의 wheel/install directory, 설치 timeout, provider 목록과 read-only volume입니다.
-- 출력: 다음 process가 검색할 수 있는 target install과 `.pth` file입니다.
-- 저장/변경: 전용 임시 install directory와 virtual environment의 path file입니다.
-- 부수효과: `pip --no-index --no-deps`를 subprocess로 실행하고 application process를 시작합니다.
-- 선행조건/규칙: extension은 신뢰할 수 있는 code이며 dependency wheel도 명시적으로 mount해야 합니다.
-- 실패: wheel 없음은 provider가 없을 때 skip하며, install 실패·timeout·provider 누락은 시작을
-  안전하게 거부합니다.
-- 관측: wheel 이름과 수, install 전·후·실패, provider distribution/version이며 pip output과
-  credential은 제외합니다.
-- 검증: 격리된 named volume에 실제 example wheel을 넣고 boto3 [CreatePartition
-  오류](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html)를 확인합니다.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack_glue/extension_bootstrap.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_glue_extensions.py`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/compose.extension-e2e.yaml`
-- 신뢰도: High
-
-<!-- section: uc-014 -->
-## UC-014: AWS SDK for pandas data와 metadata 왕복
+## UC-012: AWS SDK for pandas data와 metadata 왕복
 
 - 목적/actor/trigger: Python application이 AWS SDK for pandas 3.17.0으로 S3 Parquet dataset과
   Glue Catalog metadata를 함께 관리합니다.

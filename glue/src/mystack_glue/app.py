@@ -29,7 +29,6 @@ from .application import CatalogApplication
 from .application.ports import Clock
 from .config import GlueSettings
 from .domain.repositories import CatalogRepository
-from .extensions import ExtensionRegistry, load_glue_extensions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +40,6 @@ def create_app(
     application: CatalogApplication | None = None,
     repository: CatalogRepository | None = None,
     clock: Clock | None = None,
-    extension_registry: ExtensionRegistry | None = None,
     diagnostics_settings: DiagnosticsSettings | None = None,
     log_level: str | None = None,
 ) -> FastAPI:
@@ -58,7 +56,6 @@ def create_app(
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
 
     configure_logging("glue", log_level)
-    repository_supplied = repository is not None
     repository = repository or JsonCatalogRepository(settings.state_file)
     clock = clock or SystemClock()
     if application is None:
@@ -67,25 +64,9 @@ def create_app(
             clock=clock,
             policy=settings.policy,
         )
-    elif (
-        settings.extensions.enabled
-        and any(provider.spi == "unsafe" for provider in settings.extensions.providers)
-        and not repository_supplied
-    ):
-        raise ValueError(
-            "create_app requires the application's repository when unsafe extensions are enabled"
-        )
     service_model = AwsServiceModel("glue")
-    extensions = load_glue_extensions(
-        settings=settings,
-        service_model=service_model,
-        application=application,
-        repository=repository,
-        clock=clock,
-        registry=extension_registry,
-    )
     adapter = GlueAwsAdapter(application, settings.policy.default_catalog_id)
-    dispatcher = adapter.dispatcher(extensions)
+    dispatcher = adapter.dispatcher()
     endpoint = AwsJsonRpcEndpoint(
         service_model,
         dispatcher,
@@ -116,8 +97,6 @@ def create_app(
             state_file=str(settings.state_file),
             operation_count=len(dispatcher.operations),
             operations=sorted(dispatcher.operations),
-            extension_count=len(extensions),
-            extension_ids=[extension.extension_id for extension in extensions],
             runtime_profile={
                 "name": settings.runtime.name,
                 "spark_version": settings.runtime.spark_version,

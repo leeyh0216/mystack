@@ -28,18 +28,16 @@ COPY shared /opt/src/shared
 COPY glue /opt/src/glue
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
 COPY glue/scripts/e2e /opt/mystack/e2e
-COPY glue/scripts/extension-entrypoint.sh /opt/mystack/extension-entrypoint
 RUN python3 -m venv /opt/mystack/venv \
     && /opt/mystack/venv/bin/python -m pip install --no-cache-dir \
       --require-hashes -r /opt/requirements.txt \
     && /opt/mystack/venv/bin/python -m pip install --no-cache-dir --no-deps \
       /opt/src/shared /opt/src/glue \
     && rm -rf /opt/src /opt/requirements.txt \
-    && chmod 0755 /opt/mystack/extension-entrypoint \
-    && mkdir -p /var/lib/mystack/glue /opt/mystack/extensions \
+    && mkdir -p /var/lib/mystack/glue \
     && chown -R hadoop:hadoop /var/lib/mystack /opt/mystack
 
 USER hadoop
 EXPOSE 8080
-ENTRYPOINT ["/opt/mystack/extension-entrypoint"]
+ENTRYPOINT ["mystack-glue"]
 CMD ["--config", "/etc/mystack/mystack.yaml"]

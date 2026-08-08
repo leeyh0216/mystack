@@ -23,7 +23,6 @@
 - 전체 component와 dependency 방향: [Architecture](architecture.ko.md)
 - 하위 module이 상위 module을 모르게 하는 결정: [ADR-0001](adr/0001-hexagonal-service-boundaries.ko.md)
 - Version이 고정된 upstream adapter: [ADR-0002](adr/0002-versioned-upstream-adapters.ko.md)
-- 세 수준 Glue extension SPI: [ADR-0003](adr/0003-tiered-extension-spis.ko.md)
 - 새 service를 Proxy에 등록: [Proxy 확장 안내](extending-proxy.ko.md)
 
 <!-- section: protocol -->
@@ -38,10 +37,9 @@ Protocol을 변경할 때는 controller만 보지 말고 model manifest, dispatc
 public-Proxy contract와 E2E를 같은 issue에서 갱신합니다.
 
 <!-- section: implementation -->
-## 구현과 extension
+## 구현 경계
 
 - File-first 설정 schema와 Docker override: [설정 안내](configuration.ko.md)
-- Glue SPI package, context, wheel 설치와 보안 경계: [Extension 안내](extensions.ko.md)
 - Composition root와 side-effect boundary는 [Architecture](architecture.ko.md)의 log와 dependency
   규칙을 따릅니다.
 - 한국어와 영문 문서를 함께 고칠 때는 [한국어 기술 문서 기준](korean-writing-style.ko.md)을

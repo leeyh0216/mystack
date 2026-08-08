@@ -63,7 +63,6 @@ loaded once at process startup; no partially applied hot reload is performed.
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
 | `glue` | Durable catalog state, catalog ID, paging, and runtime profile |
-| `glue.extensions` | SPI permission, wheel/install directories, provider order, and deadlines |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -79,11 +78,6 @@ class submission in its official [application submission guide](https://spark.ap
 Browser interaction deadlines and whether missing Chromium is fatal are configured by
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
-
-Mounted Glue extensions are disabled by default. Enable them only in the selected YAML, then add
-`compose.extensions.yaml` to the Docker Compose command. Provider invocation and wheel installation
-deadlines are independent. An `application` provider declares `mystack_minor_version`; an `unsafe`
-provider declares `mystack_version`. See the [extension SPI guide](extensions.md).
 
 After environment overrides, every process validates the complete document against the packaged
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,

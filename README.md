@@ -18,7 +18,6 @@ The current primary paths are:
 - Glue Data Catalog behavior, including documented validation and service exceptions
 - Spark 3.5.4 interoperability with Glue Data Catalog, Hive-compatible types, and Iceberg 1.7.1
 - AWS SDK for pandas 3.17.0 partitioned-Parquet and Glue Catalog round trips
-- tiered `stable`, `application`, and exact-version `unsafe` Glue extension SPIs
 - A reproducible local runtime based on Docker Compose
 
 Glue Jobs, JobRuns, and Crawlers are intentionally out of scope. A passing E2E path is never a claim
@@ -58,7 +57,6 @@ prebuilt images. Use `MYSTACK__SECTION__KEY` only for deployment-specific overri
 | Check supported EMR/Glue APIs and errors | [Support scope](docs/support-scope.md), [API coverage](docs/compatibility/api-coverage.md) |
 | Check Spark Glue Hive/Iceberg and library evidence | [Client compatibility matrix](docs/compatibility/client-matrix.md) |
 | Change YAML, timeouts, ports, or Docker settings | [Configuration guide](docs/configuration.md) |
-| Replace selected Glue behavior with an extension | [Glue extension SPI guide](docs/extensions.md) |
 | Inspect resources, logs, threads, or tasks | [Management console guide](docs/console.md) |
 
 The [user guide](docs/index.md) provides the full recommended reading path.

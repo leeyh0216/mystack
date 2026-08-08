@@ -50,22 +50,16 @@ def test_service_modules_only_depend_inward() -> None:
     assert not violations, "Dependency rule violations:\n" + "\n".join(violations)
 
 
-def test_inner_layers_do_not_import_public_extension_or_composition_modules() -> None:
+def test_inner_layers_do_not_import_composition_modules() -> None:
     violations: list[str] = []
     for service, package_name in (("emr", "mystack_emr"), ("glue", "mystack_glue")):
         package_root = ROOT / service / "src" / package_name
         for layer in ("domain", "application"):
             for source in (package_root / layer).rglob("*.py"):
                 for imported in internal_imports(source, package_name):
-                    if imported.startswith(
-                        (
-                            f"{package_name}.extension_api",
-                            f"{package_name}.extensions",
-                            f"{package_name}.app",
-                        )
-                    ):
+                    if imported.startswith(f"{package_name}.app"):
                         violations.append(f"{source.relative_to(ROOT)} imports {imported}")
-    assert not violations, "Extension dependency violations:\n" + "\n".join(violations)
+    assert not violations, "Composition dependency violations:\n" + "\n".join(violations)
 
 
 def test_shared_protocol_package_does_not_import_service_packages() -> None:

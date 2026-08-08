@@ -6,8 +6,8 @@
 # Using Mystack
 
 This guide takes a new user from startup through AWS CLI, boto3, AWS SDK for pandas, and Docker
-Compose application integration. See the [support scope](support-scope.md) for implemented APIs and the [Glue
-extension SPI guide](extensions.md) for behavior customization.
+Compose application integration. See the [support scope](support-scope.md) for implemented APIs and
+explicit exclusions.
 
 <!-- section: choose -->
 ## Choose an environment
@@ -131,18 +131,14 @@ excluded services. In particular, `wr.athena.*` is currently out of scope.
 | --- | --- |
 | Default local build and startup | `-f compose.yaml` |
 | Mount YAML configuration without rebuilding | `-f compose.mount-config.yaml` |
-| Mount Glue extension wheels read-only | `-f compose.extensions.yaml` |
-| Isolated repository E2E for all three SPIs | `make extension-e2e` |
 
-For example, apply both a configuration file and Glue extension directory:
+For example, apply a configuration file without rebuilding:
 
 ```bash
 export MYSTACK_CONFIG_FILE="$PWD/config/mystack.yaml"
-export MYSTACK_GLUE_EXTENSIONS_DIR="$PWD/extensions"
 docker compose \
   -f compose.yaml \
   -f compose.mount-config.yaml \
-  -f compose.extensions.yaml \
   up --build --detach --wait
 ```
 
@@ -163,7 +159,6 @@ open http://localhost:4566/_mystack/console
 
 - `connection refused`: inspect Proxy and dependency health with `docker compose ps`.
 - Bind-mount permission error: inspect Docker Desktop file-sharing permission and absolute paths.
-- Missing extension: search logs for `extension.install.*` and `extension.provider.load.*`.
 - Suspected protocol change: run `make model-check` and `make coverage-check`.
 - Hung test: tune `tests.*_timeout_seconds` in `config/mystack.yaml` and inspect thread/task endpoints.
 

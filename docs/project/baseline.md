@@ -44,27 +44,20 @@ contracts.
   Python/JAR Spark execution, cancellation, logs, and management read models.
 - Glue: 22 operations covering database, table/version, and partition/batch behavior; JSON persistence
   uses atomic replacement; documented domain errors translate at the inbound adapter.
-- Glue extensions expose separate `stable`, `application`, and `unsafe` SPIs. A priority-ordered chain
-  composes validated operation calls and revalidates final success output against botocore output shapes.
-- Startup installs mounted wheels without network or dependency resolution and discovers providers by
-  Python entry points. `unsafe` requires explicit permission and the exact installed Mystack version.
 - Interoperability: Spark 3.5.4 + Java 17, Glue/Hive complex types and S3 Parquet, Apache Iceberg
   1.7.1 create/append/read/schema-evolution, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
 - Operations: resource/log console, route/thread/task diagnostics, structured boundary logs without
   authorization or payload contents.
 - Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
   multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
-- Extension Docker E2E verifies a real wheel install, identical Catalog access through all three SPI
-  contexts, priority composition, and boto3 `AlreadyExistsException` behavior.
-- Final test inventory: 66 collected. The fast suite passes 58 with two real-AWS opt-in skips; default
-  Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes five with one extension-only skip;
-  the separate extension Docker E2E passes its one test.
+- Final test inventory: 55 collected. The fast suite selects 50, passes 48, and skips two real-AWS
+  opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
+  five. Both commands apply explicit configured timeouts.
 
 <!-- section: entry-points -->
 ## Entry points and commands
 
-- Executables: `mystack-proxy`, `mystack-emr`, `mystack-glue`, and
-  `mystack-glue-extension-bootstrap`
+- Executables: `mystack-proxy`, `mystack-emr`, and `mystack-glue`
 - Configuration: `config/mystack.yaml`; release configuration: `config/registry-release.json`
 - Setup: `./scripts/bootstrap.sh`, `direnv allow`, or the provided Dev Container
 - Fast verification: `make test`, `make contract`, `make registry-check`, `make pre-commit`
@@ -81,8 +74,7 @@ contracts.
 - All behavior documents have Korean/English pairs and cite direct official sources.
 - Side-effect boundaries log before, after, and failure events without secrets.
 - Tests have explicit configurable timeouts and implemented operations have public-Proxy boto3 E2E.
-- Extension authors select one of three Glue SPIs by access and compatibility level. Domain and
-  application layers never import extension packages; only the composition root constructs contexts.
+- Service-specific behavior stays within its bounded context; Mystack exposes no in-process user plugin API.
 
 These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html).
 
@@ -109,20 +101,18 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
 <!-- section: candidates -->
 ## Remaining candidate gaps
 
-Extensions currently execute trusted code in the Glue process. Separate-process or remote-sidecar
-isolation is not implemented. The common operation chain is reusable by other emulators, but a public
-EMR SPI and context require a separate product decision.
+New emulator services extend Proxy through the configuration-driven route registry. Service-specific
+behavior changes remain ordinary reviewed source changes inside the owning bounded context.
 
 <!-- section: confirmations -->
 ## Sequential confirmation log
 
-- 2026-08-08: the user confirmed all A/B/C access levels as separate SPIs.
-- A became snapshot/capability-oriented `stable`, B direct application access, and C exact-version
-  `unsafe`.
+- 2026-08-08: the user superseded the earlier A/B/C design and requested complete removal of the
+  in-process SPI while retaining Proxy route extensibility.
 
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Implement a real team correction through `stable` and collect missing capabilities.
-2. Evaluate a separately packaged SPI v1 compatibility test kit.
-3. After operating the common chain, design public contexts for EMR and other services independently.
+1. Enforce architecture boundaries, including relative imports, in automated tests.
+2. Move Glue state updates behind a transactional repository boundary.
+3. Drive client and runtime compatibility from a versioned manifest.

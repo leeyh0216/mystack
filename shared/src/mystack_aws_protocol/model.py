@@ -218,7 +218,7 @@ class AwsServiceModel:
             http_status=500,
             fix_hint=(
                 "Review the pinned operation output shape and the redacted output-validation "
-                "event; inspect configured extensions before the built-in handler."
+                "event and inspect the registered inbound operation handler."
             ),
         )
 

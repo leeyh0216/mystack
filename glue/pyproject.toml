@@ -11,7 +11,6 @@ dependencies = [
 
 [project.scripts]
 mystack-glue = "mystack_glue.main:run"
-mystack-glue-extension-bootstrap = "mystack_glue.extension_bootstrap:run"
 
 [build-system]
 requires = ["uv_build==0.11.8"]

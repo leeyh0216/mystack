@@ -62,7 +62,6 @@ Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
 | `glue` | durable catalog state, catalog ID, paging, runtime profile |
-| `glue.extensions` | SPI 권한, wheel·설치 directory, provider 순서, 제한 시간 |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -78,12 +77,6 @@ E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
-
-Mount한 Glue 확장은 기본적으로 비활성화되어 있습니다. 선택한 YAML에서 활성화한 뒤 Docker
-Compose 명령에 `compose.extensions.yaml`을 추가합니다. Provider 호출과 wheel 설치는 서로
-다른 제한 시간을 사용합니다. `application` provider는 `mystack_minor_version`, `unsafe`는
-`mystack_version`을 선언해야 합니다. 자세한 내용은 [확장 SPI 안내](extensions.ko.md)를
-참고합니다.
 
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.

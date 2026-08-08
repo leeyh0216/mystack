@@ -18,7 +18,6 @@
 | EMR control plane | 부분 구현: boto3로 검증한 13개 operation | EMR public API 광범위 호환 |
 | EMR bootstrap/Spark | 세로 경로 구현: boto3, S3 bootstrap, Python/JAR Spark 3.5.4 local S3A write와 실행 중 취소 E2E | 더 많은 EMR step 유형과 runtime 정합성 |
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
-| Glue 사용자 확장 | 구현: stable/application/unsafe v1, mount한 wheel, modeled output 검증, boto3 계약 | 더 많은 서비스 context와 선택적 원격 격리 |
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
@@ -38,6 +37,7 @@
 
 - AWS Glue Job과 JobRun API
 - AWS Glue Crawler
+- Process 내부 사용자 extension 또는 plugin API
 - 미문서화된 AWS 버그 재현
 - 기본 local mode의 production IAM authorization 의미론
 - EC2/YARN/HDFS 물리적 분산 환경 재현

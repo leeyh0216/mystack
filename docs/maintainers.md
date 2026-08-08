@@ -23,7 +23,6 @@ Mystack from an application, start with the [user guide](index.md).
 - Components and dependency direction: [architecture](architecture.md)
 - Keeping lower modules unaware of upper modules: [ADR-0001](adr/0001-hexagonal-service-boundaries.md)
 - Versioned upstream adapters: [ADR-0002](adr/0002-versioned-upstream-adapters.md)
-- Three tiers of Glue extension SPI: [ADR-0003](adr/0003-tiered-extension-spis.md)
 - Registering another service in Proxy: [Proxy extension guide](extending-proxy.md)
 
 <!-- section: protocol -->
@@ -39,10 +38,9 @@ When changing protocol behavior, update the model manifest, dispatcher, domain-e
 public-Proxy contract, and E2E in the same issue rather than changing only a controller.
 
 <!-- section: implementation -->
-## Implementation and extensions
+## Implementation boundaries
 
 - File-first configuration schema and Docker overrides: [configuration guide](configuration.md)
-- Glue SPI packages, contexts, wheel installation, and trust boundary: [extension guide](extensions.md)
 - Composition roots and side-effect boundaries follow the dependency and logging rules in
   [architecture](architecture.md).
 - Apply the [Korean technical-writing standard](korean-writing-style.md) when changing Korean and
@@ -80,4 +78,3 @@ public-Proxy contract, and E2E in the same issue rather than changing only a con
 - [AWS guidance for adapting hexagonal architectures](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/adapt-to-change.html)
 - [GitHub issue and pull-request linking](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
 - [Docker Compose CI/CD](https://docs.docker.com/compose/how-tos/ci-cd/)
-

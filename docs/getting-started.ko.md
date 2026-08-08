@@ -6,8 +6,8 @@
 # Mystack 사용 안내
 
 이 문서는 Mystack을 처음 실행하고 AWS CLI, boto3, AWS SDK for pandas, Docker Compose
-application에서 사용하는 과정을 설명합니다. Emulator가 제공하는 API 범위는 [지원 범위](support-scope.ko.md),
-Glue 동작을 수정하는 방법은 [확장 SPI 안내](extensions.ko.md)를 참고하세요.
+application에서 사용하는 과정을 설명합니다. Emulator가 제공하는 API와 명시적 제외 범위는
+[지원 범위](support-scope.ko.md)를 참고하세요.
 
 <!-- section: choose -->
 ## 실행 환경 선택
@@ -134,18 +134,14 @@ print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
 | --- | --- |
 | 기본 local build와 실행 | `-f compose.yaml` |
 | YAML 설정을 rebuild 없이 mount | `-f compose.mount-config.yaml` |
-| Glue extension wheel을 읽기 전용 mount | `-f compose.extensions.yaml` |
-| 세 SPI의 격리된 repository E2E | `make extension-e2e` |
 
-예를 들어 설정과 Glue extension을 함께 적용하려면 다음과 같이 실행합니다.
+예를 들어 rebuild 없이 설정 파일을 적용하려면 다음과 같이 실행합니다.
 
 ```bash
 export MYSTACK_CONFIG_FILE="$PWD/config/mystack.yaml"
-export MYSTACK_GLUE_EXTENSIONS_DIR="$PWD/extensions"
 docker compose \
   -f compose.yaml \
   -f compose.mount-config.yaml \
-  -f compose.extensions.yaml \
   up --build --detach --wait
 ```
 
@@ -166,7 +162,6 @@ open http://localhost:4566/_mystack/console
 
 - `connection refused`: `docker compose ps`에서 Proxy와 dependency health를 확인하세요.
 - bind mount 권한 오류: Docker Desktop의 file sharing 권한과 절대 경로를 확인하세요.
-- extension이 보이지 않음: `extension.install.*`, `extension.provider.load.*` log를 확인하세요.
 - protocol 변경 의심: `make model-check`, `make coverage-check`를 실행하세요.
 - test가 멈춤: `config/mystack.yaml`의 `tests.*_timeout_seconds`를 조정하고 thread/task endpoint를
   확인하세요.

@@ -38,23 +38,10 @@ def test_schema_rejects_non_positive_timeout(monkeypatch) -> None:
         load_configuration("config/mystack.yaml")
 
 
-def test_schema_requires_application_spi_minor_version(monkeypatch) -> None:
-    monkeypatch.setenv(
-        "MYSTACK__GLUE__EXTENSIONS__PROVIDERS",
-        """[
-          {
-            id: correction,
-            spi: application,
-            api_version: 1,
-            entry_point: correction,
-            operations: [CreatePartition],
-            priority: 10,
-            timeout_seconds: 5
-          }
-        ]""",
-    )
+def test_schema_rejects_removed_glue_extension_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("MYSTACK__GLUE__EXTENSIONS__ENABLED", "true")
 
-    with pytest.raises(ConfigurationError, match="mystack_minor_version.*required"):
+    with pytest.raises(ConfigurationError, match=r"glue.*Additional properties"):
         load_configuration("config/mystack.yaml")
 
 

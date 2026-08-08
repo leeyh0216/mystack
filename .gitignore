@@ -12,7 +12,6 @@ coverage.xml
 htmlcov/
 dist/
 build/
-extensions/*.whl
 data/
 logs/
 model-drift-report.json
