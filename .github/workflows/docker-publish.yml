@@ -148,7 +148,7 @@ jobs:
           test -n "$AWS_REGION" || { echo 'Set AWS_REGION in ecr-production.' >&2; exit 2; }
           test -n "$ECR_REGISTRY" || { echo 'Set ECR_REGISTRY in ecr-production.' >&2; exit 2; }
       # Pinned official credential action; no long-lived access-key secrets.
-      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -209,7 +209,7 @@ jobs:
           set -euo pipefail
           test -n "$AWS_ROLE_ARN" || { echo 'Set AWS_ROLE_ARN in ecr-production.' >&2; exit 2; }
           test -n "$AWS_REGION" || { echo 'Set AWS_REGION in ecr-production.' >&2; exit 2; }
-      - uses: aws-actions/configure-aws-credentials@cabfdba3510de1431bac9dba27511d97497fc100 # v5
+      - uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
