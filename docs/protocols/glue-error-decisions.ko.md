@@ -33,7 +33,8 @@ Protocol 검증은 Glue dispatcher 전의 공통 AWS endpoint에서 수행합니
 의미론은 #63에서 완성합니다.
 
 이는 문서화되지 않은 AWS 평가 순서에 대한 주장이 아니라 Mystack 내부의 결정적인 순서입니다.
-#62와 #63은 pipeline을 바꾸지 않고 resource별 조건을 구체화합니다.
+[Database/table/version 계약](glue-database-table-errors.ko.md)이 해당 resource별 조건을 고정하며
+#63은 pipeline을 바꾸지 않고 partition과 batch 조건을 구체화합니다.
 
 <!-- section: taxonomy -->
 ## 분류와 wire response
@@ -43,7 +44,7 @@ Protocol 검증은 Glue dispatcher 전의 공통 AWS endpoint에서 수행합니
 | Validation | `protocol.input_shape`, `input.value_invalid` | `InvalidInputException` | Handler 미호출 또는 candidate 미commit |
 | Not found | `resource.not_found` | `EntityNotFoundException` | Candidate 미commit |
 | Conflict | `resource.already_exists` | `AlreadyExistsException` | Candidate 미commit |
-| Concurrency | `version.mismatch` | `VersionMismatchException` | Candidate 미commit |
+| Concurrency | `version.mismatch` | `ConcurrentModificationException` | Candidate 미commit |
 | Injectable | `fault.operation_timeout`, `fault.internal_service` | 설정한 문서 기반 code | Handler 미호출 |
 | System | `adapter.mapping_failure`, `persistence.side_effect_failed` | `InternalServiceException` | Candidate 미commit/미공개 |
 

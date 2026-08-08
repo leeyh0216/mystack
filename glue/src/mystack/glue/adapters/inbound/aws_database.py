@@ -8,6 +8,7 @@ from __future__ import annotations
 from mystack.aws_protocol import OperationFamily
 from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
 from mystack.glue.adapters.inbound.aws_shapes import (
+    database_attribute_keys,
     database_document,
     mapping,
     optional_int,
@@ -50,12 +51,20 @@ class DatabaseOperationFamily:
 
     async def get_databases(self, payload, context):
         del context
+        attributes = tuple(map(str, payload.get("AttributesToGet", ())))
+        allowed = database_attribute_keys(attributes, supplied="AttributesToGet" in payload)
         values, token = await self._context.application.get_databases(
             self._context.catalog(payload),
             next_token=optional_string(payload.get("NextToken")),
             max_results=optional_int(payload.get("MaxResults")),
         )
-        return with_token({"DatabaseList": [database_document(value) for value in values]}, token)
+        databases = [database_document(value) for value in values]
+        if attributes:
+            databases = [
+                {key: value for key, value in database.items() if key in allowed}
+                for database in databases
+            ]
+        return with_token({"DatabaseList": databases}, token)
 
     async def update_database(self, payload, context):
         del context

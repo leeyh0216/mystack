@@ -128,6 +128,13 @@ class CatalogDatabase:
     def definition(self) -> dict[str, Any]:
         return self._document.to_dict()
 
+    @staticmethod
+    def definition_name(definition: dict[str, Any]) -> str:
+        """Validate and normalize a candidate name before repository access."""
+
+        _, value = CatalogDocument.named(definition, path="DatabaseInput.Name")
+        return value.value
+
     def revise(self, definition: dict[str, Any]) -> CatalogDatabase:
         document, name = CatalogDocument.named(definition, path="DatabaseInput.Name")
         return CatalogDatabase(self.catalog_id, name, document, self.create_time)
@@ -153,6 +160,15 @@ class CatalogTableVersion:
     @property
     def definition(self) -> dict[str, Any]:
         return self._document.to_dict()
+
+    @staticmethod
+    def validated_id(raw: object) -> str:
+        """Validate the documented string representation of an integer version ID."""
+
+        value = str(raw)
+        if not value.isascii() or not value.isdigit():
+            raise InvalidInputError("Table VersionId must be a string representation of an integer")
+        return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,6 +237,13 @@ class CatalogTable:
     def definition(self) -> dict[str, Any]:
         return self._document.to_dict()
 
+    @staticmethod
+    def definition_name(definition: dict[str, Any]) -> str:
+        """Validate and normalize a candidate name before repository access."""
+
+        _, value = CatalogDocument.named(definition, path="TableInput.Name")
+        return value.value
+
     def partition_key_count(self) -> int:
         return len(self._document.get("PartitionKeys", ()))
 
@@ -243,6 +266,8 @@ class CatalogTable:
         expected_version_id: str | None,
         skip_archive: bool,
     ) -> CatalogTable:
+        if expected_version_id is not None:
+            expected_version_id = CatalogTableVersion.validated_id(expected_version_id)
         if expected_version_id is not None and self.version_id != expected_version_id:
             raise VersionMismatchError(
                 f"Expected table version {expected_version_id}, "

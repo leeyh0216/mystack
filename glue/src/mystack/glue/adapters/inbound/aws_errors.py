@@ -78,7 +78,7 @@ class GlueErrorTranslator:
                 "version.mismatch",
                 "concurrency",
                 "version_concurrency",
-                "VersionMismatchException",
+                "ConcurrentModificationException",
                 400,
                 "candidate_not_committed",
             ),

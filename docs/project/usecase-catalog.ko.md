@@ -249,3 +249,28 @@
   `glue/src/mystack/glue/adapters/inbound/aws_faults.py`,
   `glue/tests/test_error_contracts.py`
 - 신뢰도: High
+
+<!-- section: uc-014 -->
+## UC-014: 결정적인 Glue catalog 오류 판단 적용
+
+- 목적/actor/trigger: boto3, Spark, AWS SDK for pandas client가 구현된 database, table,
+  table-version, import-status operation 중 하나를 수행합니다.
+- 입력: 공식 model 요청과 현재 local catalog 상태이며 version, projection, pagination, archive,
+  설정 fault 값은 선택입니다.
+- 출력: 성공 document 또는 첫 번째 결정적인 modeled validation/not-found/conflict/concurrency/system
+  오류입니다.
+- 저장/변경: 성공 mutation은 새 catalog revision 하나를 commit하고 실패 candidate는 visible/durable
+  snapshot을 보존합니다.
+- 책임: Inbound family는 wire 전용 projection, application aggregate는 resource 순서/archive/rename/
+  cascade, repository는 atomic persistence, error boundary는 code를 담당합니다.
+- 부수효과: 성공 mutation만 durable save를 수행하며 query와 자연 오류는 read-only입니다.
+- 선행조건/규칙: Input → lookup, parent → destination conflict, conflict → stale version,
+  durable commit → publication 순서이며 인증과 외부 federation 상태는 제외합니다.
+- 실패: `InvalidInputException`, `EntityNotFoundException`, `AlreadyExistsException`,
+  `ConcurrentModificationException`, 정제되거나 설정한 system 오류입니다.
+- 관측: 요청 값 없이 operation boundary, condition ID, mutation 보장, transaction rollback,
+  persistence 전·후·실패 event를 기록합니다.
+- 근거: `docs/protocols/glue-database-table-errors.ko.md`,
+  `glue/tests/test_database_table_error_semantics.py`,
+  `contracts/glue-error-conditions.yaml`
+- 신뢰도: High

@@ -8,10 +8,10 @@ from __future__ import annotations
 from mystack.aws_protocol import OperationFamily
 from mystack.glue.adapters.inbound.aws_context import GlueFamilyContext
 from mystack.glue.adapters.inbound.aws_shapes import (
-    attribute_keys,
     mapping,
     optional_int,
     optional_string,
+    table_attribute_keys,
     table_document,
     with_token,
 )
@@ -59,6 +59,8 @@ class TableOperationFamily:
 
     async def get_tables(self, payload, context):
         del context
+        attributes = tuple(map(str, payload.get("AttributesToGet", ())))
+        allowed = table_attribute_keys(attributes, supplied="AttributesToGet" in payload)
         values, token = await self._context.application.get_tables(
             self._context.catalog(payload),
             str(payload["DatabaseName"]),
@@ -66,10 +68,8 @@ class TableOperationFamily:
             next_token=optional_string(payload.get("NextToken")),
             max_results=optional_int(payload.get("MaxResults")),
         )
-        attributes = set(map(str, payload.get("AttributesToGet", ())))
         tables = [table_document(value) for value in values]
         if attributes:
-            allowed = attribute_keys(attributes)
             tables = [
                 {key: value for key, value in table.items() if key in allowed} for table in tables
             ]

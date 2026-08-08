@@ -11,8 +11,9 @@ official_sources:
 precedence:
   - protocol_shape
   - required_fields
-  - value_constraints
+  - modeled_value_constraints
   - fault_injection
+  - value_constraints
   - parent_existence
   - duplicate_conflict
   - version_concurrency
@@ -83,12 +84,12 @@ conditions:
   version.mismatch:
     phase: version_concurrency
     category: concurrency
-    error_code: VersionMismatchException
+    error_code: ConcurrentModificationException
     http_status: 400
     message_template: "Expected table version {expected}; current version is {current}"
     mutation_guarantee: candidate_not_committed
     response_mode: service_error
-    model_scope: global_exception
+    model_scope: operation
     source: glue-exceptions
   batch.item_invalid:
     phase: mutation
@@ -142,25 +143,25 @@ conditions:
     source: glue-exceptions
 
 operations:
-  BatchCreatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_invalid, batch.item_already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  BatchDeletePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
-  BatchGetPartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  BatchUpdatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, batch.item_invalid, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
-  CreateDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  CreatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  CreateTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  DeleteDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
-  DeletePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
-  DeleteTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  BatchCreatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, batch.item_invalid, batch.item_already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  BatchDeletePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  BatchGetPartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  BatchUpdatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, batch.item_invalid, batch.item_not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  CreateDatabase: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  CreatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  CreateTable: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  DeleteDatabase: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  DeletePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
+  DeleteTable: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure, persistence.side_effect_failed]
   GetCatalogImportStatus: [protocol.input_shape, fault.operation_timeout, fault.internal_service, adapter.mapping_failure]
-  GetDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetDatabases: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, adapter.mapping_failure]
-  GetPartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetPartitions: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetTables: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetTableVersion: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  GetTableVersions: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, adapter.mapping_failure]
-  UpdateDatabase: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  UpdatePartition: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
-  UpdateTable: [protocol.input_shape, input.value_invalid, fault.operation_timeout, fault.internal_service, resource.not_found, resource.already_exists, version.mismatch, adapter.mapping_failure, persistence.side_effect_failed]
+  GetDatabase: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetDatabases: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, adapter.mapping_failure]
+  GetPartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetPartitions: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetTable: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetTables: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetTableVersion: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  GetTableVersions: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, adapter.mapping_failure]
+  UpdateDatabase: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  UpdatePartition: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, adapter.mapping_failure, persistence.side_effect_failed]
+  UpdateTable: [protocol.input_shape, fault.operation_timeout, fault.internal_service, input.value_invalid, resource.not_found, resource.already_exists, version.mismatch, adapter.mapping_failure, persistence.side_effect_failed]

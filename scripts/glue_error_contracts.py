@@ -108,8 +108,9 @@ def _validate(document: dict[str, Any]) -> None:
     required_phases = {
         "protocol_shape",
         "required_fields",
-        "value_constraints",
+        "modeled_value_constraints",
         "fault_injection",
+        "value_constraints",
         "parent_existence",
         "duplicate_conflict",
         "version_concurrency",

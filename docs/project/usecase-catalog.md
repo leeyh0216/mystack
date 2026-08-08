@@ -250,3 +250,28 @@
   `glue/src/mystack/glue/adapters/inbound/aws_faults.py`,
   `glue/tests/test_error_contracts.py`
 - Confidence: High
+
+<!-- section: uc-014 -->
+## UC-014: Apply a deterministic Glue catalog error decision
+
+- Purpose/actor/trigger: a boto3, Spark, or AWS SDK for pandas client performs one of the implemented
+  database, table, table-version, or import-status operations.
+- Input: official modeled request plus current local catalog state; optional version, projection,
+  pagination, archive, and configured fault values.
+- Output: success document or the first deterministic modeled validation/not-found/conflict/
+  concurrency/system error.
+- Stored/changed data: a successful mutation commits one new catalog revision; every failed
+  candidate preserves visible and durable snapshots.
+- Responsibility: inbound families validate wire-specific projections; application aggregates own
+  resource order/archive/rename/cascade; repository owns atomic persistence; error boundary owns code.
+- Side effects: durable save only for a successful mutation; queries and natural failures are read-only.
+- Preconditions/rules: input before lookup, parent before destination conflict, conflict before stale
+  version, durable commit before publication; authentication and external federation states excluded.
+- Failures: `InvalidInputException`, `EntityNotFoundException`, `AlreadyExistsException`,
+  `ConcurrentModificationException`, or sanitized/configured system errors.
+- Observability: operation boundary, condition ID, mutation guarantee, transaction rollback, and
+  persistence before/after/failure events without request values.
+- Evidence: `docs/protocols/glue-database-table-errors.md`,
+  `glue/tests/test_database_table_error_semantics.py`,
+  `contracts/glue-error-conditions.yaml`
+- Confidence: High

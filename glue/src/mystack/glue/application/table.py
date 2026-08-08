@@ -65,23 +65,26 @@ class TableCommands:
     ) -> None:
         normalized_database = name(database_name)
         normalized_old = name(old_name)
+        revised_name = CatalogTable.definition_name(definition)
+        if version_id is not None:
+            version_id = CatalogTableVersion.validated_id(version_id)
         old_key = (catalog_id, normalized_database, normalized_old)
         async with self._repository.transaction(
             operation="update-table",
             resource_key=old_key,
         ) as state:
             current = table(state, catalog_id, normalized_database, normalized_old)
+            new_key = (catalog_id, normalized_database, revised_name)
+            if new_key != old_key and new_key in state.tables:
+                raise AlreadyExistsError(
+                    f"Table {normalized_database}.{revised_name} already exists"
+                )
             revised = current.revise(
                 definition,
                 now=self._clock.now(),
                 expected_version_id=version_id,
                 skip_archive=skip_archive,
             )
-            new_key = (catalog_id, normalized_database, revised.name)
-            if new_key != old_key and new_key in state.tables:
-                raise AlreadyExistsError(
-                    f"Table {normalized_database}.{revised.name} already exists"
-                )
             state.tables.pop(old_key)
             state.tables[new_key] = revised
             if new_key != old_key:
@@ -133,6 +136,13 @@ class TableQueries:
         max_results: int | None,
     ) -> tuple[list[CatalogTable], str | None]:
         normalized_database = name(database_name)
+        page_request = self._paginator.prepare(next_token, max_results)
+        pattern = None
+        if expression:
+            try:
+                pattern = re.compile(expression)
+            except re.error as error:
+                raise InvalidInputError(f"Invalid table expression: {error}") from error
         state = await self._repository.snapshot()
         database(state, catalog_id, normalized_database)
         values = sorted(
@@ -143,13 +153,9 @@ class TableQueries:
             ],
             key=lambda item: item.name,
         )
-        if expression:
-            try:
-                pattern = re.compile(expression)
-            except re.error as error:
-                raise InvalidInputError(f"Invalid table expression: {error}") from error
+        if pattern is not None:
             values = [value for value in values if pattern.search(value.name)]
-        return self._paginator.page(values, next_token, max_results)
+        return page_request.apply(values)
 
 
 class TableVersionQueries:
@@ -164,6 +170,8 @@ class TableVersionQueries:
         table_name: str,
         version_id: str | None,
     ) -> CatalogTableVersion:
+        if version_id is not None:
+            version_id = CatalogTableVersion.validated_id(version_id)
         current = await self._tables.get(catalog_id, database_name, table_name)
         versions = current.versions()
         if version_id is None:
@@ -184,5 +192,6 @@ class TableVersionQueries:
         next_token: str | None,
         max_results: int | None,
     ) -> tuple[list[CatalogTableVersion], str | None]:
+        page_request = self._paginator.prepare(next_token, max_results)
         current = await self._tables.get(catalog_id, database_name, table_name)
-        return self._paginator.page(list(current.versions()), next_token, max_results)
+        return page_request.apply(list(current.versions()))

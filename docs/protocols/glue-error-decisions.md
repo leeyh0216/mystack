@@ -32,8 +32,9 @@ domain failures. The repository publishes a candidate only after its durable sav
 item failures are response members and may coexist with earlier successful items; #63 owns their
 complete per-operation semantics.
 
-This is a deterministic Mystack order, not a claim about undocumented AWS evaluation order. #62
-and #63 refine resource-specific conditions without changing the pipeline.
+This is a deterministic Mystack order, not a claim about undocumented AWS evaluation order. The
+[database/table/version contract](glue-database-table-errors.md) fixes those resource-specific
+conditions; #63 refines partition and batch conditions without changing the pipeline.
 
 <!-- section: taxonomy -->
 ## Taxonomy and wire response
@@ -43,7 +44,7 @@ and #63 refine resource-specific conditions without changing the pipeline.
 | Validation | `protocol.input_shape`, `input.value_invalid` | `InvalidInputException` | Handler not called or candidate not committed |
 | Not found | `resource.not_found` | `EntityNotFoundException` | Candidate not committed |
 | Conflict | `resource.already_exists` | `AlreadyExistsException` | Candidate not committed |
-| Concurrency | `version.mismatch` | `VersionMismatchException` | Candidate not committed |
+| Concurrency | `version.mismatch` | `ConcurrentModificationException` | Candidate not committed |
 | Injectable | `fault.operation_timeout`, `fault.internal_service` | Configured documented code | Handler not called |
 | System | `adapter.mapping_failure`, `persistence.side_effect_failed` | `InternalServiceException` | Candidate not committed/published |
 

@@ -18,6 +18,7 @@ from mystack.glue.domain import (
     CatalogPartition,
     CatalogTable,
     CatalogTableVersion,
+    InvalidInputError,
 )
 from mystack.glue.domain.errors import GlueDomainError
 
@@ -78,10 +79,27 @@ def without_columns(partition: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
-def attribute_keys(attributes: set[str]) -> set[str]:
+def table_attribute_keys(attributes: tuple[str, ...], *, supplied: bool) -> set[str]:
+    _require_attribute_combination(
+        attributes,
+        supplied=supplied,
+        supported={"NAME", "TABLE_TYPE"},
+    )
     keys = {"Name"}
     if "TABLE_TYPE" in attributes:
         keys.add("TableType")
+    return keys
+
+
+def database_attribute_keys(attributes: tuple[str, ...], *, supplied: bool) -> set[str]:
+    _require_attribute_combination(
+        attributes,
+        supplied=supplied,
+        supported={"NAME", "TARGET_DATABASE"},
+    )
+    keys = {"Name"}
+    if "TARGET_DATABASE" in attributes:
+        keys.add("TargetDatabase")
     return keys
 
 
@@ -107,6 +125,18 @@ def with_token(result: dict[str, Any], token: str | None) -> dict[str, Any]:
     if token is not None:
         result["NextToken"] = token
     return result
+
+
+def _require_attribute_combination(
+    attributes: tuple[str, ...],
+    *,
+    supplied: bool,
+    supported: set[str],
+) -> None:
+    if supplied and "NAME" not in attributes:
+        raise InvalidInputError("AttributesToGet must include NAME")
+    if len(attributes) != len(set(attributes)) or not set(attributes).issubset(supported):
+        raise InvalidInputError("AttributesToGet contains an unsupported combination")
 
 
 def _table_document(definition, catalog_id, database, create_time, update_time, version_id):

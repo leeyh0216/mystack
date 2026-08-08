@@ -36,16 +36,17 @@ class DatabaseCommands:
 
     async def update(self, catalog_id: str, old_name: str, definition: dict) -> None:
         normalized_old = name(old_name)
+        revised_name = CatalogDatabase.definition_name(definition)
         old_key = (catalog_id, normalized_old)
         async with self._repository.transaction(
             operation="update-database",
             resource_key=old_key,
         ) as state:
             current = database(state, catalog_id, normalized_old)
-            revised = current.revise(definition)
-            new_key = (catalog_id, revised.name)
+            new_key = (catalog_id, revised_name)
             if new_key != old_key and new_key in state.databases:
-                raise AlreadyExistsError(f"Database {revised.name!r} already exists")
+                raise AlreadyExistsError(f"Database {revised_name!r} already exists")
+            revised = current.revise(definition)
             state.databases.pop(old_key)
             state.databases[new_key] = revised
             if new_key != old_key:
@@ -88,9 +89,10 @@ class DatabaseQueries:
         next_token: str | None,
         max_results: int | None,
     ) -> tuple[list[CatalogDatabase], str | None]:
+        page_request = self._paginator.prepare(next_token, max_results)
         state = await self._repository.snapshot()
         values = sorted(
             [value for key, value in state.databases.items() if key[0] == catalog_id],
             key=lambda item: item.name,
         )
-        return self._paginator.page(values, next_token, max_results)
+        return page_request.apply(values)
