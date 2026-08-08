@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  Visual reference: https://aws.amazon.com/console/
+  Accessibility reference: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+  EMR log reference:
+  https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mystack Console</title>
+  <style>
+    :root{color-scheme:dark;--ink:#e9ebed;--muted:#aab7c4;--line:#465568;--panel:#161e2d;--nav:#101820;--accent:#f90;--blue:#0972d3;--focus:#59b9ff;--good:#7ce38b;--bad:#ff9b9b}
+    *{box-sizing:border-box}body{margin:0;background:#0f1720;color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}.skip{position:absolute;left:-9999px}.skip:focus{left:12px;top:8px;z-index:9;background:#fff;color:#111;padding:8px}
+    header{height:54px;display:flex;align-items:center;gap:22px;padding:0 24px;background:var(--nav);border-bottom:1px solid #293444;box-shadow:0 2px 8px #0008}.brand{font-size:19px;font-weight:700}.brand b{color:var(--accent)}header span:last-child,.lead,.label,.muted{color:var(--muted)}
+    main{max-width:1600px;margin:auto;padding:26px}h1{font-size:25px;margin:0 0 5px}.lead{margin:0 0 20px}.toolbar{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.field{display:grid;gap:4px;font-weight:650}.field span{font-size:12px;color:var(--muted)}
+    select,input,button{color:var(--ink);background:#202b3a;border:1px solid #607088;border-radius:4px;padding:8px 11px;min-height:38px}input{min-width:260px}button{cursor:pointer;background:var(--blue);border-color:#3897e6;font-weight:700}button.secondary{background:#202b3a}button:hover{filter:brightness(1.13)}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+    .status{min-height:38px;display:flex;align-items:center;padding:0 8px}.ok{color:var(--good)}.error{color:var(--bad)}.grid{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:13px;margin:20px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:15px;box-shadow:0 1px 3px #0008}.label{font-size:12px;text-transform:uppercase}.value{font-size:21px;font-weight:750;margin-top:4px;overflow-wrap:anywhere}.notice{margin-top:10px;color:var(--muted)}
+    .tabs{display:flex;gap:5px;overflow:auto;border-bottom:1px solid var(--line)}[role=tab]{border-radius:4px 4px 0 0;background:#172234;border-color:transparent;padding:10px 15px}[role=tab][aria-selected=true]{background:var(--panel);border:1px solid var(--line);border-bottom-color:var(--panel);color:#fff}
+    [role=tabpanel]{background:var(--panel);border:1px solid var(--line);border-top:0;border-radius:0 0 6px 6px;min-height:430px}.split{display:grid;grid-template-columns:minmax(280px,36%) 1fr;min-height:430px}.list-pane{border-right:1px solid var(--line);padding:14px}.detail-pane{padding:14px;min-width:0}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.panel-head h2{font-size:16px;margin:0}.search{min-width:140px;width:100%}
+    .resources{list-style:none;margin:0;padding:0;max-height:560px;overflow:auto}.resources li+li{margin-top:6px}.resource{width:100%;display:grid;grid-template-columns:1fr auto;gap:7px;text-align:left;background:#202b3a;border-color:#45566b;font-weight:500}.resource.selected{border-color:var(--accent);box-shadow:inset 3px 0 var(--accent)}.kind{color:var(--muted);font-size:11px;text-transform:uppercase}.state{font-size:11px;border:1px solid #66768b;border-radius:999px;padding:2px 7px;align-self:center}
+    pre{margin:0;padding:14px;background:#101820;border:1px solid #334154;border-radius:4px;min-height:320px;max-height:60vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}.log-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px}.log-grid h2{font-size:15px}.empty{padding:22px;color:var(--muted)}[hidden]{display:none!important}
+    @media(max-width:900px){main{padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.list-pane{border-right:0;border-bottom:1px solid var(--line)}.log-grid{grid-template-columns:1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}input{min-width:100%}.toolbar>*{width:100%}}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <header><div class="brand"><b>◆</b> Mystack</div><span>Emulation Management Console</span></header>
+  <main id="main">
+    <h1>Service resources</h1>
+    <p class="lead">Inspect emulator resources, compatibility, process logs, and live diagnostics.</p>
+    <div class="toolbar">
+      <label class="field"><span>Component</span><select id="component" aria-describedby="componentHelp"></select></label>
+      <span id="componentHelp" hidden>Select a registered Proxy component.</span>
+      <label class="field"><span>Management token</span><input id="token" type="password" autocomplete="off" placeholder="Optional bearer token"></label>
+      <button id="refresh" type="button">Refresh</button>
+      <span id="status" class="status ok" role="status" aria-live="polite">Ready</span>
+    </div>
+    <div class="grid" aria-label="Component summary">
+      <div class="card"><div class="label">Component</div><div class="value" id="componentValue">—</div></div>
+      <div class="card"><div class="label">Emulator mode</div><div class="value" id="modeValue">—</div></div>
+      <div class="card"><div class="label">Compatibility</div><div class="value" id="compatibilityValue">—</div></div>
+      <div class="card"><div class="label">Resources</div><div class="value" id="resourceCount">—</div></div>
+    </div>
+    <p class="notice" id="notice"></p>
+    <div class="tabs" role="tablist" aria-label="Management views">
+      <button id="tab-resources" class="secondary" role="tab" aria-selected="true" aria-controls="panel-resources" tabindex="0" data-view="resources">Resources</button>
+      <button id="tab-logs" class="secondary" role="tab" aria-selected="false" aria-controls="panel-logs" tabindex="-1" data-view="logs">Logs</button>
+      <button id="tab-threads" class="secondary" role="tab" aria-selected="false" aria-controls="panel-threads" tabindex="-1" data-view="threads">Thread stacks</button>
+      <button id="tab-tasks" class="secondary" role="tab" aria-selected="false" aria-controls="panel-tasks" tabindex="-1" data-view="tasks">Asyncio tasks</button>
+      <button id="tab-routes" class="secondary" role="tab" aria-selected="false" aria-controls="panel-routes" tabindex="-1" data-view="routes">Route registry</button>
+    </div>
+    <section id="panel-resources" role="tabpanel" aria-labelledby="tab-resources">
+      <div class="split">
+        <div class="list-pane"><div class="panel-head"><h2>Resource list</h2></div><label class="field"><span>Filter resources</span><input id="search" class="search" type="search" placeholder="Name, ID, state"></label><ul id="resourceList" class="resources"></ul></div>
+        <div class="detail-pane"><div class="panel-head"><h2>Resource detail</h2><span id="selection" class="muted">Nothing selected</span></div><pre id="resourceDetail">Select a resource.</pre></div>
+      </div>
+    </section>
+    <section id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" hidden>
+      <div id="logEmpty" class="empty">Select an EMR Step from Resources to load process logs.</div>
+      <div id="logContent" class="log-grid" hidden><div><h2>stdout</h2><pre id="stdout"></pre></div><div><h2>stderr</h2><pre id="stderr"></pre></div></div>
+    </section>
+    <section id="panel-threads" role="tabpanel" aria-labelledby="tab-threads" hidden><pre id="threads"></pre></section>
+    <section id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" hidden><pre id="tasks"></pre></section>
+    <section id="panel-routes" role="tabpanel" aria-labelledby="tab-routes" hidden><pre id="routes"></pre></section>
+  </main>
+  <script>
+    const state={resources:null,items:[],selected:null,threads:null,tasks:null,routes:null};
+    const el=id=>document.getElementById(id),headers=()=>el('token').value?{Authorization:`Bearer ${el('token').value}`}:{},component=()=>el('component').value;
+    const diagnosticsUrl=(name,kind)=>name==='proxy'?`/_mystack/diagnostics/${kind}`:`/_mystack/components/${encodeURIComponent(name)}/diagnostics/${kind}`;
+    async function json(path){const response=await fetch(path,{headers:headers()}),body=await response.json();if(!response.ok)throw new Error(`${response.status}: ${JSON.stringify(body)}`);return body}
+    function resourceItems(document){const service=document.service,items=[];if(service==='emr'){for(const cluster of document.resources.clusters){items.push({kind:'Cluster',id:cluster.id,name:cluster.name,state:cluster.state,detail:cluster});for(const step of cluster.steps)items.push({kind:'Step',id:step.id,name:step.name,state:step.state,detail:{cluster_id:cluster.id,...step},logs:{cluster_id:cluster.id,step_id:step.id}})}}else if(service==='glue'){for(const database of document.resources.databases){items.push({kind:'Database',id:database.id,name:database.name,detail:database});for(const table of database.tables){items.push({kind:'Table',id:table.id,name:table.name,state:table.table_type,detail:table});for(const partition of table.partitions)items.push({kind:'Partition',id:`${table.id}/${partition.id}`,name:partition.id||'(unpartitioned)',detail:{database_name:database.name,table_name:table.name,...partition}})}}}else{for(const route of document.resources.routes||[])items.push({kind:'Route',id:route.id,name:route.name,detail:route})}return items}
+    function summary(document){el('componentValue').textContent=document.service;el('modeValue').textContent=document.emulator.mode;const c=document.compatibility;el('compatibilityValue').textContent=c.implemented_operation_count===undefined?c.classification:`${c.classification} · ${c.implemented_operation_count}/${c.model_operation_count}`;el('resourceCount').textContent=Object.values(document.counts).reduce((a,b)=>a+b,0);el('notice').textContent=document.emulator.notice||''}
+    function renderList(){const query=el('search').value.toLowerCase(),list=el('resourceList');list.replaceChildren();for(const item of state.items.filter(x=>`${x.kind} ${x.id} ${x.name} ${x.state||''}`.toLowerCase().includes(query))){const li=document.createElement('li'),button=document.createElement('button');button.type='button';button.className=`resource${state.selected===item?' selected':''}`;button.setAttribute('aria-label',`${item.kind} ${item.name}`);button.innerHTML=`<span><span class="kind">${escapeText(item.kind)}</span><br>${escapeText(item.name)}<br><span class="muted">${escapeText(item.id)}</span></span>${item.state?`<span class="state">${escapeText(item.state)}</span>`:''}`;button.onclick=()=>selectItem(item);li.append(button);list.append(li)}if(!list.children.length){const li=document.createElement('li');li.className='empty';li.textContent='No matching resources.';list.append(li)}}
+    function escapeText(value){const node=document.createElement('span');node.textContent=String(value);return node.innerHTML}
+    function selectItem(item){state.selected=item;el('selection').textContent=`${item.kind} · ${item.id}`;el('resourceDetail').textContent=JSON.stringify(item.detail,null,2);renderList();if(item.logs)loadLogs(item);else clearLogs()}
+    function clearLogs(){el('logEmpty').hidden=false;el('logContent').hidden=true;el('stdout').textContent='';el('stderr').textContent=''}
+    async function loadLogs(item){el('logEmpty').textContent='Loading logs…';el('logEmpty').hidden=false;el('logContent').hidden=true;try{const query=new URLSearchParams(item.logs),data=await json(`/_mystack/components/${encodeURIComponent(component())}/logs?${query}`);el('stdout').textContent=data.stdout||'(empty)';el('stderr').textContent=data.stderr||'(empty)';el('logEmpty').hidden=true;el('logContent').hidden=false}catch(error){el('logEmpty').textContent=`Logs unavailable: ${error}`}}
+    function activateTab(tab,focus=true){document.querySelectorAll('[role=tab]').forEach(value=>{const active=value===tab;value.setAttribute('aria-selected',String(active));value.tabIndex=active?0:-1;el(`panel-${value.dataset.view}`).hidden=!active});if(focus)tab.focus()}
+    async function refresh(){el('status').textContent='Loading…';el('status').className='status';try{const name=component(),[resources,threads,tasks,routes]=await Promise.all([json(`/_mystack/components/${encodeURIComponent(name)}/resources`),json(diagnosticsUrl(name,'threads')),json(diagnosticsUrl(name,'tasks')),json('/_mystack/routes')]);state.resources=resources;state.items=resourceItems(resources);state.selected=null;state.threads=threads;state.tasks=tasks;state.routes=routes;summary(resources);el('threads').textContent=JSON.stringify(threads,null,2);el('tasks').textContent=JSON.stringify(tasks,null,2);el('routes').textContent=JSON.stringify(routes,null,2);el('resourceDetail').textContent='Select a resource.';el('selection').textContent='Nothing selected';clearLogs();renderList();el('status').textContent='Healthy';el('status').className='status ok'}catch(error){el('status').textContent='Request failed';el('status').className='status error';el('resourceDetail').textContent=String(error)}}
+    document.querySelectorAll('[role=tab]').forEach((tab,index,tabs)=>{tab.onclick=()=>activateTab(tab,false);tab.onkeydown=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();let target=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;activateTab(tabs[target])}});
+    el('refresh').onclick=refresh;el('component').onchange=refresh;el('search').oninput=renderList;
+    fetch('/_mystack/components').then(response=>response.json()).then(document=>{for(const name of document.components)el('component').add(new Option(name,name));refresh()}).catch(error=>{el('status').textContent=`Startup failed: ${error}`;el('status').className='status error'});
+  </script>
+</body>
+</html>

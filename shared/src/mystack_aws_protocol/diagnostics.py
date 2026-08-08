@@ -57,7 +57,7 @@ def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> AP
 
     @router.get("/threads")
     async def threads(request: Request) -> dict[str, object]:
-        _authorize(request, settings, service, "threads")
+        authorize_management(request, settings, service, "threads")
         frames = sys._current_frames()
         live_threads = {thread.ident: thread for thread in threading.enumerate()}
         entries: list[dict[str, object]] = []
@@ -90,7 +90,7 @@ def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> AP
 
     @router.get("/tasks")
     async def tasks(request: Request) -> dict[str, object]:
-        _authorize(request, settings, service, "tasks")
+        authorize_management(request, settings, service, "tasks")
         current = asyncio.current_task()
         entries: list[dict[str, object]] = []
         for task in sorted(asyncio.all_tasks(), key=lambda item: item.get_name()):
@@ -125,11 +125,11 @@ def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> AP
     return router
 
 
-def _authorize(
+def authorize_management(
     request: Request,
     settings: DiagnosticsSettings,
     service: str,
-    diagnostic: str,
+    capability: str,
 ) -> None:
     if not settings.enabled:
         raise HTTPException(status_code=404, detail="Diagnostics are disabled")
@@ -139,18 +139,18 @@ def _authorize(
             log_event(
                 _LOGGER,
                 logging.WARNING,
-                "diagnostics.access.denied",
+                "management.access.denied",
                 service=service,
-                diagnostic=diagnostic,
+                capability=capability,
                 client=_client(request),
             )
             raise HTTPException(status_code=401, detail="Invalid management token")
     log_event(
         _LOGGER,
         logging.INFO,
-        "diagnostics.access.granted",
+        "management.access.granted",
         service=service,
-        diagnostic=diagnostic,
+        capability=capability,
         client=_client(request),
         token_required=settings.management_token is not None,
     )

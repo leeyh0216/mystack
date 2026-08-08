@@ -2,7 +2,7 @@
 
 from .configuration import ConfigurationError, LoadedConfiguration, load_configuration
 from .context import AwsRequestContext
-from .diagnostics import DiagnosticsSettings, create_diagnostics_router
+from .diagnostics import DiagnosticsSettings, authorize_management, create_diagnostics_router
 from .dispatcher import OperationDispatcher
 from .endpoint import AwsJsonRpcEndpoint
 from .errors import AwsServiceError
@@ -17,6 +17,7 @@ __all__ = [
     "DiagnosticsSettings",
     "LoadedConfiguration",
     "OperationDispatcher",
+    "authorize_management",
     "create_diagnostics_router",
     "load_configuration",
 ]

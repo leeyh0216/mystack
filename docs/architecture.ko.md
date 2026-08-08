@@ -43,6 +43,11 @@ host:4566 -> proxy:8080
 
 EMR은 emulated cluster별 Spark local process를 실행합니다. Glue Job/JobRun은 구현하지 않으며 Spark 기반 Glue Catalog/Hive/Iceberg 검증은 versioned runtime profile에서 실행합니다.
 
+Management traffic은 별도 outward read-model 경계를 사용합니다. 각 service의 inbound
+management adapter가 Application/Domain resource를 versioned JSON으로 변환하고 Proxy가 이를
+전달하며 browser UI는 service 내부를 import하지 않고 렌더링합니다. 자세한 내용은
+[관리 Console 계약](console.ko.md)을 참고하세요.
+
 ## 호환성 전략
 
 1. operation, shape, enum, exception 기준이 되는 공식 botocore 모델 버전을 고정합니다.

@@ -68,6 +68,9 @@ E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 설정이므로 Compose service 이름이나 custom runtime image가 바뀌어도 test code를 수정할
 필요가 없습니다. JAR와 main class 제출 방식은 Spark 공식
 [application submission guide](https://spark.apache.org/docs/3.5.4/submitting-applications.html)를 따릅니다.
+Browser interaction deadline과 Chromium 누락을 실패로 볼지는
+`tests.e2e.browser_action_timeout_seconds` 및
+`tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
 
 Environment override를 적용한 뒤 모든 process가 전체 document를 package에 포함된
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json)으로 검증합니다.

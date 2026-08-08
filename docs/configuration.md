@@ -69,6 +69,9 @@ The E2E harness resolves the EMR route from `tests.emr_service` and copies the p
 fixture from `tests.emr_jar_fixture_container_path`. Both are configuration values so a renamed
 Compose service or custom runtime image needs no test-code change. Spark documents JAR and main
 class submission in its official [application submission guide](https://spark.apache.org/docs/3.5.4/submitting-applications.html).
+Browser interaction deadlines and whether missing Chromium is fatal are configured by
+`tests.e2e.browser_action_timeout_seconds` and the environment variable named by
+`tests.e2e.browser_required_environment_variable`.
 
 After environment overrides, every process validates the complete document against the packaged
 [`mystack.schema.json`](../shared/src/mystack_aws_protocol/mystack.schema.json). Unknown keys,

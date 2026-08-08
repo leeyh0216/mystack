@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import time
 
+import httpx
 import pytest
 from botocore.exceptions import ClientError
 
@@ -65,6 +66,19 @@ def test_boto3_cluster_step_and_control_operations(
     assert (
         emr_client.list_steps(ClusterId=cluster_id, StepIds=[step_id])["Steps"][0]["Id"] == step_id
     )
+    endpoint_url, _ = emr_server
+    resources = httpx.get(
+        f"{endpoint_url}/_mystack/management/resources", timeout=test_timeout
+    ).json()
+    assert resources["compatibility"]["implemented_operation_count"] == 13
+    assert resources["resources"]["clusters"][0]["steps"][0]["id"] == step_id
+    logs = httpx.get(
+        f"{endpoint_url}/_mystack/management/logs",
+        params={"cluster_id": cluster_id, "step_id": step_id},
+        timeout=test_timeout,
+    ).json()
+    assert logs["step_state"] == "COMPLETED"
+    assert logs["tail_limit_bytes"] > 0
 
     emr_client.add_tags(ResourceId=cluster_id, Tags=[{"Key": "owner", "Value": "mystack"}])
     assert {

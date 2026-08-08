@@ -14,7 +14,7 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | Glue Data Catalog | Partial: 22 boto3-tested database/table/version/partition operations | Remaining in-scope Catalog APIs including UDFs |
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
-| Web console | Partial: route/thread/task diagnostic console | EMR and Glue Catalog resource/status/log views |
+| Web console | Implemented: EMR/Glue resources, status/detail, EMR logs, route/thread/task views, keyboard/browser E2E | Additional service-specific visualizations |
 
 The management console is served at `/_mystack/console`. Glue metadata is atomically
 persisted to the configured `glue.state_file`. The current partition expression evaluator

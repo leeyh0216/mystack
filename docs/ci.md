@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `ci.yml` | push, pull request, manual | Python 3.11/3.12, lint, formatting, docs, model/requirements drift, Compose, unit/architecture/contract tests, packages |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
-| `e2e.yml` | relevant pull request, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg tests with logs retained |
+| `e2e.yml` | relevant pull request, nightly, manual | Docker black-box boto3/Spark/Hive/Iceberg and required Chromium console accessibility E2E with logs retained |
 | `docker-publish.yml` | version tag, manual | amd64/arm64 Proxy/EMR/Glue images, provenance, SBOM, private ECR push |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.

@@ -10,19 +10,20 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from mystack_aws_protocol import (
     AwsJsonRpcEndpoint,
     AwsServiceModel,
     DiagnosticsSettings,
     LoadedConfiguration,
+    authorize_management,
     create_diagnostics_router,
     load_configuration,
 )
 from mystack_aws_protocol.observability import configure_logging, log_event
 
-from .adapters.inbound import EmrAwsAdapter
+from .adapters.inbound import EmrAwsAdapter, EmrManagementAdapter
 from .adapters.outbound import (
     AsyncioTaskScheduler,
     InMemoryClusterRepository,
@@ -35,6 +36,7 @@ from .adapters.outbound import (
 )
 from .application import EmrApplication
 from .config import EmrSettings
+from .domain.errors import EmrDomainError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,11 +76,20 @@ def create_app(
         )
     adapter = EmrAwsAdapter(application)
     dispatcher = adapter.dispatcher()
+    service_model = AwsServiceModel("emr")
     endpoint = AwsJsonRpcEndpoint(
-        AwsServiceModel("emr"),
+        service_model,
         dispatcher,
         default_region=settings.object_store.region,
         account_id=settings.account_id,
+    )
+    management = EmrManagementAdapter(
+        application,
+        work_root=settings.work_root,
+        output_tail_bytes=settings.output_tail_bytes,
+        implemented_operations=dispatcher.operations,
+        model_operation_count=len(service_model.operation_names),
+        config_fingerprint=settings.config_fingerprint,
     )
 
     @asynccontextmanager
@@ -118,6 +129,23 @@ def create_app(
                 "implemented_operations": sorted(dispatcher.operations),
             }
         )
+
+    @app.get("/_mystack/management/resources")
+    async def management_resources(request: Request) -> JSONResponse:
+        authorize_management(request, diagnostics_settings, "emr", "resources")
+        return JSONResponse(await management.resources())
+
+    @app.get("/_mystack/management/logs")
+    async def management_logs(
+        request: Request,
+        cluster_id: str,
+        step_id: str,
+    ) -> JSONResponse:
+        authorize_management(request, diagnostics_settings, "emr", "logs")
+        try:
+            return JSONResponse(await management.logs(cluster_id, step_id))
+        except EmrDomainError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
 
     @app.post("/", include_in_schema=False)
     async def aws_json_endpoint(request: Request) -> Response:

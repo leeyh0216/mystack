@@ -115,3 +115,41 @@ def test_console_and_component_diagnostics_are_registry_driven() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"service": "emr", "thread_count": 2}
+
+
+def test_resource_and_log_management_are_forwarded_without_domain_coupling() -> None:
+    observed: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed.append((request.url.path, request.url.query.decode()))
+        if request.url.path.endswith("resources"):
+            return httpx.Response(200, json={"service": "emr", "resources": {"clusters": []}})
+        return httpx.Response(200, json={"service": "emr", "stdout": "ok", "stderr": ""})
+
+    route = ServiceRoute(
+        name="emr",
+        backend_url="http://emr:8080",
+        target_prefixes=("ElasticMapReduce",),
+        signing_names=("elasticmapreduce",),
+        host_prefixes=("emr",),
+    )
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(
+        create_app(
+            settings((route,)),
+            client=async_client,
+            diagnostics_settings=_DIAGNOSTICS,
+        )
+    ) as client:
+        resources = client.get("/_mystack/components/emr/resources")
+        logs = client.get(
+            "/_mystack/components/emr/logs",
+            params={"cluster_id": "j-1", "step_id": "s-1"},
+        )
+
+    assert resources.json()["service"] == "emr"
+    assert logs.json()["stdout"] == "ok"
+    assert observed == [
+        ("/_mystack/management/resources", ""),
+        ("/_mystack/management/logs", "cluster_id=j-1&step_id=s-1"),
+    ]

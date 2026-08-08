@@ -31,6 +31,8 @@ class E2ESettings:
     sdk_connect_timeout_seconds: float
     sdk_read_timeout_seconds: float
     sdk_max_attempts: int
+    browser_action_timeout_seconds: float
+    browser_required_environment_variable: str
     compose_file: Path
     emr_service: str
     emr_jar_fixture_container_path: str
@@ -68,6 +70,8 @@ class E2ESettings:
             sdk_connect_timeout_seconds=float(e2e["sdk_connect_timeout_seconds"]),
             sdk_read_timeout_seconds=float(e2e["sdk_read_timeout_seconds"]),
             sdk_max_attempts=int(e2e["sdk_max_attempts"]),
+            browser_action_timeout_seconds=float(e2e["browser_action_timeout_seconds"]),
+            browser_required_environment_variable=str(e2e["browser_required_environment_variable"]),
             compose_file=compose_file,
             emr_service=str(e2e["emr_service"]),
             emr_jar_fixture_container_path=str(e2e["emr_jar_fixture_container_path"]),

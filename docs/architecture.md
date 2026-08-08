@@ -54,6 +54,11 @@ host:4566 -> proxy:8080
 
 The EMR emulator runs one local Spark process at a time per emulated cluster by default. Spark-based Glue interoperability tests use versioned runtime profiles; Glue Job/JobRun execution is not implemented. Runtime processes receive LocalStack endpoints and test credentials through environment variables.
 
+Management traffic uses a separate outward read-model boundary. Each service's inbound management
+adapter translates its Application/Domain resources to versioned JSON; the Proxy forwards that JSON
+and the packaged browser UI renders it without importing service internals. See the
+[management console contract](console.md).
+
 ## Compatibility strategy
 
 1. Pin the official AWS SDK service-model version used to define operation names, shapes, enums and declared exceptions.

@@ -14,7 +14,7 @@
 | Glue Data Catalog | 부분 구현: boto3로 검증한 database/table/version/partition 22개 operation | UDF를 포함한 나머지 범위 내 Catalog API |
 | Spark + Hive + Glue Catalog | Vertical slice 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | Vertical slice 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
-| Web console | 부분 구현: route/thread/task 진단 console | EMR 및 Glue Catalog 리소스/상태/로그 조회 |
+| Web console | 구현: EMR/Glue resource·상태·상세, EMR log, route/thread/task, keyboard/browser E2E | 추가 service별 시각화 |
 
 관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata는 설정된
 `glue.state_file`에 원자적으로 저장됩니다. 현재 partition expression evaluator는 따옴표로

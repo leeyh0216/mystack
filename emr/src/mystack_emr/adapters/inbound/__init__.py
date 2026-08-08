@@ -4,5 +4,6 @@ Protocol reference: https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.
 """
 
 from .aws import EmrAwsAdapter
+from .management import EmrManagementAdapter
 
-__all__ = ["EmrAwsAdapter"]
+__all__ = ["EmrAwsAdapter", "EmrManagementAdapter"]

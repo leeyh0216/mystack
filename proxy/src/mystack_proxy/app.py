@@ -119,14 +119,13 @@ def create_app(
     async def console() -> Response:
         return console_response()
 
-    @app.get("/_mystack/components/{component}/diagnostics/{kind}")
-    async def component_diagnostics(
+    async def forward_management(
         request: Request,
+        *,
         component: str,
-        kind: str,
+        backend_path: str,
+        capability: str,
     ) -> Response:
-        if kind not in {"threads", "tasks"}:
-            return JSONResponse({"detail": "Unknown diagnostic kind"}, status_code=404)
         route = next((value for value in resolved_settings.routes if value.name == component), None)
         if route is None:
             return JSONResponse({"detail": "Unknown component"}, status_code=404)
@@ -137,33 +136,34 @@ def create_app(
             logging.INFO,
             "proxy.management.forward.before",
             component=component,
-            diagnostic_kind=kind,
+            capability=capability,
             backend_url=route.backend_url,
             side_effect=True,
         )
         try:
             response = await request.app.state.forwarder.client.get(
-                f"{route.backend_url}/_mystack/diagnostics/{kind}",
+                f"{route.backend_url}{backend_path}",
                 headers=headers,
+                params=request.query_params.multi_items(),
             )
         except httpx.HTTPError:
             _log(
                 logging.ERROR,
                 "proxy.management.forward.failed",
                 component=component,
-                diagnostic_kind=kind,
+                capability=capability,
                 fix_hint="Check the component health and proxy route backend_url.",
                 exc_info=True,
             )
             return JSONResponse(
-                {"detail": "Component diagnostics unavailable"},
+                {"detail": "Component management API unavailable"},
                 status_code=502,
             )
         _log(
             logging.INFO,
             "proxy.management.forward.after",
             component=component,
-            diagnostic_kind=kind,
+            capability=capability,
             status_code=response.status_code,
             duration_ms=round((time.monotonic() - started) * 1000, 3),
             side_effect=True,
@@ -172,6 +172,71 @@ def create_app(
             response.content,
             status_code=response.status_code,
             media_type=response.headers.get("content-type", "application/json"),
+        )
+
+    @app.get("/_mystack/components/{component}/resources")
+    async def component_resources(request: Request, component: str) -> Response:
+        if component == "proxy":
+            return JSONResponse(
+                {
+                    "schema_version": 1,
+                    "service": "proxy",
+                    "emulator": {
+                        "mode": "extensible AWS request router",
+                        "config_fingerprint": resolved_settings.config_fingerprint,
+                        "notice": "Unmatched requests are forwarded to the configured fallback.",
+                    },
+                    "compatibility": {
+                        "classification": "ROUTER",
+                        "registered_service_count": len(resolved_settings.routes),
+                    },
+                    "counts": {"routes": len(resolved_settings.routes)},
+                    "resources": {
+                        "routes": [
+                            {
+                                "id": route.name,
+                                "name": route.name,
+                                "backend_url": route.backend_url,
+                                "target_prefixes": route.target_prefixes,
+                                "signing_names": route.signing_names,
+                                "host_prefixes": route.host_prefixes,
+                            }
+                            for route in resolved_settings.routes
+                        ]
+                    },
+                }
+            )
+        return await forward_management(
+            request,
+            component=component,
+            backend_path="/_mystack/management/resources",
+            capability="resources",
+        )
+
+    @app.get("/_mystack/components/{component}/logs")
+    async def component_logs(request: Request, component: str) -> Response:
+        if component == "proxy":
+            return JSONResponse({"detail": "Proxy has no resource process logs"}, status_code=404)
+        return await forward_management(
+            request,
+            component=component,
+            backend_path="/_mystack/management/logs",
+            capability="logs",
+        )
+
+    @app.get("/_mystack/components/{component}/diagnostics/{kind}")
+    async def component_diagnostics(
+        request: Request,
+        component: str,
+        kind: str,
+    ) -> Response:
+        if kind not in {"threads", "tasks"}:
+            return JSONResponse({"detail": "Unknown diagnostic kind"}, status_code=404)
+        return await forward_management(
+            request,
+            component=component,
+            backend_path=f"/_mystack/diagnostics/{kind}",
+            capability=f"diagnostics.{kind}",
         )
 
     @app.api_route(

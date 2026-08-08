@@ -17,12 +17,13 @@ from mystack_aws_protocol import (
     AwsServiceModel,
     DiagnosticsSettings,
     LoadedConfiguration,
+    authorize_management,
     create_diagnostics_router,
     load_configuration,
 )
 from mystack_aws_protocol.observability import configure_logging, log_event
 
-from .adapters.inbound import GlueAwsAdapter
+from .adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
 from .adapters.outbound import JsonCatalogRepository, SystemClock
 from .application import CatalogApplication
 from .config import GlueSettings
@@ -57,11 +58,21 @@ def create_app(
     )
     adapter = GlueAwsAdapter(application, settings.policy.default_catalog_id)
     dispatcher = adapter.dispatcher()
+    service_model = AwsServiceModel("glue")
     endpoint = AwsJsonRpcEndpoint(
-        AwsServiceModel("glue"),
+        service_model,
         dispatcher,
         default_region=settings.default_region,
         account_id=settings.policy.default_catalog_id,
+    )
+    management = GlueManagementAdapter(
+        application,
+        catalog_id=settings.policy.default_catalog_id,
+        api_page_size=settings.policy.api_page_size,
+        implemented_operations=dispatcher.operations,
+        model_operation_count=len(service_model.operation_names),
+        runtime_profile=settings.runtime.name,
+        config_fingerprint=settings.config_fingerprint,
     )
 
     @asynccontextmanager
@@ -104,6 +115,11 @@ def create_app(
                 "runtime_profile": settings.runtime.name,
             }
         )
+
+    @app.get("/_mystack/management/resources")
+    async def management_resources(request: Request) -> JSONResponse:
+        authorize_management(request, diagnostics_settings, "glue", "resources")
+        return JSONResponse(await management.resources())
 
     @app.post("/", include_in_schema=False)
     async def aws_json_endpoint(request: Request) -> Response:
