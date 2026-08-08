@@ -31,7 +31,7 @@ repos:
         pass_filenames: false
         always_run: true
       - id: ghcr-compose-contract
-        name: Source-free GHCR Compose contract
+        name: Source-free public GHCR user contract
         entry: make ghcr-compose-check
         language: system
         pass_filenames: false

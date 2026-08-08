@@ -190,14 +190,17 @@
 - 신뢰도: High
 
 <!-- section: uc-011 -->
-## UC-011: Private multi-platform image 게시와 검증
+## UC-011: Public multi-platform image 게시와 검증
 
 - 목적/actor/trigger: maintainer가 semantic tag를 push하거나 GHCR workflow를 수동 실행합니다.
 - 입력: component/version과 파일 설정 package, Dockerfile, platform, Trivy version/policy, timeout.
-- 출력: private GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index, scan/release artifact입니다.
+- 출력: 익명으로 pull할 수 있는 public GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index,
+  scan/release artifact입니다.
 - 저장/변경: GHCR package와 GitHub workflow artifact입니다.
-- 부수효과: token login, image build/push/pull, scanner DB/image download.
-- 선행조건/규칙: 일회성 `GITHUB_TOKEN`, 새 tag, amd64+arm64 index, `latest` 미사용.
+- 부수효과: 게시자 token login, image build/push/pull, scanner DB/image download와 1회성 수동
+  package visibility 전환입니다.
+- 선행조건/규칙: 일회성 게시자 `GITHUB_TOKEN`, public consumer visibility, 새 tag, amd64+arm64
+  index, `latest` 미사용.
 - 실패: permission/tag collision, build/push, platform 검증, timeout, vulnerability policy.
 - 관측: registry 전/후/실패 event와 upload evidence.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/.github/workflows/container-publish.yml:1`,

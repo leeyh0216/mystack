@@ -63,8 +63,9 @@ contracts.
   1.7.1 create/append/read/schema-evolution, and AWS SDK for pandas 3.17.0 Parquet/Glue E2E.
 - Operations: resource/log console, route/thread/task diagnostics, structured boundary logs without
   authorization or payload contents.
-- Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, private GHCR
-  multi-platform publication workflow, SBOM/provenance, OCI index validation, and Trivy policy.
+- Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, anonymously
+  consumable public GHCR multi-platform publication, SBOM/provenance, OCI index validation, and
+  Trivy policy.
 - Final test inventory: 101 collected. The fast suite selects 96, passes 94, and skips two real-AWS
   opt-in comparisons; the default Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E passes
   five. Both commands apply explicit configured timeouts.

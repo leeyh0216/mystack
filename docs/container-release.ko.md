@@ -3,13 +3,15 @@
 
 [한국어](container-release.ko.md) | [English](container-release.md)
 
-# 비공개 GHCR 이미지 게시
+# Public GHCR 이미지 게시
 
-Mystack은 Proxy, EMR, Glue를 private multi-platform OCI image로 GitHub Container Registry에
-게시합니다. AWS/GCP account, cloud role, personal access token, repository secret이 필요하지
-않습니다. GitHub 공식 [Container registry 문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)는
-workflow repository와 연결된 package를 `GITHUB_TOKEN`으로 게시할 수 있고 최초 package는
-기본적으로 private이라고 정의합니다.
+Mystack은 Proxy, EMR, Glue를 public multi-platform OCI image로 GitHub Container Registry에
+게시해 consumer가 익명으로 pull할 수 있게 합니다. 게시에는 AWS/GCP account, cloud role,
+personal access token, repository secret이 필요하지 않습니다. GitHub 공식 [Container registry
+문서](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)는
+workflow repository와 연결된 package를 `GITHUB_TOKEN`으로 게시할 수 있다고 설명합니다. 새
+package는 처음에 private이므로 package가 처음 생성된 뒤 maintainer가 문서의 1회성 visibility
+변경을 수행합니다.
 
 <!-- section: images -->
 ## Image와 소유권
@@ -37,6 +39,8 @@ GitHub는 호출된 workflow가 caller token 권한을 높이지 못하게 하�
 ## 게시 계약
 
 - `vMAJOR.MINOR.PATCH` tag는 세 component를 모두 게시합니다.
+- Release 설정의 `consumer_visibility`는 `public`이며 일반 pull이 consumer credential에 의존하면
+  안 됩니다.
 - 수동 실행은 한 component 또는 전체를 게시하며 version을 비우면 고유한
   `manual-RUN_ID-ATTEMPT` tag를 생성합니다.
 - `latest`는 게시하지 않습니다. Production과 재현 가능한 개발 환경은 보고된 digest를
@@ -87,19 +91,31 @@ gh workflow run release.yml \
   -f version=
 ```
 
-최초 성공 workflow가 private package를 만들고 이 repository에 연결합니다. 이후 GitHub package
-설정에서 visibility와 repository access를 바꿀 수 있습니다. Private package consumer에는
-`read:packages` 또는 package read access를 부여한 repository `GITHUB_TOKEN`이 필요합니다.
+최초 성공 workflow가 private package를 만들고 이 repository에 연결합니다. Package 관리자는
+`mystack-proxy`, `mystack-emr`, `mystack-glue` 각각에 다음 절차를 수행해야 합니다.
 
-`release.json` artifact의 고정 identity를 pull합니다.
+1. Account의 **Packages** page에서 package를 열고 **Package settings**를 선택합니다.
+2. **Danger Zone**에서 **Change visibility**를 선택하고 **Public**을 고른 뒤 package name을 입력해
+   확인합니다.
+3. 세 package에서 반복하고 각 package page에 public visibility가 표시되는지 확인합니다.
+
+GitHub 공식 [Visibility 설정
+절차](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account)는
+이 설정과 public package를 다시 private으로 바꿀 수 없다는 점을 설명합니다. 연결된 repository의
+상속 permission 때문에 세부 설정이 보이지 않으면 같은 공식 문서에 따라 상속 permission을 먼저
+해제합니다. 이 수동 전환은 되돌릴 수 없으므로 release workflow가 자동으로 수행하지 않습니다.
+Public pull 권한은 workflow의 제한된 `packages: write` 게시 권한을 바꾸지 않습니다.
+
+Visibility를 바꾼 뒤 registry credential 없이 `release.json` artifact의 고정 identity를 pull합니다.
 
 ```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
 docker pull ghcr.io/leeyh0216/mystack-proxy@sha256:FULL_INDEX_DIGEST
 ```
 
-Local private pull에는 `read:packages`만 가진 classic PAT를 사용하고 account password는 사용하지
-않습니다.
+GitHub [Package 권한 안내](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)는
+public container package의 익명 접근을 설명합니다. 이 pull에서 permission 오류가 나면 visibility
+전환이 끝나지 않았거나 identity가 잘못된 것입니다. Consumer token으로 release 정책 오류를
+숨기지 마세요.
 
 <!-- section: vulnerability -->
 ## 취약점 결과와 rollback 의미
@@ -126,7 +142,8 @@ identity입니다.
 | `registry.index.verify.failed` | Architecture 누락 | Dockerfile base manifest 또는 `platforms` 설정 |
 | Trivy timeout | Image/DB download가 제한 초과 | Release config의 `scan.timeout` |
 | `registry.scan.evaluate.failed` | 설정된 fixed 취약점 존재 | Base/runtime pin 보완 후 새 version |
-| digest mismatch/pull failure | 게시 identity 또는 token access 불일치 | Build output, package access, consumer digest |
+| 익명 pull 거부 | 하나 이상의 package가 public이 아님 | 1회성 visibility 절차 완료 |
+| digest mismatch/pull failure | 게시 identity 불일치 | Build output, package visibility, consumer digest |
 
 Boundary event는 `registry.*.before`, `.after`, `.failed`를 사용하며 credential, image layer, 전체
 environment 값은 기록하지 않습니다.

@@ -11,8 +11,10 @@ from pathlib import Path
 import pytest
 
 from scripts.check_ghcr_compose import (
+    PUBLIC_PACKAGE_SOURCE,
     ImageComposeContractError,
     ImageComposePolicy,
+    PublicImageDocumentationPolicy,
     load_compose,
 )
 
@@ -44,3 +46,32 @@ def test_policy_rejects_mutable_or_development_tags(tag: str) -> None:
 
     with pytest.raises(ImageComposeContractError, match="explicit GHCR tag|forbidden"):
         ImageComposePolicy().validate(document)
+
+
+def test_user_docs_require_anonymous_public_image_onboarding() -> None:
+    documents = {
+        ROOT / "README.md": (ROOT / "README.md").read_text(encoding="utf-8"),
+        ROOT / "README.ko.md": (ROOT / "README.ko.md").read_text(encoding="utf-8"),
+        ROOT / "docs/getting-started.md": (ROOT / "docs/getting-started.md").read_text(
+            encoding="utf-8"
+        ),
+        ROOT / "docs/getting-started.ko.md": (ROOT / "docs/getting-started.ko.md").read_text(
+            encoding="utf-8"
+        ),
+    }
+
+    report = PublicImageDocumentationPolicy().validate(documents)
+
+    assert report["visibility"] == "public"
+    assert report["consumer_registry_credentials"] == 0
+
+
+@pytest.mark.parametrize("forbidden", ("docker login ghcr.io", "read:packages", "CR_PAT"))
+def test_public_image_docs_reject_consumer_registry_credentials(forbidden: str) -> None:
+    documents = {
+        Path("README.md"): f"Pull anonymously. {PUBLIC_PACKAGE_SOURCE}\n{forbidden}\n",
+        Path("README.ko.md"): f"익명으로 pull합니다. {PUBLIC_PACKAGE_SOURCE}\n",
+    }
+
+    with pytest.raises(ImageComposeContractError, match="onboarding policy"):
+        PublicImageDocumentationPolicy().validate(documents)

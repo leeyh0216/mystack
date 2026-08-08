@@ -24,9 +24,10 @@ configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoi
 <!-- section: compose -->
 ## Start with Docker Compose
 
-Install Docker Engine with Compose and authenticate GitHub CLI for access to the private repository.
-No source clone, Python environment, Java installation, or local image build is needed. Pick a tag
-that exists for all three `mystack-*` packages; `latest` is intentionally unavailable.
+Install Docker Engine with Compose and authenticate GitHub CLI only for access to the private
+repository's Compose file. No source clone, Python environment, Java installation, local image
+build, registry token, or registry login is needed. The public images are pulled anonymously. Pick a
+tag that exists for all three `mystack-*` packages; `latest` is intentionally unavailable.
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
@@ -36,19 +37,16 @@ gh api -H "Accept: application/vnd.github.raw+json" \
   > compose.ghcr.yaml
 printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
 
-export CR_PAT=YOUR_CLASSIC_PAT_WITH_READ_PACKAGES
-echo "$CR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-unset CR_PAT
-
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull
 docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-GitHub's [Container registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
-requires a classic PAT with `read:packages` for a private local pull. `gh auth` separately authorizes
-the one-file download from the private repository. Never save either token in `.env`.
+GitHub's [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)
+states that public container packages can be pulled anonymously. `gh auth` separately authorizes the
+one-file download from the private repository; it is not used to pull the images. Never save that
+repository credential in `.env`.
 
 The image-only Compose file contains no `build` key. It requires an explicit tag through Compose's
 [required interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
@@ -197,8 +195,8 @@ docker compose -f compose.ghcr.yaml down                  # remove containers, p
 docker compose -f compose.ghcr.yaml down --volumes        # permanently remove emulator state
 ```
 
-The final command deletes EMR, Glue, and LocalStack data. On a shared machine, `docker logout ghcr.io`
-also removes the saved GHCR login and can affect other private package pulls.
+The final command deletes EMR, Glue, and LocalStack data. Mystack's public images do not add or change
+saved Docker registry credentials.
 
 <!-- section: verify -->
 ## Verify and troubleshoot
@@ -212,8 +210,8 @@ curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
-- `unauthorized` or `denied`: confirm package access, use a classic PAT with `read:packages`, then
-  repeat `docker login ghcr.io`.
+- `unauthorized` or `denied`: verify that the package owner made all three packages public and that
+  the image name is exact. Do not add a consumer token as a workaround.
 - `manifest unknown`: the selected tag must exist on all three packages; there is no `latest` tag.
 - `connection refused`: inspect Proxy and dependency health with `docker compose ps`.
 - Bind-mount permission error: inspect Docker Desktop file-sharing permission and absolute paths.

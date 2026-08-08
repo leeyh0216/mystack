@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "registry": "ghcr.io",
+  "consumer_visibility": "public",
   "platforms": [
     "linux/amd64",
     "linux/arm64"
@@ -38,6 +39,8 @@
   },
   "official_sources": [
     "https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry",
+    "https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages",
+    "https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility",
     "https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images",
     "https://github.com/opencontainers/image-spec/blob/main/image-index.md",
     "https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/"

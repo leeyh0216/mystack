@@ -121,12 +121,21 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
     report = check_config(config, ROOT)
 
     assert report["registry"] == "ghcr.io"
+    assert report["consumer_visibility"] == "public"
     assert report["components"] == ["proxy", "emr", "glue"]
     assert all((ROOT / item["dockerfile"]).is_file() for item in config["components"])
     serialized = json.dumps(config)
     assert "docs.github.com" in serialized
     assert "opencontainers/image-spec" in serialized
     assert config["preflight_timeout_minutes"] == 60
+
+
+def test_release_config_rejects_non_public_consumer_visibility() -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    config["consumer_visibility"] = "private"
+
+    with pytest.raises(ReleaseContractError, match="consumer_visibility"):
+        check_config(config, ROOT)
 
 
 def _write_complete_preflight(

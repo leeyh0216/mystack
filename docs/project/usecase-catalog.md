@@ -189,15 +189,18 @@
 - Confidence: High
 
 <!-- section: uc-011 -->
-## UC-011: Publish and verify private multi-platform images
+## UC-011: Publish and verify public multi-platform images
 
 - Purpose/actor/trigger: maintainer pushes a semantic tag or manually dispatches GHCR publication.
 - Input: component/version plus file-configured packages, Dockerfiles, platforms, Trivy version/policy and
   explicit timeouts.
-- Output: private GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index and scan/release artifacts.
+- Output: anonymously pullable public GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index and
+  scan/release artifacts.
 - Stored/changed data: GHCR packages and GitHub workflow artifacts.
-- Side effects: token login, image build/push/pull, scanner DB/image downloads.
-- Preconditions/rules: ephemeral `GITHUB_TOKEN`, new tag, amd64+arm64 index; never `latest`.
+- Side effects: publisher token login, image build/push/pull, scanner DB/image downloads, and the
+  one-time manual package visibility transition.
+- Preconditions/rules: ephemeral publisher `GITHUB_TOKEN`, public consumer visibility, new tag,
+  amd64+arm64 index; never `latest`.
 - Failures: permission/tag collision, build/push, platform verification, timeout or vulnerability policy.
 - Observability: registry before/after/failure events and uploaded evidence.
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/.github/workflows/container-publish.yml:1`,

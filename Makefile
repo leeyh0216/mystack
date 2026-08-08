@@ -45,7 +45,7 @@ devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycl
 devcontainer-verify-images: ## Compare Dev Container image tags with locked registry digests.
 	@uv run python scripts/check_devcontainer.py --verify-images
 
-ghcr-compose-check: ## Prove the normal user Compose path has images only and no build context.
+ghcr-compose-check: ## Prove image-only Compose and anonymous public-image onboarding policy.
 	@uv run python scripts/check_ghcr_compose.py
 	@MYSTACK_IMAGE_TAG="$${MYSTACK_IMAGE_TAG:-v0.0.0}" \
 	  docker compose -f compose.ghcr.yaml config --quiet

@@ -31,6 +31,7 @@ CONFIG_FIELDS = frozenset(
     {
         "schema_version",
         "registry",
+        "consumer_visibility",
         "platforms",
         "components",
         "scan",
@@ -79,6 +80,7 @@ def load_config(path: Path) -> dict[str, Any]:
     emit(
         "registry.config.read.after",
         registry=config.get("registry"),
+        consumer_visibility=config.get("consumer_visibility"),
         components=len(components),
         platforms=config.get("platforms", []),
     )
@@ -506,6 +508,8 @@ def check_config(config: dict[str, Any], root: Path) -> dict[str, Any]:
     errors: list[str] = []
     if not re.fullmatch(r"[a-z0-9.-]+(?::[0-9]+)?", config.get("registry", "")):
         errors.append(f"invalid OCI registry host: {config.get('registry')!r}")
+    if config.get("consumer_visibility") != "public":
+        errors.append("consumer_visibility must be 'public' for anonymous image pulls")
     for component in config["components"]:
         if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", component["package"]):
             errors.append(f"invalid package name: {component['package']!r}")
@@ -532,6 +536,7 @@ def check_config(config: dict[str, Any], root: Path) -> dict[str, Any]:
     return {
         "schema_version": config["schema_version"],
         "registry": config["registry"],
+        "consumer_visibility": config["consumer_visibility"],
         "components": [component["name"] for component in config["components"]],
         "platforms": config["platforms"],
     }

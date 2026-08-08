@@ -28,11 +28,11 @@ for exact boundaries.
 <!-- section: quick-start -->
 ## Quick start
 
-The normal path pulls the private published images; it does not clone or build this repository.
-Install Docker Engine with Compose and authenticate GitHub CLI for this private repository. Choose
-an existing semantic tag from the package/release page. GitHub requires a classic personal access
-token with only `read:packages` for private GHCR pulls; see the official [Container registry
-guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+The normal path anonymously pulls the public published images; it does not clone or build this
+repository. Install Docker Engine with Compose and authenticate GitHub CLI only to download the
+Compose file from this private repository. Choose an existing semantic tag from the package/release
+page. Public GHCR packages require no registry token or registry login, as documented in GitHub's
+[package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages).
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
@@ -40,10 +40,6 @@ mkdir mystack-runtime && cd mystack-runtime
 gh api -H "Accept: application/vnd.github.raw+json" \
   "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
   > compose.ghcr.yaml
-
-export CR_PAT=YOUR_CLASSIC_PAT_WITH_READ_PACKAGES
-echo "$CR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-unset CR_PAT
 
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull

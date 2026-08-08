@@ -61,7 +61,7 @@ public-Proxy contract, and E2E in the same issue rather than changing only a con
 
 - Boundary logs, secret redaction, and thread/task stacks: [observability guide](observability.md)
 - Resource/log UI and management API: [console guide](console.md)
-- Private GHCR multi-platform builds, tags, SBOM, provenance, and scans: [container release](container-release.md)
+- Public GHCR multi-platform builds, visibility, tags, SBOM, provenance, and scans: [container release](container-release.md)
 
 <!-- section: workflow -->
 ## Issue-sized workflow

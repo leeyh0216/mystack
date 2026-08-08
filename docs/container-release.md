@@ -3,13 +3,15 @@
 
 [한국어](container-release.ko.md) | [English](container-release.md)
 
-# Private GHCR image publication
+# Public GHCR image publication
 
-Mystack publishes Proxy, EMR, and Glue as private multi-platform OCI images in GitHub Container
-Registry. Publication needs no AWS/GCP account, cloud role, personal access token, or repository
-secret. GitHub's official [Container registry documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
-supports `GITHUB_TOKEN` for a package associated with its workflow repository and makes a newly
-published package private by default.
+Mystack publishes Proxy, EMR, and Glue as public multi-platform OCI images in GitHub Container
+Registry so consumers can pull them anonymously. Publication needs no AWS/GCP account, cloud role,
+personal access token, or repository secret. GitHub's official [Container registry
+documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+supports `GITHUB_TOKEN` for a package associated with its workflow repository. A newly published
+package starts private, so a maintainer performs the documented one-time visibility change after
+each package first exists.
 
 <!-- section: images -->
 ## Images and ownership
@@ -37,6 +39,8 @@ No registry credential is logged or stored.
 ## Publication contract
 
 - A `vMAJOR.MINOR.PATCH` tag publishes all three components.
+- `consumer_visibility` in the release configuration is `public`; normal pulls must not depend on a
+  consumer credential.
 - A manual dispatch can publish one component or all. Blank version input generates a unique
   `manual-RUN_ID-ATTEMPT` tag.
 - `latest` is never published. Production and repeatable development should pull the reported digest.
@@ -85,19 +89,32 @@ gh workflow run release.yml \
   -f version=
 ```
 
-The first successful workflow creates private packages and links them to this repository. Package
-visibility and repository access can later be changed in GitHub package settings. A consumer of a
-private package needs `read:packages`, or a repository `GITHUB_TOKEN` to which package read access was
-granted.
+The first successful workflow creates private packages and links them to this repository. For each
+of `mystack-proxy`, `mystack-emr`, and `mystack-glue`, a package administrator must then:
 
-Pull a fixed image identity from the `release.json` artifact:
+1. Open the package page from the account's **Packages** page and select **Package settings**.
+2. In **Danger Zone**, select **Change visibility**, choose **Public**, and enter the package name to
+   confirm.
+3. Repeat for all three packages and verify each package page displays public visibility.
+
+GitHub's official [visibility instructions](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account)
+document these controls and warn that a public package cannot be made private again. If a linked
+repository's inherited permissions hide granular controls, follow the same official page to remove
+inherited permissions first. This manual, irreversible transition is intentionally not performed by
+the release workflow. Public pull access does not change the workflow's narrowly scoped
+`packages: write` publication permission.
+
+After the visibility change, pull a fixed image identity from the `release.json` artifact without a
+registry credential:
 
 ```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u USERNAME --password-stdin
 docker pull ghcr.io/leeyh0216/mystack-proxy@sha256:FULL_INDEX_DIGEST
 ```
 
-Use a classic PAT with only `read:packages` for local private pulls. Do not use an account password.
+GitHub's [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)
+states that public container packages allow anonymous access. A permission error on this pull means
+the visibility transition is incomplete or the identity is wrong; do not add a consumer token to
+mask that release-policy failure.
 
 <!-- section: vulnerability -->
 ## Vulnerability result and rollback semantics
@@ -123,7 +140,8 @@ Rollback does not require a registry mutation: change the consumer back to an ea
 | `registry.index.verify.failed` | An architecture disappeared | Dockerfile base manifest or `platforms` config |
 | Trivy timeout | Image/DB download exceeded the bound | `scan.timeout` in release config |
 | `registry.scan.evaluate.failed` | Configured fixed vulnerability exists | Base/runtime pins, then a new version |
-| digest mismatch/pull failure | Published identity or token access differs | Build output, package access, consumer digest |
+| anonymous pull denied | One or more packages are not public | Complete the one-time visibility procedure |
+| digest mismatch/pull failure | Published identity differs | Build output, package visibility, consumer digest |
 
 Boundary events use `registry.*.before`, `.after`, and `.failed`; credentials, image layers, and full
 environment values are never logged.

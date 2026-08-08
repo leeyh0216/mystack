@@ -25,9 +25,10 @@ host 정보를 보고 EMR, Glue, LocalStack으로 전달합니다. AWS SDK의 en
 <!-- section: compose -->
 ## Docker Compose로 시작하기
 
-Docker Engine과 Compose를 설치하고 private repository 접근을 위해 GitHub CLI를 인증합니다.
-Source clone, Python 환경, Java 설치, local image build는 필요하지 않습니다. 세 `mystack-*`
-package에 모두 존재하는 tag를 선택하세요. `latest`는 의도적으로 제공하지 않습니다.
+Docker Engine과 Compose를 설치하고 private repository의 Compose file을 받을 때만 GitHub CLI를
+인증합니다. Source clone, Python 환경, Java 설치, local image build, registry token, registry
+로그인은 필요하지 않습니다. Public image는 익명으로 pull합니다. 세 `mystack-*` package에 모두
+존재하는 tag를 선택하세요. `latest`는 의도적으로 제공하지 않습니다.
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
@@ -37,19 +38,16 @@ gh api -H "Accept: application/vnd.github.raw+json" \
   > compose.ghcr.yaml
 printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
 
-export CR_PAT=READ_PACKAGES_권한을_가진_CLASSIC_PAT
-echo "$CR_PAT" | docker login ghcr.io -u GITHUB_사용자명 --password-stdin
-unset CR_PAT
-
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull
 docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-GitHub [Container registry 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)에
-따라 private local pull에는 `read:packages` 권한의 classic PAT가 필요합니다. `gh auth`는 private
-repository에서 file 하나를 받는 권한을 별도로 제공합니다. 어떤 token도 `.env`에 저장하지 마세요.
+GitHub [Package 권한 안내](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)에
+따르면 public container package는 익명으로 pull할 수 있습니다. `gh auth`는 private repository에서
+file 하나를 받는 권한만 별도로 제공하며 image pull에는 사용하지 않습니다. 해당 repository
+credential을 `.env`에 저장하지 마세요.
 
 Image 전용 Compose file에는 `build` key가 없습니다. Compose의 [필수 변수
 치환](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)으로 명시적
@@ -201,8 +199,8 @@ docker compose -f compose.ghcr.yaml down                  # container 제거, na
 docker compose -f compose.ghcr.yaml down --volumes        # emulator state 영구 제거
 ```
 
-마지막 명령은 EMR, Glue, LocalStack data를 삭제합니다. 공유 장비에서 `docker logout ghcr.io`를
-실행하면 저장한 GHCR login이 사라져 다른 private package pull에도 영향을 줄 수 있습니다.
+마지막 명령은 EMR, Glue, LocalStack data를 삭제합니다. Mystack public image는 저장된 Docker
+registry credential을 추가하거나 변경하지 않습니다.
 
 <!-- section: verify -->
 ## 동작 확인과 문제 해결
@@ -216,8 +214,8 @@ curl --fail http://localhost:4566/_mystack/diagnostics/tasks
 open http://localhost:4566/_mystack/console
 ```
 
-- `unauthorized` 또는 `denied`: package access와 `read:packages` classic PAT를 확인한 뒤
-  `docker login ghcr.io`를 다시 실행하세요.
+- `unauthorized` 또는 `denied`: package 소유자가 세 package를 모두 public으로 전환했는지와 image
+  이름이 정확한지 확인하세요. Consumer token을 우회 방법으로 추가하지 마세요.
 - `manifest unknown`: 선택한 tag가 세 package에 모두 있어야 하며 `latest`는 없습니다.
 - `connection refused`: `docker compose ps`에서 Proxy와 dependency health를 확인하세요.
 - bind mount 권한 오류: Docker Desktop의 file sharing 권한과 절대 경로를 확인하세요.

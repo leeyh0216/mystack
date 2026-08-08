@@ -60,7 +60,7 @@ public-Proxy contract와 E2E를 같은 issue에서 갱신합니다.
 
 - Boundary log, secret redaction, thread/task stack: [관찰성 안내](observability.ko.md)
 - Resource/log UI와 관리 API: [Console 안내](console.ko.md)
-- Private GHCR multi-platform build, tag, SBOM, provenance와 scan: [Container release](container-release.ko.md)
+- Public GHCR multi-platform build, visibility, tag, SBOM, provenance와 scan: [Container release](container-release.ko.md)
 
 <!-- section: workflow -->
 ## Issue 단위 작업 흐름

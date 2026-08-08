@@ -28,11 +28,11 @@ Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. “�
 <!-- section: quick-start -->
 ## 빠른 시작
 
-일반 사용 경로는 private 게시 image를 pull하며 repository를 clone하거나 build하지 않습니다.
-Docker Engine과 Compose를 설치하고 private repository에 접근할 GitHub CLI 인증을 준비합니다.
-Package/release page에서 실제 semantic tag를 선택하세요. Private GHCR pull에는
-`read:packages`만 가진 classic personal access token이 필요합니다. 공식 [Container registry
-안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)를
+일반적인 실행 경로는 public 게시 image를 익명으로 pull하며 repository를 clone하거나 build하지
+않습니다. Docker Engine과 Compose를 설치하고, 이 private repository에서 Compose file을 받을
+때만 GitHub CLI를 인증하세요. Package/release page에서 실제 semantic tag를 선택합니다. Public
+GHCR package는 registry token이나 registry 로그인이 필요하지 않습니다. GitHub 공식 [Package
+권한 안내](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)를
 참고하세요.
 
 ```bash
@@ -41,10 +41,6 @@ mkdir mystack-runtime && cd mystack-runtime
 gh api -H "Accept: application/vnd.github.raw+json" \
   "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
   > compose.ghcr.yaml
-
-export CR_PAT=READ_PACKAGES_권한을_가진_CLASSIC_PAT
-echo "$CR_PAT" | docker login ghcr.io -u GITHUB_사용자명 --password-stdin
-unset CR_PAT
 
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull

@@ -13,7 +13,7 @@
 | `ci.yml` | push, pull request, manual | Python 3.11/3.12 contracts, generated required-case matrix, source-free GHCR Compose validation, and an actual Dev Container build with the frozen feature lock |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | One isolated Docker job per explicit required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case, plus Chromium console accessibility E2E |
-| `release.yml` → reusable `container-publish.yml` | version tag, manual | Required validation and local per-platform scans, aggregate authorization, then private GHCR publish with SBOM/provenance and OCI evidence |
+| `release.yml` → reusable `container-publish.yml` | version tag, manual | Required validation and local per-platform scans, aggregate authorization, then public-consumption GHCR publish with SBOM/provenance and OCI evidence |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 Actions reads only the `include` entries compiled into
@@ -47,10 +47,14 @@ immutable multi-architecture digests rather than mutable tags.
 <!-- section: publication -->
 ## GHCR publication
 
-Follow the complete [private GHCR image runbook](container-release.md). The publication job uses the
+Follow the complete [public GHCR image procedure](container-release.md). The publication job uses the
 repository's ephemeral `GITHUB_TOKEN` with `packages: write`; there are no AWS/GCP credentials or
 registry secrets. GitHub documents this authentication and automatic repository/package association
 in the official [Container registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
+
+The workflow creates a new package as private; an administrator then makes it public once by the
+official visibility procedure. Consumers pull the resulting public images anonymously. Publication
+authorization and consumption visibility are separate controls.
 
 Version tags are append-only by workflow policy and `latest` is intentionally absent. Consumers pin
 the verified OCI index digest. Rollback selects a prior verified digest and does not mutate registry

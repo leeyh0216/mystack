@@ -13,7 +13,7 @@
 | `ci.yml` | push, PR, manual | Python 3.11/3.12 계약, 생성된 required case matrix, source-free GHCR Compose 검증과 frozen feature lock을 사용한 실제 Dev Container build |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | 명시적 required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case별 독립 Docker job과 Chromium console 접근성 E2E |
-| `release.yml` → reusable `container-publish.yml` | version tag, manual | required 검증과 local platform별 scan, aggregate authorization 뒤 private GHCR 게시와 SBOM/provenance·OCI 근거 |
+| `release.yml` → reusable `container-publish.yml` | version tag, manual | required 검증과 local platform별 scan, aggregate authorization 뒤 public 소비용 GHCR 게시와 SBOM/provenance·OCI 근거 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
 Actions는 `contracts/compatibility-matrix.generated.json`에 생성된 `include` entry만 읽으며
@@ -46,11 +46,15 @@ digest를 사용합니다.
 <!-- section: publication -->
 ## GHCR 게시
 
-전체 [비공개 GHCR 이미지 운영 절차](container-release.ko.md)를 따릅니다. 게시 job은 repository의
+전체 [Public GHCR 이미지 운영 절차](container-release.ko.md)를 따릅니다. 게시 job은 repository의
 일회성 `GITHUB_TOKEN`과 `packages: write`를 사용하며 AWS/GCP credential이나 registry secret이
 없습니다. GitHub는 이 인증과 repository/package 자동 연결을 공식
 [Container registry 안내](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)에
 문서화합니다.
+
+Workflow가 새 package를 처음 만들면 private이고 관리자가 공식 visibility 절차로 한 번 public으로
+전환합니다. Consumer는 그 public image를 익명으로 pull합니다. 게시 authorization과 소비
+visibility는 서로 다른 제어입니다.
 
 Version tag는 workflow 정책상 append-only이고 `latest`는 의도적으로 없습니다. Consumer는
 검증된 OCI index digest를 고정합니다. Rollback은 과거의 검증된 digest를 선택하며 registry
