@@ -18,6 +18,7 @@ JSON management 경계만 사용합니다. 시각 체계는
 | --- | --- | --- |
 | `GET /_mystack/components/{component}/resources` | `GET /_mystack/management/resources` | Emulator/호환 상태와 resource tree |
 | `GET /_mystack/components/emr/logs?cluster_id=...&step_id=...` | `GET /_mystack/management/logs` | 설정 크기만큼의 Step stdout/stderr tail |
+| `GET /_mystack/components/emr/log-stream?...` | 반복 `GET /_mystack/management/logs/chunk` | 재연결 가능한 stdout/stderr SSE stream |
 | `GET /_mystack/components/{component}/diagnostics/threads` | `GET /_mystack/diagnostics/threads` | 실행 중 Python thread stack |
 | `GET /_mystack/components/{component}/diagnostics/tasks` | `GET /_mystack/diagnostics/tasks` | 실행 중 asyncio task stack |
 
@@ -57,8 +58,13 @@ partition key, partition, table parameter, storage location, version metadata, l
 합니다. Glue Job, JobRun, Crawler는 범위에 포함하지 않습니다.
 
 Console은 선택한 service를 갱신할 때 선택된 cluster, Step, database, table을 유지합니다.
-주기는 `management.console.refresh_interval_seconds`이며 최소 0.5초입니다. 현재 release는
-polling을 사용하며 resumable streaming은 별도 이슈에서 다룹니다.
+Resource polling은 최소 0.5초인 `management.console.refresh_interval_seconds`를 사용합니다.
+Step output은 최대 크기가 정해진 byte offset read 위에서 HTML
+[Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html)을
+사용합니다. **Pause follow**는 offset을 보존한 채 network read를 멈추고 **Resume follow**는 그
+offset부터 재연결합니다. **Download**는 browser에 현재 남은 stdout/stderr를 내보냅니다. Proxy는
+한 SSE 연결을 `log_stream_timeout_seconds`로 제한하고 browser가 자동 재연결합니다.
+`log_buffer_bytes`는 browser tab의 무제한 memory 증가를 막습니다.
 
 EMR은 cluster/Step lifecycle 상세, tag, release, application, bootstrap 요약, failure detail,
 log tail을 제공합니다. Glue는 설정 catalog의 database/table/partition tree와 Hive/Iceberg에
@@ -69,6 +75,11 @@ EMR Step을 선택하면 local stdout/stderr와 versioned S3 LogUri publication 
 표시합니다. Record는 pending, skipped, published, failed, unreadable 상태를 구분하고 성공 시
 Step 및 synthetic local-driver object key 전체를 보여 줍니다. `containers/`를 YARN output으로
 해석하기 전에 [EMR log 배치](protocols/emr-log-layout.ko.md)를 확인하세요.
+Step 실행 중 EMR이 재시작되면 Console은 durable execution journal에서 terminal **recovered
+logs** projection을 추가하고 끝나지 않은 S3 게시를 다시 시도합니다. 이 projection은
+process-local boto3 cluster를 재생성하지 않습니다. 따라서 이전 ID의 `DescribeCluster`는 계속
+modeled not-found error를 반환합니다. Retention은 terminal이면서 publication 상태가
+`published` 또는 `skipped`인 record만 지우며 upload 실패 record는 복구를 위해 남깁니다.
 
 각 service management adapter는 자기 Application/Domain read model을 import해 JSON으로
 변환할 수 있습니다. Proxy와 UI는 이 JSON 계약만 압니다. 따라서 새 emulator는 backend
@@ -97,7 +108,8 @@ Bearer token은 Mystack management read를 보호하지만 emulated AWS endpoint
 Skip link, 명시적 form label, polite live status, 이름 있는 control, responsive layout, 보이는
 keyboard focus, Left/Right/Home/End를 지원하는 WAI-ARIA tab을 제공합니다. 구현은
 [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)을 따릅니다. Playwright
-E2E는 browser에서 cluster를 생성·종료하고, Step 제출·추적·취소와 log publication을 확인하며,
+E2E는 browser에서 cluster를 생성·종료하고, Step 제출·추적·취소 전 live output 확인,
+pause/resume/download와 log publication을 검증하며,
 복합 Glue schema와 partition을 탐색합니다. 또한 label, role, keyboard 이동, 진단, browser
 console error를 검증합니다. CI는 Chromium을 설치해 필수 실행하며 local은 Chromium이 없을
 때만 skip합니다.

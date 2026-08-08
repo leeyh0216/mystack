@@ -46,6 +46,62 @@ export class MystackApi {
     return this._json(`/_mystack/components/emr/logs?${query}`, {management: true});
   }
 
+  async streamLogs(clusterId, stepId, {
+    stdoutOffset = 0,
+    stderrOffset = 0,
+    signal,
+    onEvent,
+  } = {}) {
+    const query = new URLSearchParams({
+      cluster_id: clusterId,
+      step_id: stepId,
+      stdout_offset: String(stdoutOffset),
+      stderr_offset: String(stderrOffset),
+    });
+    const headers = {Accept: "text/event-stream"};
+    const token = this._tokenProvider();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(`/_mystack/components/emr/log-stream?${query}`, {
+      headers,
+      signal,
+    });
+    if (!response.ok || !response.body) {
+      throw new ApiError(`EMR log stream returned HTTP ${response.status}`, {
+        code: `HTTP${response.status}`,
+        status: response.status,
+      });
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let lastEventId = `${stdoutOffset}:${stderrOffset}`;
+    let complete = false;
+    while (true) {
+      const {done, value} = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), {stream: !done}).replaceAll("\r\n", "\n");
+      let boundary;
+      while ((boundary = buffer.indexOf("\n\n")) >= 0) {
+        const block = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        const event = parseSseBlock(block);
+        if (!event) continue;
+        if (event.id) lastEventId = event.id;
+        if (event.type === "error") {
+          throw new ApiError(event.data?.detail || "EMR log stream failed", {
+            code: "LogStreamError",
+            body: event.data,
+          });
+        }
+        if (event.type === "logs") {
+          complete = Boolean(event.data?.complete);
+          onEvent?.(event.data, lastEventId);
+        }
+      }
+      if (done) break;
+    }
+    return {lastEventId, complete};
+  }
+
   async diagnostics(component, kind) {
     const root = component === "proxy"
       ? `/_mystack/diagnostics/${kind}`
@@ -103,6 +159,24 @@ export class MystackApi {
       });
     }
     return body;
+  }
+}
+
+function parseSseBlock(block) {
+  if (!block || block.startsWith(":")) return null;
+  let type = "message";
+  let id = null;
+  const data = [];
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) type = line.slice(6).trimStart();
+    else if (line.startsWith("id:")) id = line.slice(3).trimStart();
+    else if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+  }
+  if (!data.length) return null;
+  try {
+    return {type, id, data: JSON.parse(data.join("\n"))};
+  } catch {
+    throw new ApiError("EMR log stream returned invalid JSON", {code: "LogStreamProtocolError"});
   }
 }
 

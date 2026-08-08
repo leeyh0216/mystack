@@ -41,6 +41,16 @@ class SparkRuntimeSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class LogDeliverySettings:
+    live_chunk_bytes: int
+    retention_seconds: float
+    publication_max_attempts: int
+    publication_initial_backoff_seconds: float
+    publication_max_backoff_seconds: float
+    publication_attempt_timeout_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
 class EmrSettings:
     listen_host: str
     listen_port: int
@@ -51,6 +61,7 @@ class EmrSettings:
     terminate_grace_seconds: float
     shutdown_timeout_seconds: float
     output_tail_bytes: int
+    log_delivery: LogDeliverySettings
     startup_clusters_file: Path | None
     command_runner_jars: frozenset[str]
     account_id: str
@@ -67,6 +78,7 @@ class EmrSettings:
         localstack = require_mapping(loaded.document, "localstack")
         all_runtime_documents = require_mapping(loaded.document, "runtime_profiles")
         release_documents = require_mapping(emr, "release_profiles")
+        log_publication = require_mapping(emr, "log_publication")
 
         releases: dict[str, ReleaseProfile] = {}
         runtimes: dict[str, SparkRuntimeSettings] = {}
@@ -101,6 +113,18 @@ class EmrSettings:
                 terminate_grace_seconds=float(emr["terminate_grace_seconds"]),
                 shutdown_timeout_seconds=float(emr["shutdown_timeout_seconds"]),
                 output_tail_bytes=int(emr["output_tail_bytes"]),
+                log_delivery=LogDeliverySettings(
+                    live_chunk_bytes=int(emr["live_log_chunk_bytes"]),
+                    retention_seconds=float(emr["log_retention_seconds"]),
+                    publication_max_attempts=int(log_publication["max_attempts"]),
+                    publication_initial_backoff_seconds=float(
+                        log_publication["initial_backoff_seconds"]
+                    ),
+                    publication_max_backoff_seconds=float(log_publication["max_backoff_seconds"]),
+                    publication_attempt_timeout_seconds=float(
+                        log_publication["attempt_timeout_seconds"]
+                    ),
+                ),
                 startup_clusters_file=_optional_path(
                     emr["startup_clusters_file"],
                     configuration_source=Path(loaded.source),

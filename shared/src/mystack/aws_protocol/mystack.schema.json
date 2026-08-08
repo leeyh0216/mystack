@@ -35,9 +35,12 @@
         "console": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["refresh_interval_seconds"],
+          "required": ["refresh_interval_seconds", "log_stream_poll_interval_seconds", "log_stream_timeout_seconds", "log_buffer_bytes"],
           "properties": {
-            "refresh_interval_seconds": {"type": "number", "minimum": 0.5}
+            "refresh_interval_seconds": {"type": "number", "minimum": 0.5},
+            "log_stream_poll_interval_seconds": {"type": "number", "minimum": 0.1},
+            "log_stream_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+            "log_buffer_bytes": {"type": "integer", "minimum": 1024}
           }
         },
         "diagnostics": {
@@ -102,6 +105,9 @@
         "terminate_grace_seconds",
         "shutdown_timeout_seconds",
         "output_tail_bytes",
+        "live_log_chunk_bytes",
+        "log_retention_seconds",
+        "log_publication",
         "startup_clusters_file",
         "command_runner_jars",
         "api_page_size",
@@ -118,6 +124,19 @@
         "terminate_grace_seconds": {"$ref": "#/$defs/positive_number"},
         "shutdown_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "output_tail_bytes": {"type": "integer", "minimum": 1},
+        "live_log_chunk_bytes": {"type": "integer", "minimum": 1},
+        "log_retention_seconds": {"$ref": "#/$defs/positive_number"},
+        "log_publication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_attempts", "initial_backoff_seconds", "max_backoff_seconds", "attempt_timeout_seconds"],
+          "properties": {
+            "max_attempts": {"type": "integer", "minimum": 1},
+            "initial_backoff_seconds": {"type": "number", "minimum": 0},
+            "max_backoff_seconds": {"type": "number", "minimum": 0},
+            "attempt_timeout_seconds": {"$ref": "#/$defs/positive_number"}
+          }
+        },
         "startup_clusters_file": {
           "type": ["string", "null"],
           "minLength": 1,

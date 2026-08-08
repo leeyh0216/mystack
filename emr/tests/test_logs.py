@@ -18,14 +18,19 @@ from mystack.emr.adapters.outbound.logs import S3StepLogPublisher, StepLogPublic
 
 
 class _Objects:
-    def __init__(self, *, failure: Exception | None = None) -> None:
+    def __init__(
+        self, *, failure: Exception | None = None, failures_before_success: int = 0
+    ) -> None:
         self.values: dict[tuple[str, str], dict[str, Any]] = {}
         self.failure = failure
+        self.failures_before_success = failures_before_success
+        self.put_count = 0
         self.close_count = 0
 
     def put_object(self, **kwargs: Any) -> dict[str, str]:
-        if self.failure is not None:
-            raise self.failure
+        self.put_count += 1
+        if self.failure is not None or self.put_count <= self.failures_before_success:
+            raise self.failure or RuntimeError("transient object store failure")
         self.values[(kwargs["Bucket"], kwargs["Key"])] = kwargs
         return {"ETag": "test"}
 
@@ -40,6 +45,15 @@ def _settings() -> SimpleNamespace:
         access_key_id="test",
         secret_access_key="test",
         s3_path_style=True,
+    )
+
+
+def _policy(*, attempts: int = 1) -> SimpleNamespace:
+    return SimpleNamespace(
+        publication_max_attempts=attempts,
+        publication_initial_backoff_seconds=0,
+        publication_max_backoff_seconds=0,
+        publication_attempt_timeout_seconds=1,
     )
 
 
@@ -70,7 +84,7 @@ async def test_publishes_official_step_paths_and_synthetic_local_application_pat
     tmp_path: Path,
 ) -> None:
     objects = _Objects()
-    publisher = S3StepLogPublisher(_settings(), client=objects)
+    publisher = S3StepLogPublisher(_settings(), _policy(), client=objects)
 
     await publisher.publish(_request(tmp_path))
     await publisher.close()
@@ -101,7 +115,7 @@ async def test_publishes_official_step_paths_and_synthetic_local_application_pat
 @pytest.mark.asyncio
 async def test_missing_log_uri_skips_s3_mutation(tmp_path: Path) -> None:
     objects = _Objects()
-    publisher = S3StepLogPublisher(_settings(), client=objects)
+    publisher = S3StepLogPublisher(_settings(), _policy(), client=objects)
 
     await publisher.publish(_request(tmp_path, log_uri=None))
 
@@ -121,7 +135,7 @@ async def test_missing_log_uri_skips_s3_mutation(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_upload_failure_is_recorded_without_replacing_process_result(tmp_path: Path) -> None:
     objects = _Objects(failure=RuntimeError("object store unavailable"))
-    publisher = S3StepLogPublisher(_settings(), client=objects)
+    publisher = S3StepLogPublisher(_settings(), _policy(), client=objects)
 
     await publisher.publish(_request(tmp_path))
 
@@ -131,3 +145,18 @@ async def test_upload_failure_is_recorded_without_replacing_process_result(tmp_p
     assert publication["process_started"] is True
     assert publication["error_type"] == "RuntimeError"
     assert publication["published_keys"] == []
+
+
+@pytest.mark.asyncio
+async def test_transient_upload_failure_retries_deterministic_keys(tmp_path: Path) -> None:
+    objects = _Objects(failures_before_success=1)
+    publisher = S3StepLogPublisher(_settings(), _policy(attempts=2), client=objects)
+
+    await publisher.publish(_request(tmp_path))
+
+    publication = json.loads((tmp_path / "log-publication.json").read_text())
+    outbox = json.loads((tmp_path / "publication-request.json").read_text())
+    assert publication["status"] == "published"
+    assert publication["attempt"] == 2
+    assert outbox["status"] == "published"
+    assert outbox["attempt"] == 2

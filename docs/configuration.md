@@ -65,7 +65,7 @@ and is not required for image consumers.
 | Path | Responsibility |
 | --- | --- |
 | `logging` | Structured log level and format contract |
-| `management.console` | Browser Console automatic refresh interval |
+| `management.console` | Browser refresh, SSE polling/connection deadlines, and log buffer bound |
 | `management.diagnostics` | Enablement, bearer token, and maximum thread/task stack depth |
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
@@ -84,6 +84,10 @@ EMR or Glue workspace. It must be at least 0.5 seconds. The value is injected in
 Console at the composition boundary, so browser code has no environment-specific interval. This
 release uses the standard browser timer contract documented by
 [`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval).
+`log_stream_poll_interval_seconds` controls bounded EMR chunk polling inside one SSE connection,
+`log_stream_timeout_seconds` forces periodic reconnects, and `log_buffer_bytes` caps each browser
+stdout/stderr view. The protocol follows the HTML
+[Server-Sent Events specification](https://html.spec.whatwg.org/multipage/server-sent-events.html).
 
 `emr.shutdown_timeout_seconds` bounds service shutdown after scheduling has stopped. Within that
 deadline, EMR cancels and awaits owned driver tasks, terminates or kills bootstrap/Spark children
@@ -104,6 +108,10 @@ S3 log publication has no separate hard-coded bucket or prefix. Each cluster sup
 `RunJobFlow.LogUri`; the publisher reuses `localstack.endpoint_url`, region, credentials, and
 path-style setting. This keeps image deployments configurable and lets the same boto3 S3 route
 reach LocalStack. See the [exact log protocol](protocols/emr-log-layout.md).
+`emr.live_log_chunk_bytes` bounds each filesystem read. `emr.log_publication` configures retry
+attempts, exponential-backoff bounds, and an attempt timeout; deterministic S3 keys make retries
+idempotent. `emr.log_retention_seconds` applies only to terminal work directories whose publication
+is complete or skipped. Failed publications are intentionally retained.
 
 `emr.startup_clusters_file` is either `null` or a path to a separate schema-versioned document.
 Relative paths resolve beside the selected main configuration. The file uses official

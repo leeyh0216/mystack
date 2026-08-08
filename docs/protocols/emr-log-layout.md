@@ -73,12 +73,37 @@ one of these statuses:
 | `pending` | The management API has no record yet, normally because the Step is still running |
 | `unreadable` | The local record is malformed or cannot be read; the response includes a repair hint |
 
+<!-- section: recovery -->
+## Durable publication and restart recovery
+
+Before a Step prepares Spark, Mystack atomically writes `execution-journal.json`. Terminal process
+facts are committed there before S3 publication starts. `publication-request.json` is the durable
+outbox and records `pending`, `publishing`, `retrying`, `failed`, or `published`, including the
+attempt and deterministic object keys. Each `put_object` has a configured timeout; retries use
+configured bounded exponential backoff and overwrite the same keys, so a partial attempt is safe
+to repeat.
+
+At EMR startup, a `running` journal becomes `interrupted`. Any terminal journal with `LogUri` whose
+publication is not complete is replayed before new startup clusters are provisioned. The Console
+can explore these journal-backed logs even though the old in-memory boto3 cluster is intentionally
+not reconstructed. `emr.log_retention_seconds` removes only old terminal work directories with a
+`published` or `skipped` publication record; failed publication evidence is retained.
+
+Live reads do not follow files through an unbounded connection. The backend returns at most
+`emr.live_log_chunk_bytes` from separate stdout/stderr byte offsets. The Proxy maps repeated reads
+to standard `text/event-stream` events whose IDs are `<stdout-offset>:<stderr-offset>`. A browser
+can reconnect with `Last-Event-ID` or explicit offsets. This extension follows the
+[HTML Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html);
+it is not an Amazon EMR API.
+
 <!-- section: boundaries -->
 ## Implementation and repair boundaries
 
 - S3 layout, gzip payloads, and failure records: `mystack.emr.adapters.outbound.logs`
+- Execution journal, retention, and startup replay: `mystack.emr.adapters.outbound.journal`
 - Process capture and the publication call boundary: `mystack.emr.adapters.outbound.runtime`
 - Console/API projection: `mystack.emr.adapters.inbound.management`
+- SSE gateway: `mystack.proxy.log_stream`
 - Runtime client ownership and close order: `mystack.emr.runtime` and `mystack.emr.app`
 - boto3/LocalStack Docker proof: `tests/e2e/test_emr_spark.py`
 

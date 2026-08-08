@@ -30,6 +30,10 @@ EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 
 `emr.step_log_object.put.*`를 기록합니다. 실패 event는 cluster/Step, 안전한 bucket/key 정보,
 부분 게시 object 수와 `fix_hint`를 포함하며 local publication record는 management endpoint에서
 확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr-log-layout.ko.md)에 있습니다.
+Durability 경계는 `emr.step_journal.*`, `emr.step_journal.publication_recovery.*`를 기록하고 retry는
+상한이 있는 delay 정보가 포함된 `emr.step_logs.publish.retry`를 남깁니다. Live output 경계는
+`emr.management.log_chunk.*`, `proxy.emr_log_stream.*`에 offset을 기록하고 component schema가
+달라지면 수정 hint를 남깁니다. Output 내용 자체는 log에 기록하지 않습니다.
 
 미리 구성한 cluster는 전체 file 검증 전후에 `emr.startup_clusters.load.*`, plan 실행 전후에
 `emr.startup_clusters.provision.*`, application port 호출마다 `emr.startup_cluster.create.*`를

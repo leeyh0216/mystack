@@ -30,6 +30,9 @@ def settings(routes: tuple[ServiceRoute, ...] = ()) -> ProxySettings:
         listen_host="127.0.0.1",
         listen_port=8080,
         console_refresh_interval_seconds=2,
+        console_log_stream_poll_interval_seconds=0.1,
+        console_log_stream_timeout_seconds=10,
+        console_log_buffer_bytes=65536,
         config_source="test",
         config_fingerprint="test-fingerprint",
     )
@@ -262,6 +265,83 @@ def test_resource_and_log_management_are_forwarded_without_domain_coupling() -> 
         ("/_mystack/management/resources", ""),
         ("/_mystack/management/logs", "cluster_id=j-1&step_id=s-1"),
     ]
+
+
+def test_emr_log_stream_uses_sse_and_resumes_from_last_event_offsets() -> None:
+    observed: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        observed["query"] = request.url.query.decode()
+        observed["authorization"] = request.headers["authorization"]
+        return httpx.Response(
+            200,
+            json={
+                "stdout": "next line\n",
+                "stderr": "",
+                "stdout_next_offset": 20,
+                "stderr_next_offset": 7,
+                "step_state": "COMPLETED",
+                "log_publication": {"status": "published"},
+                "complete": True,
+            },
+        )
+
+    route = ServiceRoute(
+        name="emr",
+        backend_url="http://emr:8080",
+        target_prefixes=("ElasticMapReduce",),
+        signing_names=("elasticmapreduce",),
+        host_prefixes=("emr",),
+    )
+    async_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    with TestClient(
+        create_app(
+            settings((route,)),
+            client=async_client,
+            diagnostics_settings=_DIAGNOSTICS,
+        )
+    ) as client:
+        response = client.get(
+            "/_mystack/components/emr/log-stream",
+            params={"cluster_id": "j-1", "step_id": "s-1"},
+            headers={"Authorization": "Bearer token", "Last-Event-ID": "12:7"},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: logs" in response.text
+    assert "id: 20:7" in response.text
+    assert '"stdout":"next line\\n"' in response.text
+    assert observed == {
+        "query": ("cluster_id=j-1&step_id=s-1&stdout_offset=12&stderr_offset=7"),
+        "authorization": "Bearer token",
+    }
+
+
+def test_emr_log_stream_rejects_negative_offsets_before_backend_call() -> None:
+    route = ServiceRoute(
+        name="emr",
+        backend_url="http://emr:8080",
+        target_prefixes=("ElasticMapReduce",),
+        signing_names=("elasticmapreduce",),
+        host_prefixes=("emr",),
+    )
+    async_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda request: pytest.fail(str(request.url)))
+    )
+    with TestClient(
+        create_app(
+            settings((route,)),
+            client=async_client,
+            diagnostics_settings=_DIAGNOSTICS,
+        )
+    ) as client:
+        response = client.get(
+            "/_mystack/components/emr/log-stream",
+            params={"cluster_id": "j-1", "step_id": "s-1", "stdout_offset": -1},
+        )
+
+    assert response.status_code == 400
 
 
 def test_management_backend_failure_is_mapped_without_exposing_client_state() -> None:

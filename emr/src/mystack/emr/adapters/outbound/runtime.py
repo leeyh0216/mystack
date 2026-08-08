@@ -26,7 +26,7 @@ from mystack.aws_protocol.observability import log_event, payload_fingerprint
 from mystack.emr.application.ports import RuntimeResult
 from mystack.emr.domain import BootstrapAction, Cluster, Step
 
-from .logs import StepLogPublicationRequest, StepLogPublisher
+from .journal import StepExecutionJournal
 
 _LOGGER = logging.getLogger(__name__)
 _S3_SCHEMES = frozenset({"s3", "s3a", "s3n"})
@@ -519,16 +519,17 @@ class LocalSparkStepRunner:
         settings: EmrRuntimeConfiguration,
         artifacts: ArtifactResolver,
         executor: LocalProcessExecutor,
-        logs: StepLogPublisher,
+        journal: StepExecutionJournal,
     ) -> None:
         self._settings = settings
         self._executor = executor
         self._materializer = SparkSubmitArtifactMaterializer(artifacts)
-        self._logs = logs
+        self._journal = journal
 
     async def run(self, cluster: Cluster, step: Step) -> RuntimeResult:
         work_dir = self._settings.work_root / cluster.id / step.id
         try:
+            await self._journal.begin(cluster, step, work_dir)
             command = await self._command(cluster, step, work_dir)
             outcome = await self._executor.execute(
                 cluster_id=cluster.id,
@@ -553,7 +554,13 @@ class LocalSparkStepRunner:
                 exc_info=True,
             )
             result = RuntimeResult(False, reason=f"Unable to prepare Spark step: {error}")
-            await self._publish_logs(cluster, step, work_dir, result, None)
+            await self._complete_execution(
+                cluster,
+                step,
+                work_dir,
+                result,
+                process_started=False,
+            )
             return result
         result = RuntimeResult(
             outcome.exit_code == 0,
@@ -563,7 +570,13 @@ class LocalSparkStepRunner:
             ),
             log_file=str(outcome.stderr_file),
         )
-        await self._publish_logs(cluster, step, work_dir, result, outcome)
+        await self._complete_execution(
+            cluster,
+            step,
+            work_dir,
+            result,
+            process_started=True,
+        )
         return result
 
     async def cancel(self, cluster_id: str, step_id: str) -> None:
@@ -572,38 +585,33 @@ class LocalSparkStepRunner:
     async def cleanup(self, cluster_id: str) -> None:
         await self._executor.cancel_cluster(cluster_id)
 
-    async def _publish_logs(
+    async def _complete_execution(
         self,
         cluster: Cluster,
         step: Step,
         work_dir: Path,
         result: RuntimeResult,
-        outcome: _ProcessOutcome | None,
+        *,
+        process_started: bool,
     ) -> None:
         try:
-            await self._logs.publish(
-                StepLogPublicationRequest(
-                    cluster_id=cluster.id,
-                    step_id=step.id,
-                    log_uri=cluster.log_uri,
-                    work_dir=work_dir,
-                    process_started=outcome is not None,
-                    exit_code=result.exit_code,
-                    reason=result.reason,
-                    stdout_file=outcome.stdout_file if outcome is not None else None,
-                    stderr_file=outcome.stderr_file if outcome is not None else None,
-                )
+            await self._journal.complete(
+                cluster,
+                step,
+                work_dir,
+                result,
+                process_started=process_started,
             )
         except Exception:
             log_event(
                 _LOGGER,
                 logging.ERROR,
-                "emr.step_logs.publisher_boundary.failed",
+                "emr.step_execution.journal_boundary.failed",
                 cluster_id=cluster.id,
                 step_id=step.id,
                 fix_hint=(
-                    "Inspect the configured StepLogPublisher. Publication failures must not "
-                    "change the Spark RuntimeResult."
+                    "Inspect execution-journal.json and publication-request.json. Journal or "
+                    "publication failures must not change the Spark RuntimeResult."
                 ),
                 exc_info=True,
             )

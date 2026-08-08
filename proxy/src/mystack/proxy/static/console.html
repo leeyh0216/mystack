@@ -13,6 +13,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="mystack-refresh-interval-ms" content="__MYSTACK_REFRESH_INTERVAL_MS__">
+  <meta name="mystack-log-buffer-bytes" content="__MYSTACK_LOG_BUFFER_BYTES__">
   <title>Mystack Console</title>
   <link rel="stylesheet" href="/_mystack/assets/console/console.css">
   <script type="module" src="/_mystack/assets/console/console.js"></script>
@@ -137,7 +138,12 @@
                 <div id="logContent" hidden>
                   <div class="log-heading">
                     <div><h3 id="logStepName">Step logs</h3><p id="logStepIdentity" class="mono muted"></p></div>
-                    <button id="cancelStep" class="button danger" type="button">Cancel Step</button>
+                    <div class="log-actions">
+                      <span id="logFollowStatus" class="stream-status" role="status">Disconnected</span>
+                      <button id="toggleLogFollow" class="button secondary" type="button">Pause follow</button>
+                      <button id="downloadLogs" class="button secondary" type="button">Download</button>
+                      <button id="cancelStep" class="button danger" type="button">Cancel Step</button>
+                    </div>
                   </div>
                   <section><h4>S3 LogUri publication</h4><div id="logPublication" class="publication-card"></div></section>
                   <div class="log-grid">

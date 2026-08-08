@@ -17,12 +17,13 @@ _ASSETS = {
 }
 
 
-def console_response(*, refresh_interval_seconds: float) -> HTMLResponse:
+def console_response(*, refresh_interval_seconds: float, log_buffer_bytes: int) -> HTMLResponse:
     document = files("mystack.proxy").joinpath("static/console.html").read_text(encoding="utf-8")
     document = document.replace(
         "__MYSTACK_REFRESH_INTERVAL_MS__",
         str(round(refresh_interval_seconds * 1000)),
     )
+    document = document.replace("__MYSTACK_LOG_BUFFER_BYTES__", str(log_buffer_bytes))
     return HTMLResponse(document)
 
 

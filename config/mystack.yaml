@@ -11,6 +11,11 @@ management:
     # Polling complements explicit refresh; streaming log transport is configured separately.
     # Timer behavior: https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timers
     refresh_interval_seconds: 2
+    # Reconnect-safe SSE is produced by the Proxy from bounded EMR log chunks.
+    # Protocol: https://html.spec.whatwg.org/multipage/server-sent-events.html
+    log_stream_poll_interval_seconds: 0.5
+    log_stream_timeout_seconds: 300
+    log_buffer_bytes: 1048576
   diagnostics:
     enabled: true
     stack_limit: 100
@@ -55,6 +60,14 @@ emr:
   terminate_grace_seconds: 10
   shutdown_timeout_seconds: 30
   output_tail_bytes: 32768
+  live_log_chunk_bytes: 16384
+  # Local journals older than this are retained unless publication is complete.
+  log_retention_seconds: 604800
+  log_publication:
+    max_attempts: 3
+    initial_backoff_seconds: 0.5
+    max_backoff_seconds: 10
+    attempt_timeout_seconds: 60
   # Optional separate file; relative paths resolve beside this main configuration file.
   # Shape source: https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
   startup_clusters_file: null

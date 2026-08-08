@@ -15,6 +15,7 @@ Docker 애플리케이션입니다. 사용자는 AWS CLI, boto3와 기존 클라
 - 공식 wire protocol을 통한 AWS CLI와 AWS SDK 호환
 - Amazon EMR 클러스터, bootstrap action, Step 상태 전이 에뮬레이션
 - LocalStack S3와 연결된 실제 Spark 3.5.x local mode 실행
+- pause/resume/download, 재시작 복구, S3 게시를 지원하는 EMR Step stdout/stderr
 - 문서화된 검증·예외 동작을 포함한 Glue Data Catalog 호환
 - Spark 3.5.4, Hive 호환 타입, Iceberg 1.7.1 상호운용성
 - AWS SDK for pandas 3.17.0 기반 partitioned Parquet와 Glue Catalog 왕복
@@ -29,8 +30,8 @@ Glue Job, JobRun, Crawler는 명시적으로 범위에서 제외합니다. “�
 ## 빠른 시작
 
 일반적인 실행 경로는 public 게시 image를 익명으로 pull하며 repository를 clone하거나 build하지
-않습니다. Docker Engine과 Compose를 설치하고, 이 private repository에서 Compose file을 받을
-때만 GitHub CLI를 인증하세요. Package/release page에서 실제 semantic tag를 선택합니다. Public
+않습니다. Docker Engine과 Compose를 설치하고 image와 같은 public Git tag에서 Compose file을
+받으세요. Package/release page에서 실제 semantic tag를 선택합니다. Public
 GHCR package는 registry token이나 registry 로그인이 필요하지 않습니다. GitHub 공식 [Package
 권한 안내](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)를
 참고하세요.
@@ -38,9 +39,8 @@ GHCR package는 registry token이나 registry 로그인이 필요하지 않습�
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
 mkdir mystack-runtime && cd mystack-runtime
-gh api -H "Accept: application/vnd.github.raw+json" \
-  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
-  > compose.ghcr.yaml
+curl --fail --location --output compose.ghcr.yaml \
+  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"
 
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull
@@ -48,7 +48,8 @@ docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-`http://localhost:4566/_mystack/console`에서 EMR cluster 생성·운영, Step 제출·추적·log 확인,
+`http://localhost:4566/_mystack/console`에서 EMR cluster 생성·운영, Step 제출·추적, live log
+follow/pause/download,
 Glue database/table/schema/partition 탐색, route, thread stack, asyncio task 확인을 할 수
 있습니다. Docker Compose 조합, boto3와 AWS SDK for pandas 연결, upgrade, rollback,
 문제 해결과 정리는 [상세 사용 안내](docs/getting-started.ko.md)부터 읽어보세요. Source build는 일반

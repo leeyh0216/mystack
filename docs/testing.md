@@ -76,6 +76,11 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   configured environment-variable name. Playwright's official
   [auto-waiting behavior](https://playwright.dev/python/docs/actionability) remains bounded by that
   explicit deadline.
+- Restart the EMR Compose service while a long Step is running, then verify the recovered Console
+  projection, preserved stdout, modeled boto3 not-found behavior, and idempotently republished S3
+  archive. The Compose subprocess and every HTTP/SDK wait use the configured E2E timeout. Docker's
+  official [`compose restart` contract](https://docs.docker.com/reference/cli/docker/compose/restart/)
+  defines the injected lifecycle event.
 - The current Iceberg scenario covers create, append, read, and schema evolution. Partition and transaction scenarios remain target scope, using the [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
 <!-- section: reproducibility -->

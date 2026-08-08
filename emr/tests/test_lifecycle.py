@@ -58,6 +58,12 @@ class _CloseRecorder:
             raise RuntimeError("startup failed")
         return ()
 
+    async def recover(self) -> tuple[object, ...]:
+        self._events.append(f"recover:{self._name}")
+        if self._fail_start:
+            raise RuntimeError("startup failed")
+        return ()
+
 
 @pytest.mark.asyncio
 async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Path) -> None:
@@ -67,6 +73,7 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
         _executor=_CloseRecorder("executor", events),  # type: ignore[arg-type]
         _artifacts=_CloseRecorder("artifacts", events),  # type: ignore[arg-type]
         _logs=_CloseRecorder("logs", events),  # type: ignore[arg-type]
+        _recovery=_CloseRecorder("recovery", events),  # type: ignore[arg-type]
         _startup=_CloseRecorder("startup", events),  # type: ignore[arg-type]
         _settings=SimpleNamespace(work_root=tmp_path),  # type: ignore[arg-type]
     )
@@ -76,6 +83,7 @@ async def test_partial_startup_closes_every_owned_resource_in_order(tmp_path: Pa
     await runtime.close()
 
     assert events == [
+        "recover:recovery",
         "start:application",
         "close:application",
         "close:executor",
@@ -93,6 +101,7 @@ async def test_startup_provisioning_failure_closes_every_owned_resource(tmp_path
         _executor=_CloseRecorder("executor", events),  # type: ignore[arg-type]
         _artifacts=_CloseRecorder("artifacts", events),  # type: ignore[arg-type]
         _logs=_CloseRecorder("logs", events),  # type: ignore[arg-type]
+        _recovery=_CloseRecorder("recovery", events),  # type: ignore[arg-type]
         _startup=_CloseRecorder("startup", events, fail_start=True),  # type: ignore[arg-type]
         _settings=SimpleNamespace(work_root=tmp_path),  # type: ignore[arg-type]
     )
@@ -101,6 +110,7 @@ async def test_startup_provisioning_failure_closes_every_owned_resource(tmp_path
         await runtime.start()
 
     assert events == [
+        "recover:recovery",
         "start:application",
         "provision:startup",
         "close:application",

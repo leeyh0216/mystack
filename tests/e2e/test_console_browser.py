@@ -86,6 +86,18 @@ def test_console_service_workflows_and_accessibility(
             )
             expect(page.get_by_role("heading", name="S3 LogUri publication")).to_be_visible()
             expect(page.locator("#logPublication")).to_contain_text("pending")
+            expect(page.locator("#stdout")).to_contain_text(
+                "console-long-step-started",
+                timeout=e2e_settings.timeout_seconds * 1000,
+            )
+            expect(page.locator("#logFollowStatus")).to_contain_text("Following")
+            page.get_by_role("button", name="Pause follow", exact=True).click()
+            expect(page.locator("#logFollowStatus")).to_have_text("Paused")
+            page.get_by_role("button", name="Resume follow", exact=True).click()
+            expect(page.locator("#logFollowStatus")).to_contain_text("Following")
+            with page.expect_download() as download_info:
+                page.get_by_role("button", name="Download", exact=True).click()
+            assert download_info.value.suggested_filename.endswith("-logs.txt")
             page.get_by_role("button", name="Cancel Step", exact=True).click()
             expect(page.locator("#logStepIdentity")).to_contain_text(
                 "CANCELLED",
@@ -94,6 +106,12 @@ def test_console_service_workflows_and_accessibility(
             expect(page.locator("#logPublication")).to_contain_text(
                 "published",
                 timeout=e2e_settings.timeout_seconds * 1000,
+            )
+            e2e_settings.artifacts_dir.mkdir(parents=True, exist_ok=True)
+            page.evaluate("window.scrollTo(0, 0)")
+            page.screenshot(
+                path=e2e_settings.artifacts_dir / "mystack-console-emr-logs.png",
+                full_page=True,
             )
 
             page.once("dialog", lambda dialog: dialog.accept())
@@ -108,7 +126,6 @@ def test_console_service_workflows_and_accessibility(
             for control in page.get_by_role("button").all():
                 assert control.get_attribute("aria-label") or control.inner_text().strip()
             assert not browser_errors
-            e2e_settings.artifacts_dir.mkdir(parents=True, exist_ok=True)
             page.evaluate("window.scrollTo(0, 0)")
             page.screenshot(
                 path=e2e_settings.artifacts_dir / "mystack-console.png",

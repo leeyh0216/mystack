@@ -4,6 +4,7 @@ Architecture reference:
 https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html
 """
 
+from .journal import StepExecutionJournal, StepExecutionRecord
 from .logs import S3StepLogPublisher
 from .repository import InMemoryClusterRepository
 from .runtime import (
@@ -23,5 +24,7 @@ __all__ = [
     "RandomAwsIds",
     "S3ArtifactStore",
     "S3StepLogPublisher",
+    "StepExecutionJournal",
+    "StepExecutionRecord",
     "SystemClock",
 ]

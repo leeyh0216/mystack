@@ -73,12 +73,36 @@ Local `<work_root>/<cluster-id>/<step-id>/log-publication.json`은 schema versio
 | `pending` | Management API에 아직 record가 없으며 일반적으로 Step 실행 중임 |
 | `unreadable` | Local record가 잘못됐거나 읽을 수 없으며 응답에 수정 hint가 있음 |
 
+<!-- section: recovery -->
+## Durable 게시와 재시작 복구
+
+Step이 Spark를 준비하기 전에 Mystack은 `execution-journal.json`을 atomic하게 씁니다. Terminal
+process fact를 먼저 commit한 뒤 S3 게시를 시작합니다. `publication-request.json`은 durable
+outbox이며 `pending`, `publishing`, `retrying`, `failed`, `published` 상태와 attempt, 결정적인
+object key를 기록합니다. 각 `put_object`에는 설정한 timeout이 있고 retry는 상한이 있는
+exponential backoff를 사용합니다. 같은 key를 overwrite하므로 부분 성공도 안전하게 반복합니다.
+
+EMR 시작 시 `running` journal은 `interrupted`로 바뀝니다. `LogUri`가 있는 terminal journal 중
+게시가 끝나지 않은 것은 새 startup cluster를 만들기 전에 replay합니다. Console은 journal 기반
+log를 탐색할 수 있지만 이전 process-local boto3 cluster는 의도적으로 복원하지 않습니다.
+`emr.log_retention_seconds`는 `published` 또는 `skipped` publication record가 있는 오래된 terminal
+work directory만 지우며 실패 증거는 보존합니다.
+
+Live read는 무제한 연결로 file을 follow하지 않습니다. Backend는 stdout/stderr별 byte offset에서
+최대 `emr.live_log_chunk_bytes`만 반환합니다. Proxy는 반복 read를 표준 `text/event-stream`으로
+변환하고 event ID를 `<stdout-offset>:<stderr-offset>`로 지정합니다. Browser는 `Last-Event-ID`
+또는 명시적 offset으로 재연결합니다. 이 extension은
+[HTML Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html)을
+따르지만 Amazon EMR API는 아닙니다.
+
 <!-- section: boundaries -->
 ## 구현 및 수정 경계
 
 - S3 배치, gzip payload, 실패 record: `mystack.emr.adapters.outbound.logs`
+- 실행 journal, retention, 시작 replay: `mystack.emr.adapters.outbound.journal`
 - Process capture와 publication 호출 경계: `mystack.emr.adapters.outbound.runtime`
 - Console/API 투영: `mystack.emr.adapters.inbound.management`
+- SSE gateway: `mystack.proxy.log_stream`
 - Runtime client 소유권과 close 순서: `mystack.emr.runtime`, `mystack.emr.app`
 - boto3/LocalStack Docker 검증: `tests/e2e/test_emr_spark.py`
 

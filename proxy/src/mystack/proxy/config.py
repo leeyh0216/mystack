@@ -49,6 +49,9 @@ class ProxySettings:
     listen_host: str
     listen_port: int
     console_refresh_interval_seconds: float
+    console_log_stream_poll_interval_seconds: float
+    console_log_stream_timeout_seconds: float
+    console_log_buffer_bytes: int
     config_source: str
     config_fingerprint: str
 
@@ -69,6 +72,9 @@ class ProxySettings:
                 raise ConfigurationError(
                     "management.console.refresh_interval_seconds must be at least 0.5"
                 )
+            log_poll_interval_seconds = float(console["log_stream_poll_interval_seconds"])
+            log_stream_timeout_seconds = float(console["log_stream_timeout_seconds"])
+            log_buffer_bytes = int(console["log_buffer_bytes"])
             return cls(
                 fallback_url=str(proxy["fallback_url"]),
                 routes=routes,
@@ -76,6 +82,9 @@ class ProxySettings:
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
                 console_refresh_interval_seconds=refresh_interval_seconds,
+                console_log_stream_poll_interval_seconds=log_poll_interval_seconds,
+                console_log_stream_timeout_seconds=log_stream_timeout_seconds,
+                console_log_buffer_bytes=log_buffer_bytes,
                 config_source=loaded.source,
                 config_fingerprint=loaded.fingerprint,
             )

@@ -39,6 +39,7 @@ from .adapters.outbound import (
     RandomAwsIds,
     S3ArtifactStore,
     S3StepLogPublisher,
+    StepExecutionJournal,
     SystemClock,
 )
 from .application import EmrApplication
@@ -70,19 +71,21 @@ def create_app(
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
 
     owned_runtime: EmrRuntime | None = None
+    journal: StepExecutionJournal | None = None
     startup_plan = StartupClusterPlan.disabled()
     if application is None:
         startup_plan = load_startup_cluster_plan(settings.startup_clusters_file, settings.policy)
         repository = InMemoryClusterRepository()
         executor = LocalProcessExecutor(settings)
         artifacts = S3ArtifactStore(settings.object_store)
-        logs = S3StepLogPublisher(settings.object_store)
+        logs = S3StepLogPublisher(settings.object_store, settings.log_delivery)
+        journal = StepExecutionJournal(settings.work_root, logs, settings.log_delivery)
         application = EmrApplication(
             repository=repository,
             clock=SystemClock(),
             ids=RandomAwsIds(),
             bootstrap_runner=LocalBootstrapRunner(settings, artifacts, executor),
-            step_runner=LocalSparkStepRunner(settings, artifacts, executor, logs),
+            step_runner=LocalSparkStepRunner(settings, artifacts, executor, journal),
             scheduler=AsyncioTaskScheduler(settings.shutdown_timeout_seconds),
             policy=settings.policy,
         )
@@ -97,6 +100,7 @@ def create_app(
             executor,
             artifacts,
             logs,
+            journal,
             startup,
             settings,
         )
@@ -114,6 +118,7 @@ def create_app(
         application,
         work_root=settings.work_root,
         output_tail_bytes=settings.output_tail_bytes,
+        live_chunk_bytes=settings.log_delivery.live_chunk_bytes,
         implemented_operations=dispatcher.operations,
         model_operation_count=len(service_model.operation_names),
         config_fingerprint=settings.config_fingerprint,
@@ -128,6 +133,7 @@ def create_app(
         startup_cluster_source=startup_plan.source,
         startup_cluster_fingerprint=startup_plan.fingerprint,
         startup_cluster_count=len(startup_plan.commands),
+        execution_journal=journal,
     )
 
     @asynccontextmanager
@@ -203,6 +209,31 @@ def create_app(
             return JSONResponse(await management.logs(cluster_id, step_id))
         except EmrDomainError as error:
             raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @app.get("/_mystack/management/logs/chunk")
+    async def management_log_chunk(
+        request: Request,
+        cluster_id: str,
+        step_id: str,
+        stdout_offset: int = 0,
+        stderr_offset: int = 0,
+    ) -> JSONResponse:
+        authorize_management(request, diagnostics_settings, "emr", "logs.chunk")
+        try:
+            return JSONResponse(
+                await management.log_chunk(
+                    cluster_id,
+                    step_id,
+                    stdout_offset=stdout_offset,
+                    stderr_offset=stderr_offset,
+                )
+            )
+        except EmrDomainError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
 
     @app.post("/", include_in_schema=False)
     async def aws_json_endpoint(request: Request) -> Response:

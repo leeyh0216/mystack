@@ -75,6 +75,10 @@
   CI는 설정된 환경변수 이름으로 Chromium 실행을 필수화합니다. Playwright 공식
   [auto-waiting 동작](https://playwright.dev/python/docs/actionability)도 이 명시적 deadline
   안에서만 사용합니다.
+- 긴 Step 실행 중 EMR Compose service를 재시작한 뒤 recovered Console projection, 보존된 stdout,
+  boto3 modeled not-found 동작, idempotent S3 archive 재게시를 검증합니다. Compose subprocess와
+  모든 HTTP/SDK wait는 설정한 E2E timeout을 사용합니다. 주입한 lifecycle event는 Docker 공식
+  [`compose restart` 계약](https://docs.docker.com/reference/cli/docker/compose/restart/)을 따릅니다.
 - 현재 Iceberg 시나리오는 create, append, read, schema evolution을 검증합니다. Partition과 transaction은 목표 범위이며 [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을 따릅니다.
 
 <!-- section: reproducibility -->

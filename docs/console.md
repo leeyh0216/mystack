@@ -18,6 +18,7 @@ controllers. The visual vocabulary follows the [AWS Management Console](https://
 | --- | --- | --- |
 | `GET /_mystack/components/{component}/resources` | `GET /_mystack/management/resources` | Emulator/compatibility status and resource tree |
 | `GET /_mystack/components/emr/logs?cluster_id=...&step_id=...` | `GET /_mystack/management/logs` | Configured tail of Step stdout/stderr |
+| `GET /_mystack/components/emr/log-stream?...` | Repeated `GET /_mystack/management/logs/chunk` | Reconnectable stdout/stderr SSE stream |
 | `GET /_mystack/components/{component}/diagnostics/threads` | `GET /_mystack/diagnostics/threads` | Live Python thread stacks |
 | `GET /_mystack/components/{component}/diagnostics/tasks` | `GET /_mystack/diagnostics/tasks` | Live asyncio task stacks |
 
@@ -56,8 +57,13 @@ matching the [Glue type-system behavior](https://docs.aws.amazon.com/glue/latest
 Glue Jobs, JobRuns, and Crawlers remain out of scope.
 
 The Console refreshes the selected service without losing the selected cluster, Step, database, or
-table. Its interval is `management.console.refresh_interval_seconds` and must be at least 0.5
-seconds. This release uses polling; resumable streaming is tracked separately.
+table. Resource polling uses `management.console.refresh_interval_seconds` (minimum 0.5 seconds).
+Step output uses the HTML
+[Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html) over
+bounded byte-offset reads. **Pause follow** stops network reads without losing offsets; **Resume
+follow** reconnects at those offsets, and **Download** exports the browser's current stdout/stderr
+buffer. The Proxy bounds one SSE connection with `log_stream_timeout_seconds` and the browser
+automatically reconnects. `log_buffer_bytes` prevents an unbounded browser tab.
 
 EMR exposes cluster and Step lifecycle detail, tags, release, applications, bootstrap summaries,
 failure detail, and log tails. Glue exposes the configured catalog's database/table/partition tree,
@@ -69,6 +75,11 @@ Selecting an EMR Step shows local stdout/stderr plus its versioned S3 LogUri pub
 The record distinguishes pending, skipped, published, failed, and unreadable states; published
 records list the exact Step and synthetic local-driver object keys. See the
 [EMR log layout](protocols/emr-log-layout.md) before interpreting `containers/` as YARN output.
+If EMR restarts during a Step, the Console adds a terminal **recovered logs** projection from the
+durable execution journal and retries an incomplete S3 publication. This projection deliberately
+does not recreate the process-local boto3 cluster: `DescribeCluster` still returns the modeled
+not-found error for the old ID. Retention removes only terminal records whose publication is
+`published` or `skipped`; failed uploads remain available for repair.
 
 Service management adapters may import their own Application/Domain read models and translate
 them to JSON. Proxy and UI code know only this JSON contract. Adding a new emulator therefore
@@ -96,7 +107,8 @@ The console provides a skip link, explicit form labels, a polite live status reg
 responsive layouts, visible keyboard focus, and WAI-ARIA tabs with Left/Right/Home/End navigation.
 The implementation follows the [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 Playwright E2E creates and terminates a cluster through the browser, submits/tracks/cancels a Step,
-checks its log publication, explores a complex Glue schema and partition, and verifies labels,
+observes live output before cancellation, pauses/resumes/downloads the stream, checks publication,
+explores a complex Glue schema and partition, and verifies labels,
 roles, keyboard navigation, diagnostics, and browser console errors. CI installs Chromium and makes
 the test required; local runs skip only when Chromium is absent. Install it with
 `uv run playwright install chromium`.

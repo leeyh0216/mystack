@@ -8,6 +8,9 @@ import {ApiError, lines, pairs} from "./api.js";
 
 const ACTIVE_STEPS = new Set(["PENDING", "CANCEL_PENDING", "RUNNING"]);
 const TERMINAL_CLUSTERS = new Set(["TERMINATED", "TERMINATED_WITH_ERRORS"]);
+const LOG_BUFFER_BYTES = Number(
+  document.querySelector('meta[name="mystack-log-buffer-bytes"]').content,
+);
 
 export class EmrConsole {
   constructor(api, {notify, afterMutation, activateTab}) {
@@ -20,6 +23,14 @@ export class EmrConsole {
     this.stepId = null;
     this.clusterQuery = "";
     this.stepQuery = "";
+    this.logIdentity = null;
+    this.logController = null;
+    this.logPaused = false;
+    this.logComplete = false;
+    this.stdoutOffset = 0;
+    this.stderrOffset = 0;
+    this.stdoutContent = "";
+    this.stderrContent = "";
     this._bind();
   }
 
@@ -36,6 +47,8 @@ export class EmrConsole {
     byId("terminateCluster").addEventListener("click", () => this.terminate());
     byId("terminationProtection").addEventListener("click", () => this.toggleProtection());
     byId("cancelStep").addEventListener("click", () => this.cancelSelectedStep());
+    byId("toggleLogFollow").addEventListener("click", () => this.toggleLogFollow());
+    byId("downloadLogs").addEventListener("click", () => this.downloadLogs());
     byId("clusterForm").addEventListener("submit", event => this.create(event));
     byId("stepForm").addEventListener("submit", event => this.addStep(event));
   }
@@ -45,6 +58,7 @@ export class EmrConsole {
     this._renderReleaseOptions();
     const clusters = this.clusters;
     if (this.clusterId && !clusters.some(cluster => cluster.id === this.clusterId)) {
+      this._stopLogStream();
       this.clusterId = null;
       this.stepId = null;
     }
@@ -200,25 +214,139 @@ export class EmrConsole {
     const cluster = this.selectedCluster;
     const step = this.selectedStep;
     if (!cluster || !step) {
+      this._stopLogStream();
+      this.logIdentity = null;
       byId("logEmpty").hidden = false;
       byId("logContent").hidden = true;
       return;
     }
+    const identity = `${cluster.id}/${step.id}`;
     try {
-      const logs = await this.api.logs(cluster.id, step.id);
       byId("logEmpty").hidden = true;
       byId("logContent").hidden = false;
       byId("logStepName").textContent = step.name;
-      byId("logStepIdentity").textContent = `${step.id} · ${step.state}`;
-      byId("stdout").textContent = logs.stdout || "(empty)";
-      byId("stderr").textContent = logs.stderr || "(empty)";
+      byId("logStepIdentity").textContent = `${step.id} · ${step.state}${step.recovered ? " · recovered logs" : ""}`;
       byId("cancelStep").disabled = !ACTIVE_STEPS.has(step.state);
+      if (this.logIdentity === identity) return;
+      this._stopLogStream();
+      this.logIdentity = identity;
+      this.logPaused = false;
+      this.logComplete = false;
+      this.stdoutOffset = 0;
+      this.stderrOffset = 0;
+      this.stdoutContent = "";
+      this.stderrContent = "";
+      this._renderLogText();
+      this._renderFollowState("Connecting…", "live");
+      const logs = await this.api.logs(cluster.id, step.id);
+      if (this.logIdentity !== identity) return;
       renderPublication(byId("logPublication"), logs.log_publication || {status: "unavailable"});
+      this._startLogStream(identity);
     } catch (error) {
+      if (this.logIdentity === identity) this.logIdentity = null;
       byId("logEmpty").hidden = false;
       byId("logEmpty").textContent = error instanceof ApiError ? error.display() : String(error);
       byId("logContent").hidden = true;
     }
+  }
+
+  toggleLogFollow() {
+    if (!this.logIdentity || this.logComplete) return;
+    if (this.logPaused) {
+      this.logPaused = false;
+      this._renderFollowState("Reconnecting…", "live");
+      this._startLogStream(this.logIdentity);
+      return;
+    }
+    this.logPaused = true;
+    this._stopLogStream();
+    this._renderFollowState("Paused", "paused");
+  }
+
+  downloadLogs() {
+    const step = this.selectedStep;
+    if (!step) return;
+    const content = [
+      `Mystack EMR Step ${step.id}`,
+      "",
+      "===== stdout =====",
+      this.stdoutContent,
+      "",
+      "===== stderr =====",
+      this.stderrContent,
+      "",
+    ].join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([content], {type: "text/plain;charset=utf-8"}));
+    link.download = `${step.id}-logs.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  async _startLogStream(identity) {
+    if (this.logController || this.logPaused || this.logComplete || identity !== this.logIdentity) return;
+    const [clusterId, stepId] = identity.split("/");
+    const controller = new AbortController();
+    this.logController = controller;
+    this._renderFollowState("Following live output", "live");
+    try {
+      const result = await this.api.streamLogs(clusterId, stepId, {
+        stdoutOffset: this.stdoutOffset,
+        stderrOffset: this.stderrOffset,
+        signal: controller.signal,
+        onEvent: document => this._appendLogEvent(identity, document),
+      });
+      if (identity !== this.logIdentity) return;
+      this.logComplete = result.complete;
+      if (result.complete) this._renderFollowState("Complete", "");
+      else this._renderFollowState("Reconnecting…", "live");
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      if (identity !== this.logIdentity) return;
+      this._renderFollowState("Stream interrupted · retrying", "paused");
+      this.notifyError(error);
+    } finally {
+      if (this.logController === controller) this.logController = null;
+    }
+    if (!this.logPaused && !this.logComplete && identity === this.logIdentity) {
+      window.setTimeout(() => this._startLogStream(identity), 500);
+    }
+  }
+
+  _appendLogEvent(identity, document) {
+    if (identity !== this.logIdentity) return;
+    this.stdoutOffset = Number(document.stdout_next_offset ?? this.stdoutOffset);
+    this.stderrOffset = Number(document.stderr_next_offset ?? this.stderrOffset);
+    this.stdoutContent = trimLogBuffer(this.stdoutContent + (document.stdout || ""));
+    this.stderrContent = trimLogBuffer(this.stderrContent + (document.stderr || ""));
+    this._renderLogText();
+    renderPublication(
+      byId("logPublication"),
+      document.log_publication || {status: "unavailable"},
+    );
+    if (document.complete) {
+      this.logComplete = true;
+      this._renderFollowState("Complete", "");
+    }
+  }
+
+  _renderLogText() {
+    renderFollowedText(byId("stdout"), this.stdoutContent);
+    renderFollowedText(byId("stderr"), this.stderrContent);
+  }
+
+  _renderFollowState(label, tone) {
+    const status = byId("logFollowStatus");
+    status.textContent = label;
+    status.className = `stream-status${tone ? ` ${tone}` : ""}`;
+    const button = byId("toggleLogFollow");
+    button.textContent = this.logPaused ? "Resume follow" : "Pause follow";
+    button.disabled = this.logComplete || !this.logIdentity;
+  }
+
+  _stopLogStream() {
+    this.logController?.abort();
+    this.logController = null;
   }
 
   notifyError(error) {
@@ -474,4 +602,21 @@ function renderPublication(root, publication) {
     details.append(list);
     root.append(details);
   }
+}
+
+function trimLogBuffer(value) {
+  const encoder = new TextEncoder();
+  if (encoder.encode(value).byteLength <= LOG_BUFFER_BYTES) return value;
+  const notice = `[older output removed; ${LOG_BUFFER_BYTES} byte browser limit]\n`;
+  let tail = value.slice(-Math.max(1, LOG_BUFFER_BYTES - encoder.encode(notice).byteLength));
+  while (encoder.encode(notice + tail).byteLength > LOG_BUFFER_BYTES) {
+    tail = tail.slice(Math.max(1, Math.floor(tail.length / 20)));
+  }
+  return notice + tail;
+}
+
+function renderFollowedText(root, value) {
+  const followsBottom = root.scrollHeight - root.scrollTop - root.clientHeight < 48;
+  root.textContent = value || "(waiting for output)";
+  if (followsBottom) root.scrollTop = root.scrollHeight;
 }

@@ -14,6 +14,7 @@ import json
 import logging
 import posixpath
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -26,6 +27,7 @@ from mystack.aws_protocol.observability import log_event
 _LOGGER = logging.getLogger(__name__)
 _SAFE_IDENTIFIER = re.compile(r"[^A-Za-z0-9_]")
 _PUBLICATION_RECORD = "log-publication.json"
+_PUBLICATION_REQUEST = "publication-request.json"
 
 
 class LogStoreConfiguration(Protocol):
@@ -40,6 +42,13 @@ class ObjectWriter(Protocol):
     def put_object(self, **kwargs: Any) -> Any: ...
 
     def close(self) -> None: ...
+
+
+class LogPublicationPolicy(Protocol):
+    publication_max_attempts: int
+    publication_initial_backoff_seconds: float
+    publication_max_backoff_seconds: float
+    publication_attempt_timeout_seconds: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +74,7 @@ class S3StepLogPublisher:
     def __init__(
         self,
         settings: LogStoreConfiguration,
+        policy: LogPublicationPolicy,
         *,
         client: ObjectWriter | None = None,
     ) -> None:
@@ -76,6 +86,7 @@ class S3StepLogPublisher:
             aws_secret_access_key=settings.secret_access_key,
             config=Config(s3={"addressing_style": "path" if settings.s3_path_style else "auto"}),
         )
+        self._policy = policy
         self._closed = False
 
     async def publish(self, request: StepLogPublicationRequest) -> None:
@@ -95,11 +106,22 @@ class S3StepLogPublisher:
             return
 
         published_keys: list[str] = []
+        attempt = 0
         try:
             if self._closed:
                 raise RuntimeError("EMR Step log publisher is closed")
             destination = _destination(request.log_uri, request.cluster_id, request.step_id)
             payloads = await _payloads(request, destination)
+            await self._write_outbox(
+                request,
+                {
+                    "status": "pending",
+                    "log_uri": request.log_uri,
+                    "attempt": 0,
+                    "max_attempts": self._policy.publication_max_attempts,
+                    "object_keys": [key for key, _ in payloads],
+                },
+            )
             log_event(
                 _LOGGER,
                 logging.INFO,
@@ -112,39 +134,96 @@ class S3StepLogPublisher:
                 object_count=len(payloads),
                 side_effect=True,
             )
-            for key, payload in payloads:
-                log_event(
-                    _LOGGER,
-                    logging.INFO,
-                    "emr.step_log_object.put.before",
-                    cluster_id=request.cluster_id,
-                    step_id=request.step_id,
-                    bucket=destination.bucket,
-                    key=key,
-                    uncompressed_bytes=len(payload),
-                    side_effect=True,
+            delay = self._policy.publication_initial_backoff_seconds
+            for attempt in range(1, self._policy.publication_max_attempts + 1):
+                published_keys = []
+                await self._write_outbox(
+                    request,
+                    {
+                        "status": "publishing",
+                        "log_uri": request.log_uri,
+                        "attempt": attempt,
+                        "max_attempts": self._policy.publication_max_attempts,
+                        "object_keys": [key for key, _ in payloads],
+                    },
                 )
-                compressed = gzip.compress(payload, mtime=0)
-                await asyncio.to_thread(
-                    self._client.put_object,
-                    Bucket=destination.bucket,
-                    Key=key,
-                    Body=compressed,
-                    ContentEncoding="gzip",
-                    ContentType="text/plain; charset=utf-8",
-                )
-                published_keys.append(key)
-                log_event(
-                    _LOGGER,
-                    logging.INFO,
-                    "emr.step_log_object.put.after",
-                    cluster_id=request.cluster_id,
-                    step_id=request.step_id,
-                    bucket=destination.bucket,
-                    key=key,
-                    compressed_bytes=len(compressed),
-                    side_effect=True,
-                )
+                try:
+                    for key, payload in payloads:
+                        log_event(
+                            _LOGGER,
+                            logging.INFO,
+                            "emr.step_log_object.put.before",
+                            cluster_id=request.cluster_id,
+                            step_id=request.step_id,
+                            bucket=destination.bucket,
+                            key=key,
+                            attempt=attempt,
+                            attempt_timeout_seconds=(
+                                self._policy.publication_attempt_timeout_seconds
+                            ),
+                            uncompressed_bytes=len(payload),
+                            side_effect=True,
+                        )
+                        compressed = gzip.compress(payload, mtime=0)
+                        await asyncio.wait_for(
+                            asyncio.to_thread(
+                                self._client.put_object,
+                                Bucket=destination.bucket,
+                                Key=key,
+                                Body=compressed,
+                                ContentEncoding="gzip",
+                                ContentType="text/plain; charset=utf-8",
+                            ),
+                            timeout=self._policy.publication_attempt_timeout_seconds,
+                        )
+                        published_keys.append(key)
+                        log_event(
+                            _LOGGER,
+                            logging.INFO,
+                            "emr.step_log_object.put.after",
+                            cluster_id=request.cluster_id,
+                            step_id=request.step_id,
+                            bucket=destination.bucket,
+                            key=key,
+                            attempt=attempt,
+                            compressed_bytes=len(compressed),
+                            side_effect=True,
+                        )
+                    break
+                except Exception as error:
+                    await self._write_outbox(
+                        request,
+                        {
+                            "status": "retrying"
+                            if attempt < self._policy.publication_max_attempts
+                            else "failed",
+                            "log_uri": request.log_uri,
+                            "attempt": attempt,
+                            "max_attempts": self._policy.publication_max_attempts,
+                            "published_keys": published_keys,
+                            "error_type": type(error).__name__,
+                            "error": str(error),
+                        },
+                    )
+                    if attempt >= self._policy.publication_max_attempts:
+                        raise
+                    log_event(
+                        _LOGGER,
+                        logging.WARNING,
+                        "emr.step_logs.publish.retry",
+                        cluster_id=request.cluster_id,
+                        step_id=request.step_id,
+                        attempt=attempt,
+                        next_attempt=attempt + 1,
+                        backoff_seconds=delay,
+                        reason_type=type(error).__name__,
+                        fix_hint=(
+                            "Transient S3/LocalStack failures are retried with the configured "
+                            "bounded backoff; inspect publication-request.json if retries exhaust."
+                        ),
+                    )
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, self._policy.publication_max_backoff_seconds)
         except Exception as error:
             log_event(
                 _LOGGER,
@@ -167,6 +246,8 @@ class S3StepLogPublisher:
                     "status": "failed",
                     "log_uri": request.log_uri,
                     "published_keys": published_keys,
+                    "attempt": attempt,
+                    "max_attempts": self._policy.publication_max_attempts,
                     "error_type": type(error).__name__,
                     "error": str(error),
                 },
@@ -181,6 +262,18 @@ class S3StepLogPublisher:
                 "application_id": destination.application_id,
                 "container_id": destination.container_id,
                 "runtime_mode": "Spark local/client mode (synthetic application identifiers)",
+                "published_keys": published_keys,
+                "attempt": attempt,
+                "max_attempts": self._policy.publication_max_attempts,
+            },
+        )
+        await self._write_outbox(
+            request,
+            {
+                "status": "published",
+                "log_uri": request.log_uri,
+                "attempt": attempt,
+                "max_attempts": self._policy.publication_max_attempts,
                 "published_keys": published_keys,
             },
         )
@@ -228,6 +321,50 @@ class S3StepLogPublisher:
                 _LOGGER,
                 logging.ERROR,
                 "emr.step_logs.publication_record.failed",
+                cluster_id=request.cluster_id,
+                step_id=request.step_id,
+                record_file=str(target),
+                fix_hint="Verify that the configured EMR work_root is writable by hadoop.",
+                exc_info=True,
+            )
+
+    async def _write_outbox(
+        self,
+        request: StepLogPublicationRequest,
+        publication: dict[str, Any],
+    ) -> None:
+        await self._write_json(
+            request,
+            request.work_dir / _PUBLICATION_REQUEST,
+            {
+                "schema_version": 1,
+                "cluster_id": request.cluster_id,
+                "step_id": request.step_id,
+                "updated_at_epoch_seconds": time.time(),
+                **publication,
+            },
+            event="emr.step_logs.publication_outbox.failed",
+        )
+
+    async def _write_json(
+        self,
+        request: StepLogPublicationRequest,
+        target: Path,
+        record: dict[str, Any],
+        *,
+        event: str,
+    ) -> None:
+        temporary = target.with_suffix(".tmp")
+        try:
+            request.work_dir.mkdir(parents=True, exist_ok=True)
+            content = json.dumps(record, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+            await asyncio.to_thread(temporary.write_text, content, encoding="utf-8")
+            await asyncio.to_thread(temporary.replace, target)
+        except Exception:
+            log_event(
+                _LOGGER,
+                logging.ERROR,
+                event,
                 cluster_id=request.cluster_id,
                 step_id=request.step_id,
                 record_file=str(target),

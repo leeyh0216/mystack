@@ -15,6 +15,7 @@ The current primary paths are:
 - AWS CLI and AWS SDK compatibility through the documented wire protocols
 - Amazon EMR cluster, bootstrap action, and step lifecycle emulation
 - real Spark 3.5.x execution in local mode with LocalStack S3 access
+- live EMR Step stdout/stderr with pause/resume/download, restart recovery, and S3 log publication
 - Glue Data Catalog behavior, including documented validation and service exceptions
 - Spark 3.5.4 interoperability with Glue Data Catalog, Hive-compatible types, and Iceberg 1.7.1
 - AWS SDK for pandas 3.17.0 partitioned-Parquet and Glue Catalog round trips
@@ -29,17 +30,16 @@ for exact boundaries.
 ## Quick start
 
 The normal path anonymously pulls the public published images; it does not clone or build this
-repository. Install Docker Engine with Compose and authenticate GitHub CLI only to download the
-Compose file from this private repository. Choose an existing semantic tag from the package/release
-page. Public GHCR packages require no registry token or registry login, as documented in GitHub's
+repository. Install Docker Engine with Compose and download the Compose file from the same public
+Git tag as the images. Choose an existing semantic tag from the package/release page. Public GHCR
+packages require no registry token or registry login, as documented in GitHub's
 [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages).
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
 mkdir mystack-runtime && cd mystack-runtime
-gh api -H "Accept: application/vnd.github.raw+json" \
-  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
-  > compose.ghcr.yaml
+curl --fail --location --output compose.ghcr.yaml \
+  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"
 
 docker compose -f compose.ghcr.yaml config --quiet
 docker compose -f compose.ghcr.yaml pull
@@ -48,7 +48,7 @@ curl --fail http://localhost:4566/_mystack/health
 ```
 
 Open `http://localhost:4566/_mystack/console` to create and operate EMR clusters, submit and track
-Steps, inspect their logs, explore Glue databases/tables/schemas/partitions, and view routes, thread
+Steps, follow/pause/download live logs, explore Glue databases/tables/schemas/partitions, and view routes, thread
 stacks, and asyncio tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
 boto3, AWS SDK for pandas, upgrades, rollback, troubleshooting, and cleanup. Source builds belong in
 the [development guide](docs/development.md), not the normal user path.

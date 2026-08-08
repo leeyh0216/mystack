@@ -63,7 +63,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | 경로 | 책임 |
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
-| `management.console` | Browser Console 자동 갱신 주기 |
+| `management.console` | Browser 갱신, SSE polling/연결 deadline, log buffer 상한 |
 | `management.diagnostics` | thread/task stack 활성화, bearer token, 최대 깊이 |
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
@@ -81,6 +81,10 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 주입하므로 browser code에는 환경별 interval이 없습니다. 현재 release는 표준 browser timer
 계약인 [`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval)을
 사용합니다.
+`log_stream_poll_interval_seconds`는 SSE 연결 안에서 최대 크기가 정해진 EMR chunk를 조회하는 주기,
+`log_stream_timeout_seconds`는 주기적 재연결을 강제하는 deadline,
+`log_buffer_bytes`는 browser stdout/stderr별 memory 상한입니다. Protocol은 HTML
+[Server-Sent Events 명세](https://html.spec.whatwg.org/multipage/server-sent-events.html)를 따릅니다.
 
 `emr.shutdown_timeout_seconds`는 새 scheduling을 멈춘 뒤 service 종료 전체를 제한합니다. 이
 deadline 안에서 EMR은 소유한 driver task를 cancel/await하고,
@@ -102,6 +106,11 @@ S3 log 게시에는 별도로 hard-code한 bucket이나 prefix가 없습니다. 
 `RunJobFlow.LogUri`를 제공하며 publisher는 `localstack.endpoint_url`, region, credential,
 path-style 설정을 재사용합니다. 따라서 image 배포도 설정 가능하며 같은 boto3 S3 route로
 LocalStack에 접근합니다. 정확한 내용은 [log protocol](protocols/emr-log-layout.ko.md)을 참고하세요.
+`emr.live_log_chunk_bytes`는 filesystem read 한 번의 크기를 제한합니다.
+`emr.log_publication`은 retry 횟수, exponential backoff 범위, attempt timeout을 설정합니다.
+결정적인 S3 key를 사용하므로 재시도는 idempotent합니다. `emr.log_retention_seconds`는 terminal이며
+publication이 완료 또는 skip된 work directory에만 적용합니다. 게시 실패 record는 의도적으로
+보존합니다.
 
 `emr.startup_clusters_file`은 `null` 또는 별도의 schema-versioned document path입니다. Relative
 path는 선택한 main configuration 옆을 기준으로 해석합니다. File은 공식

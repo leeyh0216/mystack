@@ -30,6 +30,10 @@ EMR LogUri publication emits `emr.step_logs.publish.*` around the complete archi
 `emr.step_log_object.put.*` around every S3 object. Failures contain the cluster/Step, safe bucket
 and key evidence, partial object count, and a `fix_hint`, while the local publication record remains
 available through the management endpoint. See the [log layout contract](protocols/emr-log-layout.md).
+Durability adds `emr.step_journal.*` and `emr.step_journal.publication_recovery.*`; retry attempts
+emit `emr.step_logs.publish.retry` with bounded-delay evidence. Live output emits
+`emr.management.log_chunk.*` and `proxy.emr_log_stream.*`, including offsets and a repair hint on
+component-schema drift, but never the output content itself.
 
 Preconfigured clusters emit `emr.startup_clusters.load.*` before/after whole-file validation,
 `emr.startup_clusters.provision.*` around the plan, and `emr.startup_cluster.create.*` for each
