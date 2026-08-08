@@ -11,7 +11,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from mystack.aws_protocol import (
     DiagnosticsSettings,
     LoadedConfiguration,
@@ -21,8 +21,6 @@ from mystack.aws_protocol import (
 from mystack.aws_protocol.observability import configure_logging, log_event
 
 from .config import ProxySettings
-from .console import console_asset_response, console_response
-from .log_stream import EmrLogEventStream, offsets_from_last_event_id
 from .ports import ManagementBackendUnavailableError, UnknownManagementComponentError
 from .runtime import ProxyRuntime
 
@@ -117,14 +115,41 @@ def create_app(
 
     @app.get("/_mystack/console")
     async def console() -> Response:
-        return console_response(
-            refresh_interval_seconds=resolved_settings.console_refresh_interval_seconds,
-            log_buffer_bytes=resolved_settings.console_log_buffer_bytes,
-        )
+        return RedirectResponse("/_mystack/ui/emr/", status_code=307)
 
-    @app.get("/_mystack/assets/console/{asset_name}")
-    async def console_asset(asset_name: str) -> Response:
-        return console_asset_response(asset_name)
+    @app.get("/console")
+    async def short_console() -> Response:
+        return RedirectResponse("/_mystack/ui/emr/", status_code=307)
+
+    @app.get("/_mystack/ui")
+    async def ui_root() -> Response:
+        return RedirectResponse("/_mystack/ui/emr/", status_code=307)
+
+    @app.get("/_mystack/ui/{component}")
+    async def component_ui_root(component: str) -> Response:
+        return RedirectResponse(f"/_mystack/ui/{component}/", status_code=307)
+
+    @app.api_route(
+        "/_mystack/ui/{component}/{relative_path:path}",
+        methods=["GET", "HEAD"],
+    )
+    async def component_ui(request: Request, component: str, relative_path: str) -> Response:
+        _log(
+            logging.DEBUG,
+            "proxy.service_ui.controller.before",
+            component=component,
+            relative_path=relative_path,
+        )
+        try:
+            return await runtime.service_ui.forward(
+                request,
+                component=component,
+                relative_path=relative_path,
+            )
+        except UnknownManagementComponentError:
+            return JSONResponse({"detail": "Unknown UI component"}, status_code=404)
+        except ManagementBackendUnavailableError:
+            return JSONResponse({"detail": "Component UI unavailable"}, status_code=502)
 
     async def forward_management(
         request: Request,
@@ -144,7 +169,6 @@ def create_app(
                 component=component,
                 backend_path=backend_path,
                 capability=capability,
-                authorization=request.headers.get("authorization"),
                 query_params=request.query_params.multi_items(),
             )
         except UnknownManagementComponentError:
@@ -215,45 +239,6 @@ def create_app(
             component=component,
             backend_path="/_mystack/management/logs",
             capability="logs",
-        )
-
-    @app.get("/_mystack/components/emr/log-stream")
-    async def emr_component_log_stream(
-        request: Request,
-        cluster_id: str,
-        step_id: str,
-        stdout_offset: int = 0,
-        stderr_offset: int = 0,
-    ) -> Response:
-        if stdout_offset < 0 or stderr_offset < 0:
-            return JSONResponse({"detail": "Log offsets must be non-negative"}, status_code=400)
-        stdout_offset, stderr_offset = offsets_from_last_event_id(
-            request.headers.get("last-event-id"),
-            stdout_offset=stdout_offset,
-            stderr_offset=stderr_offset,
-        )
-        _log(
-            logging.INFO,
-            "proxy.emr_log_stream.controller.before",
-            cluster_id=cluster_id,
-            step_id=step_id,
-            stdout_offset=stdout_offset,
-            stderr_offset=stderr_offset,
-        )
-        return StreamingResponse(
-            EmrLogEventStream(runtime.management, resolved_settings).events(
-                request,
-                cluster_id=cluster_id,
-                step_id=step_id,
-                stdout_offset=stdout_offset,
-                stderr_offset=stderr_offset,
-                authorization=request.headers.get("authorization"),
-            ),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache, no-transform",
-                "X-Accel-Buffering": "no",
-            },
         )
 
     @app.get("/_mystack/components/{component}/diagnostics/{kind}")

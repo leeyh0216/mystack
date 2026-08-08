@@ -19,3 +19,6 @@ api-coverage-drift-report.json
 test-artifacts/
 .idea/
 .vscode/
+node_modules/
+emr/src/mystack/emr/static/ui/
+glue/src/mystack/glue/static/ui/

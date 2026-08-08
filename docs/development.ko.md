@@ -10,6 +10,7 @@
 
 - Private repository 접근 권한이 있는 Git과 GitHub CLI
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- `.node-version`의 Node.js 24.6.0과 npm(Dev Container 사용 시 별도 설치 불필요)
 - [Docker Desktop 또는 Docker Engine과 Compose](https://docs.docker.com/compose/install/)
 - 자동 환경 로딩을 위한 선택적 [direnv](https://direnv.net/)
 - Spark/Glue 호환 이미지와 테스트 데이터를 위한 12GB 이상 여유 공간
@@ -45,8 +46,8 @@ Host에 Docker와 VS Code Dev Containers extension이 있다면 별도 Python·u
 `.devcontainer/devcontainer.json`은 workspace를 Host와 같은 절대 경로에 mount하고 Host Docker
 daemon을 사용합니다. 생성이 끝나면 `make up`과 `make test`를 그대로 실행할 수 있습니다.
 
-Container에는 Python 3.11, digest로 고정한 uv, Docker CLI/Compose, AWS CLI, GitHub CLI,
-locked workspace dependency, pre-commit과 editor extension이 준비됩니다. `devcontainer.json`의
+Container에는 Python 3.11, Node.js 24.6.0, digest로 고정한 uv, Docker CLI/Compose, AWS CLI,
+GitHub CLI, lock으로 고정한 Python/npm workspace dependency, pre-commit과 editor extension이 준비됩니다. `devcontainer.json`의
 feature 버전과 `devcontainer-lock.json`의 resolved digest를 함께 commit합니다. CI는
 [공식 Dev Container CLI](https://github.com/devcontainers/cli)의 `--frozen-lockfile`로 같은 image를
 build합니다.
@@ -85,7 +86,8 @@ mystack-proxy --config "$MYSTACK_CONFIG_FILE"
 `make up CONFIG=...`은 repository 안의 YAML을 build 시 image에 포함합니다. Read-only live
 mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f compose.mount-config.yaml`을
 추가합니다. 두 방식 모두 [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/)
-계약을 따릅니다. 공유 환경 management token과 실제 AWS credential은 commit하지 않습니다.
+계약을 따릅니다. Mystack은 management 인증을 제공하지 않으며 실제 AWS credential은 commit하지
+않습니다.
 
 <!-- section: commands -->
 ## 일상 명령
@@ -94,6 +96,7 @@ mount가 필요하면 [설정 가이드](configuration.ko.md)에 따라 `-f comp
 
 ```bash
 make format
+make frontend
 make pre-commit
 make requirements
 make coverage-check
@@ -112,8 +115,11 @@ make down
 
 Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap timeout은 별도이며 가능한 경우 바깥 test timeout보다 먼저 adapter가 hung subprocess를 종료합니다.
 
-`make pre-commit`은 `uv.lock`으로 재현되는 repository-local hook을 설치하고 실행합니다.
-Lint/format, 한·영 문서, container requirement lock, botocore model manifest와 생성된
+`make frontend`는 ESLint, TypeScript project-reference 검사, Vitest component 계약, 두 Vite
+production build를 실행합니다. `MYSTACK_FRONTEND_TEST_TIMEOUT_MS`를 양의 millisecond 값으로
+지정하면 명시적인 기본 10초 test/hook deadline을 바꿀 수 있습니다. `make pre-commit`은
+`uv.lock`과 `package-lock.json`으로 재현되는 repository-local hook을 설치하고 실행합니다.
+Python과 React/TypeScript lint/format, 한·영 문서, container requirement lock, botocore model manifest와 생성된
 상호운용성 근거의 변경을 commit
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
@@ -122,6 +128,12 @@ Lint/format, 한·영 문서, container requirement lock, botocore model manifes
 ## 변경 위치
 
 - Wire metadata/공통 JSON 직렬화: `shared/src/mystack/aws_protocol`
+- 공통 React primitive와 semantic Tailwind theme token: `ui/src`; 이 package는 EMR/Glue UI를
+  import하면 안 됨
+- EMR UI application/DTO/API 조립: `emr/ui`; Glue UI application/DTO/API 조립: `glue/ui`;
+  service UI는 `@mystack/ui`만 import하며 서로를 import하면 안 됨
+- 안정적인 공개 UI forwarding만 담당: `proxy/src/mystack/proxy/forwarder.py`; Proxy는 service
+  React code를 package하거나 service DTO를 알면 안 됨
 - Proxy route 동작: `proxy/src/mystack/proxy/routing.py`; 새 서비스는 YAML 우선
 - Proxy controller capability와 HTTP lifecycle: `proxy/src/mystack/proxy/ports.py`, `runtime.py`
 - EMR 상태/동작: `emr/src/mystack/emr/domain`; focused command/query/failure policy/queue driver:

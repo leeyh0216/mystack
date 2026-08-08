@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    {"path": "./ui"},
+    {"path": "./emr/ui"},
+    {"path": "./glue/ui"}
+  ]
+}

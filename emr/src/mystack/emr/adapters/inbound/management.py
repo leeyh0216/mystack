@@ -1,6 +1,6 @@
 """Management read model for EMR resources and local Step logs.
 
-This adapter translates aggregates and durable execution records into the Proxy Console boundary.
+This adapter translates aggregates and durable execution records into the service-owned UI boundary.
 The byte-offset endpoint is an emulator extension; the S3 projection follows Amazon EMR's layout.
 
 References:
@@ -25,6 +25,7 @@ from mystack.emr.domain.errors import EmrDomainError
 
 _LOGGER = logging.getLogger(__name__)
 _PUBLICATION_FILE = "log-publication.json"
+_RESOLVED_COMMAND_FILE = "resolved-command.json"
 _SAFE_RESOURCE_ID = re.compile(r"[A-Za-z0-9_-]+")
 _ACTIVE_STEP_STATES = frozenset({"PENDING", "CANCEL_PENDING", "RUNNING"})
 
@@ -62,7 +63,7 @@ class EmrManagementAdapter:
         model_operation_count: int,
         config_fingerprint: str,
         default_release_label: str,
-        release_profiles: dict[str, dict[str, str]],
+        release_profiles: dict[str, dict[str, Any]],
         startup_cluster_source: str | None = None,
         startup_cluster_fingerprint: str | None = None,
         startup_cluster_count: int = 0,
@@ -151,9 +152,10 @@ class EmrManagementAdapter:
         )
         try:
             work_dir, step_name, step_state, recovered = await self._identity(cluster_id, step_id)
-            stdout, stderr = await asyncio.gather(
+            stdout, stderr, resolved_command = await asyncio.gather(
                 asyncio.to_thread(_tail, work_dir / "stdout.log", self._output_tail_bytes),
                 asyncio.to_thread(_tail, work_dir / "stderr.log", self._output_tail_bytes),
+                asyncio.to_thread(_resolved_command, work_dir / _RESOLVED_COMMAND_FILE),
             )
             publication = await asyncio.to_thread(_publication, work_dir / _PUBLICATION_FILE)
         except Exception:
@@ -196,6 +198,7 @@ class EmrManagementAdapter:
             "stderr_truncated": stderr[2],
             "tail_limit_bytes": self._output_tail_bytes,
             "log_publication": publication,
+            "resolved_command": resolved_command,
         }
 
     async def log_chunk(
@@ -347,6 +350,8 @@ def _step(value: Step) -> dict[str, Any]:
         "jar": value.config.jar,
         "main_class": value.config.main_class,
         "argument_count": len(value.config.args),
+        "args": list(value.config.args),
+        "properties": dict(value.config.properties),
         "failure_details": value.failure_details,
         "recovered": False,
     }
@@ -400,6 +405,8 @@ def _recovered_cluster(records: list[ExecutionRecord]) -> dict[str, Any]:
                 "jar": "command-runner.jar",
                 "main_class": None,
                 "argument_count": 0,
+                "args": [],
+                "properties": {},
                 "failure_details": None,
                 "recovered": True,
             }
@@ -463,3 +470,22 @@ def _publication(path: Path) -> dict[str, Any]:
             "fix_hint": "Inspect the local EMR Step log-publication.json record.",
         }
     return value if isinstance(value, dict) else {"schema_version": 1, "status": "unreadable"}
+
+
+def _resolved_command(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"schema_version": 1, "status": "pending", "arguments": []}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        arguments = value["arguments"]
+        if not isinstance(arguments, list) or not all(isinstance(item, str) for item in arguments):
+            raise TypeError("arguments must be a string array")
+        return {"schema_version": 1, "status": "recorded", "arguments": arguments}
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        return {
+            "schema_version": 1,
+            "status": "unreadable",
+            "arguments": [],
+            "error_type": type(error).__name__,
+            "fix_hint": "Inspect the local EMR Step resolved-command.json record.",
+        }

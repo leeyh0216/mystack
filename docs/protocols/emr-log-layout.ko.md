@@ -89,7 +89,7 @@ log를 탐색할 수 있지만 이전 process-local boto3 cluster는 의도적�
 work directory만 지우며 실패 증거는 보존합니다.
 
 Live read는 무제한 연결로 file을 follow하지 않습니다. Backend는 stdout/stderr별 byte offset에서
-최대 `emr.live_log_chunk_bytes`만 반환합니다. Proxy는 반복 read를 표준 `text/event-stream`으로
+최대 `emr.live_log_chunk_bytes`만 반환합니다. EMR은 반복 read를 표준 `text/event-stream`으로
 변환하고 event ID를 `<stdout-offset>:<stderr-offset>`로 지정합니다. Browser는 `Last-Event-ID`
 또는 명시적 offset으로 재연결합니다. 이 extension은
 [HTML Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html)을
@@ -102,7 +102,7 @@ Live read는 무제한 연결로 file을 follow하지 않습니다. Backend는 s
 - 실행 journal, retention, 시작 replay: `mystack.emr.adapters.outbound.journal`
 - Process capture와 publication 호출 경계: `mystack.emr.adapters.outbound.runtime`
 - Console/API 투영: `mystack.emr.adapters.inbound.management`
-- SSE gateway: `mystack.proxy.log_stream`
+- SSE service adapter: `mystack.emr.adapters.inbound.log_stream`
 - Runtime client 소유권과 close 순서: `mystack.emr.runtime`, `mystack.emr.app`
 - boto3/LocalStack Docker 검증: `tests/e2e/test_emr_spark.py`
 

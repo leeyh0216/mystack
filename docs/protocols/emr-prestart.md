@@ -116,7 +116,11 @@ docker compose -f compose.ghcr.yaml exec --user hadoop emr \
 
 The inventory records the actual base OS, service UID/GID/home, resolved executables and versions,
 Python packages and CA paths, Spark home/release/Ivy directory, writable paths, and recognized
-environment-variable names. It never records environment values.
+environment-variable names. It never records environment values. `process_tools.ps` must resolve:
+the image installs Amazon Linux `procps-ng` because Spark's
+[`bin/load-spark-env.sh`](https://github.com/apache/spark/blob/v3.5.4/bin/load-spark-env.sh)
+invokes `ps` while discovering existing processes. A null path is an image contract failure, not a
+harmless warning.
 
 <!-- section: diagnostics -->
 ## Diagnose startup safely

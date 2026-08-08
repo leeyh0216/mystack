@@ -94,6 +94,7 @@ def test_prestart_environment_reaches_service_bootstrap_and_spark(
         "user": "hadoop",
     }
     assert inventory["spark"]["release"].startswith("Spark 3.5.4")
+    assert inventory["process_tools"]["ps"].endswith("/ps")
     assert inventory["java"]["keytool"]
     assert inventory["python"]["ca_paths"]["cafile"] == "/etc/pki/tls/cert.pem"
 

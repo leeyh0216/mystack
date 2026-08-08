@@ -15,6 +15,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  frontend:
+    name: React TypeScript contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MYSTACK_FRONTEND_TEST_TIMEOUT_MS: "10000"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Official setup-node cache contract: https://github.com/actions/setup-node
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install the locked frontend workspace
+        run: npm ci --ignore-scripts
+      - name: Lint, type-check, test, and build both service UIs
+        run: npm run frontend:check
+      - name: Upload service-owned UI builds for Python protocol tests
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: service-ui-builds
+          path: |
+            emr/src/mystack/emr/static/ui
+            glue/src/mystack/glue/static/ui
+          if-no-files-found: error
+          retention-days: 1
+
   prepare-compatibility:
     name: Resolve required compatibility cases
     runs-on: ubuntu-latest
@@ -60,6 +87,7 @@ jobs:
 
   python-contracts:
     name: Python ${{ matrix.python-version }} contracts
+    needs: frontend
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -68,6 +96,11 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download service-owned UI builds
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: service-ui-builds
+          path: .
       # Official setup-uv action: https://github.com/astral-sh/setup-uv
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
@@ -111,6 +144,8 @@ jobs:
           --korean docs/compatibility/api-coverage.ko.generated.md
           --report api-coverage-drift-report.json
       - name: Verify contributor pre-commit gates
+        env:
+          SKIP: frontend-lint
         run: uv run pre-commit run --all-files
       - name: Unit, architecture, and protocol contract tests
         run: >-

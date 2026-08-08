@@ -31,8 +31,9 @@ MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
 mystack-proxy
 ```
 
-Sensitive override paths are redacted in logs. Do not put production credentials or management
-tokens in a committed YAML file; inject them at deployment time. Docker documents the difference
+Sensitive override paths are redacted in logs. Do not put production credentials in a committed
+YAML file; inject them at deployment time. Mystack management/UI endpoints deliberately have no
+authentication setting and must stay on a trusted local network. Docker documents the difference
 between ordinary environment configuration and [secrets](https://docs.docker.com/compose/how-tos/use-secrets/).
 
 <!-- section: docker-modes -->
@@ -66,7 +67,7 @@ and is not required for image consumers.
 | --- | --- |
 | `logging` | Structured log level and format contract |
 | `management.console` | Browser refresh, SSE polling/connection deadlines, and log buffer bound |
-| `management.diagnostics` | Enablement, bearer token, and maximum thread/task stack depth |
+| `management.diagnostics` | Enablement and maximum thread/task stack depth; no authentication |
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
@@ -80,8 +81,8 @@ and Application modules receive typed policy/value objects and never read files 
 variables.
 
 `management.console.refresh_interval_seconds` controls state-preserving polling for the selected
-EMR or Glue workspace. It must be at least 0.5 seconds. The value is injected into the static
-Console at the composition boundary, so browser code has no environment-specific interval. This
+EMR or Glue workspace. It must be at least 0.5 seconds. Each emulator exposes the value through its
+service-owned UI configuration endpoint, so browser code has no environment-specific interval. This
 release uses the standard browser timer contract documented by
 [`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval).
 `log_stream_poll_interval_seconds` controls bounded EMR chunk polling inside one SSE connection,

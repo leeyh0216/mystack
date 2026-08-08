@@ -9,15 +9,17 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from mystack.aws_protocol import (
     AwsJsonRpcEndpoint,
     AwsServiceModel,
     DiagnosticsSettings,
+    HistoryFallbackStaticFiles,
     LoadedConfiguration,
-    authorize_management,
+    ManagementUiSettings,
     create_diagnostics_router,
     load_configuration,
 )
@@ -25,6 +27,7 @@ from mystack.aws_protocol.observability import configure_logging, log_event
 
 from .adapters.inbound import (
     EmrAwsAdapter,
+    EmrLogEventStream,
     EmrManagementAdapter,
     StartupClusterPlan,
     StartupClusterProvisioner,
@@ -69,6 +72,11 @@ def create_app(
         diagnostics_settings = DiagnosticsSettings.from_configuration(loaded)
     if log_level is None and loaded is not None:
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
+    ui_settings = (
+        ManagementUiSettings.from_configuration(loaded)
+        if loaded is not None
+        else ManagementUiSettings(2.0, 0.5, 300.0, 1_048_576)
+    )
 
     owned_runtime: EmrRuntime | None = None
     journal: StepExecutionJournal | None = None
@@ -127,6 +135,7 @@ def create_app(
             label: {
                 "runtime_profile": profile.runtime_profile,
                 "aws_spark_version": profile.aws_spark_version,
+                "submit_aliases": list(settings.runtimes[profile.runtime_profile].submit_aliases),
             }
             for label, profile in settings.policy.release_profiles.items()
         },
@@ -176,6 +185,14 @@ def create_app(
 
     app = FastAPI(title="Mystack EMR Emulator", version="0.1.0", lifespan=lifespan)
     app.include_router(create_diagnostics_router("emr", diagnostics_settings))
+    app.include_router(
+        create_diagnostics_router(
+            "emr",
+            diagnostics_settings,
+            prefix="/_mystack/ui/emr/diagnostics",
+        )
+    )
+    log_stream = EmrLogEventStream(management, ui_settings)
 
     @app.get("/_mystack/health")
     async def health() -> JSONResponse:
@@ -194,17 +211,16 @@ def create_app(
         )
 
     @app.get("/_mystack/management/resources")
-    async def management_resources(request: Request) -> JSONResponse:
-        authorize_management(request, diagnostics_settings, "emr", "resources")
+    @app.get("/_mystack/ui/emr/resources")
+    async def management_resources() -> JSONResponse:
         return JSONResponse(await management.resources())
 
     @app.get("/_mystack/management/logs")
+    @app.get("/_mystack/ui/emr/logs")
     async def management_logs(
-        request: Request,
         cluster_id: str,
         step_id: str,
     ) -> JSONResponse:
-        authorize_management(request, diagnostics_settings, "emr", "logs")
         try:
             return JSONResponse(await management.logs(cluster_id, step_id))
         except EmrDomainError as error:
@@ -213,14 +229,13 @@ def create_app(
             raise HTTPException(status_code=400, detail=str(error)) from error
 
     @app.get("/_mystack/management/logs/chunk")
+    @app.get("/_mystack/ui/emr/logs/chunk")
     async def management_log_chunk(
-        request: Request,
         cluster_id: str,
         step_id: str,
         stdout_offset: int = 0,
         stderr_offset: int = 0,
     ) -> JSONResponse:
-        authorize_management(request, diagnostics_settings, "emr", "logs.chunk")
         try:
             return JSONResponse(
                 await management.log_chunk(
@@ -235,8 +250,55 @@ def create_app(
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
 
+    @app.get("/_mystack/ui/emr/config")
+    async def ui_config() -> JSONResponse:
+        return JSONResponse(ui_settings.document())
+
+    @app.get("/_mystack/ui/emr/log-stream")
+    async def ui_log_stream(
+        request: Request,
+        cluster_id: str,
+        step_id: str,
+        stdout_offset: int = 0,
+        stderr_offset: int = 0,
+    ) -> Response:
+        if stdout_offset < 0 or stderr_offset < 0:
+            return JSONResponse({"detail": "Log offsets must be non-negative"}, status_code=400)
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.ui.log_stream.controller.before",
+            cluster_id=cluster_id,
+            step_id=step_id,
+            stdout_offset=stdout_offset,
+            stderr_offset=stderr_offset,
+        )
+        return StreamingResponse(
+            log_stream.events(
+                request,
+                cluster_id=cluster_id,
+                step_id=step_id,
+                stdout_offset=stdout_offset,
+                stderr_offset=stderr_offset,
+            ),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
+        )
+
     @app.post("/", include_in_schema=False)
     async def aws_json_endpoint(request: Request) -> Response:
         return await endpoint(request)
+
+    @app.get("/_mystack/ui")
+    @app.get("/_mystack/ui/")
+    async def ui_root() -> RedirectResponse:
+        return RedirectResponse("/_mystack/ui/emr/", status_code=307)
+
+    ui_directory = Path(__file__).parent / "static" / "ui"
+    app.mount(
+        "/_mystack/ui/emr",
+        HistoryFallbackStaticFiles(directory=ui_directory, html=True, check_dir=False),
+        name="emr-ui",
+    )
 
     return app

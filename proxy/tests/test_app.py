@@ -19,7 +19,7 @@ from mystack.proxy.config import ProxySettings, ServiceRoute
 from mystack.proxy.forwarder import AwsRequestForwarder
 from mystack.proxy.routing import AwsServiceDetector
 
-_DIAGNOSTICS = DiagnosticsSettings(enabled=True, management_token=None, stack_limit=20)
+_DIAGNOSTICS = DiagnosticsSettings(enabled=True, stack_limit=20)
 
 
 def settings(routes: tuple[ServiceRoute, ...] = ()) -> ProxySettings:
@@ -29,10 +29,6 @@ def settings(routes: tuple[ServiceRoute, ...] = ()) -> ProxySettings:
         request_timeout_seconds=30,
         listen_host="127.0.0.1",
         listen_port=8080,
-        console_refresh_interval_seconds=2,
-        console_log_stream_poll_interval_seconds=0.1,
-        console_log_stream_timeout_seconds=10,
-        console_log_buffer_bytes=65536,
         config_source="test",
         config_fingerprint="test-fingerprint",
     )
@@ -188,10 +184,10 @@ async def test_preserves_content_encoded_wire_bytes_and_aws_checksum_headers() -
     assert response.headers["x-amz-checksum-crc32"] == "upstream-checksum"
 
 
-def test_console_and_component_diagnostics_are_registry_driven() -> None:
+def test_console_redirect_and_component_diagnostics_are_registry_driven_without_auth() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/_mystack/diagnostics/threads"
-        assert request.headers["authorization"] == "Bearer token"
+        assert "authorization" not in request.headers
         return httpx.Response(200, json={"service": "emr", "thread_count": 2})
 
     route = ServiceRoute(
@@ -210,16 +206,9 @@ def test_console_and_component_diagnostics_are_registry_driven() -> None:
         )
     ) as client:
         assert client.get("/_mystack/components").json() == {"components": ["proxy", "emr"]}
-        console = client.get("/_mystack/console")
-        assert "Mystack Console" in console.text
-        assert 'content="2000"' in console.text
-        stylesheet = client.get("/_mystack/assets/console/console.css")
-        javascript = client.get("/_mystack/assets/console/console.js")
-        assert stylesheet.status_code == 200
-        assert stylesheet.headers["content-type"].startswith("text/css")
-        assert javascript.status_code == 200
-        assert javascript.headers["content-type"].startswith("text/javascript")
-        assert client.get("/_mystack/assets/console/unknown.js").status_code == 404
+        console = client.get("/_mystack/console", follow_redirects=False)
+        assert console.status_code == 307
+        assert console.headers["location"] == "/_mystack/ui/emr/"
         response = client.get(
             "/_mystack/components/emr/diagnostics/threads",
             headers={"Authorization": "Bearer token"},
@@ -267,23 +256,21 @@ def test_resource_and_log_management_are_forwarded_without_domain_coupling() -> 
     ]
 
 
-def test_emr_log_stream_uses_sse_and_resumes_from_last_event_offsets() -> None:
+def test_service_owned_emr_sse_is_streamed_through_the_stable_ui_path() -> None:
     observed: dict[str, str] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        observed["path"] = request.url.path
         observed["query"] = request.url.query.decode()
-        observed["authorization"] = request.headers["authorization"]
+        observed["last_event_id"] = request.headers["last-event-id"]
+        observed["authorization"] = request.headers.get("authorization", "absent")
         return httpx.Response(
             200,
-            json={
-                "stdout": "next line\n",
-                "stderr": "",
-                "stdout_next_offset": 20,
-                "stderr_next_offset": 7,
-                "step_state": "COMPLETED",
-                "log_publication": {"status": "published"},
-                "complete": True,
-            },
+            content=(
+                b"retry: 1000\n\nid: 20:7\nevent: logs\n"
+                b'data: {"stdout":"next line\\n","complete":true}\n\n'
+            ),
+            headers={"content-type": "text/event-stream"},
         )
 
     route = ServiceRoute(
@@ -302,8 +289,13 @@ def test_emr_log_stream_uses_sse_and_resumes_from_last_event_offsets() -> None:
         )
     ) as client:
         response = client.get(
-            "/_mystack/components/emr/log-stream",
-            params={"cluster_id": "j-1", "step_id": "s-1"},
+            "/_mystack/ui/emr/log-stream",
+            params={
+                "cluster_id": "j-1",
+                "step_id": "s-1",
+                "stdout_offset": 12,
+                "stderr_offset": 7,
+            },
             headers={"Authorization": "Bearer token", "Last-Event-ID": "12:7"},
         )
 
@@ -313,12 +305,14 @@ def test_emr_log_stream_uses_sse_and_resumes_from_last_event_offsets() -> None:
     assert "id: 20:7" in response.text
     assert '"stdout":"next line\\n"' in response.text
     assert observed == {
+        "path": "/_mystack/ui/emr/log-stream",
         "query": ("cluster_id=j-1&step_id=s-1&stdout_offset=12&stderr_offset=7"),
-        "authorization": "Bearer token",
+        "last_event_id": "12:7",
+        "authorization": "absent",
     }
 
 
-def test_emr_log_stream_rejects_negative_offsets_before_backend_call() -> None:
+def test_unknown_service_ui_is_rejected_before_backend_call() -> None:
     route = ServiceRoute(
         name="emr",
         backend_url="http://emr:8080",
@@ -337,11 +331,10 @@ def test_emr_log_stream_rejects_negative_offsets_before_backend_call() -> None:
         )
     ) as client:
         response = client.get(
-            "/_mystack/components/emr/log-stream",
-            params={"cluster_id": "j-1", "step_id": "s-1", "stdout_offset": -1},
+            "/_mystack/ui/glue/",
         )
 
-    assert response.status_code == 400
+    assert response.status_code == 404
 
 
 def test_management_backend_failure_is_mapped_without_exposing_client_state() -> None:

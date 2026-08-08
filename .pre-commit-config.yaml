@@ -18,6 +18,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: frontend-lint
+        name: React TypeScript ESLint
+        entry: npm run frontend:lint
+        language: system
+        pass_filenames: false
+        files: ^(ui|emr/ui|glue/ui)/|^(package(-lock)?\.json|eslint\.config\.js|tsconfig\.json)$
       - id: documentation-contract
         name: Bilingual documentation contract
         entry: uv run python scripts/check_docs.py

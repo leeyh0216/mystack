@@ -19,6 +19,7 @@ Mystack은 AWS API 경계에서 관찰되는 EMR 및 Glue Data Catalog 동작을
 | `emr` | EMR 리소스, 클러스터/Step 상태 머신, bootstrap/Spark 실행 | Proxy 라우팅과 Glue 모델 |
 | `glue` | Glue Data Catalog, Glue 타입, Hive/Iceberg 상호운용성 | Proxy 라우팅과 EMR 모델 |
 | `shared` | AWS JSON 1.1 codec, 공식 서비스 모델, 요청 검증 | EMR/Glue 비즈니스 규칙 |
+| `ui` | Service 중립 React primitive와 semantic Tailwind design token | EMR/Glue DTO, API, 비즈니스 규칙 |
 
 Proxy route registry는 설정 기반입니다. 새 emulator는 target prefix, SigV4 signing name, host prefix, backend URL만 등록하며 Proxy 코드를 변경하거나 새 서비스 패키지를 import하지 않습니다.
 
@@ -115,11 +116,13 @@ host:4566 -> proxy:8080
 EMR은 emulated cluster별 Spark local process를 실행합니다. Glue Job/JobRun은 구현하지 않으며 Spark 기반 Glue Catalog/Hive/Iceberg 검증은 versioned runtime profile에서 실행합니다.
 
 Management traffic은 별도 outward read-model 경계를 사용합니다. 각 service의 inbound
-management adapter가 Application/Domain resource를 versioned JSON으로 변환하고 Proxy가 이를
-전달하며 browser UI는 service 내부를 import하지 않고 렌더링합니다. 자세한 내용은
+management adapter가 Application/Domain resource를 versioned JSON으로 변환하고 각 emulator가
+자기 React/TypeScript UI를 package하고 직접 제공합니다. Proxy는 안정적인 공개 UI path와 byte만
+stream하며 service asset이나 DTO를 소유하지 않습니다. 두 application은 서로 또는 service 내부를
+import하지 않고 root `@mystack/ui` primitive와 중앙 Tailwind semantic token을 조립합니다. 자세한 내용은
 [관리 Console 계약](console.ko.md)을 참고하세요.
 
-Console command는 내부 객체 bridge로 이 architecture를 우회하지 않습니다. EMR mutation은
+UI command는 내부 객체 bridge로 이 architecture를 우회하지 않습니다. EMR mutation은
 문서화된 AWS JSON 1.1 request를 public Proxy로 보내므로 boto3와 동일한 routing, model
 validation, application handler, repository, error translation, 경계 logging을 거칩니다. Glue
 탐색은 read model로 유지합니다. Static browser module은 이 두 outward contract만 알기 때문에
@@ -183,7 +186,7 @@ interface는 service 의존성 graph에 들어가지 않습니다. [Pre-start
 - Glue Job과 JobRun
 - Glue Crawler
 - 초기 runtime에서 분산 EC2/YARN/HDFS의 물리적 재현
-- strict authentication mode가 아닌 경우 IAM policy 평가
+- Production IAM policy 평가 또는 management endpoint 인증
 - 미문서화된 AWS 버그 재현
 
 <!-- section: sources -->

@@ -64,6 +64,13 @@ def test_schema_rejects_removed_glue_extension_configuration(monkeypatch) -> Non
         load_configuration("config/mystack.yaml")
 
 
+def test_schema_rejects_removed_management_authentication_configuration(monkeypatch) -> None:
+    monkeypatch.setenv("MYSTACK__MANAGEMENT__DIAGNOSTICS__TOKEN", "removed")
+
+    with pytest.raises(ConfigurationError, match=r"management\.diagnostics.*Additional properties"):
+        load_configuration("config/mystack.yaml")
+
+
 def test_schema_error_redacts_sensitive_override_value(monkeypatch) -> None:
     monkeypatch.setenv("MYSTACK__LOCALSTACK__SECRET_ACCESS_KEY", "123456789")
 

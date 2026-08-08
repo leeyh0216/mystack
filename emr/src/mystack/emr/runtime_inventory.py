@@ -3,6 +3,7 @@
 Official runtime sources:
 - Corretto 17: https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
 - Spark configuration: https://spark.apache.org/docs/3.5.4/configuration.html
+- Spark process discovery script: https://github.com/apache/spark/blob/v3.5.4/bin/load-spark-env.sh
 - Python venv: https://docs.python.org/3.11/library/venv.html
 """
 
@@ -59,6 +60,10 @@ def inventory() -> dict[str, Any]:
             "ivy_cache": "/home/hadoop/.ivy2",
             "master": "local[*] (configured in config/mystack.yaml)",
         },
+        "process_tools": {
+            "ps": _executable("ps"),
+            "purpose": "Required by Spark bin/load-spark-env.sh process discovery",
+        },
         "aws_cli": {
             "executable": _executable("aws"),
             "version": _version(["aws", "--version"]),
@@ -93,6 +98,7 @@ def inventory() -> dict[str, Any]:
             "https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html",
             "https://docs.docker.com/reference/dockerfile/#entrypoint",
             "https://docs.python.org/3.11/library/venv.html",
+            "https://github.com/apache/spark/blob/v3.5.4/bin/load-spark-env.sh",
             "https://spark.apache.org/docs/3.5.4/configuration.html",
         ],
     }

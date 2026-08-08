@@ -90,7 +90,7 @@ not reconstructed. `emr.log_retention_seconds` removes only old terminal work di
 `published` or `skipped` publication record; failed publication evidence is retained.
 
 Live reads do not follow files through an unbounded connection. The backend returns at most
-`emr.live_log_chunk_bytes` from separate stdout/stderr byte offsets. The Proxy maps repeated reads
+`emr.live_log_chunk_bytes` from separate stdout/stderr byte offsets. EMR maps repeated reads
 to standard `text/event-stream` events whose IDs are `<stdout-offset>:<stderr-offset>`. A browser
 can reconnect with `Last-Event-ID` or explicit offsets. This extension follows the
 [HTML Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html);
@@ -103,7 +103,7 @@ it is not an Amazon EMR API.
 - Execution journal, retention, and startup replay: `mystack.emr.adapters.outbound.journal`
 - Process capture and the publication call boundary: `mystack.emr.adapters.outbound.runtime`
 - Console/API projection: `mystack.emr.adapters.inbound.management`
-- SSE gateway: `mystack.proxy.log_stream`
+- SSE service adapter: `mystack.emr.adapters.inbound.log_stream`
 - Runtime client ownership and close order: `mystack.emr.runtime` and `mystack.emr.app`
 - boto3/LocalStack Docker proof: `tests/e2e/test_emr_spark.py`
 

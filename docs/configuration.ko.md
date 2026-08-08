@@ -29,8 +29,9 @@ MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
 mystack-proxy
 ```
 
-민감한 override path는 로그에서 가립니다. Production credential과 management token을
-commit된 YAML에 넣지 말고 배포 시 주입합니다. Docker의 일반 환경 설정과
+민감한 override path는 로그에서 가립니다. Production credential은 commit된 YAML에 넣지 말고
+배포 시 주입합니다. Mystack management/UI endpoint에는 의도적으로 인증 설정이 없으므로
+신뢰하는 local network 안에서만 사용해야 합니다. Docker의 일반 환경 설정과
 [secret](https://docs.docker.com/compose/how-tos/use-secrets/) 구분을 따르세요.
 
 <!-- section: docker-modes -->
@@ -64,7 +65,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
 | `management.console` | Browser 갱신, SSE polling/연결 deadline, log buffer 상한 |
-| `management.diagnostics` | thread/task stack 활성화, bearer token, 최대 깊이 |
+| `management.diagnostics` | 인증 없는 thread/task stack 활성화와 최대 깊이 |
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
@@ -77,8 +78,8 @@ mapping하며 설정 test와 한·영 문서를 함께 추가합니다. 안쪽 D
 file이나 environment를 읽지 않고 typed policy/value object만 받습니다.
 
 `management.console.refresh_interval_seconds`는 선택한 EMR 또는 Glue workspace의 선택 상태를
-유지하는 polling 주기이며 최소 0.5초입니다. Composition 경계에서 static Console에 값을
-주입하므로 browser code에는 환경별 interval이 없습니다. 현재 release는 표준 browser timer
+유지하는 polling 주기이며 최소 0.5초입니다. 각 emulator가 service 소유 UI 설정 endpoint에서
+값을 제공하므로 browser code에는 환경별 interval이 없습니다. 현재 release는 표준 browser timer
 계약인 [`Window.setInterval`](https://developer.mozilla.org/en-US/docs/Web/API/Window/setInterval)을
 사용합니다.
 `log_stream_poll_interval_seconds`는 SSE 연결 안에서 최대 크기가 정해진 EMR chunk를 조회하는 주기,

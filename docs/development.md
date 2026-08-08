@@ -10,6 +10,7 @@
 
 - Git and GitHub CLI authenticated for the private repository
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- Node.js 24.6.0 from `.node-version` and npm (not required when using the Dev Container)
 - [Docker Desktop or Docker Engine with Compose](https://docs.docker.com/compose/install/)
 - Optional [direnv](https://direnv.net/) for automatic local environment loading
 - At least 12 GB free disk space for Spark/Glue-compatible images and test data
@@ -45,8 +46,8 @@ uv, or AWS CLI installation is required. Open a local clone and run `Dev Contain
 Container`. `.devcontainer/devcontainer.json` mounts the workspace at the same absolute host path and
 uses the host Docker daemon. Run `make up` and `make test` after creation completes.
 
-The container provides Python 3.11, digest-pinned uv, Docker CLI/Compose, AWS CLI, GitHub CLI, locked
-workspace dependencies, pre-commit, and editor extensions. Commit feature versions in
+The container provides Python 3.11, Node.js 24.6.0, digest-pinned uv, Docker CLI/Compose, AWS CLI,
+GitHub CLI, locked Python/npm workspace dependencies, pre-commit, and editor extensions. Commit feature versions in
 `devcontainer.json` with resolved digests in `devcontainer-lock.json`. CI builds the same image with
 the [official Dev Container CLI](https://github.com/devcontainers/cli) and `--frozen-lockfile`.
 
@@ -86,7 +87,7 @@ mystack-proxy --config "$MYSTACK_CONFIG_FILE"
 `make up CONFIG=...` embeds a repository-local YAML file at build time. For a read-only live
 mount, add `-f compose.mount-config.yaml` as described in the [configuration guide](configuration.md).
 Both modes follow [Docker Compose configs](https://docs.docker.com/reference/compose-file/configs/).
-Never commit shared-environment management tokens or real AWS credentials.
+Mystack has no management authentication; never commit real AWS credentials.
 
 <!-- section: commands -->
 ## Daily commands
@@ -95,6 +96,7 @@ Run `make help` for the source of truth. Common flows:
 
 ```bash
 make format
+make frontend
 make pre-commit
 make requirements
 make coverage-check
@@ -113,7 +115,10 @@ make down
 
 Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible.
 
-`make pre-commit` installs and runs repository-local hooks backed by `uv.lock`. The hooks reject
+`make frontend` runs ESLint, TypeScript project-reference checking, Vitest component contracts, and
+both Vite production builds. Set `MYSTACK_FRONTEND_TEST_TIMEOUT_MS` to a positive millisecond value
+to override the explicit 10-second test/hook deadline. `make pre-commit` installs and runs
+repository-local hooks backed by `uv.lock` and `package-lock.json`. The hooks reject Python and React/TypeScript
 lint/format, bilingual documentation, container requirement lock, botocore model-manifest, and
 generated interoperability evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
@@ -123,6 +128,12 @@ contract](https://pre-commit.com/#install).
 ## Where to make changes
 
 - Wire metadata or generic JSON serialization: `shared/src/mystack/aws_protocol`
+- Shared React primitives and semantic Tailwind theme tokens: `ui/src`; this package must not import
+  EMR or Glue UI modules
+- EMR UI application/DTO/API composition: `emr/ui`; Glue UI application/DTO/API composition:
+  `glue/ui`; service UIs may import `@mystack/ui` but never each other
+- Stable public UI forwarding only: `proxy/src/mystack/proxy/forwarder.py`; Proxy must not package
+  service React code or know service DTOs
 - Proxy route behavior: `proxy/src/mystack/proxy/routing.py`; add services through YAML first
 - Proxy controller capabilities and HTTP lifecycle: `proxy/src/mystack/proxy/ports.py` and
   `runtime.py`

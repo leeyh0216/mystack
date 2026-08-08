@@ -57,6 +57,7 @@ def test_inventory_declares_runtime_paths_without_environment_values(
     assert document["service_identity"]["user"] == "hadoop"
     assert document["service_identity"]["initialization_user"] == "root"
     assert document["spark"]["release"] == "Spark 3.5.4 test build"
+    assert document["process_tools"]["ps"] == "/runtime/bin/ps"
     assert document["java"]["default_trust_store"] == "/runtime/java/lib/security/cacerts"
     assert "HTTPS_PROXY" in document["environment_names"]
     assert "never-log-this" not in serialized
@@ -71,6 +72,7 @@ def test_image_entrypoint_sources_hooks_then_execs_privilege_adapter() -> None:
     assert 'exec /usr/local/bin/mystack-emr-run-as-hadoop "${mystack_command[@]}"' in entrypoint
     assert "its contents and environment values were not logged" in entrypoint
     assert 'ENTRYPOINT ["/usr/local/bin/mystack-emr-entrypoint"]' in dockerfile
+    assert "procps-ng" in dockerfile
     assert "USER hadoop" not in dockerfile
 
 

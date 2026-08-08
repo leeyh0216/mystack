@@ -9,6 +9,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
+from fastapi import Request
+from mystack.aws_protocol import ManagementUiSettings
+from mystack.emr.adapters.inbound.log_stream import EmrLogEventStream
 from mystack.emr.adapters.inbound.management import EmrManagementAdapter
 from mystack.emr.domain.errors import ClusterNotFoundError
 
@@ -126,3 +129,65 @@ async def test_log_resource_ids_reject_path_traversal() -> None:
             stdout_offset=0,
             stderr_offset=0,
         )
+
+
+@pytest.mark.asyncio
+async def test_service_owned_log_stream_resumes_with_bounded_offsets() -> None:
+    logs = SimpleNamespace(
+        log_chunk=AsyncMock(
+            return_value={
+                "stdout": "next line\n",
+                "stderr": "",
+                "stdout_next_offset": 20,
+                "stderr_next_offset": 7,
+                "step_state": "COMPLETED",
+                "log_publication": {"status": "published"},
+                "complete": True,
+            }
+        )
+    )
+
+    async def receive() -> dict[str, object]:
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/_mystack/ui/emr/log-stream",
+            "headers": [(b"last-event-id", b"12:7")],
+            "client": ("127.0.0.1", 1234),
+        },
+        receive,
+    )
+    stream = EmrLogEventStream(
+        logs,
+        ManagementUiSettings(
+            refresh_interval_seconds=2,
+            log_stream_poll_interval_seconds=0.1,
+            log_stream_timeout_seconds=10,
+            log_buffer_bytes=4096,
+        ),
+    )
+
+    content = b"".join(
+        [
+            chunk
+            async for chunk in stream.events(
+                request,
+                cluster_id="j-1",
+                step_id="s-1",
+                stdout_offset=0,
+                stderr_offset=0,
+            )
+        ]
+    )
+
+    logs.log_chunk.assert_awaited_once_with(
+        "j-1",
+        "s-1",
+        stdout_offset=12,
+        stderr_offset=7,
+    )
+    assert b"event: logs" in content
+    assert b"id: 20:7" in content

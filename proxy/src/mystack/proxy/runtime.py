@@ -15,8 +15,13 @@ import httpx
 from mystack.aws_protocol.observability import log_event
 
 from .config import ProxySettings, ServiceRoute
-from .forwarder import AwsRequestForwarder, HttpManagementForwarder
-from .ports import AwsRequestForwarding, ManagementForwarding, RouteDetector
+from .forwarder import AwsRequestForwarder, HttpManagementForwarder, HttpServiceUiForwarder
+from .ports import (
+    AwsRequestForwarding,
+    ManagementForwarding,
+    RouteDetector,
+    ServiceUiForwarding,
+)
 from .routing import AwsServiceDetector
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +62,7 @@ class ProxyRuntime:
         self._client: httpx.AsyncClient | None = None
         self._aws_requests: AwsRequestForwarding | None = None
         self._management: ManagementForwarding | None = None
+        self._service_ui: ServiceUiForwarding | None = None
         self._state = RuntimeState.NEW
         self._closed = False
         self._close_lock = asyncio.Lock()
@@ -77,6 +83,12 @@ class ProxyRuntime:
             raise RuntimeError("Proxy runtime is not started")
         return self._management
 
+    @property
+    def service_ui(self) -> ServiceUiForwarding:
+        if self._service_ui is None:
+            raise RuntimeError("Proxy runtime is not started")
+        return self._service_ui
+
     async def start(self) -> None:
         if self._state is not RuntimeState.NEW:
             raise RuntimeError(f"Proxy runtime cannot start from {self._state}")
@@ -93,6 +105,7 @@ class ProxyRuntime:
                 client,
                 self._settings.routes,
             )
+            self._service_ui = HttpServiceUiForwarder(client, self._settings.routes)
         except Exception:
             self._state = RuntimeState.FAILED
             _log(

@@ -115,7 +115,10 @@ docker compose -f compose.ghcr.yaml exec --user hadoop emr \
 
 이 정보는 실제 base OS, service UID/GID/home, 확인된 실행 file과 version, Python package와 CA
 path, Spark home/release/Ivy directory, 쓰기 가능한 path, 인식하는 환경변수 이름을 기록합니다.
-환경변수 값은 기록하지 않습니다.
+환경변수 값은 기록하지 않습니다. `process_tools.ps`는 반드시 실제 path여야 합니다. Spark의
+[`bin/load-spark-env.sh`](https://github.com/apache/spark/blob/v3.5.4/bin/load-spark-env.sh)가
+기존 process를 찾을 때 `ps`를 호출하므로 image가 Amazon Linux `procps-ng`를 설치합니다. Null
+path는 무시할 warning이 아니라 image 계약 실패입니다.
 
 <!-- section: diagnostics -->
 ## 안전하게 시작 실패 진단하기

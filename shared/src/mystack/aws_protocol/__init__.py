@@ -2,12 +2,14 @@
 
 from .configuration import ConfigurationError, LoadedConfiguration, load_configuration
 from .context import AwsRequestContext
-from .diagnostics import DiagnosticsSettings, authorize_management, create_diagnostics_router
+from .diagnostics import DiagnosticsSettings, create_diagnostics_router
 from .dispatcher import OperationDispatcher
 from .endpoint import AwsJsonRpcEndpoint
 from .errors import AwsServiceError
+from .management import ManagementUiSettings
 from .model import AwsServiceModel
 from .operation_registry import OperationFamily, OperationFamilyRegistry
+from .static_ui import HistoryFallbackStaticFiles
 
 __all__ = [
     "AwsJsonRpcEndpoint",
@@ -16,11 +18,12 @@ __all__ = [
     "AwsServiceModel",
     "ConfigurationError",
     "DiagnosticsSettings",
+    "HistoryFallbackStaticFiles",
     "LoadedConfiguration",
+    "ManagementUiSettings",
     "OperationDispatcher",
     "OperationFamily",
     "OperationFamilyRegistry",
-    "authorize_management",
     "create_diagnostics_router",
     "load_configuration",
 ]

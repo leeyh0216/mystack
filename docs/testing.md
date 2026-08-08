@@ -12,10 +12,11 @@
 | --- | --- | --- | --- |
 | Unit | Domain states, codecs, routing, configuration | None | `tests.unit_timeout_seconds` |
 | Architecture | Inward-only imports and bounded contexts | None | unit timeout |
+| Frontend | Shared theme/primitives, React components, TypeScript, production assets | Node/jsdom | `MYSTACK_FRONTEND_TEST_TIMEOUT_MS` plus CI job timeout |
 | Contract | boto3 serialization, response and modeled errors | API process | `tests.contract_timeout_seconds` |
 | E2E | Public Proxy to LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg, AWS SDK for pandas | Docker | `tests.e2e_timeout_seconds` |
 
-Every pytest invocation uses `pytest-timeout` with the thread method so a hang produces Python thread stacks. Spark/bootstrap adapters also receive service-specific process timeouts from YAML.
+Every pytest invocation uses `pytest-timeout` with the thread method so a hang produces Python thread stacks. Spark/bootstrap adapters also receive service-specific process timeouts from YAML. Vitest uses the explicit configurable millisecond deadline for both tests and hooks; CI separately bounds lint, type checking, tests, and production builds at the job level.
 
 <!-- section: contracts -->
 ## Contract rules
@@ -69,7 +70,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 - Exercise partitioned Parquet write/read, S3 HEAD, and Glue table/partition metadata through the
   same public Proxy with AWS SDK for pandas 3.17.0. The [client compatibility
   matrix](compatibility/client-matrix.md) records the exact scope.
-- Drive the management Console with Playwright: create/terminate an EMR cluster, submit, track,
+- Drive both service-owned React UIs through Proxy with Playwright: create/terminate an EMR cluster, submit, track,
   cancel and inspect a Step, verify S3 log publication, explore a complex Glue schema and partition,
   and assert keyboard/ARIA behavior plus a clean browser console. Browser actions use
   `tests.e2e.browser_action_timeout_seconds`; CI makes Chromium execution mandatory through the
@@ -86,11 +87,14 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
 <!-- section: reproducibility -->
 ## Reproducibility
 
-The lockfile, hash-locked container exports, YAML runtime profile, immutable container-base
+The `uv.lock` and `package-lock.json` lockfiles, hash-locked container exports, YAML runtime profile, immutable container-base
 digests, botocore manifest, Spark checksum/version, and Iceberg version are test inputs. Updating
 any one requires corresponding manifest/profile documentation and E2E evidence. CI rejects a
 `requirements/*.txt` export that does not match `uv.lock`; generation follows the official
 [uv export command](https://docs.astral.sh/uv/reference/cli/#uv-export).
+The frontend gate runs ESLint, `tsc` project references, Vitest, and both Vite builds. A shared-theme
+contract proves both applications consume the same semantic CSS variables, while the Docker E2E
+proves each final service image serves its own built assets and Proxy preserves the stable paths.
 
 <!-- section: differential -->
 ## Optional differential layer

@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract differential up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract differential up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -14,6 +14,9 @@ bootstrap: ## Validate tools, install locked dependencies, and run fast contract
 
 sync: ## Recreate the Python workspace from uv.lock.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv sync --locked --all-packages
+
+frontend: ## Lint, type-check, test, and build both service-owned UIs.
+	@npm run frontend:check
 
 pre-commit: ## Install and run repository-local commit quality gates.
 	@uv run pre-commit install
@@ -110,15 +113,7 @@ routes: ## Show the active Proxy route registry.
 	@curl --fail --silent --show-error "$(MYSTACK_URL)/_mystack/routes" | uv run python -m json.tool
 
 threads: ## Show thread stacks for the selected management endpoint.
-	@if [ -n "$${MYSTACK_MANAGEMENT_TOKEN:-}" ]; then \
-	  curl --fail --silent --show-error -H "Authorization: Bearer $$MYSTACK_MANAGEMENT_TOKEN" "$(MYSTACK_URL)/_mystack/diagnostics/threads"; \
-	else \
-	  curl --fail --silent --show-error "$(MYSTACK_URL)/_mystack/diagnostics/threads"; \
-	fi | uv run python -m json.tool
+	@curl --fail --silent --show-error "$(MYSTACK_URL)/_mystack/diagnostics/threads" | uv run python -m json.tool
 
 tasks: ## Show asyncio task stacks for the selected management endpoint.
-	@if [ -n "$${MYSTACK_MANAGEMENT_TOKEN:-}" ]; then \
-	  curl --fail --silent --show-error -H "Authorization: Bearer $$MYSTACK_MANAGEMENT_TOKEN" "$(MYSTACK_URL)/_mystack/diagnostics/tasks"; \
-	else \
-	  curl --fail --silent --show-error "$(MYSTACK_URL)/_mystack/diagnostics/tasks"; \
-	fi | uv run python -m json.tool
+	@curl --fail --silent --show-error "$(MYSTACK_URL)/_mystack/diagnostics/tasks" | uv run python -m json.tool

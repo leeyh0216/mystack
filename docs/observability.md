@@ -32,8 +32,9 @@ and key evidence, partial object count, and a `fix_hint`, while the local public
 available through the management endpoint. See the [log layout contract](protocols/emr-log-layout.md).
 Durability adds `emr.step_journal.*` and `emr.step_journal.publication_recovery.*`; retry attempts
 emit `emr.step_logs.publish.retry` with bounded-delay evidence. Live output emits
-`emr.management.log_chunk.*` and `proxy.emr_log_stream.*`, including offsets and a repair hint on
-component-schema drift, but never the output content itself.
+`emr.management.log_chunk.*` and `emr.ui.log_stream.*`, including offsets and a repair hint on
+component-schema drift, but never the output content itself. Service UI forwarding emits
+`proxy.service_ui.forward.*` with component, relative path, status, byte count, and duration.
 
 Preconfigured clusters emit `emr.startup_clusters.load.*` before/after whole-file validation,
 `emr.startup_clusters.provision.*` around the plan, and `emr.startup_cluster.create.*` for each
@@ -52,7 +53,7 @@ private. See the [EMR pre-start contract](protocols/emr-prestart.md).
 
 `service`, `component`, `request_id`, `operation`, `api_version`, `model_fingerprint`, `resource_id`, `state_before`, `state_after`, `duration_ms`, and `fix_hint` where relevant.
 
-Never log Authorization, access/secret keys, management tokens, complete request payloads, or frame locals. Payload diagnostics use byte length and SHA-256 prefix. Configuration logs use source, fingerprint, and redacted override paths.
+Never log Authorization, access/secret keys, complete request payloads, or frame locals. Payload diagnostics use byte length and SHA-256 prefix. Configuration logs use source, fingerprint, and redacted override paths.
 
 <!-- section: diagnostics -->
 ## Live diagnostics
@@ -60,9 +61,9 @@ Never log Authorization, access/secret keys, management tokens, complete request
 - `GET /_mystack/diagnostics/threads`: Python threads and source stack lines
 - `GET /_mystack/diagnostics/tasks`: asyncio tasks and source stack lines
 
-Both honor YAML `management.diagnostics.enabled`, `stack_limit`, and optional `token`. A configured token requires `Authorization: Bearer ...`. Access attempts are audited. Python documents the non-deadlocking snapshot behavior of [`sys._current_frames`](https://docs.python.org/3/library/sys.html#sys._current_frames).
+Both honor YAML `management.diagnostics.enabled` and `stack_limit`. Mystack deliberately implements no management authentication. Access observations are logged without credentials. Python documents the non-deadlocking snapshot behavior of [`sys._current_frames`](https://docs.python.org/3/library/sys.html#sys._current_frames).
 
-Use `make threads` or `make tasks`. Stack source is operationally sensitive even without locals, so shared deployments must configure a management token and restrict network access.
+Use `make threads` or `make tasks`. Stack source is operationally sensitive even without locals, so deployments must restrict UI and diagnostics with container or network boundaries and must not expose them to untrusted networks.
 
 <!-- section: drift -->
 ## Upstream drift diagnosis

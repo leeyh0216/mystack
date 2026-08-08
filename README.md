@@ -47,9 +47,10 @@ docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-Open `http://localhost:4566/_mystack/console` to create and operate EMR clusters, submit and track
-Steps, follow/pause/download live logs, explore Glue databases/tables/schemas/partitions, and view routes, thread
-stacks, and asyncio tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
+Open the service-owned [EMR UI](http://localhost:4566/_mystack/ui/emr/) to create and operate
+clusters, submit and track Steps, and follow/pause/download live logs. Open the service-owned
+[Glue UI](http://localhost:4566/_mystack/ui/glue/) to explore databases, tables, schemas,
+partitions, thread stacks, and asyncio tasks. Start with the [detailed usage guide](docs/getting-started.md) for Docker Compose combinations,
 boto3, AWS SDK for pandas, upgrades, rollback, troubleshooting, and cleanup. Source builds belong in
 the [development guide](docs/development.md), not the normal user path.
 

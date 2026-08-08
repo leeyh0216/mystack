@@ -48,10 +48,6 @@ class ProxySettings:
     request_timeout_seconds: float
     listen_host: str
     listen_port: int
-    console_refresh_interval_seconds: float
-    console_log_stream_poll_interval_seconds: float
-    console_log_stream_timeout_seconds: float
-    console_log_buffer_bytes: int
     config_source: str
     config_fingerprint: str
 
@@ -59,38 +55,24 @@ class ProxySettings:
     def from_configuration(cls, loaded: LoadedConfiguration) -> ProxySettings:
         proxy = require_mapping(loaded.document, "proxy")
         listen = require_mapping(proxy, "listen")
-        management = require_mapping(loaded.document, "management")
-        console = require_mapping(management, "console")
         route_documents = proxy.get("routes")
         if not isinstance(route_documents, list):
             raise ConfigurationError("proxy.routes must be a list")
         routes = tuple(ServiceRoute.from_mapping(route) for route in route_documents)
         _validate_routes(routes)
         try:
-            refresh_interval_seconds = float(console["refresh_interval_seconds"])
-            if refresh_interval_seconds < 0.5:
-                raise ConfigurationError(
-                    "management.console.refresh_interval_seconds must be at least 0.5"
-                )
-            log_poll_interval_seconds = float(console["log_stream_poll_interval_seconds"])
-            log_stream_timeout_seconds = float(console["log_stream_timeout_seconds"])
-            log_buffer_bytes = int(console["log_buffer_bytes"])
             return cls(
                 fallback_url=str(proxy["fallback_url"]),
                 routes=routes,
                 request_timeout_seconds=float(proxy["request_timeout_seconds"]),
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
-                console_refresh_interval_seconds=refresh_interval_seconds,
-                console_log_stream_poll_interval_seconds=log_poll_interval_seconds,
-                console_log_stream_timeout_seconds=log_stream_timeout_seconds,
-                console_log_buffer_bytes=log_buffer_bytes,
                 config_source=loaded.source,
                 config_fingerprint=loaded.fingerprint,
             )
         except KeyError as error:
             raise ConfigurationError(
-                f"proxy/management console configuration is missing required key: {error.args[0]}"
+                f"proxy configuration is missing required key: {error.args[0]}"
             ) from error
 
 

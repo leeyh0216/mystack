@@ -116,10 +116,19 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
+      # Official setup-node cache contract: https://github.com/actions/setup-node
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
       - name: Install and run repository-local required checks
         run: |
           uv sync --locked --all-packages
+          npm ci --ignore-scripts
           uv run pre-commit run --all-files
+          npm run frontend:typecheck
+          npm run frontend:test
+          npm run frontend:build
           make test package-check compatibility-check
       - name: Run required contract cases as isolated processes
         run: |

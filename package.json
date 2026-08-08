@@ -1,0 +1,41 @@
+{
+  "name": "mystack-frontend-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.6.0"
+  },
+  "workspaces": [
+    "ui",
+    "emr/ui",
+    "glue/ui"
+  ],
+  "scripts": {
+    "frontend:lint": "eslint ui emr/ui glue/ui",
+    "frontend:typecheck": "tsc -b",
+    "frontend:test": "vitest run --testTimeout=10000 --hookTimeout=10000",
+    "frontend:build": "npm run build --workspace @mystack/emr-ui && npm run build --workspace @mystack/glue-ui",
+    "frontend:check:emr": "eslint ui emr/ui && tsc -b ui emr/ui && vitest run ui/tests emr/ui/src --testTimeout=10000 --hookTimeout=10000 && npm run build --workspace @mystack/emr-ui",
+    "frontend:check:glue": "eslint ui glue/ui && tsc -b ui glue/ui && vitest run ui/tests glue/ui/src --testTimeout=10000 --hookTimeout=10000 && npm run build --workspace @mystack/glue-ui",
+    "frontend:check": "npm run frontend:lint && npm run frontend:typecheck && npm run frontend:test && npm run frontend:build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "24.3.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "eslint": "9.39.5",
+    "globals": "16.3.0",
+    "jsdom": "29.1.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vite": "8.2.1",
+    "vitest": "4.1.10"
+  }
+}

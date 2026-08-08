@@ -1,6 +1,21 @@
 # syntax=docker/dockerfile:1.7
-# Amazon Linux public ECR source: https://gallery.ecr.aws/amazonlinux/amazonlinux
+# Node official image and Vite production build references:
+# https://hub.docker.com/_/node
+# https://vite.dev/guide/build.html
+ARG NODE_BASE=node:24.6.0-bookworm-slim@sha256:9b741b28148b0195d62fa456ed84dd6c953c1f17a3761f3e6e6797a754d9edff
 ARG AMAZON_LINUX_BASE=public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2
+FROM ${NODE_BASE} AS ui-builder
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+COPY ui/package.json ui/package.json
+COPY emr/ui/package.json emr/ui/package.json
+COPY glue/ui/package.json glue/ui/package.json
+RUN npm ci --ignore-scripts
+COPY ui ui
+COPY emr/ui emr/ui
+RUN npm run build --workspace @mystack/emr-ui
+
+# Amazon Linux public ECR source: https://gallery.ecr.aws/amazonlinux/amazonlinux
 FROM ${AMAZON_LINUX_BASE} AS runtime-base
 
 ARG SPARK_VERSION=3.5.4
@@ -17,11 +32,14 @@ LABEL org.opencontainers.image.title="Mystack EMR Spark Emulator" \
 
 # Corretto package reference:
 # https://docs.aws.amazon.com/corretto/latest/corretto-17-ug/amazon-linux-install.html
+# Spark's official load-spark-env script calls ps while locating running processes:
+# https://github.com/apache/spark/blob/v3.5.4/bin/load-spark-env.sh
 RUN dnf install -y \
       gzip \
       java-17-amazon-corretto-headless \
       python3.11 \
       python3.11-pip \
+      procps-ng \
       shadow-utils \
       sudo \
       tar \
@@ -85,6 +103,7 @@ COPY requirements/emr.txt /opt/requirements.txt
 RUN python3.11 -m pip install --no-cache-dir --require-hashes -r /opt/requirements.txt
 COPY shared /opt/src/shared
 COPY emr /opt/src/emr
+COPY --from=ui-builder /workspace/emr/src/mystack/emr/static/ui /opt/src/emr/src/mystack/emr/static/ui
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
 COPY --chmod=0755 emr/scripts/container/entrypoint.sh /usr/local/bin/mystack-emr-entrypoint
 # EMR bootstrap actions run as hadoop and use sudo for privileged work:

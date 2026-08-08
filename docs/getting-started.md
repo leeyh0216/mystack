@@ -24,17 +24,16 @@ configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoi
 <!-- section: compose -->
 ## Start with Docker Compose
 
-Install Docker Engine with Compose and authenticate GitHub CLI only for access to the private
-repository's Compose file. No source clone, Python environment, Java installation, local image
-build, registry token, or registry login is needed. The public images are pulled anonymously. Pick a
+Install Docker Engine with Compose. No source clone, GitHub login, Python environment, Java
+installation, local image build, registry token, or registry login is needed. The public repository
+and images are available anonymously. Pick a
 tag that exists for all three `mystack-*` packages; `latest` is intentionally unavailable.
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
 mkdir mystack-runtime && cd mystack-runtime
-gh api -H "Accept: application/vnd.github.raw+json" \
-  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
-  > compose.ghcr.yaml
+curl --fail --location --output compose.ghcr.yaml \
+  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"
 printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
 
 docker compose -f compose.ghcr.yaml config --quiet
@@ -44,9 +43,8 @@ curl --fail http://localhost:4566/_mystack/health
 ```
 
 GitHub's [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)
-states that public container packages can be pulled anonymously. `gh auth` separately authorizes the
-one-file download from the private repository; it is not used to pull the images. Never save that
-repository credential in `.env`.
+states that public container packages can be pulled anonymously. The raw Compose file is public as
+well. Never save a registry or GitHub credential in `.env` for this consumer path.
 
 The image-only Compose file contains no `build` key. It requires an explicit tag through Compose's
 [required interpolation](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)
@@ -262,14 +260,15 @@ docker compose -f compose.ghcr.yaml logs --tail 200 proxy glue emr
 curl --fail http://localhost:4566/_mystack/routes
 curl --fail http://localhost:4566/_mystack/diagnostics/threads
 curl --fail http://localhost:4566/_mystack/diagnostics/tasks
-open http://localhost:4566/_mystack/console
+open http://localhost:4566/_mystack/ui/emr/
+open http://localhost:4566/_mystack/ui/glue/
 ```
 
-In **EMR**, create a cluster with the same fields used by `RunJobFlow`, select it, submit a Spark
+In the service-owned **EMR UI**, create a cluster with the same fields used by `RunJobFlow`, select it, submit a Spark
 Step, and follow state, failure detail, stdout/stderr, and S3 log-publication status. Cluster
 protection and termination, plus active-Step cancellation, also use the public boto3-compatible
-AWS endpoint. In **Glue**, select a database and table to explore ordinary columns, partition keys,
-partition values and locations, parameters, and raw metadata. The Console polls at the configured
+AWS endpoint. In the service-owned **Glue UI**, select a database and table to explore ordinary columns, partition keys,
+partition values and locations, parameters, and raw metadata. Each UI polls its own emulator at the configured
 interval while preserving the current selection. See the [Console guide](console.md) for its exact
 boundary and security model.
 

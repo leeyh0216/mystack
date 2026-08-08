@@ -1,8 +1,23 @@
 # syntax=docker/dockerfile:1.7
+# Node official image and Vite production build references:
+# https://hub.docker.com/_/node
+# https://vite.dev/guide/build.html
+ARG NODE_BASE=node:24.6.0-bookworm-slim@sha256:9b741b28148b0195d62fa456ed84dd6c953c1f17a3761f3e6e6797a754d9edff
+ARG GLUE_BASE=public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7
+FROM ${NODE_BASE} AS ui-builder
+WORKDIR /workspace
+COPY package.json package-lock.json ./
+COPY ui/package.json ui/package.json
+COPY emr/ui/package.json emr/ui/package.json
+COPY glue/ui/package.json glue/ui/package.json
+RUN npm ci --ignore-scripts
+COPY ui ui
+COPY glue/ui glue/ui
+RUN npm run build --workspace @mystack/glue-ui
+
 # AWS Glue 5.0 image/reference:
 # https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html
-ARG GLUE_BASE=public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7
-FROM ${GLUE_BASE}
+FROM ${GLUE_BASE} AS final
 
 ARG MYSTACK_VERSION=0.1.0
 ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
@@ -26,6 +41,7 @@ WORKDIR /opt/mystack
 COPY requirements/glue.txt /opt/requirements.txt
 COPY shared /opt/src/shared
 COPY glue /opt/src/glue
+COPY --from=ui-builder /workspace/glue/src/mystack/glue/static/ui /opt/src/glue/src/mystack/glue/static/ui
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
 COPY glue/scripts/e2e /opt/mystack/e2e
 RUN python3 -m venv /opt/mystack/venv \

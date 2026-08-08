@@ -21,9 +21,11 @@
 | Spark + Hive + Glue Catalog | 세로 경로 구현: 공식 Glue 5 image, complex type, S3 Parquet E2E | 더 넓은 Hive metadata 의미론 |
 | Spark + Iceberg + Glue Catalog | 세로 경로 구현: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partition, transaction, 더 넓은 Iceberg API |
 | AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 더 넓은 Glue/S3 함수와 추가 client 검증 |
-| Web console | 구현: EMR cluster/Step 운영, pause/resume/download와 재시작 복구를 지원하는 live log, Glue database/table/schema/partition 탐색, route/thread/task, keyboard/browser E2E | Spark UI와 History Server link |
+| Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
 
-관리 console은 `/_mystack/console`에서 제공됩니다. Glue metadata mutation은 직렬화한
+EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다. Proxy의 공개 경로는
+`/_mystack/ui/emr/`, `/_mystack/ui/glue/`이며 호환 경로 `/_mystack/console`은 EMR로 redirect합니다.
+Glue metadata mutation은 직렬화한
 candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를
 모두 유지하고 database/table rename 또는 delete는 하위 table과 partition을 한 commit에
 포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema version 1은 다음
@@ -51,6 +53,7 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 - 미문서화된 AWS 버그 재현
 - 기본 local mode의 production IAM authorization 의미론
 - EC2/YARN/HDFS 물리적 분산 환경 재현
+- Spark History Server
 
 <!-- section: versions -->
 ## 버전 기준선

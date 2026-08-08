@@ -10,7 +10,7 @@ from mystack.aws_protocol import DiagnosticsSettings, create_diagnostics_router
 
 def test_thread_diagnostics_expose_stack_without_locals() -> None:
     app = FastAPI()
-    settings = DiagnosticsSettings(enabled=True, management_token=None, stack_limit=20)
+    settings = DiagnosticsSettings(enabled=True, stack_limit=20)
     app.include_router(create_diagnostics_router("test-service", settings))
 
     response = TestClient(app).get("/_mystack/diagnostics/threads")
@@ -23,22 +23,15 @@ def test_thread_diagnostics_expose_stack_without_locals() -> None:
     assert all("locals" not in thread for thread in payload["threads"])
 
 
-def test_diagnostics_require_configured_bearer_token() -> None:
+def test_disabled_diagnostics_return_not_found_without_authentication_behavior() -> None:
     app = FastAPI()
-    settings = DiagnosticsSettings(
-        enabled=True,
-        management_token="management-secret",
-        stack_limit=20,
-    )
+    settings = DiagnosticsSettings(enabled=False, stack_limit=20)
     app.include_router(create_diagnostics_router("test-service", settings))
     client = TestClient(app)
 
-    denied = client.get("/_mystack/diagnostics/tasks")
-    allowed = client.get(
+    response = client.get(
         "/_mystack/diagnostics/tasks",
-        headers={"Authorization": "Bearer management-secret"},
+        headers={"Authorization": "Bearer ignored-by-design"},
     )
 
-    assert denied.status_code == 401
-    assert allowed.status_code == 200
-    assert allowed.json()["task_count"] >= 1
+    assert response.status_code == 404

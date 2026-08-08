@@ -9,15 +9,17 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from mystack.aws_protocol import (
     AwsJsonRpcEndpoint,
     AwsServiceModel,
     DiagnosticsSettings,
+    HistoryFallbackStaticFiles,
     LoadedConfiguration,
-    authorize_management,
+    ManagementUiSettings,
     create_diagnostics_router,
     load_configuration,
 )
@@ -54,6 +56,11 @@ def create_app(
         diagnostics_settings = DiagnosticsSettings.from_configuration(loaded)
     if log_level is None and loaded is not None:
         log_level = str(loaded.document.get("logging", {}).get("level", "INFO"))
+    ui_settings = (
+        ManagementUiSettings.from_configuration(loaded)
+        if loaded is not None
+        else ManagementUiSettings(2.0, 0.5, 300.0, 1_048_576)
+    )
 
     configure_logging("glue", log_level)
     repository = repository or JsonCatalogRepository(settings.state_file)
@@ -110,6 +117,13 @@ def create_app(
 
     app = FastAPI(title="Mystack Glue Data Catalog Emulator", version="0.1.0", lifespan=lifespan)
     app.include_router(create_diagnostics_router("glue", diagnostics_settings))
+    app.include_router(
+        create_diagnostics_router(
+            "glue",
+            diagnostics_settings,
+            prefix="/_mystack/ui/glue/diagnostics",
+        )
+    )
 
     @app.get("/_mystack/health")
     async def health() -> JSONResponse:
@@ -124,12 +138,28 @@ def create_app(
         )
 
     @app.get("/_mystack/management/resources")
-    async def management_resources(request: Request) -> JSONResponse:
-        authorize_management(request, diagnostics_settings, "glue", "resources")
+    @app.get("/_mystack/ui/glue/resources")
+    async def management_resources() -> JSONResponse:
         return JSONResponse(await management.resources())
+
+    @app.get("/_mystack/ui/glue/config")
+    async def ui_config() -> JSONResponse:
+        return JSONResponse(ui_settings.document())
 
     @app.post("/", include_in_schema=False)
     async def aws_json_endpoint(request: Request) -> Response:
         return await endpoint(request)
+
+    @app.get("/_mystack/ui")
+    @app.get("/_mystack/ui/")
+    async def ui_root() -> RedirectResponse:
+        return RedirectResponse("/_mystack/ui/glue/", status_code=307)
+
+    ui_directory = Path(__file__).parent / "static" / "ui"
+    app.mount(
+        "/_mystack/ui/glue",
+        HistoryFallbackStaticFiles(directory=ui_directory, html=True, check_dir=False),
+        name="glue-ui",
+    )
 
     return app

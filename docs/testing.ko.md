@@ -12,10 +12,11 @@
 | --- | --- | --- | --- |
 | Unit | Domain 상태, codec, routing, 설정 | 없음 | `tests.unit_timeout_seconds` |
 | Architecture | 안쪽 import와 도메인 경계 | 없음 | unit timeout |
+| Frontend | 공통 theme/primitive, React component, TypeScript, production asset | Node/jsdom | `MYSTACK_FRONTEND_TEST_TIMEOUT_MS`와 CI job timeout |
 | Contract | boto3 직렬화, 응답, modeled error | API process | `tests.contract_timeout_seconds` |
 | E2E | Public Proxy, LocalStack, EMR Spark, Glue Catalog, Hive/Iceberg, AWS SDK for pandas | Docker | `tests.e2e_timeout_seconds` |
 
-모든 pytest 실행은 thread 방식의 `pytest-timeout`을 사용해 hang 시 Python thread stack을 출력합니다. Spark/bootstrap adapter도 YAML의 서비스별 process timeout을 받습니다.
+모든 pytest 실행은 thread 방식의 `pytest-timeout`을 사용해 hang 시 Python thread stack을 출력합니다. Spark/bootstrap adapter도 YAML의 서비스별 process timeout을 받습니다. Vitest는 test와 hook에 명시적으로 설정 가능한 millisecond deadline을 사용하며 CI는 lint, typecheck, test, production build 전체를 job timeout으로 한 번 더 제한합니다.
 
 <!-- section: contracts -->
 ## Contract 규칙
@@ -69,7 +70,7 @@
 - AWS SDK for pandas 3.17.0으로 partitioned Parquet write/read, S3 HEAD, Glue table/partition을
   같은 공개 Proxy에서 검증합니다. 시험 범위는 [Client 호환성 표](compatibility/client-matrix.ko.md)에
   기록합니다.
-- Playwright로 management Console을 조작해 EMR cluster 생성·종료, Step 제출·추적·취소·조회,
+- Playwright로 Proxy를 경유한 두 service 소유 React UI를 조작해 EMR cluster 생성·종료, Step 제출·추적·취소·조회,
   S3 log publication, 복합 Glue schema와 partition 탐색, keyboard/ARIA 동작과 깨끗한 browser
   console을 검증합니다. Browser action은 `tests.e2e.browser_action_timeout_seconds`를 사용하고
   CI는 설정된 환경변수 이름으로 Chromium 실행을 필수화합니다. Playwright 공식
@@ -84,11 +85,14 @@
 <!-- section: reproducibility -->
 ## 재현성
 
-Lockfile, hash-locked container export, YAML runtime profile, immutable container-base digest,
+`uv.lock`, `package-lock.json`, hash-locked container export, YAML runtime profile, immutable container-base digest,
 botocore manifest, Spark checksum/version, Iceberg version은 모두 테스트 입력입니다. 어느
 하나를 갱신해도 해당 manifest/profile 문서와 E2E 증거가 필요합니다. CI는 `uv.lock`과
 다른 `requirements/*.txt` export를 거부하며 공식 [uv export 명령](https://docs.astral.sh/uv/reference/cli/#uv-export)을
 사용합니다.
+Frontend 확인 절차는 ESLint, `tsc` project reference, Vitest, 두 Vite build를 실행합니다. 공통 theme
+확인 절차는 두 application이 같은 semantic CSS variable을 사용함을 검증하고 Docker E2E는 각 최종
+service image가 자기 build asset을 직접 제공하며 Proxy가 안정적인 path를 보존함을 검증합니다.
 
 <!-- section: differential -->
 ## 선택적 differential 계층

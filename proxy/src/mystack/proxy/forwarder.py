@@ -17,10 +17,11 @@ import logging
 import re
 import time
 from collections.abc import Mapping, Sequence
+from urllib.parse import quote
 
 import httpx
 from fastapi import Request
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from mystack.aws_protocol.observability import log_event, payload_fingerprint
 
 from .config import ProxySettings, ServiceRoute
@@ -216,13 +217,11 @@ class HttpManagementForwarder:
         component: str,
         backend_path: str,
         capability: str,
-        authorization: str | None,
         query_params: Sequence[tuple[str, str]],
     ) -> ManagementResponse:
         route = self._routes.get(component)
         if route is None:
             raise UnknownManagementComponentError(component)
-        headers = {"authorization": authorization} if authorization else {}
         started = time.monotonic()
         _log(
             logging.INFO,
@@ -235,7 +234,6 @@ class HttpManagementForwarder:
         try:
             response = await self._client.get(
                 f"{route.backend_url}{backend_path}",
-                headers=headers,
                 params=query_params,
             )
         except httpx.HTTPError as error:
@@ -263,6 +261,101 @@ class HttpManagementForwarder:
             content=response.content,
             status_code=response.status_code,
             content_type=response.headers.get("content-type", "application/json"),
+        )
+
+
+class HttpServiceUiForwarder:
+    """Stream service-owned UI assets and APIs through stable Proxy paths."""
+
+    def __init__(self, client: httpx.AsyncClient, routes: Sequence[ServiceRoute]) -> None:
+        self._client = client
+        self._routes = {route.name: route for route in routes}
+
+    async def forward(
+        self,
+        request: Request,
+        *,
+        component: str,
+        relative_path: str,
+    ) -> Response:
+        route = self._routes.get(component)
+        if route is None:
+            raise UnknownManagementComponentError(component)
+        if any(part in {".", ".."} for part in relative_path.split("/")):
+            return Response(status_code=404)
+        encoded_path = quote(relative_path, safe="/-._~")
+        target_url = (
+            f"{route.backend_url.rstrip('/')}/_mystack/ui/{quote(component, safe='-._~')}/"
+            f"{encoded_path}"
+        )
+        if request.url.query:
+            target_url = f"{target_url}?{request.url.query}"
+        started = time.monotonic()
+        _log(
+            logging.INFO,
+            "proxy.service_ui.forward.before",
+            component=component,
+            relative_path=relative_path,
+            backend_url=route.backend_url,
+            side_effect=False,
+        )
+        try:
+            upstream_request = self._client.build_request(
+                request.method,
+                target_url,
+                headers={
+                    key: value
+                    for key, value in request.headers.items()
+                    if key.lower()
+                    not in _HOP_BY_HOP_HEADERS
+                    | {"authorization", "content-length", "cookie", "host"}
+                },
+            )
+            response = await self._client.send(upstream_request, stream=True)
+        except httpx.HTTPError as error:
+            _log(
+                logging.ERROR,
+                "proxy.service_ui.forward.failed",
+                component=component,
+                relative_path=relative_path,
+                duration_ms=round((time.monotonic() - started) * 1000, 3),
+                fix_hint="Check the configured service backend and its /_mystack/ui health.",
+                side_effect=False,
+                exc_info=True,
+            )
+            raise ManagementBackendUnavailableError(component) from error
+
+        async def body():
+            response_bytes = 0
+            try:
+                if response.is_stream_consumed:
+                    response_bytes = len(response.content)
+                    yield response.content
+                else:
+                    async for chunk in response.aiter_raw():
+                        response_bytes += len(chunk)
+                        yield chunk
+            finally:
+                await response.aclose()
+                _log(
+                    logging.INFO,
+                    "proxy.service_ui.forward.after",
+                    component=component,
+                    relative_path=relative_path,
+                    status_code=response.status_code,
+                    response_bytes=response_bytes,
+                    duration_ms=round((time.monotonic() - started) * 1000, 3),
+                    side_effect=False,
+                )
+
+        return StreamingResponse(
+            body(),
+            status_code=response.status_code,
+            headers={
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() not in _HOP_BY_HOP_HEADERS | {"content-length"}
+            },
         )
 
 

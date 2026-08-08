@@ -148,13 +148,13 @@
 <!-- section: uc-008 -->
 ## UC-008: Inspect service resources and EMR logs
 
-- Purpose/actor/trigger: operator/UI calls versioned management endpoints through Proxy.
-- Input: component/path, optional Bearer management token, resource/log query and configured page limit.
+- Purpose/actor/trigger: operator/service-owned UI calls versioned management endpoints directly or through Proxy.
+- Input: component/path, resource/log query and configured page limit; there is deliberately no management credential.
 - Output: EMR cluster/step/log read models or Glue database/table/partition tree.
 - Stored/changed data/events: none; management access audit event.
-- Side effects: Proxy makes one internal management HTTP call; raw step arguments are not exposed.
-- Preconditions/rules: known component, management enabled/token valid, application API pagination.
-- Failures: unauthorized/disabled, unknown component/resource, internal service timeout.
+- Side effects: Proxy makes one internal management HTTP call when the public gateway path is used. Submitted and resolved Step argument vectors are deliberately exposed to this unauthenticated local UI but their values are not emitted in structured logs.
+- Preconditions/rules: known component, enabled endpoint, application API pagination, and trusted local-network deployment.
+- Failures: disabled endpoint, unknown component/resource, or internal service timeout.
 - Observability: management forwarding and component adapter boundary logs plus UI E2E.
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/app.py:122`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/app.py:134`,
@@ -165,27 +165,27 @@
 ## UC-009: Inspect thread/task stacks
 
 - Purpose/actor/trigger: operator/UI calls `/_mystack/diagnostics/threads` or `/tasks`.
-- Input: optional Bearer token and configured stack-frame limit.
+- Input: diagnostic kind and configured stack-frame limit; there is deliberately no authentication input.
 - Output: thread/task metadata and source stack lines, never frame locals.
 - Stored/changed data/events: no resource mutation; diagnostic access audit log.
-- Preconditions/rules: diagnostics enabled and token valid if configured.
-- Failures: disabled or unauthorized.
-- Observability: access result/client without token contents.
+- Preconditions/rules: diagnostics enabled and trusted local-network deployment.
+- Failures: disabled or unknown diagnostic kind.
+- Observability: access result, component, client, and explicit `authentication=disabled-by-design` evidence.
 - Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/diagnostics.py:55`
 - Confidence: High
 
 <!-- section: uc-010 -->
 ## UC-010: Operate the browser management console
 
-- Purpose/actor/trigger: local operator opens `/_mystack/console` to operate EMR, explore Glue, or inspect diagnostics.
-- Input: cluster/Step forms and actions, database/table/tab selection, refresh and optional management token.
+- Purpose/actor/trigger: local operator opens `/_mystack/ui/emr/` or `/_mystack/ui/glue/` through Proxy, or `/_mystack/ui/` on an emulator directly.
+- Input: cluster/Step forms and actions, database/table/tab selection, refresh, and log-stream controls.
 - Output: accessible lifecycle/status, logs and publication evidence, Glue schema/partition metadata, route and stack views.
 - Stored/changed data/events: browser selection state; reads use management endpoints while EMR mutations use the public AWS endpoint and normal application use cases.
-- Preconditions/rules: packaged static modules and public Proxy; configured polling interval; keyboard/ARIA tab contract; arrays are never shell-parsed.
-- Failures: unavailable component/endpoint/token or modeled AWS error displays a non-secret error with AWS code/request ID when present.
+- Preconditions/rules: each emulator packages its own React/TypeScript application; Proxy only forwards stable paths; shared primitives and Tailwind semantic tokens flow inward; configured polling interval; keyboard/ARIA tab contract; arrays are never shell-parsed.
+- Failures: unavailable component/endpoint or modeled AWS error displays a non-secret error with AWS code/request ID when present.
 - Observability: Playwright cluster/Step/Glue/keyboard/browser E2E, protocol boundary logs, and captured screenshot.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
+- Evidence: `ui/src/components.tsx`, `emr/ui/src/App.tsx`, `glue/ui/src/App.tsx`,
+  `proxy/src/mystack/proxy/forwarder.py`, `tests/e2e/test_console_browser.py`
 - Confidence: High
 
 <!-- section: uc-011 -->

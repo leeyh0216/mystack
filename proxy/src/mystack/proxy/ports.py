@@ -48,9 +48,18 @@ class ManagementForwarding(Protocol):
         component: str,
         backend_path: str,
         capability: str,
-        authorization: str | None,
         query_params: Sequence[tuple[str, str]],
     ) -> ManagementResponse: ...
+
+
+class ServiceUiForwarding(Protocol):
+    async def forward(
+        self,
+        request: Request,
+        *,
+        component: str,
+        relative_path: str,
+    ) -> Response: ...
 
 
 class UnknownManagementComponentError(LookupError):

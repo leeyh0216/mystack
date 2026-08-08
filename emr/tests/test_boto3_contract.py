@@ -13,6 +13,30 @@ from botocore.exceptions import ClientError
 
 
 @pytest.mark.contract
+def test_emr_emulator_serves_its_compiled_react_ui_and_runtime_config(
+    emr_server,
+    test_timeout: float,
+) -> None:
+    endpoint_url, _ = emr_server
+
+    config = httpx.get(f"{endpoint_url}/_mystack/ui/emr/config", timeout=test_timeout)
+    index = httpx.get(f"{endpoint_url}/_mystack/ui/emr/", timeout=test_timeout)
+    deep_link = httpx.get(
+        f"{endpoint_url}/_mystack/ui/emr/clusters/j-DEEP/steps/s-DEEP/logs",
+        headers={"Accept": "text/html"},
+        timeout=test_timeout,
+    )
+
+    assert config.status_code == 200
+    assert config.json()["log_buffer_bytes"] == 1_048_576
+    assert index.status_code == 200
+    assert '<div id="root"></div>' in index.text
+    assert deep_link.status_code == 200
+    assert '<div id="root"></div>' in deep_link.text
+    assert "Management token" not in index.text
+
+
+@pytest.mark.contract
 def test_boto3_cluster_step_and_control_operations(
     emr_client,
     emr_server,
@@ -72,6 +96,10 @@ def test_boto3_cluster_step_and_control_operations(
     ).json()
     assert resources["compatibility"]["implemented_operation_count"] == 13
     assert resources["resources"]["clusters"][0]["steps"][0]["id"] == step_id
+    assert resources["resources"]["clusters"][0]["steps"][0]["args"] == [
+        "spark-submit",
+        "s3://assets/job.py",
+    ]
     logs = httpx.get(
         f"{endpoint_url}/_mystack/management/logs",
         params={"cluster_id": cluster_id, "step_id": step_id},

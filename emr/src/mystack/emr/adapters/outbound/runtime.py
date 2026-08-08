@@ -11,6 +11,7 @@ Official behavior and configuration references:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import shutil
@@ -31,6 +32,7 @@ from .journal import StepExecutionJournal
 _LOGGER = logging.getLogger(__name__)
 _S3_SCHEMES = frozenset({"s3", "s3a", "s3n"})
 _SPARK_RESOURCE_OPTIONS = frozenset({"--archives", "--files", "--jars", "--py-files"})
+_RESOLVED_COMMAND_FILE = "resolved-command.json"
 
 
 class ObjectStoreConfiguration(Protocol):
@@ -531,6 +533,7 @@ class LocalSparkStepRunner:
         try:
             await self._journal.begin(cluster, step, work_dir)
             command = await self._command(cluster, step, work_dir)
+            await self._record_resolved_command(cluster, step, work_dir, command)
             outcome = await self._executor.execute(
                 cluster_id=cluster.id,
                 operation_id=step.id,
@@ -643,6 +646,41 @@ class LocalSparkStepRunner:
             command.extend(("--class", step.config.main_class))
         command.extend(submit_args)
         return command
+
+    async def _record_resolved_command(
+        self,
+        cluster: Cluster,
+        step: Step,
+        work_dir: Path,
+        command: list[str],
+    ) -> None:
+        """Persist the exact argv without leaking its potentially sensitive values into logs."""
+
+        document = {"schema_version": 1, "arguments": command}
+        content = json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+        target = work_dir / _RESOLVED_COMMAND_FILE
+        temporary = target.with_suffix(".tmp")
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.step.resolved_command.write.before",
+            cluster_id=cluster.id,
+            step_id=step.id,
+            argument_count=len(command),
+            command_fingerprint=payload_fingerprint(content.encode()),
+            side_effect=True,
+        )
+        await asyncio.to_thread(temporary.write_text, content, encoding="utf-8")
+        await asyncio.to_thread(temporary.replace, target)
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "emr.step.resolved_command.write.after",
+            cluster_id=cluster.id,
+            step_id=step.id,
+            argument_count=len(command),
+            side_effect=True,
+        )
 
 
 def _application_index(arguments: list[str], value_options: frozenset[str]) -> int:

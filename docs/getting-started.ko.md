@@ -25,17 +25,16 @@ host 정보를 보고 EMR, Glue, LocalStack으로 전달합니다. AWS SDK의 en
 <!-- section: compose -->
 ## Docker Compose로 시작하기
 
-Docker Engine과 Compose를 설치하고 private repository의 Compose file을 받을 때만 GitHub CLI를
-인증합니다. Source clone, Python 환경, Java 설치, local image build, registry token, registry
-로그인은 필요하지 않습니다. Public image는 익명으로 pull합니다. 세 `mystack-*` package에 모두
+Docker Engine과 Compose를 설치합니다. Source clone, GitHub login, Python 환경, Java 설치,
+local image build, registry token, registry 로그인은 필요하지 않습니다. Public repository와
+image는 익명으로 접근할 수 있습니다. 세 `mystack-*` package에 모두
 존재하는 tag를 선택하세요. `latest`는 의도적으로 제공하지 않습니다.
 
 ```bash
 export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
 mkdir mystack-runtime && cd mystack-runtime
-gh api -H "Accept: application/vnd.github.raw+json" \
-  "repos/leeyh0216/mystack/contents/compose.ghcr.yaml?ref=$MYSTACK_IMAGE_TAG" \
-  > compose.ghcr.yaml
+curl --fail --location --output compose.ghcr.yaml \
+  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"
 printf 'MYSTACK_IMAGE_TAG=%s\n' "$MYSTACK_IMAGE_TAG" > .env
 
 docker compose -f compose.ghcr.yaml config --quiet
@@ -45,9 +44,8 @@ curl --fail http://localhost:4566/_mystack/health
 ```
 
 GitHub [Package 권한 안내](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)에
-따르면 public container package는 익명으로 pull할 수 있습니다. `gh auth`는 private repository에서
-file 하나를 받는 권한만 별도로 제공하며 image pull에는 사용하지 않습니다. 해당 repository
-credential을 `.env`에 저장하지 마세요.
+따르면 public container package는 익명으로 pull할 수 있습니다. Raw Compose file도 public입니다.
+이 consumer 경로를 위해 registry나 GitHub credential을 `.env`에 저장하지 마세요.
 
 Image 전용 Compose file에는 `build` key가 없습니다. Compose의 [필수 변수
 치환](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/)으로 명시적
@@ -265,14 +263,15 @@ docker compose -f compose.ghcr.yaml logs --tail 200 proxy glue emr
 curl --fail http://localhost:4566/_mystack/routes
 curl --fail http://localhost:4566/_mystack/diagnostics/threads
 curl --fail http://localhost:4566/_mystack/diagnostics/tasks
-open http://localhost:4566/_mystack/console
+open http://localhost:4566/_mystack/ui/emr/
+open http://localhost:4566/_mystack/ui/glue/
 ```
 
-**EMR**에서 `RunJobFlow`와 같은 field로 cluster를 생성하고 선택한 뒤 Spark Step을 제출하면
+Service가 소유한 **EMR UI**에서 `RunJobFlow`와 같은 field로 cluster를 생성하고 선택한 뒤 Spark Step을 제출하면
 상태, failure detail, stdout/stderr, S3 log publication 상태를 추적할 수 있습니다. Cluster 종료
-보호와 종료, 실행 중 Step 취소 역시 boto3 호환 public AWS endpoint를 사용합니다. **Glue**에서는
+보호와 종료, 실행 중 Step 취소 역시 boto3 호환 public AWS endpoint를 사용합니다. Service가 소유한 **Glue UI**에서는
 database와 table을 선택해 일반 column, partition key, partition 값과 위치, parameter, raw
-metadata를 탐색할 수 있습니다. Console은 현재 선택을 유지하며 설정된 주기로 polling합니다.
+metadata를 탐색할 수 있습니다. 각 UI는 현재 선택을 유지하며 자기 emulator를 설정된 주기로 polling합니다.
 정확한 경계와 보안 model은 [Console 안내](console.ko.md)를 참고하세요.
 
 - `unauthorized` 또는 `denied`: package 소유자가 세 package를 모두 public으로 전환했는지와 image

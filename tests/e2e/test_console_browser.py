@@ -11,6 +11,7 @@ References:
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -61,7 +62,7 @@ def test_console_service_workflows_and_accessibility(
             else None,
         )
         try:
-            page.goto(f"{e2e_settings.endpoint_url}/_mystack/console", wait_until="networkidle")
+            page.goto(f"{e2e_settings.endpoint_url}/_mystack/ui/emr/", wait_until="networkidle")
             _assert_shell(page)
             cluster_name = f"console-created-{suffix}"
             _create_cluster_in_console(page, cluster_name, bucket)
@@ -75,12 +76,23 @@ def test_console_service_workflows_and_accessibility(
             add_step = page.get_by_role("button", name="Add Step", exact=True)
             expect(add_step).to_be_enabled(timeout=e2e_settings.timeout_seconds * 1000)
             _add_step_in_console(page, bucket)
+            expect(page).to_have_url(
+                re.compile(r"/_mystack/ui/emr/clusters/[^/]+/steps/[^/]+/logs$")
+            )
+            expect(page.get_by_role("tab", name="Logs", exact=True)).to_have_attribute(
+                "aria-selected", "true"
+            )
+            page.get_by_role("tab", name="Steps", exact=True).click()
             steps_tab = page.get_by_role("tab", name="Steps", exact=True)
             expect(steps_tab).to_have_attribute("aria-selected", "true")
             row = page.get_by_role("row", name="Step console-long-step")
             expect(row).to_be_visible(timeout=e2e_settings.timeout_seconds * 1000)
             expect(row).to_contain_text("RUNNING", timeout=e2e_settings.timeout_seconds * 1000)
+            expect(row).to_contain_text("spark-submit")
             row.click()
+            expect(page).to_have_url(
+                re.compile(r"/_mystack/ui/emr/clusters/[^/]+/steps/[^/]+/logs$")
+            )
             expect(page.get_by_role("tab", name="Logs", exact=True)).to_have_attribute(
                 "aria-selected", "true"
             )
@@ -90,6 +102,14 @@ def test_console_service_workflows_and_accessibility(
                 "console-long-step-started",
                 timeout=e2e_settings.timeout_seconds * 1000,
             )
+            # The restored Logs route immediately opens a long-lived SSE request, so the page is
+            # intentionally never network-idle. DOM readiness is the correct navigation boundary.
+            page.reload(wait_until="domcontentloaded")
+            expect(page.get_by_role("tab", name="Logs", exact=True)).to_have_attribute(
+                "aria-selected", "true"
+            )
+            expect(page.locator("#submittedCommand")).to_contain_text("spark-submit")
+            expect(page.locator("#resolvedCommand")).to_contain_text("spark-submit")
             expect(page.locator("#logFollowStatus")).to_contain_text("Following")
             page.get_by_role("button", name="Pause follow", exact=True).click()
             expect(page.locator("#logFollowStatus")).to_have_text("Paused")
@@ -138,10 +158,10 @@ def test_console_service_workflows_and_accessibility(
 def _assert_shell(page: Page) -> None:
     expect(page.get_by_role("heading", name="Clusters", exact=True, level=1)).to_be_visible()
     expect(page.get_by_role("status")).to_have_attribute("aria-live", "polite")
-    expect(page.get_by_role("textbox", name="Management token", exact=True)).to_be_visible()
-    expect(page.get_by_role("button", name="EMR Clusters & Steps")).to_have_attribute(
+    expect(page.get_by_role("link", name="EMR", exact=True)).to_have_attribute(
         "aria-current", "page"
     )
+    expect(page.get_by_role("textbox", name="Management token", exact=True)).to_have_count(0)
 
 
 def _create_cluster_in_console(page: Page, name: str, bucket: str) -> None:
@@ -160,14 +180,15 @@ def _add_step_in_console(page: Page, bucket: str) -> None:
     page.get_by_role("button", name="Add Step", exact=True).click()
     dialog = page.get_by_role("dialog", name="Add Step")
     dialog.get_by_label("Step name *").fill("console-long-step")
-    dialog.get_by_label("Application resource *").fill(f"s3://{bucket}/jobs/console_long_step.py")
-    dialog.get_by_label("Application arguments").fill("--sleep-seconds\n120")
+    dialog.get_by_label("Full command argument vector *").fill(
+        f"spark-submit\ns3://{bucket}/jobs/console_long_step.py\n--sleep-seconds\n120"
+    )
     dialog.get_by_role("button", name="Add Step", exact=True).click()
     expect(dialog).to_be_hidden()
 
 
 def _assert_glue_explorer(page: Page, table_name: str) -> None:
-    page.get_by_role("button", name="Glue Data Catalog").click()
+    page.get_by_role("link", name="Glue", exact=True).click()
     expect(page.get_by_role("heading", name="Data Catalog", exact=True)).to_be_visible()
     database = page.get_by_role("button", name="Database default")
     expect(database).to_be_visible()
@@ -175,27 +196,32 @@ def _assert_glue_explorer(page: Page, table_name: str) -> None:
     table = page.get_by_role("button", name=f"Table {table_name}")
     expect(table).to_be_visible()
     table.click()
+    expect(page).to_have_url(re.compile(r"/_mystack/ui/glue/databases/default/tables/[^/]+$"))
     expect(page.get_by_role("heading", name=table_name, exact=True)).to_be_visible()
     expect(page.locator("#columnRows")).to_contain_text("event_id")
     expect(page.locator("#columnRows")).to_contain_text("bigint")
     expect(page.locator("#partitionKeyList")).to_contain_text("event_day")
     page.get_by_role("tab", name="Partitions", exact=True).click()
+    expect(page).to_have_url(
+        re.compile(r"/_mystack/ui/glue/databases/default/tables/[^/]+/partitions$")
+    )
     expect(page.locator("#partitionRows")).to_contain_text("2026-08-08")
     expect(page.locator("#partitionRows")).to_contain_text("s3://")
+    page.reload(wait_until="networkidle")
+    expect(page.get_by_role("tab", name="Partitions", exact=True)).to_have_attribute(
+        "aria-selected", "true"
+    )
+    expect(page.locator("#partitionRows")).to_contain_text("2026-08-08")
 
 
 def _assert_system_diagnostics(page: Page) -> None:
-    page.get_by_role("button", name="System Routes & diagnostics").click()
-    expect(page.get_by_role("heading", name="System diagnostics", exact=True)).to_be_visible()
-    expect(page.locator("#routes")).to_contain_text('"name": "emr"')
-    page.get_by_role("tab", name="Thread stacks").click()
+    page.get_by_role("tab", name="Diagnostics", exact=True).click()
     expect(page.locator("#threads")).to_contain_text('"thread_count"')
-    page.get_by_role("tab", name="Asyncio tasks").click()
+    page.get_by_role("button", name="Asyncio tasks", exact=True).click()
     expect(page.locator("#tasks")).to_contain_text('"task_count"')
 
 
 def _assert_keyboard_contract(page: Page) -> None:
-    page.get_by_role("button", name="Glue Data Catalog").click()
     schema = page.get_by_role("tab", name="Schema", exact=True)
     schema.focus()
     schema.press("ArrowRight")

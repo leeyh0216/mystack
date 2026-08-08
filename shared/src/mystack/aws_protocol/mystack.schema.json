@@ -46,11 +46,10 @@
         "diagnostics": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled", "stack_limit", "token"],
+          "required": ["enabled", "stack_limit"],
           "properties": {
             "enabled": {"type": "boolean"},
-            "stack_limit": {"type": "integer", "minimum": 1},
-            "token": {"type": ["string", "null"], "minLength": 1}
+            "stack_limit": {"type": "integer", "minimum": 1}
           }
         }
       }

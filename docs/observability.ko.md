@@ -32,8 +32,9 @@ EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 
 확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr-log-layout.ko.md)에 있습니다.
 Durability 경계는 `emr.step_journal.*`, `emr.step_journal.publication_recovery.*`를 기록하고 retry는
 상한이 있는 delay 정보가 포함된 `emr.step_logs.publish.retry`를 남깁니다. Live output 경계는
-`emr.management.log_chunk.*`, `proxy.emr_log_stream.*`에 offset을 기록하고 component schema가
-달라지면 수정 hint를 남깁니다. Output 내용 자체는 log에 기록하지 않습니다.
+`emr.management.log_chunk.*`, `emr.ui.log_stream.*`에 offset을 기록하고 component schema가
+달라지면 수정 hint를 남깁니다. Output 내용 자체는 log에 기록하지 않습니다. Service UI 전달은
+component, 상대 path, status, byte 수, 시간을 가진 `proxy.service_ui.forward.*`를 기록합니다.
 
 미리 구성한 cluster는 전체 file 검증 전후에 `emr.startup_clusters.load.*`, plan 실행 전후에
 `emr.startup_clusters.provision.*`, application port 호출마다 `emr.startup_cluster.create.*`를
@@ -52,7 +53,7 @@ SHA-256 prefix, 실행 시간 또는 exit code, `fix_hint`만 기록하며 값�
 
 상황에 따라 `service`, `component`, `request_id`, `operation`, `api_version`, `model_fingerprint`, `resource_id`, `state_before`, `state_after`, `duration_ms`, `fix_hint`를 사용합니다.
 
-Authorization, access/secret key, management token, 전체 request payload, frame locals는 기록하지 않습니다. Payload 진단은 byte length와 SHA-256 prefix, 설정 로그는 source·fingerprint·redacted override path만 사용합니다.
+Authorization, access/secret key, 전체 request payload, frame locals는 기록하지 않습니다. Payload 진단은 byte length와 SHA-256 prefix, 설정 로그는 source·fingerprint·redacted override path만 사용합니다.
 
 <!-- section: diagnostics -->
 ## Live 진단
@@ -60,9 +61,11 @@ Authorization, access/secret key, management token, 전체 request payload, fram
 - `GET /_mystack/diagnostics/threads`: Python thread와 source stack line
 - `GET /_mystack/diagnostics/tasks`: asyncio task와 source stack line
 
-YAML `management.diagnostics.enabled`, `stack_limit`, 선택적 `token`을 따릅니다. Token이 있으면 `Authorization: Bearer ...`가 필요하며 접근 시도를 audit합니다. Python은 [`sys._current_frames`](https://docs.python.org/3/library/sys.html#sys._current_frames)의 non-deadlocking snapshot 동작을 문서화합니다.
+YAML `management.diagnostics.enabled`, `stack_limit`을 따릅니다. Mystack은 management 인증을
+의도적으로 구현하지 않으며 credential 없이 접근 정보를 기록합니다. Python은 [`sys._current_frames`](https://docs.python.org/3/library/sys.html#sys._current_frames)의 non-deadlocking snapshot 동작을 문서화합니다.
 
-`make threads`, `make tasks`를 사용합니다. Stack source는 locals가 없어도 운영상 민감하므로 공유 배포에서는 management token과 network 제한이 필요합니다.
+`make threads`, `make tasks`를 사용합니다. Stack source는 locals가 없어도 운영상 민감하므로
+container 또는 network 경계로 UI와 진단을 제한하고 신뢰할 수 없는 network에 노출하지 않습니다.
 
 <!-- section: drift -->
 ## Upstream drift 진단

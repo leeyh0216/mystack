@@ -19,9 +19,6 @@ management:
   diagnostics:
     enabled: true
     stack_limit: 100
-    # Supply through a secret environment override in shared environments:
-    # MYSTACK__MANAGEMENT__DIAGNOSTICS__TOKEN
-    token: null
 
 proxy:
   listen:

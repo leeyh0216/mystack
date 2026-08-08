@@ -21,9 +21,11 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 | Spark + Hive + Glue Catalog | Implemented vertical slice: official Glue 5 image, complex types, S3 Parquet E2E | Broader Hive metadata semantics |
 | Spark + Iceberg + Glue Catalog | Implemented vertical slice: Iceberg 1.7.1 create/append/read/schema evolution E2E | Partitions, transactions, and broader Iceberg APIs |
 | AWS SDK for pandas | Implemented vertical slice: 3.17.0 partitioned Parquet S3/Glue write/read E2E | Broader Glue/S3 functions and additional clients |
-| Web console | Implemented: EMR cluster/Step operations, resumable live logs with pause/resume/download and restart recovery, Glue database/table/schema/partition explorer, route/thread/task views, keyboard/browser E2E | Spark UI and History Server links |
+| Service-owned web UIs | Implemented: React/TypeScript EMR cluster/Step/log UI and Glue database/table/schema/partition explorer, shared Tailwind design system, thread/task views, keyboard/browser E2E | Live Spark UI links |
 
-The management console is served at `/_mystack/console`. Glue metadata mutations use serialized
+EMR and Glue serve their UIs directly at `/_mystack/ui/`; Proxy exposes them at
+`/_mystack/ui/emr/` and `/_mystack/ui/glue/`. The compatibility path `/_mystack/console` redirects
+to EMR. Glue metadata mutations use serialized
 candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
 database/table rename or deletion includes child tables and partitions in one commit. The versioned
 JSON document is stored at `glue.state_file`; schema version 1 is migrated on the next mutation.
@@ -49,6 +51,7 @@ EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract
 - undocumented AWS bug reproduction
 - production IAM authorization semantics in default local mode
 - physical EC2/YARN/HDFS distribution fidelity
+- Spark History Server
 
 <!-- section: versions -->
 ## Version baseline

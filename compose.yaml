@@ -37,6 +37,7 @@ services:
       context: .
       dockerfile: emr/Dockerfile
       args:
+        NODE_BASE: ${NODE_BASE:-node:24.6.0-bookworm-slim@sha256:9b741b28148b0195d62fa456ed84dd6c953c1f17a3761f3e6e6797a754d9edff}
         AMAZON_LINUX_BASE: ${AMAZON_LINUX_BASE:-public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2}
         SPARK_VERSION: ${SPARK_VERSION:-3.5.4}
         SPARK_DISTRIBUTION: ${SPARK_DISTRIBUTION:-hadoop3}
@@ -60,6 +61,7 @@ services:
       context: .
       dockerfile: glue/Dockerfile
       args:
+        NODE_BASE: ${NODE_BASE:-node:24.6.0-bookworm-slim@sha256:9b741b28148b0195d62fa456ed84dd6c953c1f17a3761f3e6e6797a754d9edff}
         GLUE_BASE: ${GLUE_BASE:-public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7}
         GLUE_VERSION: ${GLUE_VERSION:-5.0}
         SPARK_VERSION: ${GLUE_SPARK_VERSION:-3.5.4}

@@ -3,116 +3,126 @@
 
 [한국어](console.ko.md) | [English](console.md)
 
-# Management console and resource API
+# Service-owned management UIs
 
-The service-aware, AWS-console-inspired UI is served at `/_mystack/console` on the public Proxy
-endpoint. It is a dependency-free package of HTML, CSS, and native JavaScript modules and never
-imports EMR or Glue Domain code. The UI consumes a
-versioned JSON management boundary, following the same outward-adapter rule as the AWS protocol
-controllers. The visual vocabulary follows the [AWS Management Console](https://aws.amazon.com/console/).
+Mystack provides separate React and TypeScript applications for EMR and Glue. Each emulator builds,
+packages, and serves its own application; the Proxy only exposes stable gateway paths. All service
+applications compose primitives from the root `@mystack/ui` workspace and consume the same Tailwind
+design set. The implementation follows the official [React TypeScript guide](https://react.dev/learn/typescript),
+[Vite production build guide](https://vite.dev/guide/build.html), and
+[Tailwind Vite integration](https://tailwindcss.com/docs/installation/using-vite).
 
 <!-- section: resource-boundary -->
-## Resource boundary
+## URLs and component boundary
 
-| Public Proxy API | Backend API | Purpose |
+| Consumer path | Owning backend path | Purpose |
 | --- | --- | --- |
-| `GET /_mystack/components/{component}/resources` | `GET /_mystack/management/resources` | Emulator/compatibility status and resource tree |
-| `GET /_mystack/components/emr/logs?cluster_id=...&step_id=...` | `GET /_mystack/management/logs` | Configured tail of Step stdout/stderr |
-| `GET /_mystack/components/emr/log-stream?...` | Repeated `GET /_mystack/management/logs/chunk` | Reconnectable stdout/stderr SSE stream |
-| `GET /_mystack/components/{component}/diagnostics/threads` | `GET /_mystack/diagnostics/threads` | Live Python thread stacks |
-| `GET /_mystack/components/{component}/diagnostics/tasks` | `GET /_mystack/diagnostics/tasks` | Live asyncio task stacks |
+| `GET /_mystack/ui/emr/` | EMR `GET /_mystack/ui/emr/` | EMR React application and hashed assets |
+| `GET /_mystack/ui/glue/` | Glue `GET /_mystack/ui/glue/` | Glue React application and hashed assets |
+| `GET /_mystack/ui/emr/resources` | EMR same path | Cluster and Step read model |
+| `GET /_mystack/ui/emr/log-stream?...` | EMR same path | Reconnectable stdout/stderr SSE |
+| `GET /_mystack/ui/glue/resources` | Glue same path | Catalog database/table/partition read model |
+| `GET /_mystack/ui/{service}/diagnostics/{kind}` | Service-owned UI diagnostics path | Thread or asyncio task stacks |
 
-EMR mutations intentionally use the same public AWS JSON 1.1 endpoint as boto3 rather than a
-Console-only command controller:
+`/_mystack/console`, `/console`, and `/_mystack/ui` redirect to `/_mystack/ui/emr/` for compatibility
+and onboarding. Direct emulator access uses the same paths at `http://emr:8080/_mystack/ui/emr/`
+or `http://glue:8080/_mystack/ui/glue/` inside Compose. The Proxy streams bytes and SSE frames without
+interpreting service JSON or importing a service package. A new emulator therefore needs a normal
+declarative Proxy route and a service-owned `/_mystack/ui/{service}/` contract.
 
-| Console action | AWS operation |
+Selections are durable browser history routes rather than component-only state. Examples include
+`/_mystack/ui/emr/clusters/{cluster-id}/steps/{step-id}/logs` and
+`/_mystack/ui/glue/databases/{database}/tables/{table}/partitions`. Refresh, copied links, Back, and
+Forward restore the selected resource and tab. Each emulator's history-fallback adapter serves the
+entry document for extensionless UI paths while missing assets and JSON requests remain real 404s.
+
+The root `ui/` package owns `Input`, `Select`, `Textarea`, `Checkbox`, `Button`, `Badge`, `Dialog`,
+`Tabs`, panels, definitions, loading/error states, and service-neutral HTTP/polling utilities. EMR
+and Glue import only that public package; they never import one another. Semantic Tailwind variables
+live in `ui/src/theme.css`. Both the light and midnight sets map raw values to names such as
+`canvas`, `surface`, `ink`, `border`, `brand`, `positive`, and `danger`. Changing that set updates
+both applications without editing service components. See the official
+[Tailwind theme-variable contract](https://tailwindcss.com/docs/theme).
+
+EMR mutations intentionally use the same public AWS JSON 1.1 endpoint as boto3:
+
+| UI action | AWS operation |
 | --- | --- |
 | Create cluster | `RunJobFlow` |
 | Submit Spark Step | `AddJobFlowSteps` |
 | Cancel active Step | `CancelSteps` |
-| Protect/unprotect cluster | `SetTerminationProtection` |
+| Protect or unprotect cluster | `SetTerminationProtection` |
 | Terminate cluster | `TerminateJobFlows` |
 
-The browser supplies the documented `X-Amz-Target` and request shape. Proxy routing, pinned model
-validation, application handler, state transition, response validation, and modeled AWS errors are
-therefore identical to the boto3 path. The Console preserves the AWS error code and request ID in
-its alert. See the [EMR API reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html).
+The browser sends the documented `X-Amz-Target` and request body to `/`. Proxy routing, pinned model
+validation, application handlers, state transitions, response validation, and modeled errors are
+therefore shared with boto3. The [EMR API reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)
+remains the operation source.
 
 <!-- section: service-workflows -->
-## Service-aware workflows
+## Service workflows
 
-The EMR workspace lists clusters by name, ID, and state; its detail view presents release,
-instance count, `LogUri`, termination protection, bootstrap actions, tags, and lifecycle
-timestamps. The Steps table tracks state, duration, failure detail, and cancellation availability.
-Selecting a Step opens stdout/stderr and its S3 publication record. The create forms accept one
-argument per line and one `key=value` property/tag per line; values are passed as arrays and are
-never shell-parsed. Release choices come from the EMR service's configured release profiles rather
-than a browser constant; service role, Step concurrency, visibility, and instance behavior map to
-the documented `RunJobFlow` members.
+The EMR application filters clusters, renders release/`LogUri`/bootstrap/tag/timeline
+details, creates a cluster, submits or cancels a Step, manages termination protection, and
+terminates a cluster. It omits IAM roles, instance sizing, and cross-user visibility because they do
+not affect Spark local mode. Release choices and accepted submit aliases come from configured EMR
+profiles. A Step accepts the complete command argument vector with one argument per line and never
+shell-parses it. A PySpark application uses `spark-submit` followed by its `.py` URI; an interactive
+`pyspark` shell is not an EMR Step. This follows Amazon EMR's
+[Spark Step contract](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html).
 
-The Glue workspace is a database → table → detail explorer. Table detail separates ordinary
-columns, partition keys, partitions, table parameters, storage locations, version metadata, and a
-raw lossless view. Glue type strings are displayed without inventing an emulator type restriction,
-matching the [Glue type-system behavior](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).
-Glue Jobs, JobRuns, and Crawlers remain out of scope.
+Selecting a Step opens its submitted `HadoopJarStep` argument vector, the exact resolved local
+process argument vector, service-owned live stdout/stderr, publication status, pause/resume, download,
+and cancel controls. EMR reads local files by byte offset, publishes SSE event IDs with both offsets,
+and honors `Last-Event-ID` on reconnect. `management.console.log_stream_timeout_seconds` limits one
+connection, while `log_buffer_bytes` caps stdout and stderr retained by the browser. Durable recovered
+Step projections and S3 publication statuses remain visible after an emulator restart. Interpret
+synthetic local-driver objects with the [EMR log layout](protocols/emr-log-layout.md) and AWS
+[EMR log guidance](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html).
 
-The Console refreshes the selected service without losing the selected cluster, Step, database, or
-table. Resource polling uses `management.console.refresh_interval_seconds` (minimum 0.5 seconds).
-Step output uses the HTML
-[Server-Sent Events protocol](https://html.spec.whatwg.org/multipage/server-sent-events.html) over
-bounded byte-offset reads. **Pause follow** stops network reads without losing offsets; **Resume
-follow** reconnects at those offsets, and **Download** exports the browser's current stdout/stderr
-buffer. The Proxy bounds one SSE connection with `log_stream_timeout_seconds` and the browser
-automatically reconnects. `log_buffer_bytes` prevents an unbounded browser tab.
+The Glue application explores database → table → schema/partitions/parameters/raw detail. It keeps
+Glue type strings lossless so Spark Hive and Iceberg metadata are visible without a second browser
+type system. The behavior follows the [Glue Data Catalog API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.html)
+and [Glue type documentation](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html). Glue Jobs,
+JobRuns, and Crawlers remain out of scope.
 
-EMR exposes cluster and Step lifecycle detail, tags, release, applications, bootstrap summaries,
-failure detail, and log tails. Glue exposes the configured catalog's database/table/partition tree,
-Hive/Iceberg-relevant type and storage fields, parameters, and table versions. The API identifies
-the emulator mode and the exact implemented/upstream operation counts so the UI cannot imply full
-AWS compatibility.
-
-Selecting an EMR Step shows local stdout/stderr plus its versioned S3 LogUri publication record.
-The record distinguishes pending, skipped, published, failed, and unreadable states; published
-records list the exact Step and synthetic local-driver object keys. See the
-[EMR log layout](protocols/emr-log-layout.md) before interpreting `containers/` as YARN output.
-If EMR restarts during a Step, the Console adds a terminal **recovered logs** projection from the
-durable execution journal and retries an incomplete S3 publication. This projection deliberately
-does not recreate the process-local boto3 cluster: `DescribeCluster` still returns the modeled
-not-found error for the old ID. Retention removes only terminal records whose publication is
-`published` or `skipped`; failed uploads remain available for repair.
-
-Service management adapters may import their own Application/Domain read models and translate
-them to JSON. Proxy and UI code know only this JSON contract. Adding a new emulator therefore
-requires implementing the backend resource endpoint and registering a normal Proxy route; the UI
-does not need the new service's Python package.
+Both applications poll their service-owned resource endpoint with the configured refresh interval
+and preserve a still-existing selection. Every controller, resource snapshot, stream open/close,
+backend forwarding boundary, and failure emits structured logs. Protocol failures identify the
+service UI adapter or management schema that maintainers should inspect.
 
 <!-- section: security -->
-## Security and logging
+## Local security model
 
-Resource and log endpoints reuse `management.diagnostics.enabled` and its optional bearer token.
-The Proxy forwards only the `Authorization` header and query parameters to the selected backend.
-Every authorization decision, resource snapshot, log read, and Proxy forwarding boundary emits
-structured before/after/failure events. Step arguments are summarized by count rather than exposed;
-stdout/stderr can still contain workload data and should be protected in shared environments.
-AWS documents the sensitivity and lifecycle of [EMR log files](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html).
+Mystack deliberately provides no login, management-token input, bearer-token validation, session,
+cookie, or authorization forwarding for UI and diagnostic paths. This is a local development
+emulator, not an IAM or multi-tenant administration plane. `management.diagnostics.enabled` can
+remove thread/task endpoints, but it is an availability switch rather than authentication.
 
-The bearer token protects Mystack management reads, not the emulated AWS endpoint. Console
-mutations have exactly the same authorization scope as boto3 calls to that endpoint; Mystack local
-mode does not claim production IAM enforcement. Do not expose the Proxy to an untrusted network.
+Consequently, do not expose the Proxy or emulator ports to an untrusted network. stdout/stderr,
+catalog parameters, paths, thread source lines, and task stacks can contain operationally sensitive
+data. Submitted application arguments and resolved commands are visible here and can also contain
+secrets; pass credentials through a safer runtime mechanism. Use container/network boundaries supplied by the deployment environment. AWS request
+`Authorization` remains relevant only as protocol evidence for normal SigV4 service routing; the UI
+gateway strips it and cookies before forwarding.
 
 <!-- section: browser-e2e -->
-## Accessibility and browser E2E
+## Development, accessibility, and browser E2E
 
-The console provides a skip link, explicit form labels, a polite live status region, named controls,
-responsive layouts, visible keyboard focus, and WAI-ARIA tabs with Left/Right/Home/End navigation.
-The implementation follows the [WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
-Playwright E2E creates and terminates a cluster through the browser, submits/tracks/cancels a Step,
-observes live output before cancellation, pauses/resumes/downloads the stream, checks publication,
-explores a complex Glue schema and partition, and verifies labels,
-roles, keyboard navigation, diagnostics, and browser console errors. CI installs Chromium and makes
-the test required; local runs skip only when Chromium is absent. Install it with
-`uv run playwright install chromium`.
+Run `npm ci` once after checkout. Use `npm run frontend:check:emr`,
+`npm run frontend:check:glue`, or `npm run frontend:check`. Production builds are generated into
+each Python package during its Docker multi-stage build; the final image has no Node runtime. The
+Dev Container installs the pinned Node toolchain, and pre-commit runs both Python Ruff and React
+TypeScript ESLint. CI independently runs lint, TypeScript project references, Vitest, and both Vite
+builds before Docker E2E.
 
-Browser action timeout and the CI-required environment-variable name live in
-`tests.e2e.browser_action_timeout_seconds` and
-`tests.e2e.browser_required_environment_variable`.
+Shared controls provide labels, descriptions, visible focus, named status/error regions, responsive
+layouts, skip links, and keyboard tabs. Tabs support Left/Right/Home/End according to the
+[WAI-ARIA tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/). Playwright creates and
+terminates an EMR cluster, submits/tracks/cancels a Step, observes/pause/resumes/downloads logs,
+checks S3 publication, navigates to the separate Glue application, explores complex types and a
+partition, opens service diagnostics, checks keyboard behavior, and fails on browser console errors.
+
+Browser action and total E2E limits remain file-driven through
+`tests.e2e.browser_action_timeout_seconds` and `tests.e2e_timeout_seconds`. Install a local browser
+only when running the browser contract with `uv run playwright install chromium`.

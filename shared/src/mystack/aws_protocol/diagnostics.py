@@ -30,7 +30,6 @@ _LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True, slots=True)
 class DiagnosticsSettings:
     enabled: bool
-    management_token: str | None
     stack_limit: int
 
     @classmethod
@@ -40,7 +39,6 @@ class DiagnosticsSettings:
         try:
             settings = cls(
                 enabled=bool(diagnostics["enabled"]),
-                management_token=(str(diagnostics["token"]) if diagnostics.get("token") else None),
                 stack_limit=int(diagnostics["stack_limit"]),
             )
         except KeyError as error:
@@ -52,12 +50,17 @@ class DiagnosticsSettings:
         return settings
 
 
-def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> APIRouter:
-    router = APIRouter(prefix="/_mystack/diagnostics", tags=["Mystack diagnostics"])
+def create_diagnostics_router(
+    service: str,
+    settings: DiagnosticsSettings,
+    *,
+    prefix: str = "/_mystack/diagnostics",
+) -> APIRouter:
+    router = APIRouter(prefix=prefix, tags=["Mystack diagnostics"])
 
     @router.get("/threads")
     async def threads(request: Request) -> dict[str, object]:
-        authorize_management(request, settings, service, "threads")
+        _require_enabled(request, settings, service, "threads")
         frames = sys._current_frames()
         live_threads = {thread.ident: thread for thread in threading.enumerate()}
         entries: list[dict[str, object]] = []
@@ -90,7 +93,7 @@ def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> AP
 
     @router.get("/tasks")
     async def tasks(request: Request) -> dict[str, object]:
-        authorize_management(request, settings, service, "tasks")
+        _require_enabled(request, settings, service, "tasks")
         current = asyncio.current_task()
         entries: list[dict[str, object]] = []
         for task in sorted(asyncio.all_tasks(), key=lambda item: item.get_name()):
@@ -125,7 +128,7 @@ def create_diagnostics_router(service: str, settings: DiagnosticsSettings) -> AP
     return router
 
 
-def authorize_management(
+def _require_enabled(
     request: Request,
     settings: DiagnosticsSettings,
     service: str,
@@ -133,26 +136,14 @@ def authorize_management(
 ) -> None:
     if not settings.enabled:
         raise HTTPException(status_code=404, detail="Diagnostics are disabled")
-    if settings.management_token:
-        supplied = request.headers.get("authorization", "")
-        if supplied != f"Bearer {settings.management_token}":
-            log_event(
-                _LOGGER,
-                logging.WARNING,
-                "management.access.denied",
-                service=service,
-                capability=capability,
-                client=_client(request),
-            )
-            raise HTTPException(status_code=401, detail="Invalid management token")
     log_event(
         _LOGGER,
         logging.INFO,
-        "management.access.granted",
+        "management.access.observed",
         service=service,
         capability=capability,
         client=_client(request),
-        token_required=settings.management_token is not None,
+        authentication="disabled-by-design",
     )
 
 

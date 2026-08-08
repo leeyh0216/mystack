@@ -149,13 +149,13 @@
 <!-- section: uc-008 -->
 ## UC-008: Service resource와 EMR log 조회
 
-- 목적/actor/trigger: operator/UI가 Proxy를 통해 versioned management endpoint를 호출합니다.
-- 입력: component/path, 선택 Bearer token, resource/log query, 설정된 page limit.
+- 목적/actor/trigger: operator/service 소유 UI가 direct 또는 Proxy를 통해 versioned management endpoint를 호출합니다.
+- 입력: component/path, resource/log query, 설정된 page limit이며 management credential은 의도적으로 없습니다.
 - 출력: EMR cluster/step/log read model 또는 Glue database/table/partition tree입니다.
 - 저장/변경/event: resource mutation 없이 management access audit event만 있습니다.
-- 부수효과: Proxy가 internal management HTTP를 한 번 호출하고 raw step argument를 노출하지 않습니다.
-- 선행조건/규칙: 알려진 component, management 활성/token 유효, application API pagination.
-- 실패: unauthorized/disabled, unknown component/resource, internal timeout.
+- 부수효과: 공개 gateway path를 사용하면 Proxy가 internal management HTTP를 한 번 호출합니다. 제출·resolved Step argument vector는 인증 없는 local UI에 의도적으로 제공하지만 그 값을 구조화 log에 기록하지 않습니다.
+- 선행조건/규칙: 알려진 component, 활성화한 endpoint, application API pagination, 신뢰하는 local-network 배포.
+- 실패: 비활성 endpoint, unknown component/resource, internal timeout.
 - 관측: management forwarding/component adapter log와 UI E2E.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/app.py:122`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/app.py:134`,
@@ -166,27 +166,27 @@
 ## UC-009: Thread/task stack 조회
 
 - 목적/actor/trigger: operator/UI가 `/_mystack/diagnostics/threads` 또는 `/tasks`를 호출합니다.
-- 입력: 선택 Bearer token과 stack frame limit.
+- 입력: diagnostic kind와 설정된 stack frame limit이며 인증 입력은 의도적으로 없습니다.
 - 출력: frame local을 제외한 thread/task metadata와 source stack line입니다.
 - 저장/변경/event: resource mutation 없이 diagnostic access audit log만 있습니다.
-- 선행조건/규칙: diagnostics 활성화, 설정 시 token 유효.
-- 실패: disabled 또는 unauthorized.
-- 관측: token 내용 없는 access result/client.
+- 선행조건/규칙: diagnostics 활성화와 신뢰하는 local-network 배포.
+- 실패: disabled 또는 알 수 없는 diagnostic kind.
+- 관측: access result, component, client, 명시적인 `authentication=disabled-by-design` 근거.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/diagnostics.py:55`
 - 신뢰도: High
 
 <!-- section: uc-010 -->
 ## UC-010: Browser management console 운영
 
-- 목적/actor/trigger: local operator가 `/_mystack/console`을 열어 EMR을 운영하고 Glue를 탐색하거나 진단을 확인합니다.
-- 입력: cluster/Step form과 action, database/table/tab 선택, refresh, 선택 management token.
+- 목적/actor/trigger: local operator가 Proxy의 `/_mystack/ui/emr/`, `/_mystack/ui/glue/` 또는 emulator direct `/_mystack/ui/`를 엽니다.
+- 입력: cluster/Step form과 action, database/table/tab 선택, refresh, log stream control.
 - 출력: 접근 가능한 lifecycle/status, log/publication 근거, Glue schema/partition metadata, route/stack view입니다.
 - 저장/변경: browser 선택 상태를 유지합니다. Read는 management endpoint, EMR mutation은 public AWS endpoint와 기존 application use case를 사용합니다.
-- 선행조건/규칙: packaged static module/public Proxy, 설정 polling 주기, keyboard/ARIA tab 계약, array를 shell parsing하지 않음.
-- 실패: unavailable component/endpoint/token 또는 modeled AWS error는 secret 없이 표시하며 가능한 경우 AWS code/request ID를 보존합니다.
+- 선행조건/규칙: 각 emulator가 자기 React/TypeScript application을 package하고 Proxy는 안정 path만 전달합니다. 공통 primitive와 Tailwind semantic token은 service 방향으로만 의존하며 설정 polling 주기, keyboard/ARIA tab 계약, array를 shell parsing하지 않는 규칙을 지킵니다.
+- 실패: unavailable component/endpoint 또는 modeled AWS error는 secret 없이 표시하며 가능한 경우 AWS code/request ID를 보존합니다.
 - 관측: Playwright cluster/Step/Glue/keyboard/browser E2E, protocol 경계 log와 screenshot.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/console.py:12`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/tests/e2e/test_console_browser.py:21`
+- 근거: `ui/src/components.tsx`, `emr/ui/src/App.tsx`, `glue/ui/src/App.tsx`,
+  `proxy/src/mystack/proxy/forwarder.py`, `tests/e2e/test_console_browser.py`
 - 신뢰도: High
 
 <!-- section: uc-011 -->

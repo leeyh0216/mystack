@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # uv installation: https://docs.astral.sh/uv/getting-started/installation/
 # Docker Compose: https://docs.docker.com/compose/install/
+# Reproducible frontend installation: https://docs.npmjs.com/cli/v11/commands/npm-ci
 set -euo pipefail
 
 config_path="config/mystack.yaml"
@@ -17,7 +18,7 @@ while (($#)); do
   esac
 done
 
-for command_name in uv docker; do
+for command_name in uv docker node npm; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing required command: $command_name" >&2
     exit 1
@@ -33,6 +34,10 @@ fi
 export MYSTACK_CONFIG_FILE="$config_path"
 echo "[mystack] syncing locked Python workspace"
 uv sync --locked --all-packages
+echo "[mystack] syncing locked React/TypeScript workspace"
+npm ci --ignore-scripts
+echo "[mystack] checking shared UI, EMR UI, and Glue UI"
+npm run frontend:check
 echo "[mystack] checking bilingual documentation and official references"
 uv run python scripts/check_docs.py
 echo "[mystack] checking the source-free GHCR user Compose file"

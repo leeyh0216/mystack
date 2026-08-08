@@ -19,6 +19,7 @@ Mystack emulates EMR and Glue observable behavior at the AWS API boundary while 
 | `emr` | EMR resources, cluster/step state machines, bootstrap and Spark orchestration | Proxy routing or Glue models |
 | `glue` | Glue Data Catalog, Glue types, and Hive/Iceberg interoperability | Proxy routing or EMR models |
 | `shared` | AWS JSON 1.1 codec, official service-model access, request validation primitives | Any EMR/Glue business rule |
+| `ui` | Service-neutral React primitives and semantic Tailwind design tokens | EMR/Glue DTOs, APIs, or business rules |
 
 Business abstractions are not placed in `shared`. Sharing is limited to the wire protocol boundary.
 Mystack does not expose an in-process user plugin API. Service behavior changes remain inside the
@@ -125,11 +126,13 @@ host:4566 -> proxy:8080
 The EMR emulator runs one local Spark process at a time per emulated cluster by default. Spark-based Glue interoperability tests use versioned runtime profiles; Glue Job/JobRun execution is not implemented. Runtime processes receive LocalStack endpoints and test credentials through environment variables.
 
 Management traffic uses a separate outward read-model boundary. Each service's inbound management
-adapter translates its Application/Domain resources to versioned JSON; the Proxy forwards that JSON
-and the packaged browser UI renders it without importing service internals. See the
+adapter translates its Application/Domain resources to versioned JSON and each emulator packages
+and serves its own React/TypeScript UI. Proxy streams stable public UI paths and bytes only; it does
+not own service assets or DTOs. Both applications compose the root `@mystack/ui` primitives and
+central Tailwind semantic tokens without importing each other or service internals. See the
 [management console contract](console.md).
 
-Console commands do not bypass this architecture with an internal object bridge. EMR mutations
+UI commands do not bypass this architecture with an internal object bridge. EMR mutations
 send documented AWS JSON 1.1 requests to the public Proxy and therefore traverse the same routing,
 model validation, application handlers, repositories, error translation, and boundary logging as
 boto3. Glue exploration remains a read model. Static browser modules know only these two outward
@@ -201,7 +204,7 @@ Glue's JSON persistence adapter uses Python's atomic
 - Glue Jobs and JobRuns
 - Glue Crawlers
 - distributed EC2/YARN/HDFS fidelity in the initial runtime
-- IAM policy evaluation unless an authentication-enforcement mode is enabled
+- production IAM policy evaluation or management-endpoint authentication
 - reproduction of undocumented AWS bugs
 
 <!-- section: sources -->

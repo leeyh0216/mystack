@@ -48,10 +48,10 @@ docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-`http://localhost:4566/_mystack/console`에서 EMR cluster 생성·운영, Step 제출·추적, live log
-follow/pause/download,
-Glue database/table/schema/partition 탐색, route, thread stack, asyncio task 확인을 할 수
-있습니다. Docker Compose 조합, boto3와 AWS SDK for pandas 연결, upgrade, rollback,
+[EMR UI](http://localhost:4566/_mystack/ui/emr/)에서 cluster 생성·운영, Step 제출·추적,
+live log follow/pause/download를 할 수 있습니다. 별도의 service 소유
+[Glue UI](http://localhost:4566/_mystack/ui/glue/)에서는 database/table/schema/partition,
+thread stack, asyncio task를 탐색할 수 있습니다. Docker Compose 조합, boto3와 AWS SDK for pandas 연결, upgrade, rollback,
 문제 해결과 정리는 [상세 사용 안내](docs/getting-started.ko.md)부터 읽어보세요. Source build는 일반
 사용 경로가 아니며 [개발 환경 안내](docs/development.ko.md)에 있습니다.
 
