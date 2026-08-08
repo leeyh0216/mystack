@@ -113,6 +113,7 @@ def create_app(
                     terminate_grace_seconds=optimizer.worker.terminate_grace_seconds,
                     catalog_endpoint_url=optimizer.catalog_endpoint_url,
                     object_store_endpoint_url=settings.object_store.endpoint_url,
+                    object_store_path_style=settings.object_store.s3_path_style,
                     region=settings.object_store.region,
                     access_key_id=settings.object_store.access_key_id,
                     secret_access_key=settings.object_store.secret_access_key,

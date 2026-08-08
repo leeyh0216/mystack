@@ -52,6 +52,17 @@ def test_optimizer_runtime_settings_are_loaded_from_the_mounted_yaml() -> None:
     assert settings.table_optimizers.policy.compaction_failure_limit == 4
 
 
+def test_optimizer_configures_hadoop_s3a_for_iceberg_orphan_file_listing() -> None:
+    assert optimizer_job._hadoop_s3_configuration(
+        "http://localstack:4566",
+        path_style=True,
+    ) == {
+        "spark.hadoop.fs.s3a.endpoint": "http://localstack:4566",
+        "spark.hadoop.fs.s3a.path.style.access": "true",
+        "spark.hadoop.fs.s3a.connection.ssl.enabled": "false",
+    }
+
+
 def test_zorder_uses_the_current_identity_sort_columns(monkeypatch: pytest.MonkeyPatch) -> None:
     class Result:
         @staticmethod
@@ -235,6 +246,7 @@ def _executor_settings(
         terminate_grace_seconds=0.05,
         catalog_endpoint_url="http://127.0.0.1:8080",
         object_store_endpoint_url="http://127.0.0.1:4566",
+        object_store_path_style=True,
         region="us-east-1",
         access_key_id="test",
         secret_access_key="test",

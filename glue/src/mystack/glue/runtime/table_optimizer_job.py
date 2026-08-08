@@ -23,6 +23,11 @@ def main() -> None:
     parser.add_argument("--work-file", type=Path, required=True)
     parser.add_argument("--catalog-endpoint", required=True)
     parser.add_argument("--object-store-endpoint", required=True)
+    parser.add_argument(
+        "--object-store-path-style",
+        required=True,
+        choices=("true", "false"),
+    )
     parser.add_argument("--region", required=True)
     parser.add_argument("--catalog-name", required=True)
     args = parser.parse_args()
@@ -52,7 +57,7 @@ def _spark_session(work: dict, args):
     from pyspark.sql import SparkSession
 
     bucket = urlsplit(work["table_location"]).netloc
-    return (
+    builder = (
         SparkSession.builder.appName(
             f"mystack-glue-{work['optimizer_type']}-{work['database_name']}-{work['table_name']}"
         )
@@ -86,9 +91,29 @@ def _spark_session(work: dict, args):
             f"spark.sql.catalog.{args.catalog_name}.s3.endpoint",
             args.object_store_endpoint,
         )
-        .config(f"spark.sql.catalog.{args.catalog_name}.s3.path-style-access", "true")
-        .getOrCreate()
+        .config(
+            f"spark.sql.catalog.{args.catalog_name}.s3.path-style-access",
+            args.object_store_path_style,
+        )
     )
+    for key, value in _hadoop_s3_configuration(
+        args.object_store_endpoint,
+        path_style=args.object_store_path_style == "true",
+    ).items():
+        builder = builder.config(key, value)
+    return builder.getOrCreate()
+
+
+def _hadoop_s3_configuration(endpoint: str, *, path_style: bool) -> dict[str, str]:
+    """Configure S3A used by Iceberg actions separately from Iceberg S3FileIO."""
+
+    return {
+        "spark.hadoop.fs.s3a.endpoint": endpoint,
+        "spark.hadoop.fs.s3a.path.style.access": str(path_style).lower(),
+        "spark.hadoop.fs.s3a.connection.ssl.enabled": str(
+            urlsplit(endpoint).scheme == "https"
+        ).lower(),
+    }
 
 
 def _compact(spark, work: dict, catalog_name: str) -> dict:

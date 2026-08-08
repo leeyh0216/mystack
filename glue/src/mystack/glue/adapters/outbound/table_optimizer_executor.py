@@ -36,6 +36,7 @@ class SparkTableOptimizerExecutorSettings:
     terminate_grace_seconds: float
     catalog_endpoint_url: str
     object_store_endpoint_url: str
+    object_store_path_style: bool
     region: str
     access_key_id: str
     secret_access_key: str
@@ -80,6 +81,8 @@ class SparkTableOptimizerExecutor:
             self._settings.catalog_endpoint_url,
             "--object-store-endpoint",
             self._settings.object_store_endpoint_url,
+            "--object-store-path-style",
+            str(self._settings.object_store_path_style).lower(),
             "--region",
             self._settings.region,
             "--catalog-name",
@@ -96,6 +99,7 @@ class SparkTableOptimizerExecutor:
             work_fingerprint=hashlib.sha256(work_file.read_bytes()).hexdigest()[:16],
             catalog_endpoint_host=urlsplit(self._settings.catalog_endpoint_url).hostname,
             object_store_endpoint_host=urlsplit(self._settings.object_store_endpoint_url).hostname,
+            object_store_path_style=self._settings.object_store_path_style,
             timeout_seconds=self._settings.timeout_seconds,
             stdout_file=str(stdout_file),
             stderr_file=str(stderr_file),
