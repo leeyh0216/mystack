@@ -1,80 +1,16 @@
 # Spark client lab
 
-Run a local Spark Hive and Iceberg round trip through Mystack's public Proxy. Compose starts
-Mystack, LocalStack S3, and a separate client using the pinned Glue 5 / Spark 3.5 runtime. The
-Spark program creates Hive and Iceberg namespaces and tables, writes data, and reads it back.
-No AWS account or cloud credentials are required.
-
-## Prerequisites
-
-- Docker Desktop (or Docker Engine) is running.
-- Docker Compose v2 supports [`include`](https://docs.docker.com/reference/compose-file/include/).
-- Run the commands from this directory, not the repository root.
-
-## What Compose runs
-
-| File | Role when you run the lab |
-| --- | --- |
-| [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy`, and starts `spark-client` with Glue, S3, and STS endpoint variables directed at Mystack/LocalStack. |
-| [`compose.env`](compose.env) | Sets `MYSTACK_PORT=0`, avoiding a collision with another local Mystack stack. The client uses internal Compose hostnames instead. |
-| [`Dockerfile`](Dockerfile) | Uses the pinned Glue 5 / Spark 3.5 client image and copies the two workload files into `/workspace`. |
-| [`run.sh`](run.sh) | The container entrypoint. It creates `mystack-spark-client-lab` in LocalStack S3 if needed, then invokes `spark-submit` with the Compose command arguments. |
-| [`verify.py`](verify.py) | The Spark application: configures the Glue-backed Hive and Iceberg catalogs, creates two namespaces and tables, inserts one row into each, reads both tables, prints their counts, and stops Spark. |
-
-The command `docker compose up … --exit-code-from spark-client` treats the exit status of
-`run.sh` → `spark-submit` → `verify.py` as the lab result. A nonzero exit identifies a failed
-catalog, object-store, or Spark operation.
-
-## Run the lab
-
-Copy and paste this block. The first execution can take several minutes because it builds the
-client image and resolves Spark's Maven/Ivy dependencies.
+This lab starts Mystack and a separate Spark client process in the Glue 5/Spark 3.5 runtime. The
+client executes the same public-Proxy Hive and Iceberg catalog scenario used for compatibility
+testing: it creates Hive and Iceberg namespaces/tables, writes and reads Parquet/Iceberg data in
+LocalStack S3, and prints `MYSTACK_E2E_RESULT=` on success.
 
 ```bash
-cd examples/clients/spark
-docker compose config --quiet
 docker compose up --build --abort-on-container-exit --exit-code-from spark-client
 ```
 
-`spark-client` exits with status `0` when the Hive and Iceberg workflow succeeds. Mystack services
-remain available after the client exits.
+The initial image build and Maven/Ivy resolution can take several minutes. Stop persistent services
+afterward with `docker compose down --volumes`.
 
-## Check the result
-
-The final Spark output includes one result with a row count for each table:
-
-```text
-{'hive_database': 'client_lab_hive', 'hive_count': 1, 'iceberg_database': 'client_lab_iceberg', 'iceberg_count': 1}
-```
-
-Use these commands to inspect the result and service health:
-
-```bash
-# Print the completed Spark client output.
-docker compose logs spark-client
-
-# Confirm the Proxy and LocalStack services are healthy.
-docker compose ps
-
-# Query the public health endpoint from the host.
-curl --fail http://localhost:4566/_mystack/health
-```
-
-To run the same client program again while the stack is up:
-
-```bash
-docker compose run --rm spark-client \
-  --master local[2] \
-  /workspace/verify.py
-```
-
-## Clean up
-
-Stop the lab and remove its containers, network, and local volumes:
-
-```bash
-docker compose down --volumes --remove-orphans
-```
-
-See [client workflows](../../../docs/client-workflows.md) for the Hive/Iceberg API path and the
-compatibility matrix for the exact support boundary.
+See [client workflows](../../../docs/client-workflows.md) for the Spark Hive/Iceberg request path
+and the compatibility matrix for its exact support boundary.
