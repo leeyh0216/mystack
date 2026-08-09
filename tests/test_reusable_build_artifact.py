@@ -82,7 +82,9 @@ def test_workflows_use_exact_cache_and_verified_cross_run_artifacts() -> None:
     assert "uv run python scripts/reusable_build_artifact.py" not in ci
     assert "service-ui-builds-${{ github.sha }}" in ci
     assert "workflow_run:" in e2e
-    assert "run-id: ${{ github.event.workflow_run.id }}" in e2e
+    assert "run-id: ${{ github.event.workflow_run.id || inputs.producer_run_id }}" in e2e
+    assert "producer_run_id:" in e2e
+    assert "inputs.producer_run_id" in e2e
     assert "reusable_build_artifact.py verify" in e2e
     assert "ci_run_id: ${{ github.event.workflow_run.id }}" in release
     assert "run-id: ${{ inputs.ci_run_id }}" in publish
