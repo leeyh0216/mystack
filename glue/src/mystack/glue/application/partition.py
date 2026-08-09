@@ -317,6 +317,7 @@ class PartitionQueries:
                 predicate,
                 None if selected_segment is None else selected_segment.number,
                 None if selected_segment is None else selected_segment.total,
+                self._expression_compiler.fallback_max_candidates,
             )
         )
         if page.invalid_cursor:
@@ -350,6 +351,19 @@ class PartitionQueries:
                 ),
             )
             raise InvalidInputError("Partition value count does not match partition key count")
+        if page.fallback_candidate_limit_exceeded:
+            log_event(
+                _LOGGER,
+                logging.WARNING,
+                "glue.partition_query.fallback.limit_exceeded",
+                expression_fingerprint=predicate.fingerprint,
+                candidate_limit=self._expression_compiler.fallback_max_candidates,
+                fix_hint="Narrow the partition expression and retry within the configured bound.",
+            )
+            raise InvalidInputError(
+                "Partition expression fallback exceeded the configured candidate limit; "
+                "narrow the request and retry"
+            )
         log_event(
             _LOGGER,
             logging.INFO,

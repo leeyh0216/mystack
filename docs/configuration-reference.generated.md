@@ -77,6 +77,7 @@ All values load once at process startup; restart the affected service after a ch
 | `glue.create_default_database` | type='boolean' | `true` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.max_length` | type='integer'; minimum=1 | `2048` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.max_tokens` | type='integer'; minimum=1 | `512` | `glue` | Runtime configuration; restart required |
+| `glue.partition_expressions.fallback_max_candidates` | type='integer'; minimum=1 | `1000` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.supported_key_types` | type='array'; minItems=1 | `["string", "date", "timestamp", "int", "bigint", "long", "tinyint", "smallint", "decimal"]` | `glue` | Runtime configuration; restart required |
 | `glue.fault_injection.enabled` | type='boolean' | `false` | `glue` | Runtime configuration; restart required |
 | `glue.fault_injection.rules` | type='array' | `[]` | `glue` | Runtime configuration; restart required |

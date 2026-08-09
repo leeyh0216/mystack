@@ -80,15 +80,19 @@ continuation token에는 version, request-context fingerprint, surrogate row ID�
 value는 없습니다. 다른 catalog/table/expression/segment의 token은 거부됩니다. 일반
 `GetPartitions`는 total-count query를 실행하지 않습니다. 참조 key 검증은 index된 중립 health fact를
 읽으므로 invalid value가 없다는 이유만으로 모든 partition을 탐색하지 않습니다. 결과 materialization은
-요청 page와 lookahead로 제한됩니다. 현재 ANTLR grammar는 모두 SQL/UDF로 compile합니다. 이후 grammar
-node를 추가할 때는 구성 가능한 limit을 가진 명시적 상한이 있는 evaluator fallback과 differential test를 먼저
-추가한 뒤 지원 범위에 포함해야 합니다.
+요청 page와 lookahead로 제한됩니다. 현재 ANTLR grammar는 모두 SQL/UDF로 compile합니다. evaluator가
+지원하지만 정확한 SQLite compiler가 아직 없는 이후 node는 `ORDER BY (order_key, partition_id)` seek
+streaming으로 최대 `fallback_max_candidates` row만 평가하며 catalog 목록을 snapshot하지 않습니다. cap을
+넘으면 값과 식을 노출하지 않는 narrowing hint가 포함된 결정적 `InvalidInputException`을 반환합니다.
+fallback의 strategy는 `sqlite-keyset-bounded-evaluator`이며, 이후 node는 이 상한 검증 범위를
+갖춘 뒤에만 지원 범위에 포함할 수 있습니다.
 
 Mount한 Mystack YAML의 `glue.partition_expressions.max_length`, `max_tokens`,
-`supported_key_types`로 resource limit과 호환 profile을 제어합니다. 기본 길이는 공식 API model과
+`fallback_max_candidates`, `supported_key_types`로 resource limit과 호환 profile을 제어합니다. 기본 길이는 공식 API model과
 같고 token 상한은 로컬 denial-of-service 방어입니다. 구조화 event
 `glue.partition_expression.parse.*`, `glue.partition_expression.bind.*`,
 `glue.partition_query.plan.*`, `glue.partition_query.preflight.failed`,
+`glue.partition_query.fallback`,
 `glue.sqlite_catalog.query.page.after`는 `INFO`에서 기록합니다. expression fingerprint,
 연산자만 포함한 AST 형태, key type, segment 좌표, 요청/반환 page 개수, strategy, duration, 수정 위치
 안내만 포함하며 literal, token, partition value, SQL text는 기록하지 않습니다. 이후 boto3, Spark Hive
