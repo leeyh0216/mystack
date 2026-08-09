@@ -249,6 +249,11 @@ class GlueCatalogUseCases(Protocol):
 
 
 class GlueManagementQueries(Protocol):
+    """UI-only bounded pages, details, and explicit totals.
+
+    The inbound management adapter may not reach persistence ports directly.
+    """
+
     async def get_databases(
         self,
         catalog_id: str,
@@ -278,3 +283,11 @@ class GlueManagementQueries(Protocol):
         next_token: str | None,
         max_results: int | None,
     ) -> tuple[list[CatalogPartition], str | None]: ...
+
+    async def count_databases(self, catalog_id: str) -> int: ...
+
+    async def count_tables(self, catalog_id: str, database: str) -> int: ...
+
+    async def count_partitions(self, catalog_id: str, database: str, table: str) -> int: ...
+
+    async def get_table(self, catalog_id: str, database: str, name: str) -> CatalogTable: ...

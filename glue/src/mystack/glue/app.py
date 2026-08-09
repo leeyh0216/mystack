@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Glue Data Catalog FastAPI composition root.
 
 References:
@@ -13,7 +14,7 @@ from importlib.metadata import version as distribution_version
 from pathlib import Path
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from mystack.aws_protocol import (
     AwsJsonRpcEndpoint,
@@ -247,10 +248,36 @@ def create_app(
             }
         )
 
-    @app.get("/_mystack/management/resources")
-    @app.get("/_mystack/ui/glue/resources")
-    async def management_resources() -> JSONResponse:
-        return JSONResponse(await management.resources())
+    @app.get("/_mystack/ui/glue/catalog")
+    async def management_document() -> JSONResponse:
+        return JSONResponse(management.document())
+
+    @app.get("/_mystack/ui/glue/catalog/databases")
+    async def management_databases(
+        cursor: str | None = None, limit: int | None = Query(None, ge=1)
+    ) -> JSONResponse:
+        return JSONResponse(await management.databases(cursor=cursor, limit=limit))
+
+    @app.get("/_mystack/ui/glue/catalog/databases/{database_name}/tables")
+    async def management_tables(
+        database_name: str, cursor: str | None = None, limit: int | None = Query(None, ge=1)
+    ) -> JSONResponse:
+        return JSONResponse(await management.tables(database_name, cursor=cursor, limit=limit))
+
+    @app.get("/_mystack/ui/glue/catalog/databases/{database_name}/tables/{table_name}")
+    async def management_table(database_name: str, table_name: str) -> JSONResponse:
+        return JSONResponse(await management.table(database_name, table_name))
+
+    @app.get("/_mystack/ui/glue/catalog/databases/{database_name}/tables/{table_name}/partitions")
+    async def management_partitions(
+        database_name: str,
+        table_name: str,
+        cursor: str | None = None,
+        limit: int | None = Query(None, ge=1),
+    ) -> JSONResponse:
+        return JSONResponse(
+            await management.partitions(database_name, table_name, cursor=cursor, limit=limit)
+        )
 
     @app.get("/_mystack/ui/glue/config")
     async def ui_config() -> JSONResponse:

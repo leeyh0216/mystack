@@ -1,11 +1,13 @@
-/** Service-relative read adapter; official catalog API: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.html */
 import {requestJson} from "@mystack/ui";
-import type {GlueResourceDocument, UiConfig} from "./types";
-
-const UI_BASE = "/_mystack/ui/glue/";
-
+import type {GluePage, GluePartition, GlueTable, GlueUiDocument, UiConfig} from "./types";
+const BASE = "/_mystack/ui/glue/";
+const path = (value: string) => encodeURIComponent(value);
 export class GlueUiApi {
-  resources(): Promise<GlueResourceDocument> { return requestJson("resources", UI_BASE); }
-  config(): Promise<UiConfig> { return requestJson("config", UI_BASE); }
-  diagnostics(kind: "threads" | "tasks"): Promise<unknown> { return requestJson(`diagnostics/${kind}`, UI_BASE); }
+  document(): Promise<GlueUiDocument> { return requestJson("catalog", BASE); }
+  databases(cursor?: string): Promise<GluePage> { return requestJson(`catalog/databases${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, BASE); }
+  tables(database: string, cursor?: string): Promise<GluePage<GlueTable>> { return requestJson(`catalog/databases/${path(database)}/tables${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, BASE); }
+  table(database: string, table: string): Promise<{resource: GlueTable; partition_count: number}> { return requestJson(`catalog/databases/${path(database)}/tables/${path(table)}`, BASE); }
+  partitions(database: string, table: string, cursor?: string): Promise<GluePage<GluePartition>> { return requestJson(`catalog/databases/${path(database)}/tables/${path(table)}/partitions${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, BASE); }
+  config(): Promise<UiConfig> { return requestJson("config", BASE); }
+  diagnostics(kind: "threads" | "tasks"): Promise<unknown> { return requestJson(`diagnostics/${kind}`, BASE); }
 }
