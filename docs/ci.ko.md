@@ -60,10 +60,12 @@ runner가 제공하는 JUnit XML을 작성합니다. Repository-local renderer�
 
 [Spark CI](https://github.com/apache/spark/blob/master/.github/workflows/build_and_test.yml)처럼 모든 실행에는 구조화된 결과와 summary를 제공하고 상세 log는 실패 시에만 남깁니다. [Trino의 result-processing action](https://github.com/trinodb/trino/blob/master/.github/actions/process-test-results/action.yml)도 test report를 보존하고 별도 확인 절차를 만들지 않고 현재 job에 annotation을 연결합니다.
 
-일반 `*-test-report` artifact의 보존 기간은 14일입니다. `service-ui-builds` artifact는 frontend와
-Python job 사이에서만 쓰는 하루짜리 내부 handoff이며 test 결과나 Docker image artifact가 아닙니다.
-기존 test deadline도 유지합니다. pytest는 선택된 YAML timeout을 받고 Vitest는 설정된 test와 hook
-deadline을 받습니다.
+일반 `*-test-report` artifact의 보존 기간은 14일입니다. `service-ui-builds-<SHA>`는 이틀간 보존되는
+내부 build artifact이며 test 결과나 Docker image artifact가 아닙니다. 부분 key restore를 사용하지 않는 exact-key
+cache가 같은 호환 producer lane의 재build를 막습니다. manifest는 source SHA, platform, lock/config 입력, producer run,
+bundle file digest를 묶고 Python CI, Docker E2E, release preflight가 재사용 전
+검증합니다. artifact가 없으면 local build로 전환합니다. 기존 test deadline도 유지합니다. pytest는 선택된 YAML
+timeout을 받고 Vitest는 설정된 test와 hook deadline을 받습니다.
 
 <!-- section: branch-protection -->
 ## Branch protection 기대값
