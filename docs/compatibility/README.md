@@ -9,6 +9,7 @@
 ## Contents
 
 - [Read in this order](#read-in-this-order)
+- [Use the generated reports only when needed](#use-the-generated-reports-only-when-needed)
 - [What CI generates](#what-ci-generates)
 - [Official sources](#official-sources)
 <!-- toc:end -->
@@ -29,6 +30,18 @@ supported operation, test scenario, or release gate.
 4. [Glue error decisions](../protocols/glue/glue-error-decisions.md) — why an operation returns a given
    modeled error and how its precedence is chosen.
 
+## Use the generated reports only when needed
+
+You do not need to read the generated tables to run a client or understand the supported surface.
+Use them for a focused maintenance question:
+
+| Question | Start here | Generated detail, if needed |
+| --- | --- | --- |
+| Can my client path be used? | [Client and library compatibility](client-matrix.md) | Client matrix and annotation evidence |
+| Is a particular EMR or Glue operation implemented? | [API compatibility coverage](api-coverage.md) | Full API coverage table |
+| Why does a Glue request return this error? | [Glue error decisions](../protocols/glue/glue-error-decisions.md) | Glue error table |
+| What must pass before publishing? | [Support scope](../support-scope.md) | Release acceptance report |
+
 <!-- section: generated-artifacts -->
 ## What CI generates
 
@@ -45,6 +58,9 @@ The files named `*.generated.*` are detailed audit outputs, not primary document
 Source policies remain in `contracts/`; tests declare the evidence. Generation is deterministic and
 CI verifies it before running required compatibility cases. Developers normally run
 `make compatibility-check` to detect drift; they do not hand-edit generated files.
+
+See [`contracts/README.md`](../../contracts/README.md) for the source-of-truth files, the
+producer of each generated baseline, and the command to run after a change.
 
 <!-- section: sources -->
 ## Official sources
