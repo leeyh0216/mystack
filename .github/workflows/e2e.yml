@@ -133,7 +133,7 @@ jobs:
       - name: Verify downloaded UI build
         if: steps.reusable_ui.outcome == 'success'
         run: >-
-          uv run python scripts/reusable_build_artifact.py verify
+          python3 scripts/reusable_build_artifact.py verify
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "${{ github.event.workflow_run.head_sha || github.sha }}"
           --platform "$RUNNER_OS-$RUNNER_ARCH"
@@ -212,7 +212,7 @@ jobs:
       - name: Verify downloaded UI build
         if: steps.reusable_ui.outcome == 'success'
         run: >-
-          uv run python scripts/reusable_build_artifact.py verify
+          python3 scripts/reusable_build_artifact.py verify
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "${{ github.event.workflow_run.head_sha || github.sha }}"
           --platform "$RUNNER_OS-$RUNNER_ARCH"
