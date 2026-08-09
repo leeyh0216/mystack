@@ -78,7 +78,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
-| `glue` | durable catalog state/lock, catalog ID, paging, partition expression/fault 정책, runtime profile |
+| `glue` | 영속 SQLite catalog, catalog ID, paging, partition expression/fault 정책, optimizer, runtime profile |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -91,19 +91,29 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 `supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
 protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
 
-`glue.catalog_lock`은 JSON catalog의 process 간 경계를 설정합니다. `file`은 absolute가 아니면
-`glue.data_root` 아래에서 해석하며 `glue.state_file`과 달라야 합니다.
-`acquire_timeout_seconds`는 다른 emulator process의 lock을 기다리는 시간을 제한하고
-`poll_interval_seconds`는 non-blocking POSIX `flock` 재시도 주기이며 timeout보다 클 수 없습니다.
-State file을 공유하는 모든 process가 같은 lock file을 mount하고 설정해야 합니다. [Iceberg
-GlueCatalog commit 계약](protocols/glue-iceberg-commits.ko.md)과 Python 공식
-[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) 문서를 참고하세요.
+`glue.sqlite`는 유일한 영속 Glue catalog store를 설정합니다. `database_file`은 absolute가 아니면
+`glue.data_root` 아래에서 해석합니다. Database file 하나만 mount하지 말고 parent directory 전체를
+write 가능하게 mount해야 합니다. WAL은 그곳에 `-wal`, `-shm` sibling을 유지합니다. Image의 고정한
+private DB-API는 schema나 catalog file을 만들기 전에 검증합니다. WAL이 기본이며 검증에 실패하면
+시작을 거부합니다. `rollback`은 명시적인 개발용 escape hatch이고 자동 fallback이 아닙니다.
 
-`glue.sqlite`는 현재 Glue 시작 전에 검토한 private SQLite DB-API runtime만 검증합니다.
-JSON catalog을 바꾸거나 `glue.state_file`을 migration하지 않습니다. `database_file`의 parent는
-일시 capability probe를 위한 write 가능한 directory이며 durable catalog state가 아닙니다. 전체
-runtime policy, 명시적인 `rollback` escape hatch, 이후 persistence 경계는
-[Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에서 설명합니다.
+| Key | 효과 |
+| --- | --- |
+| `database_file` | 정규화한 영속 catalog path; 상대 path는 `glue.data_root` 아래에서 해석 |
+| `driver.module` | image 또는 명시적인 개발 driver가 선택하는 private DB-API module |
+| `driver.expected_version` | WAL에 필요한 source-built SQLite의 정확한 version |
+| `driver.minimum_wal_version` | 안전한 WAL의 최저 version; `3.51.3` 이상이어야 함 |
+| `driver.manifest_file` | WAL 시작 검증 절차에서 source-build provenance를 확인하는 manifest |
+| `journal_mode` | 기본 `wal` 또는 명시적 `rollback` (`DELETE` journal) |
+| `synchronous` | SQLite durability 설정: `off`, `normal`, `full`, `extra` |
+| `busy_timeout_milliseconds` | busy SQLite operation 하나를 기다리는 최대 시간 |
+| `retry_limit` | busy writer 결과 뒤에 추가하는 상한 있는 retry 횟수 |
+| `checkpoint.mode` | 요청하는 maintenance checkpoint mode: `passive`, `full`, `restart`, `truncate` |
+| `checkpoint.auto_checkpoint_pages` | SQLite 자동 WAL checkpoint page threshold |
+
+JSON catalog fallback이나 migration은 없습니다. Durability, 같은 host WAL 제한, backup 절차, logging,
+수정 경계는 [Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
+[SQLite transaction 계약](protocols/glue-iceberg-commits.ko.md)에 있습니다.
 
 Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
 credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며

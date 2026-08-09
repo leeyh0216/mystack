@@ -63,6 +63,39 @@ GENERATED_PYTHON_EXCLUSIONS: tuple[str, ...] = ()
 
 _LAYERS = {"domain": 0, "application": 1, "adapters": 2, "composition": 3}
 _TRANSPORT_PREFIXES = ("boto3", "botocore", "fastapi", "httpx", "starlette", "uvicorn")
+_SQLITE_DRIVER_PREFIXES = ("sqlite3", "pysqlite3", "apsw")
+_SQL_STATEMENT_PREFIXES = frozenset(
+    {
+        "ALTER",
+        "ANALYZE",
+        "BEGIN",
+        "COMMIT",
+        "CREATE",
+        "DELETE",
+        "DROP",
+        "EXPLAIN",
+        "INSERT",
+        "PRAGMA",
+        "REINDEX",
+        "RELEASE",
+        "ROLLBACK",
+        "SAVEPOINT",
+        "SELECT",
+        "UPDATE",
+        "VACUUM",
+        "WITH",
+    }
+)
+_GLUE_SQLITE_ADAPTER_PREFIX = "mystack.glue.adapters.outbound.sqlite_catalog"
+_GLUE_DOMAIN_ERROR_NAMES = frozenset(
+    {
+        "AlreadyExistsError",
+        "EntityNotFoundError",
+        "GlueDomainError",
+        "InvalidInputError",
+        "VersionMismatchError",
+    }
+)
 
 
 def _source_module(source: Path, boundary: PackageBoundary, root: Path) -> str:
@@ -117,6 +150,134 @@ def _imports(source: Path, source_module: str) -> tuple[ImportReference, ...]:
             ImportReference(source, source_module, imported, node.lineno) for imported in modules
         )
     return tuple(references)
+
+
+def _sqlite_boundary_violations(
+    source: Path,
+    source_module: str,
+    boundary: PackageBoundary,
+) -> list[ArchitectureViolation]:
+    """Reject database-driver leakage without mistaking non-SQL ``execute`` calls for SQL.
+
+    The check deliberately recognizes only literal SQL statement prefixes. For example,
+    ``SparkTableOptimizerExecutor.execute(work)`` remains an application port invocation, while
+    ``connection.execute(\"SELECT ...\")`` is a persistence responsibility that belongs to an
+    outbound adapter.
+    """
+
+    tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+    source_layer = _layer(source_module, boundary.package)
+    violations: list[ArchitectureViolation] = []
+    if source_layer in {"domain", "application"}:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                modules = tuple(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules = (node.module,)
+            else:
+                modules = ()
+            for module in modules:
+                if module in _SQLITE_DRIVER_PREFIXES or module.startswith(
+                    tuple(f"{prefix}." for prefix in _SQLITE_DRIVER_PREFIXES)
+                ):
+                    violations.append(
+                        ArchitectureViolation(
+                            source=source,
+                            line=node.lineno,
+                            imported_module=module,
+                            rule="inner-sqlite-driver-dependency",
+                            repair=(
+                                "Keep SQLite DB-API imports in an outbound adapter and depend on "
+                                "an application-owned catalog port instead."
+                            ),
+                        )
+                    )
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr not in {"execute", "executemany"} or not node.args:
+                continue
+            statement = _literal_sql_statement(node.args[0])
+            if statement is None:
+                continue
+            violations.append(
+                ArchitectureViolation(
+                    source=source,
+                    line=node.lineno,
+                    imported_module=f"SQL:{statement}",
+                    rule="inner-sql-execution",
+                    repair=(
+                        "Move literal SQL execution to an outbound adapter and expose a typed "
+                        "application port operation."
+                    ),
+                )
+            )
+
+    if source_module.startswith(_GLUE_SQLITE_ADAPTER_PREFIX):
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                module = node.module or ""
+                imported_errors = {
+                    alias.name for alias in node.names if alias.name in _GLUE_DOMAIN_ERROR_NAMES
+                }
+                if module == "mystack.glue.domain.errors" or imported_errors:
+                    violations.append(
+                        ArchitectureViolation(
+                            source=source,
+                            line=node.lineno,
+                            imported_module=module or ",".join(sorted(imported_errors)),
+                            rule="sqlite-adapter-domain-error-dependency",
+                            repair=(
+                                "Return neutral persistence outcomes; application handlers own "
+                                "Glue error precedence and translation."
+                            ),
+                        )
+                    )
+            if isinstance(node, ast.Raise) and _raised_domain_error(node.exc):
+                violations.append(
+                    ArchitectureViolation(
+                        source=source,
+                        line=node.lineno,
+                        imported_module=_raise_name(node.exc),
+                        rule="sqlite-adapter-domain-error-raise",
+                        repair=(
+                            "Return neutral persistence outcomes; application handlers own "
+                            "Glue error precedence and translation."
+                        ),
+                    )
+                )
+    return violations
+
+
+def _literal_sql_statement(argument: ast.expr) -> str | None:
+    if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+        text = argument.value
+    elif isinstance(argument, ast.JoinedStr):
+        text = "".join(
+            value.value
+            for value in argument.values
+            if isinstance(value, ast.Constant) and isinstance(value.value, str)
+        )
+    else:
+        return None
+    statement = text.lstrip().split(maxsplit=1)
+    if not statement:
+        return None
+    return statement[0].upper() if statement[0].upper() in _SQL_STATEMENT_PREFIXES else None
+
+
+def _raised_domain_error(value: ast.expr | None) -> bool:
+    return _raise_name(value) in _GLUE_DOMAIN_ERROR_NAMES
+
+
+def _raise_name(value: ast.expr | None) -> str:
+    if isinstance(value, ast.Call):
+        return _raise_name(value.func)
+    if isinstance(value, ast.Name):
+        return value.id
+    if isinstance(value, ast.Attribute):
+        return value.attr
+    return ""
 
 
 def _layer(module: str, package: str) -> str | None:
@@ -345,6 +506,14 @@ def scan_repository(
                 reference,
                 source_boundaries[reference.source],
                 boundaries,
+            )
+        )
+    for source, boundary in source_boundaries.items():
+        violations.extend(
+            _sqlite_boundary_violations(
+                source,
+                _source_module(source, boundary, resolved_root),
+                boundary,
             )
         )
     violations.extend(_cycle_violations(resolved_root, module_sources, collected))

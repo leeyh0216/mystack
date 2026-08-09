@@ -322,7 +322,7 @@ def test_catalog_failure_removes_unreferenced_metadata_candidate() -> None:
     catalog = GlueCatalogHarness()
     try:
         catalog.require_success("CreateDatabase", {"DatabaseInput": {"Name": "analytics"}})
-        catalog.store.fail_on_attempt = catalog.store.save_attempts + 1
+        catalog.failpoint.fail_on_attempt = catalog.failpoint.save_attempts + 1
         response = catalog.call(
             "CreateTable",
             {

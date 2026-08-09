@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import pytest
 from mystack.glue.application.policies import GlueFaultInjectionPolicy, GlueFaultRule
 
-from test_support.glue_error_harness import GlueCatalogHarness, ToggleFailureStore
+from test_support.glue_error_harness import GlueCatalogHarness, ToggleCommitFailpoint
 
 
 @dataclass(frozen=True, slots=True)
@@ -367,11 +367,11 @@ def test_batch_update_and_delete_apply_items_sequentially_with_stable_errors(
 
 
 def test_batch_persistence_failure_keeps_prior_commits_and_rolls_back_failed_item() -> None:
-    store = ToggleFailureStore()
-    catalog = GlueCatalogHarness(store)
+    failpoint = ToggleCommitFailpoint()
+    catalog = GlueCatalogHarness(failpoint)
     try:
         catalog.arrange("table")
-        store.fail_on_attempt = store.save_attempts + 2
+        failpoint.fail_on_attempt = failpoint.save_attempts + 2
 
         response = catalog.call(
             "BatchCreatePartition",

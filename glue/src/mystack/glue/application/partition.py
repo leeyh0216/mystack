@@ -12,20 +12,20 @@ import logging
 from dataclasses import dataclass
 
 from mystack.aws_protocol.observability import log_event
+from mystack.glue.application.catalog_identity import name, partition, table
+from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition_expression import (
     PartitionExpressionCompiler,
     PartitionKey,
 )
 from mystack.glue.application.ports import Clock
-from mystack.glue.application.state import name, partition, partition_key, table
 from mystack.glue.domain import (
     AlreadyExistsError,
     CatalogPartition,
     InvalidInputError,
     PartitionValues,
 )
-from mystack.glue.domain.repositories import CatalogRepository
 
 _LOGGER = logging.getLogger(__name__)
 _MAX_PARTITION_SEGMENTS = 10
@@ -39,8 +39,8 @@ class PartitionTarget:
 
 
 class PartitionTargetResolver:
-    def __init__(self, repository: CatalogRepository) -> None:
-        self._repository = repository
+    def __init__(self, catalog: CatalogReadPort) -> None:
+        self._catalog = catalog
 
     async def require(
         self,
@@ -50,8 +50,7 @@ class PartitionTargetResolver:
     ) -> PartitionTarget:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        state = await self._repository.snapshot()
-        parent = table(state, catalog_id, normalized_database, normalized_table)
+        parent = await table(self._catalog, catalog_id, normalized_database, normalized_table)
         return PartitionTarget(parent.partition_key_count())
 
 
@@ -78,8 +77,8 @@ class PartitionSegment:
 
 
 class PartitionCommands:
-    def __init__(self, repository: CatalogRepository, clock: Clock) -> None:
-        self._repository = repository
+    def __init__(self, catalog: CatalogWritePort, clock: Clock) -> None:
+        self._catalog = catalog
         self._clock = clock
 
     async def create(
@@ -92,11 +91,11 @@ class PartitionCommands:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
         resource_key = (catalog_id, normalized_database, normalized_table)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="create-partition",
             resource_key=resource_key,
-        ) as state:
-            parent = table(state, catalog_id, normalized_database, normalized_table)
+        ) as transaction:
+            parent = await table(transaction, catalog_id, normalized_database, normalized_table)
             value = CatalogPartition.create(
                 catalog_id,
                 normalized_database,
@@ -105,10 +104,18 @@ class PartitionCommands:
                 expected_value_count=parent.partition_key_count(),
                 now=self._clock.now(),
             )
-            key = partition_key(value)
-            if key in state.partitions:
+            if (
+                await transaction.find_partition(
+                    catalog_id,
+                    normalized_database,
+                    normalized_table,
+                    value.values,
+                )
+                is not None
+            ):
                 raise AlreadyExistsError(f"Partition {list(value.values)!r} already exists")
-            state.partitions[key] = value
+            if not await transaction.insert_partition(value):
+                raise AlreadyExistsError(f"Partition {list(value.values)!r} already exists")
         return value
 
     async def update(
@@ -122,11 +129,11 @@ class PartitionCommands:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
         old_key = (catalog_id, normalized_database, normalized_table, old_values)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="update-partition",
             resource_key=old_key,
-        ) as state:
-            parent = table(state, catalog_id, normalized_database, normalized_table)
+        ) as transaction:
+            parent = await table(transaction, catalog_id, normalized_database, normalized_table)
             normalized_old_values = PartitionValues.from_items(
                 old_values,
                 expected_count=parent.partition_key_count(),
@@ -137,8 +144,8 @@ class PartitionCommands:
                 normalized_table,
                 normalized_old_values,
             )
-            current = partition(
-                state,
+            current = await partition(
+                transaction,
                 catalog_id,
                 normalized_database,
                 normalized_table,
@@ -149,13 +156,21 @@ class PartitionCommands:
                 expected_value_count=parent.partition_key_count(),
                 now=self._clock.now(),
             )
-            new_key = partition_key(revised)
-            if new_key != old_key and new_key in state.partitions:
+            if (
+                revised.values != normalized_old_values
+                and await transaction.find_partition(
+                    catalog_id,
+                    normalized_database,
+                    normalized_table,
+                    revised.values,
+                )
+                is not None
+            ):
                 raise InvalidInputError(
                     f"Partition destination {list(revised.values)!r} already exists"
                 )
-            state.partitions.pop(old_key)
-            state.partitions[new_key] = revised
+            if not await transaction.replace_partition(current, revised):
+                raise RuntimeError("SQLite catalog partition changed during update")
 
     async def delete(
         self,
@@ -167,34 +182,35 @@ class PartitionCommands:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
         key = (catalog_id, normalized_database, normalized_table, values)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="delete-partition",
             resource_key=key,
-        ) as state:
-            parent = table(state, catalog_id, normalized_database, normalized_table)
+        ) as transaction:
+            parent = await table(transaction, catalog_id, normalized_database, normalized_table)
             normalized_values = PartitionValues.from_items(
                 values,
                 expected_count=parent.partition_key_count(),
             ).items
             key = (catalog_id, normalized_database, normalized_table, normalized_values)
-            partition(
-                state,
+            current = await partition(
+                transaction,
                 catalog_id,
                 normalized_database,
                 normalized_table,
                 normalized_values,
             )
-            state.partitions.pop(key)
+            if not await transaction.delete_partition(current):
+                raise RuntimeError("SQLite catalog partition changed during delete")
 
 
 class PartitionQueries:
     def __init__(
         self,
-        repository: CatalogRepository,
+        catalog: CatalogReadPort,
         paginator: Paginator,
         expression_compiler: PartitionExpressionCompiler,
     ) -> None:
-        self._repository = repository
+        self._catalog = catalog
         self._paginator = paginator
         self._expression_compiler = expression_compiler
 
@@ -207,14 +223,13 @@ class PartitionQueries:
     ) -> CatalogPartition:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        state = await self._repository.snapshot()
-        parent = table(state, catalog_id, normalized_database, normalized_table)
+        parent = await table(self._catalog, catalog_id, normalized_database, normalized_table)
         normalized_values = PartitionValues.from_items(
             values,
             expected_count=parent.partition_key_count(),
         ).items
-        return partition(
-            state,
+        return await partition(
+            self._catalog,
             catalog_id,
             normalized_database,
             normalized_table,
@@ -237,8 +252,7 @@ class PartitionQueries:
         page_request = self._paginator.prepare(next_token, max_results)
         selected_segment = PartitionSegment.from_request(segment)
         parsed_expression = self._expression_compiler.parse(expression)
-        state = await self._repository.snapshot()
-        parent = table(state, catalog_id, normalized_database, normalized_table)
+        parent = await table(self._catalog, catalog_id, normalized_database, normalized_table)
         partition_keys = tuple(
             PartitionKey(
                 name=str(value.get("Name", "")),
@@ -247,10 +261,12 @@ class PartitionQueries:
             for value in parent.definition.get("PartitionKeys", ())
         )
         predicate = self._expression_compiler.bind(parsed_expression, partition_keys)
-        prefix = (catalog_id, normalized_database, normalized_table)
-        values = sorted(
-            [value for key, value in state.partitions.items() if key[:3] == prefix],
-            key=lambda item: item.values,
+        values = list(
+            await self._catalog.list_partitions(
+                catalog_id,
+                normalized_database,
+                normalized_table,
+            )
         )
         candidate_count = len(values)
         log_event(

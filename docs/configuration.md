@@ -80,7 +80,7 @@ and is not required for image consumers.
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
-| `glue` | Durable catalog state/lock, catalog ID, paging, partition-expression/fault policies, and runtime profile |
+| `glue` | Durable SQLite catalog, catalog ID, paging, partition-expression/fault policies, optimizer, and runtime profile |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -94,19 +94,30 @@ variables.
 and `supported_key_types` defines the typed compatibility profile. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md).
 
-`glue.catalog_lock` configures the inter-process boundary for the JSON catalog. `file` resolves
-under `glue.data_root` unless absolute and must differ from `glue.state_file`.
-`acquire_timeout_seconds` bounds waiting for another emulator process;
-`poll_interval_seconds` controls non-blocking POSIX `flock` retries and cannot exceed the timeout.
-All processes sharing a state file must mount and configure the same lock file. See the
-[Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md) and Python's official
-[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) reference.
+`glue.sqlite` configures the only durable Glue catalog store. `database_file` resolves below
+`glue.data_root` unless absolute. Mount its parent directory writable, rather than mounting only the
+database file: WAL retains `-wal` and `-shm` siblings there. The image's pinned private DB-API is
+verified before the schema or catalog file is created. WAL is the default and fails closed; `rollback`
+is an explicit development escape hatch, never an automatic fallback.
 
-`glue.sqlite` currently verifies the reviewed private SQLite DB-API runtime before Glue starts; it
-does not replace the JSON catalog or migrate `glue.state_file`. Its `database_file` parent is the
-writable directory for a temporary capability probe, not durable catalog state. The full runtime
-policy, the explicit `rollback` escape hatch, and the future-persistence boundary are in the
-[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md).
+| Key | Effect |
+| --- | --- |
+| `database_file` | Durable normalized catalog path; relative paths resolve under `glue.data_root` |
+| `driver.module` | Private DB-API module selected by the image or an explicit development driver |
+| `driver.expected_version` | Exact source-built SQLite version required for WAL |
+| `driver.minimum_wal_version` | Lowest safe WAL version; must be at least `3.51.3` |
+| `driver.manifest_file` | Source-build provenance manifest used for a WAL startup gate |
+| `journal_mode` | `wal` by default, or explicit `rollback` (`DELETE` journal) |
+| `synchronous` | SQLite durability setting: `off`, `normal`, `full`, or `extra` |
+| `busy_timeout_milliseconds` | Maximum wait for one busy SQLite operation |
+| `retry_limit` | Additional bounded retries after a busy writer result |
+| `checkpoint.mode` | Requested maintenance checkpoint mode: `passive`, `full`, `restart`, or `truncate` |
+| `checkpoint.auto_checkpoint_pages` | SQLite automatic WAL checkpoint page threshold |
+
+There is no JSON catalog fallback or migration. The full durability, same-host WAL restriction,
+backup procedure, logging, and repair boundary are in the
+[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md); Iceberg pointer commits use the
+[SQLite transaction contract](protocols/glue-iceberg-commits.md).
 
 Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
 path-style setting through an injected S3 port. The application never assumes a Compose service

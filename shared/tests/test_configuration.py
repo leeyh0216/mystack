@@ -33,16 +33,12 @@ def test_glue_fault_injection_is_file_driven_and_disabled_by_default() -> None:
     }
 
 
-def test_glue_catalog_lock_timeout_override_is_typed(monkeypatch) -> None:
-    monkeypatch.setenv("MYSTACK__GLUE__CATALOG_LOCK__ACQUIRE_TIMEOUT_SECONDS", "7.5")
+def test_glue_sqlite_busy_timeout_override_is_typed(monkeypatch) -> None:
+    monkeypatch.setenv("MYSTACK__GLUE__SQLITE__BUSY_TIMEOUT_MILLISECONDS", "7500")
 
     loaded = load_configuration("config/mystack.yaml")
 
-    assert loaded.document["glue"]["catalog_lock"] == {
-        "file": "catalog-state.lock",
-        "acquire_timeout_seconds": 7.5,
-        "poll_interval_seconds": 0.05,
-    }
+    assert loaded.document["glue"]["sqlite"]["busy_timeout_milliseconds"] == 7500
 
 
 def test_schema_rejects_unknown_keys_with_actionable_path(monkeypatch) -> None:

@@ -52,8 +52,9 @@ Mystack은 process 내부 사용자 plugin API를 공개하지 않습니다. Ser
 domain <- application <- adapters <- bootstrap / FastAPI app
 ```
 
-- Domain: entity, value object, 상태 머신, domain exception, repository port
-- Application: use case와 orchestration; Domain과 내부에서 선언한 port에만 의존
+- Domain: entity, value object, 상태 머신, domain exception
+- Application: use case, orchestration, typed read/write port protocol; Domain과 내부에서 선언한
+  port에만 의존
 - Adapter: AWS JSON 입력, 저장소, S3, Spark/process 구현
 - Composition root: concrete dependency와 FastAPI route 구성
 
@@ -73,9 +74,9 @@ application handler가 주입받은 metadata-store port, 기존 table command, �
 `VersionId` CAS를 조정합니다. LocalStack 호환 S3 adapter는 AWS [hexagonal architecture
 지침](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html)에
 따라 composition root에서만 만듭니다. `CatalogApplication`은 inbound port를 위한 delegation 전용
-compatibility facade입니다. Rename과
-cascade policy는 이 handler가 소유하며 repository는 snapshot과 candidate transaction capability만
-노출합니다.
+compatibility facade입니다. Rename과 cascade policy는 이 handler가 소유합니다. Application 소유
+read/write port는 immutable value와 scoped typed write transaction만 노출하며 mutable catalog
+aggregate, SQL, DB-API connection은 노출하지 않습니다.
 
 Managed table optimizer는 전용 domain aggregate, command/query handler, executor port와 lifecycle
 소유 scheduler를 추가합니다. Scheduler는 application facade를 통해서만 work를 claim하고
@@ -117,6 +118,9 @@ graph를 구성한 다음 다음 의존성 변경을 실행 전에 거부합니�
 | `adapter-sibling-dependency` | Inbound adapter와 outbound adapter가 서로를 import |
 | `inbound-concrete-facade` | Inbound adapter가 concrete Application facade를 import |
 | `service-import-cycle` | 내부 module 사이에 직간접 import cycle이 발생 |
+| `inner-sqlite-driver-dependency` | Glue Domain/Application이 SQLite DB-API driver를 import |
+| `inner-sql-execution` | Glue Domain/Application이 literal SQL statement를 실행 |
+| `sqlite-adapter-domain-error-*` | SQLite adapter가 Glue domain error를 import 또는 raise |
 
 Inbound adapter는 `application/use_cases.py`의 최소 Protocol과
 `application/commands.py`의 immutable value에 의존합니다. Concrete adapter의 import와 생성은
@@ -184,14 +188,33 @@ Controller 진입/종료, route 판정, 상태 전이, 저장소/S3/process side
 <!-- section: persistence -->
 ## 저장과 실행
 
-Glue Application은 각 mutation을 격리된 `CatalogState` candidate에 적용하고 repository가
-transaction을 직렬화합니다. JSON state store는 schema version 3을 저장하고 fsync한 뒤 기존
-document를 원자적으로 교체하며, 성공한 뒤에만 candidate를 reader에게 공개합니다. Persistence
-실패는 candidate를 취소합니다. Durable commit 중 cancellation은 visible publish를 끝낸 다음
-cancellation을 반환합니다. Schema version 1과 2는 읽을 수 있고 다음 mutation에서 migration합니다.
-Optimizer와 상한이 있는 run history는 같은 database/table aggregate transaction의 child입니다.
-Persistence는 repository transaction 뒤에 합성하며 JSON repository가 memory mutation 동작을
-상속하지 않습니다. EMR cluster state는 현재 process-local입니다. Inbound startup-file adapter는
+Glue는 `glue.sqlite.database_file`로 선택한 정규화 SQLite catalog 하나를 사용합니다. JSON state,
+production in-memory store, migration fallback은 없습니다. Runtime 검증이 schema 생성보다 먼저
+성공합니다. Application은 validation/error precedence와 typed port operation 선택을 소유하고,
+outbound adapter는 connection, SQL, foreign key, commit/rollback을 소유합니다.
+
+```text
+AWS JSON request
+      |
+inbound Glue adapter
+      |
+application command/query ---- CatalogReadPort ----> short read connection
+      |                         CatalogWritePort
+      |                                |
+      +---- domain validation -> scoped CatalogTransaction
+                                       |
+                                BEGIN IMMEDIATE
+                                       |
+                       normalized SQLite row + foreign-key cascade
+                                       |
+                        conditional VersionId update / COMMIT
+```
+
+Writer는 짧은 `BEGIN IMMEDIATE` transaction에서 조건부 `VersionId` update, archive/child row 기록,
+진단용 catalog revision 증가, commit 순서로 실행합니다. Persistence 실패는 transaction 전체를
+rollback합니다. 진행 중인 commit은 cancellation으로부터 보호한 뒤 durable 결과를 반환합니다. 검증한
+기본값은 WAL이고 rollback journaling은 명시적으로만 선택합니다. EMR cluster state는 현재
+process-local입니다. Inbound startup-file adapter는
 side effect 전에 versioned `RunJobFlow` plan 전체를 검증하고
 `CreateCluster` command로 mapping한 뒤 queue driver 시작 후 기존 Application port를 호출합니다.
 Repository를 알거나 직접 변경하지 않습니다. Container 재시작 시 새 process-local ID가 생깁니다.

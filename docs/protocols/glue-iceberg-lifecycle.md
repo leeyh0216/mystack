@@ -109,7 +109,8 @@ When an upgrade breaks this profile, inspect:
 1. `glue/scripts/e2e/iceberg_lifecycle.py` for Spark SQL or result changes.
 2. Iceberg `GlueCatalog.renameTable` and `dropTable` for changed call ordering.
 3. `glue/adapters/inbound/aws_table.py` for modeled request-member drift.
-4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for atomicity regressions.
+4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
+   atomicity regressions.
 5. Typed pytest compatibility annotations for the pinned runtime and capability evidence.
 
 <!-- section: limits -->
