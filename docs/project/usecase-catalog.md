@@ -24,6 +24,7 @@
 - [UC-013: Reproduce a documented Glue timeout or internal failure](#uc-013-reproduce-a-documented-glue-timeout-or-internal-failure)
 - [UC-014: Apply a deterministic Glue catalog error decision](#uc-014-apply-a-deterministic-glue-catalog-error-decision)
 - [UC-015: Manage and execute Glue Iceberg table optimizers](#uc-015-manage-and-execute-glue-iceberg-table-optimizers)
+- [UC-016: Generate test-declared compatibility evidence](#uc-016-generate-test-declared-compatibility-evidence)
 - [Candidate gap: User documentation and contributor evidence](#candidate-gap-user-documentation-and-contributor-evidence)
 <!-- toc:end -->
 
@@ -240,8 +241,9 @@
   publication for its exact SHA.
 - Input: root `VERSION`, branch/event policy, file-configured packages, Dockerfiles, platforms,
   Trivy policy, and explicit timeouts.
-- Output: anonymously pullable public GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index and
-  scan/release artifacts.
+- Output: immutable GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index, and scan/release
+  artifacts. Anonymous public pulls become available only after the one-time package-visibility
+  transition.
 - Stored/changed data: GHCR packages, workflow artifacts, and for stable main releases an annotated
   Git tag plus GitHub Release.
 - Side effects: publisher token login, image build/push/pull, scanner DB/image downloads, and the
@@ -353,6 +355,26 @@
   `docs/protocols/glue-table-optimizers.md`.
 - Confidence: High for the documented Glue 5/Spark 3.5.4/Iceberg 1.7.1 path.
 
+<!-- section: uc-016 -->
+## UC-016: Generate test-declared compatibility evidence
+
+- Purpose/actor/trigger: a contributor runs the compatibility evidence check or generation command
+  after adding typed compatibility annotations to a contract or E2E test.
+- Input: collected pytest metadata, pinned workspace/runtime facts, registered EMR/Glue operations,
+  and checked-in generated artifacts.
+- Output: deterministic case evidence, bilingual annotated-evidence documents, and CI matrices; a
+  check reports duplicate/invalid metadata, stale outputs, or evidence/registry mismatches.
+- Stored/changed data: generation updates only reviewed compatibility evidence artifacts; collection
+  executes no test body.
+- Preconditions/rules: registered strict pytest marker, bounded collection timeout, no forbidden
+  heavyweight client imports during collection, and public-Proxy-compatible verification boundary.
+- Failures: malformed/duplicate case IDs, unknown operations, missing source/test metadata, timeout,
+  or generated-file drift.
+- Observability: structured collection/compile/parity events with case count and source digest.
+- Evidence: `scripts/compatibility_evidence.py`, `test_support/compatibility_plugin.py`,
+  `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
+- Confidence: High
+
 <!-- section: candidate-documentation -->
 ## Candidate gap: User documentation and contributor evidence
 
@@ -362,6 +384,6 @@
   and read a supported/not-supported client path without implementation detail.
 - Contributor outcome: a contributor can find API/endpoint inventory, runtime architecture,
   configuration keys, CI evidence, and protocol repair locations without overloading user pages.
-- Evidence: #75, #79, #80, #81; [Spark documentation index](https://spark.apache.org/docs/latest/),
+- Evidence: #79, #81, #87; [Spark documentation index](https://spark.apache.org/docs/latest/),
   [Trino deployment documentation](https://trino.io/docs/current/installation/deployment.html).
 - Confidence: Candidate; implementation is issue-tracked and not yet a static-site commitment.
