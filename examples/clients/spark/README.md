@@ -15,9 +15,8 @@ No AWS account or cloud credentials are required.
 
 | File | Role when you run the lab |
 | --- | --- |
-| [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy`, and starts `spark-client` with Glue, S3, and STS endpoint variables directed at Mystack/LocalStack. |
+| [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy`, and starts `spark-client` from the already-built Glue image with Glue, S3, and STS endpoint variables directed at Mystack/LocalStack. It mounts the workload files read-only. |
 | [`compose.env`](compose.env) | Sets `MYSTACK_PORT=0`, avoiding a collision with another local Mystack stack. The client uses internal Compose hostnames instead. |
-| [`Dockerfile`](Dockerfile) | Uses the pinned Glue 5 / Spark 3.5 client image and copies the two workload files into `/workspace`. |
 | [`run.sh`](run.sh) | The container entrypoint. It creates `mystack-spark-client-lab` in LocalStack S3 if needed, then invokes `spark-submit` with the Compose command arguments. |
 | [`verify.py`](verify.py) | The Spark application: configures the Glue-backed Hive and Iceberg catalogs, creates two namespaces and tables, inserts one row into each, reads both tables, prints their counts, and stops Spark. |
 
@@ -27,8 +26,9 @@ catalog, object-store, or Spark operation.
 
 ## Run the lab
 
-Copy and paste this block. The first execution can take several minutes because it builds the
-client image and resolves Spark's Maven/Ivy dependencies.
+Copy and paste this block. It builds the Mystack stack's Glue image once and reuses that exact
+Glue 5 / Spark 3.5 runtime as the client; no separate example image is built. The first execution
+can still take several minutes because it resolves Spark's Maven/Ivy dependencies.
 
 ```bash
 cd examples/clients/spark
