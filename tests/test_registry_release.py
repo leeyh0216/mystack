@@ -18,6 +18,7 @@ from scripts.registry_release import (
     check_config,
     evaluate_scans,
     load_config,
+    resolve_publication_plan,
     summarize_trivy,
     verify_index,
 )
@@ -130,6 +131,23 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
     assert config["preflight_timeout_minutes"] == 60
     assert config["tags"]["snapshot_retention_days"] == 30
     assert config["tags"]["publish_latest"] is False
+
+
+def test_publication_plan_compiles_every_component_platform_without_shell_logic() -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+
+    plan = resolve_publication_plan(config)
+
+    assert [item["name"] for item in plan["component_matrix"]["include"]] == [
+        "proxy",
+        "emr",
+        "glue",
+    ]
+    assert len(plan["preflight_matrix"]["include"]) == 6
+    assert {item["platform_slug"] for item in plan["preflight_matrix"]["include"]} == {
+        "linux-amd64",
+        "linux-arm64",
+    }
 
 
 def test_release_config_rejects_non_public_consumer_visibility() -> None:

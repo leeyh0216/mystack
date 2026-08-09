@@ -98,6 +98,45 @@ def component_config(config: dict[str, Any], name: str) -> dict[str, str]:
     )
 
 
+def resolve_publication_plan(config: dict[str, Any]) -> dict[str, Any]:
+    """Compile the configured component/platform product outside workflow shell syntax."""
+    emit("registry.plan.compile.before", components=len(config["components"]))
+    component_matrix = {"include": config["components"]}
+    preflight_matrix = {
+        "include": [
+            {
+                **component,
+                "platform": platform,
+                "platform_slug": platform_slug(platform),
+            }
+            for component in config["components"]
+            for platform in config["platforms"]
+        ]
+    }
+    expected = len(config["components"]) * len(config["platforms"])
+    if len(preflight_matrix["include"]) != expected:
+        raise ReleaseContractError("compiled preflight matrix cardinality mismatch")
+    report = {
+        "component_matrix": component_matrix,
+        "preflight_matrix": preflight_matrix,
+        "platforms": ",".join(config["platforms"]),
+        "registry": config["registry"],
+        "selection": "all",
+        "trivy_version": config["scan"]["trivy_version"],
+        "scan_timeout": config["scan"]["timeout"],
+        "ignore_unfixed": config["scan"]["ignore_unfixed"],
+        "workflow_timeout_minutes": config["workflow_timeout_minutes"],
+        "preflight_timeout_minutes": config["preflight_timeout_minutes"],
+        "snapshot_retention_days": config["tags"]["snapshot_retention_days"],
+    }
+    emit(
+        "registry.plan.compile.after",
+        components=len(component_matrix["include"]),
+        preflights=len(preflight_matrix["include"]),
+    )
+    return report
+
+
 def normalized_platform(descriptor: dict[str, Any]) -> str | None:
     platform = descriptor.get("platform", {})
     os_name = platform.get("os")
@@ -464,6 +503,8 @@ def parser() -> argparse.ArgumentParser:
     config_command = commands.add_parser("check-config")
     config_command.add_argument("--root", type=Path, default=Path.cwd())
 
+    commands.add_parser("resolve-plan")
+
     index = commands.add_parser("verify-index")
     index.add_argument("--component", required=True)
     index.add_argument("--image", required=True)
@@ -568,6 +609,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         config = load_config(args.config)
         if args.command == "check-config":
             report = check_config(config, args.root)
+        elif args.command == "resolve-plan":
+            check_config(config, Path.cwd())
+            report = resolve_publication_plan(config)
         elif args.command == "verify-index":
             component_config(config, args.component)
             if not re.fullmatch(r"sha256:[0-9a-f]{64}", args.digest):

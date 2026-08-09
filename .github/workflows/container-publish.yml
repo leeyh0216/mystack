@@ -86,33 +86,27 @@ jobs:
               [[ "$PYTHON_VERSION" == "$stable.dev"*"+g"* ]]
               ;;
           esac
-          component_matrix=$(jq -c '{include: .components}' "$config")
-          test "$(jq '.include | length' <<<"$component_matrix")" -gt 0
-          preflight_matrix=$(jq -c \
-            '.components as $components | .platforms as $platforms | \
-             {include: [$components[] as $component | \
-             $platforms[] as $platform | $component + {platform: $platform, platform_slug: ($platform | gsub("/"; "-"))}]}' \
-            "$config")
-          expected=$(($(jq '.include | length' <<<"$component_matrix") * $(jq '.platforms | length' "$config")))
-          test "$(jq '.include | length' <<<"$preflight_matrix")" -eq "$expected"
+          publication_plan=$(python3 scripts/registry_release.py --config "$config" resolve-plan)
+          component_matrix=$(jq -c '.component_matrix' <<<"$publication_plan")
+          preflight_matrix=$(jq -c '.preflight_matrix' <<<"$publication_plan")
 
           echo "event=registry.plan.resolve.after channel=$CHANNEL version=$VERSION python_version=$PYTHON_VERSION source_sha=$SOURCE_SHA components=$(jq '.include | length' <<<"$component_matrix")"
           {
             echo "component_matrix=$component_matrix"
             echo "preflight_matrix=$preflight_matrix"
-            echo "platforms=$(jq -r '.platforms | join(",")' "$config")"
-            echo "registry=$(jq -r '.registry' "$config")"
-            echo "selection=all"
+            echo "platforms=$(jq -r '.platforms' <<<"$publication_plan")"
+            echo "registry=$(jq -r '.registry' <<<"$publication_plan")"
+            echo "selection=$(jq -r '.selection' <<<"$publication_plan")"
             echo "version=$VERSION"
             echo "channel=$CHANNEL"
             echo "python_version=$PYTHON_VERSION"
             echo "source_sha=$SOURCE_SHA"
-            echo "snapshot_retention_days=$(jq -r '.tags.snapshot_retention_days' "$config")"
-            echo "trivy_version=$(jq -r '.scan.trivy_version' "$config")"
-            echo "scan_timeout=$(jq -r '.scan.timeout' "$config")"
-            echo "ignore_unfixed=$(jq -r '.scan.ignore_unfixed' "$config")"
-            echo "workflow_timeout_minutes=$(jq -r '.workflow_timeout_minutes' "$config")"
-            echo "preflight_timeout_minutes=$(jq -r '.preflight_timeout_minutes' "$config")"
+            echo "snapshot_retention_days=$(jq -r '.snapshot_retention_days' <<<"$publication_plan")"
+            echo "trivy_version=$(jq -r '.trivy_version' <<<"$publication_plan")"
+            echo "scan_timeout=$(jq -r '.scan_timeout' <<<"$publication_plan")"
+            echo "ignore_unfixed=$(jq -r '.ignore_unfixed' <<<"$publication_plan")"
+            echo "workflow_timeout_minutes=$(jq -r '.workflow_timeout_minutes' <<<"$publication_plan")"
+            echo "preflight_timeout_minutes=$(jq -r '.preflight_timeout_minutes' <<<"$publication_plan")"
           } >>"$GITHUB_OUTPUT"
 
   required-validation:
