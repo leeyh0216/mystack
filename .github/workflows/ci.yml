@@ -111,7 +111,7 @@ jobs:
       - name: Create immutable reusable-build manifest
         if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
         run: >-
-          uv run python scripts/reusable_build_artifact.py create
+          python3 scripts/reusable_build_artifact.py create
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "$GITHUB_SHA"
           --platform "$RUNNER_OS-$RUNNER_ARCH"
@@ -123,7 +123,7 @@ jobs:
           --artifact glue/src/mystack/glue/static/ui
       - name: Verify cached or freshly built UI provenance
         run: >-
-          uv run python scripts/reusable_build_artifact.py verify
+          python3 scripts/reusable_build_artifact.py verify
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "$GITHUB_SHA"
           --platform "$RUNNER_OS-$RUNNER_ARCH"
