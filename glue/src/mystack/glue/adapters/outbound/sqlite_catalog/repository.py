@@ -1197,14 +1197,6 @@ class _SqliteCatalogTransaction:
         return cursor.rowcount == 1
 
 
-def _database_id(connection: Any, catalog_id: str, database_name: str) -> int | None:
-    row = connection.execute(
-        "SELECT database_id FROM catalog_databases WHERE catalog_id = ? AND name = ?",
-        (catalog_id, database_name),
-    ).fetchone()
-    return None if row is None else int(row[0])
-
-
 def _database(
     connection: Any,
     catalog_id: str,
