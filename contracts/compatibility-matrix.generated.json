@@ -137,7 +137,7 @@
         "title_ko": "Spark Hive catalog \ub3d9\uc791"
       }
     },
-    "evidence_sha256": "f9e2c10ae1c958e3cec0f57f7259affe1f248b536043c4d2b9ab842638f63e34",
+    "evidence_sha256": "9634e877ae9bb79ea2ce9670f2929cc190bdc8c7a48e69fa6cda10bc2fcf928d",
     "exclusions": {
       "additional-catalog-clients": {
         "official_sources": [
@@ -321,7 +321,7 @@
           }
         }
       },
-      "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
+      "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -401,7 +401,7 @@
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+          "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
           "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
           "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
         ]
@@ -414,7 +414,7 @@
         "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
         "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
         "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-        "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+        "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
         "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
         "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
       ],
@@ -738,7 +738,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
+          "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -869,5 +869,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "aef10acb7ab14b9f92a95e1eb402e4be6d611566940637b976ecb28b058ca855"
+  "source_sha256": "cd886fbd77f39f1523899895c47110e728171dfe344886383913e101ad63a9be"
 }
