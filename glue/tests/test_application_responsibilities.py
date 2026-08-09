@@ -11,6 +11,7 @@ from pathlib import Path
 from mystack.glue.adapters.outbound import SqliteCatalogRepository
 from mystack.glue.application.batch import PartitionBatchHandler
 from mystack.glue.application.catalog_ports import (
+    CatalogQueryPort,
     CatalogReadPort,
     CatalogTransaction,
     CatalogWritePort,
@@ -48,7 +49,13 @@ def test_application_handlers_have_one_explicit_responsibility() -> None:
     assert _public_methods(PartitionTargetResolver) == {"require"}
     assert _public_methods(PartitionBatchHandler) == {"create", "delete", "get", "update"}
     assert _public_methods(CatalogInitializer) == {"initialize"}
-    assert _public_methods(Paginator) == {"page", "prepare"}
+    assert _public_methods(Paginator) == {
+        "complete_keyset",
+        "context",
+        "page",
+        "prepare",
+        "prepare_keyset",
+    }
     assert _public_methods(TableOptimizerCommands) == {
         "claim_due",
         "complete",
@@ -74,12 +81,18 @@ def test_catalog_port_capabilities_are_typed_and_segregated() -> None:
         "find_partition",
         "find_table",
         "list_active_optimizers",
-        "list_databases",
         "list_due_optimizers",
         "list_optimizers_for_database",
         "list_optimizers_for_table",
-        "list_partitions",
-        "list_tables",
+    }
+    assert _public_methods(CatalogQueryPort) == {
+        "count_databases",
+        "count_partitions",
+        "count_tables",
+        "first_partition",
+        "page_databases",
+        "page_partitions",
+        "page_tables",
     }
     assert _public_methods(CatalogWritePort) == {"initialize", "transaction"}
     assert _public_methods(CatalogTransaction) == {
@@ -96,19 +109,18 @@ def test_catalog_port_capabilities_are_typed_and_segregated() -> None:
         "insert_partition",
         "insert_table",
         "list_active_optimizers",
-        "list_databases",
         "list_due_optimizers",
         "list_optimizers_for_database",
         "list_optimizers_for_table",
-        "list_partitions",
-        "list_tables",
         "replace_database",
         "replace_optimizer",
         "replace_partition",
         "replace_table",
     }
     assert _public_methods(SqliteCatalogRepository) == (
-        _public_methods(CatalogReadPort) | _public_methods(CatalogWritePort)
+        _public_methods(CatalogReadPort)
+        | _public_methods(CatalogQueryPort)
+        | _public_methods(CatalogWritePort)
     )
 
 

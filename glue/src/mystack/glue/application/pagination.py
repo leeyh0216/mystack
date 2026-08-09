@@ -67,11 +67,7 @@ class Paginator:
         """Validate client-controlled paging before a repository read."""
 
         offset = _decode_token(token)
-        size = (
-            self._maximum_page_size
-            if requested_size is None
-            else min(requested_size, self._maximum_page_size)
-        )
+        size = min(requested_size or self._maximum_page_size, self._maximum_page_size)
         if size <= 0:
             raise InvalidInputError("MaxResults must be positive")
         return PageRequest(offset, size)
@@ -83,17 +79,12 @@ class Paginator:
     ) -> KeysetPageRequest:
         """Validate one opaque seek token without reading application state."""
 
-        context: str | None = None
-        cursor: SeekCursor | None = None
-        if token:
-            context, cursor = _decode_keyset_token(token)
-        size = (
-            self._maximum_page_size
-            if requested_size is None
-            else min(requested_size, self._maximum_page_size)
-        )
+        size = min(requested_size or self._maximum_page_size, self._maximum_page_size)
         if size <= 0:
             raise InvalidInputError("MaxResults must be positive")
+        if not token:
+            return KeysetPageRequest(size=size, cursor=None, token_context=None)
+        context, cursor = _decode_keyset_token(token)
         return KeysetPageRequest(size=size, cursor=cursor, token_context=context)
 
     @staticmethod

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import json
 import logging
 import time
 from collections.abc import AsyncIterator, Callable
@@ -21,6 +22,10 @@ from typing import Any, Protocol, TypeVar
 
 from mystack.aws_protocol.observability import log_event
 from mystack.glue.adapters.outbound.sqlite_catalog.connection import SqliteCatalogConnectionFactory
+from mystack.glue.adapters.outbound.sqlite_catalog.keys import (
+    partition_order_key,
+    partition_segment_rows,
+)
 from mystack.glue.adapters.outbound.sqlite_catalog.mapping import (
     database_from_row,
     encode_document,
@@ -30,12 +35,26 @@ from mystack.glue.adapters.outbound.sqlite_catalog.mapping import (
     partition_values_key,
     table_from_row,
 )
+from mystack.glue.adapters.outbound.sqlite_catalog.projection import PartitionValueProjector
+from mystack.glue.adapters.outbound.sqlite_catalog.query_compiler import (
+    ProjectionRequirement,
+    SqlitePartitionQueryCompiler,
+)
 from mystack.glue.adapters.outbound.sqlite_catalog.schema import initialize_schema
 from mystack.glue.application.catalog_ports import (
     CatalogResourceKey,
     CatalogStore,
     CatalogTransaction,
 )
+from mystack.glue.application.catalog_query_models import (
+    CatalogPage,
+    DatabasePageQuery,
+    PartitionCatalogPage,
+    PartitionPageQuery,
+    SeekCursor,
+    TablePageQuery,
+)
+from mystack.glue.application.partition_expression.service import CompiledPartitionExpression
 from mystack.glue.application.sqlite_runtime import SQLiteRuntimeSettings
 from mystack.glue.domain import (
     CatalogDatabase,
@@ -172,16 +191,51 @@ class SqliteCatalogRepository(CatalogStore):
             query,
         )
 
-    async def list_databases(self, catalog_id: str) -> tuple[CatalogDatabase, ...]:
+    async def page_databases(self, query: DatabasePageQuery) -> CatalogPage[CatalogDatabase]:
+        """Return one indexed, bounded database page without materializing the Catalog."""
+
+        def read(connection: Any) -> CatalogPage[CatalogDatabase]:
+            parameters: list[object] = [query.catalog_id]
+            seek = ""
+            if query.after is not None:
+                cursor = connection.execute(
+                    "SELECT name FROM catalog_databases WHERE database_id = ? AND catalog_id = ?",
+                    (query.after.identifier, query.catalog_id),
+                ).fetchone()
+                if cursor is None:
+                    return CatalogPage((), None, 0, "sqlite-keyset", invalid_cursor=True)
+                cursor_name = str(cursor[0])
+                seek = (
+                    " AND (name COLLATE BINARY > ? OR "
+                    "(name COLLATE BINARY = ? AND database_id > ?))"
+                )
+                parameters.extend((cursor_name, cursor_name, query.after.identifier))
+            rows = connection.execute(
+                "SELECT database_id, catalog_id, name, definition_json, create_time "
+                "FROM catalog_databases WHERE catalog_id = ?"
+                + seek
+                + " ORDER BY name COLLATE BINARY, database_id LIMIT ?",
+                (*parameters, query.page_size + 1),
+            ).fetchall()
+            page_rows = rows[: query.page_size]
+            values = tuple(database_from_row(tuple(row[1:])) for row in page_rows)
+            next_cursor = (
+                None
+                if len(rows) <= query.page_size or not page_rows
+                else SeekCursor(int(page_rows[-1][0]))
+            )
+            return CatalogPage(values, next_cursor, len(page_rows), "sqlite-keyset")
+
+        return await self._read("page_databases", read)
+
+    async def count_databases(self, catalog_id: str) -> int:
         return await self._read(
-            "list_databases",
-            lambda connection: tuple(
-                database_from_row(tuple(row))
-                for row in connection.execute(
-                    "SELECT catalog_id, name, definition_json, create_time "
-                    "FROM catalog_databases WHERE catalog_id = ? ORDER BY name",
+            "count_databases",
+            lambda connection: int(
+                connection.execute(
+                    "SELECT COUNT(*) FROM catalog_databases WHERE catalog_id = ?",
                     (catalog_id,),
-                ).fetchall()
+                ).fetchone()[0]
             ),
         )
 
@@ -200,23 +254,47 @@ class SqliteCatalogRepository(CatalogStore):
             query,
         )
 
-    async def list_tables(
-        self,
-        catalog_id: str,
-        database_name: str,
-    ) -> tuple[CatalogTable, ...]:
-        def query(connection: Any) -> tuple[CatalogTable, ...]:
+    async def page_tables(self, query: TablePageQuery) -> CatalogPage[CatalogTable]:
+        def read(connection: Any) -> CatalogPage[CatalogTable]:
+            database_id = _database_id(connection, query.catalog_id, query.database_name)
+            if database_id is None:
+                return CatalogPage((), None, 0, "sqlite-keyset-regexp")
+            parameters: list[object] = [query.name_pattern, query.name_pattern, database_id]
+            seek = ""
+            if query.after is not None:
+                cursor = connection.execute(
+                    "SELECT name FROM catalog_tables WHERE table_id = ? AND database_id = ?",
+                    (query.after.identifier, database_id),
+                ).fetchone()
+                if cursor is None:
+                    return CatalogPage((), None, 0, "sqlite-keyset-regexp", invalid_cursor=True)
+                cursor_name = str(cursor[0])
+                seek = (
+                    " AND (t.name COLLATE BINARY > ? OR "
+                    "(t.name COLLATE BINARY = ? AND t.table_id > ?))"
+                )
+                parameters.extend((cursor_name, cursor_name, query.after.identifier))
             rows = connection.execute(
                 "SELECT t.table_id, d.catalog_id, d.name, t.name, t.definition_json, "
                 "t.create_time, t.update_time, t.version_id "
                 "FROM catalog_tables AS t JOIN catalog_databases AS d "
                 "ON d.database_id = t.database_id "
-                "WHERE d.catalog_id = ? AND d.name = ? ORDER BY t.name",
-                (catalog_id, database_name),
+                "WHERE (? IS NULL OR mystack_glue_regex(?, t.name) = 1) "
+                "AND t.database_id = ? "
+                + seek
+                + " ORDER BY t.name COLLATE BINARY, t.table_id LIMIT ?",
+                (*parameters, query.page_size + 1),
             ).fetchall()
-            return tuple(_table_from_record(connection, tuple(row))[1] for row in rows)
+            page_rows = rows[: query.page_size]
+            values = tuple(_table_from_record(connection, tuple(row))[1] for row in page_rows)
+            next_cursor = (
+                None
+                if len(rows) <= query.page_size or not page_rows
+                else SeekCursor(int(page_rows[-1][0]))
+            )
+            return CatalogPage(values, next_cursor, len(page_rows), "sqlite-keyset-regexp")
 
-        return await self._read("list_tables", query)
+        return await self._read("page_tables", read)
 
     async def find_partition(
         self,
@@ -234,30 +312,150 @@ class SqliteCatalogRepository(CatalogStore):
             query,
         )
 
-    async def list_partitions(
-        self,
-        catalog_id: str,
-        database_name: str,
-        table_name: str,
-    ) -> tuple[CatalogPartition, ...]:
-        def query(connection: Any) -> tuple[CatalogPartition, ...]:
+    async def page_partitions(
+        self, query: PartitionPageQuery
+    ) -> PartitionCatalogPage[CatalogPartition]:
+        def read(connection: Any) -> PartitionCatalogPage[CatalogPartition]:
+            table_id = _table_id(
+                connection,
+                query.catalog_id,
+                query.database_name,
+                query.table_name,
+            )
+            if table_id is None:
+                return PartitionCatalogPage((), None, 0, "sqlite-keyset-pushdown")
+
+            cursor_order_key: bytes | None = None
+            cursor_identifier: int | None = None
+            if query.after is not None:
+                cursor = connection.execute(
+                    "SELECT order_key, partition_id FROM catalog_partitions "
+                    "WHERE partition_id = ? AND table_id = ?",
+                    (query.after.identifier, table_id),
+                ).fetchone()
+                if cursor is None:
+                    return PartitionCatalogPage((), None, 0, "sqlite-keyset-pushdown", True)
+                cursor_order_key = bytes(cursor[0])
+                cursor_identifier = int(cursor[1])
+
+            compiled = SqlitePartitionQueryCompiler().compile(query.predicate)
+            preflight = _partition_projection_issue(
+                connection,
+                table_id,
+                query.predicate,
+                compiled.projections,
+            )
+            if preflight is not None:
+                return PartitionCatalogPage(
+                    (),
+                    None,
+                    0,
+                    "sqlite-keyset-pushdown",
+                    invalid_partition_key_type=preflight.key_type,
+                    invalid_partition_value_count=preflight.value_count_mismatch,
+                )
+            parameters: list[object] = []
+            joins = list(compiled.joins)
+            if query.total_segments is not None:
+                joins.append(
+                    "JOIN catalog_partition_segments AS ps "
+                    "ON ps.partition_id = p.partition_id AND ps.total_segments = ? "
+                    "AND ps.segment_number = ?"
+                )
+                parameters.extend((query.total_segments, query.segment_number))
+            seek = ""
+            if cursor_order_key is not None and cursor_identifier is not None:
+                seek = " AND (p.order_key > ? OR (p.order_key = ? AND p.partition_id > ?))"
+            parameters.append(table_id)
+            parameters.extend(compiled.parameters)
+            if cursor_order_key is not None and cursor_identifier is not None:
+                parameters.extend((cursor_order_key, cursor_order_key, cursor_identifier))
             rows = connection.execute(
                 "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
                 "p.definition_json, p.creation_time, p.update_time "
                 "FROM catalog_partitions AS p "
                 "JOIN catalog_tables AS t ON t.table_id = p.table_id "
                 "JOIN catalog_databases AS d ON d.database_id = t.database_id "
-                "WHERE d.catalog_id = ? AND d.name = ? AND t.name = ?",
-                (catalog_id, database_name, table_name),
+                + " ".join(joins)
+                + " WHERE p.table_id = ? AND ("
+                + compiled.predicate_sql
+                + ")"
+                + seek
+                + " ORDER BY p.order_key, p.partition_id LIMIT ?",
+                (*parameters, query.page_size + 1),
             ).fetchall()
-            return tuple(
-                sorted(
-                    (partition_from_row(tuple(row[1:])) for row in rows),
-                    key=lambda value: value.values,
-                )
+            page_rows = rows[: query.page_size]
+            values = tuple(partition_from_row(tuple(row[1:])) for row in page_rows)
+            next_cursor = (
+                None
+                if len(rows) <= query.page_size or not page_rows
+                else SeekCursor(int(page_rows[-1][0]))
+            )
+            return PartitionCatalogPage(
+                values,
+                next_cursor,
+                len(page_rows),
+                "sqlite-keyset-pushdown",
             )
 
-        return await self._read("list_partitions", query)
+        return await self._read("page_partitions", read)
+
+    async def first_partition(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: str,
+    ) -> CatalogPartition | None:
+        """Probe one stable first row for evaluator-compatible error ordering."""
+
+        def read(connection: Any) -> CatalogPartition | None:
+            table_id = _table_id(connection, catalog_id, database_name, table_name)
+            if table_id is None:
+                return None
+            row = connection.execute(
+                "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
+                "p.definition_json, p.creation_time, p.update_time "
+                "FROM catalog_partitions AS p "
+                "JOIN catalog_tables AS t ON t.table_id = p.table_id "
+                "JOIN catalog_databases AS d ON d.database_id = t.database_id "
+                "WHERE p.table_id = ? ORDER BY p.order_key, p.partition_id LIMIT 1",
+                (table_id,),
+            ).fetchone()
+            return None if row is None else partition_from_row(tuple(row[1:]))
+
+        return await self._read("first_partition", read)
+
+    async def count_tables(self, catalog_id: str, database_name: str) -> int:
+        return await self._read(
+            "count_tables",
+            lambda connection: int(
+                connection.execute(
+                    "SELECT COUNT(*) FROM catalog_tables AS t "
+                    "JOIN catalog_databases AS d ON d.database_id = t.database_id "
+                    "WHERE d.catalog_id = ? AND d.name = ?",
+                    (catalog_id, database_name),
+                ).fetchone()[0]
+            ),
+        )
+
+    async def count_partitions(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: str,
+    ) -> int:
+        return await self._read(
+            "count_partitions",
+            lambda connection: int(
+                connection.execute(
+                    "SELECT COUNT(*) FROM catalog_partitions AS p "
+                    "JOIN catalog_tables AS t ON t.table_id = p.table_id "
+                    "JOIN catalog_databases AS d ON d.database_id = t.database_id "
+                    "WHERE d.catalog_id = ? AND d.name = ? AND t.name = ?",
+                    (catalog_id, database_name, table_name),
+                ).fetchone()[0]
+            ),
+        )
 
     async def find_optimizer(
         self,
@@ -436,6 +634,22 @@ class SqliteCatalogRepository(CatalogStore):
             duration_ms=_duration_ms(started),
             returned_count=_returned_count(result),
         )
+        if isinstance(result, CatalogPage):
+            log_event(
+                _LOGGER,
+                logging.INFO,
+                "glue.sqlite_catalog.query.page.after",
+                query_category=category,
+                query_strategy=result.query_strategy,
+                returned_count=len(result.values),
+                has_next=result.next_cursor is not None,
+                invalid_cursor=result.invalid_cursor,
+                duration_ms=_duration_ms(started),
+                fix_hint=(
+                    "Inspect application pagination context and the SQLite query compiler/schema "
+                    "when a client upgrade changes page continuation behavior."
+                ),
+            )
         return result
 
     async def _begin_write_transaction(
@@ -568,14 +782,6 @@ class _SqliteCatalogTransaction:
         record = _database(self._connection, catalog_id, database_name)
         return None if record is None else record[1]
 
-    async def list_databases(self, catalog_id: str) -> tuple[CatalogDatabase, ...]:
-        rows = self._connection.execute(
-            "SELECT catalog_id, name, definition_json, create_time "
-            "FROM catalog_databases WHERE catalog_id = ? ORDER BY name",
-            (catalog_id,),
-        ).fetchall()
-        return tuple(database_from_row(tuple(row)) for row in rows)
-
     async def find_table(
         self,
         catalog_id: str,
@@ -584,21 +790,6 @@ class _SqliteCatalogTransaction:
     ) -> CatalogTable | None:
         record = _table(self._connection, catalog_id, database_name, table_name)
         return None if record is None else record[1]
-
-    async def list_tables(
-        self,
-        catalog_id: str,
-        database_name: str,
-    ) -> tuple[CatalogTable, ...]:
-        rows = self._connection.execute(
-            "SELECT t.table_id, d.catalog_id, d.name, t.name, t.definition_json, "
-            "t.create_time, t.update_time, t.version_id "
-            "FROM catalog_tables AS t JOIN catalog_databases AS d "
-            "ON d.database_id = t.database_id "
-            "WHERE d.catalog_id = ? AND d.name = ? ORDER BY t.name",
-            (catalog_id, database_name),
-        ).fetchall()
-        return tuple(_table_from_record(self._connection, tuple(row))[1] for row in rows)
 
     async def find_partition(
         self,
@@ -609,27 +800,6 @@ class _SqliteCatalogTransaction:
     ) -> CatalogPartition | None:
         record = _partition(self._connection, catalog_id, database_name, table_name, values)
         return None if record is None else record[1]
-
-    async def list_partitions(
-        self,
-        catalog_id: str,
-        database_name: str,
-        table_name: str,
-    ) -> tuple[CatalogPartition, ...]:
-        rows = self._connection.execute(
-            "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
-            "p.definition_json, p.creation_time, p.update_time "
-            "FROM catalog_partitions AS p "
-            "JOIN catalog_tables AS t ON t.table_id = p.table_id "
-            "JOIN catalog_databases AS d ON d.database_id = t.database_id "
-            "WHERE d.catalog_id = ? AND d.name = ? AND t.name = ?",
-            (catalog_id, database_name, table_name),
-        ).fetchall()
-        return tuple(
-            sorted(
-                (partition_from_row(tuple(row[1:])) for row in rows), key=lambda value: value.values
-            )
-        )
 
     async def find_optimizer(
         self,
@@ -815,6 +985,7 @@ class _SqliteCatalogTransaction:
         if cursor.rowcount != 1:
             return False
         _replace_partition_keys(self._connection, table_id, revised)
+        _refresh_table_partition_query_facts(self._connection, table_id, revised)
         _replace_table_versions(self._connection, table_id, revised)
         self.mutated = True
         return True
@@ -843,11 +1014,12 @@ class _SqliteCatalogTransaction:
         try:
             cursor = self._connection.execute(
                 "INSERT INTO catalog_partitions ("
-                "table_id, values_key, values_json, definition_json, "
-                "creation_time, update_time) VALUES (?, ?, ?, ?, ?, ?)",
+                "table_id, values_key, order_key, values_json, definition_json, "
+                "creation_time, update_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     table[0],
                     values_key,
+                    partition_order_key(value.values),
                     encode_document(list(value.values)),
                     encode_document(value.definition),
                     value.creation_time,
@@ -860,7 +1032,11 @@ class _SqliteCatalogTransaction:
             raise
         if cursor.rowcount != 1:
             return False
-        _replace_partition_values(self._connection, int(cursor.lastrowid), value.values)
+        partition_id = int(cursor.lastrowid)
+        _replace_partition_values(self._connection, partition_id, value.values)
+        _replace_partition_query_facts(
+            self._connection, partition_id, table[0], table[1], value.values
+        )
         self.mutated = True
         return True
 
@@ -881,11 +1057,12 @@ class _SqliteCatalogTransaction:
         partition_id = record[0]
         try:
             cursor = self._connection.execute(
-                "UPDATE catalog_partitions SET values_key = ?, values_json = ?, "
+                "UPDATE catalog_partitions SET values_key = ?, order_key = ?, values_json = ?, "
                 "definition_json = ?, "
                 "update_time = ? WHERE partition_id = ?",
                 (
                     partition_values_key(revised.values),
+                    partition_order_key(revised.values),
                     encode_document(list(revised.values)),
                     encode_document(revised.definition),
                     revised.update_time,
@@ -899,6 +1076,17 @@ class _SqliteCatalogTransaction:
         if cursor.rowcount != 1:
             return False
         _replace_partition_values(self._connection, partition_id, revised.values)
+        parent = _table(
+            self._connection,
+            revised.catalog_id,
+            revised.database_name,
+            revised.table_name,
+        )
+        if parent is None:
+            raise AssertionError("Partition parent disappeared inside its write transaction")
+        _replace_partition_query_facts(
+            self._connection, partition_id, parent[0], parent[1], revised.values
+        )
         self.mutated = True
         return True
 
@@ -1008,6 +1196,14 @@ class _SqliteCatalogTransaction:
         return cursor.rowcount == 1
 
 
+def _database_id(connection: Any, catalog_id: str, database_name: str) -> int | None:
+    row = connection.execute(
+        "SELECT database_id FROM catalog_databases WHERE catalog_id = ? AND name = ?",
+        (catalog_id, database_name),
+    ).fetchone()
+    return None if row is None else int(row[0])
+
+
 def _database(
     connection: Any,
     catalog_id: str,
@@ -1021,6 +1217,14 @@ def _database(
     if row is None:
         return None
     return int(row[0]), database_from_row(tuple(row[1:]))
+
+
+def _database_id(connection: Any, catalog_id: str, database_name: str) -> int | None:
+    row = connection.execute(
+        "SELECT database_id FROM catalog_databases WHERE catalog_id = ? AND name = ?",
+        (catalog_id, database_name),
+    ).fetchone()
+    return None if row is None else int(row[0])
 
 
 def _table(
@@ -1040,6 +1244,81 @@ def _table(
     if row is None:
         return None
     return _table_from_record(connection, tuple(row))
+
+
+def _table_id(
+    connection: Any,
+    catalog_id: str,
+    database_name: str,
+    table_name: str,
+) -> int | None:
+    row = connection.execute(
+        "SELECT t.table_id FROM catalog_tables AS t "
+        "JOIN catalog_databases AS d ON d.database_id = t.database_id "
+        "WHERE d.catalog_id = ? AND d.name = ? AND t.name = ?",
+        (catalog_id, database_name, table_name),
+    ).fetchone()
+    return None if row is None else int(row[0])
+
+
+class _PartitionProjectionIssue:
+    def __init__(self, *, key_type: str | None, value_count_mismatch: bool) -> None:
+        self.key_type = key_type
+        self.value_count_mismatch = value_count_mismatch
+
+
+def _partition_projection_issue(
+    connection: Any,
+    table_id: int,
+    predicate: CompiledPartitionExpression,
+    requirements: tuple[ProjectionRequirement, ...],
+) -> _PartitionProjectionIssue | None:
+    """Return the first neutral invalid-projection fact in evaluator row order.
+
+    The application already evaluates one first row before invoking this adapter.  This helper
+    catches an invalid typed value in a later row without materializing every partition and
+    returns only the declared key type, never the stored value.
+    """
+
+    if predicate.expression is None:
+        return None
+    candidates: list[tuple[bytes, int, int, str | None, bool]] = []
+    expected_key_count = len(predicate.keys)
+    arity_row = connection.execute(
+        "SELECT p.order_key, p.partition_id FROM catalog_partitions AS p "
+        "WHERE p.table_id = ? AND ("
+        "SELECT COUNT(*) FROM catalog_partition_value_projections AS pv "
+        "WHERE pv.partition_id = p.partition_id) != ? "
+        "ORDER BY p.order_key, p.partition_id LIMIT 1",
+        (table_id, expected_key_count),
+    ).fetchone()
+    if arity_row is not None:
+        candidates.append((bytes(arity_row[0]), int(arity_row[1]), -1, None, True))
+    for field_position, requirement in enumerate(requirements):
+        row = connection.execute(
+            "SELECT p.order_key, p.partition_id FROM catalog_partition_value_projections AS pv "
+            "JOIN catalog_partitions AS p ON p.partition_id = pv.partition_id "
+            "WHERE pv.table_id = ? AND pv.ordinal = ? AND pv.conversion_valid = 0 "
+            "ORDER BY p.order_key, p.partition_id LIMIT 1",
+            (table_id, requirement.ordinal),
+        ).fetchone()
+        if row is not None:
+            candidates.append(
+                (
+                    bytes(row[0]),
+                    int(row[1]),
+                    field_position,
+                    requirement.type_name,
+                    False,
+                )
+            )
+    if not candidates:
+        return None
+    _, _, _, key_type, value_count_mismatch = min(candidates)
+    return _PartitionProjectionIssue(
+        key_type=key_type,
+        value_count_mismatch=value_count_mismatch,
+    )
 
 
 def _table_from_record(connection: Any, row: tuple[Any, ...]) -> tuple[int, CatalogTable]:
@@ -1162,6 +1441,87 @@ def _replace_partition_values(
     )
 
 
+def _replace_partition_query_facts(
+    connection: Any,
+    partition_id: int,
+    table_id: int,
+    table_value: CatalogTable,
+    values: tuple[str, ...],
+) -> None:
+    """Refresh typed value and segment projections in the same partition transaction."""
+
+    projector = PartitionValueProjector()
+    key_types = {ordinal: type_name for ordinal, _, _, type_name in partition_key_rows(table_value)}
+    connection.execute(
+        "DELETE FROM catalog_partition_value_projections WHERE partition_id = ?", (partition_id,)
+    )
+    projections = [
+        projector.project(
+            ordinal,
+            value,
+            key_types.get(ordinal, "__missing_partition_key__"),
+        )
+        for ordinal, value in enumerate(values)
+    ]
+    connection.executemany(
+        "INSERT INTO catalog_partition_value_projections ("
+        "partition_id, table_id, ordinal, type_family, conversion_valid, string_value, "
+        "date_value, timestamp_value, numeric_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            (
+                partition_id,
+                table_id,
+                value.ordinal,
+                value.type_family,
+                int(value.conversion_valid),
+                value.string_value,
+                value.date_value,
+                value.timestamp_value,
+                value.numeric_value,
+            )
+            for value in projections
+        ),
+    )
+    connection.execute(
+        "DELETE FROM catalog_partition_segments WHERE partition_id = ?", (partition_id,)
+    )
+    connection.executemany(
+        "INSERT INTO catalog_partition_segments ("
+        "partition_id, table_id, total_segments, segment_number) VALUES (?, ?, ?, ?)",
+        partition_segment_rows(partition_id, table_id, values),
+    )
+
+
+def _refresh_table_partition_query_facts(
+    connection: Any,
+    table_id: int,
+    table_value: CatalogTable,
+) -> None:
+    """Rebuild durable query facts when an UpdateTable changes partition-key metadata.
+
+    A table schema rewrite is a write-side maintenance action and must visit each child row so a
+    later GetPartitions request can remain a bounded read. Rows stream directly from SQLite;
+    no catalog-wide or Python collection snapshot is created.
+    """
+
+    cursor = connection.execute(
+        "SELECT partition_id, values_json FROM catalog_partitions WHERE table_id = ? "
+        "ORDER BY partition_id",
+        (table_id,),
+    )
+    for row in cursor:
+        decoded = json.loads(str(row[1]))
+        if not isinstance(decoded, list) or not all(isinstance(value, str) for value in decoded):
+            raise RuntimeError("SQLite Glue catalog partition values are invalid")
+        _replace_partition_query_facts(
+            connection,
+            int(row[0]),
+            table_id,
+            table_value,
+            tuple(decoded),
+        )
+
+
 def _replace_optimizer_runs(
     connection: Any,
     optimizer_id: int,
@@ -1219,4 +1579,6 @@ def _duration_ms(started: float) -> float:
 def _returned_count(value: object) -> int | None:
     if isinstance(value, tuple):
         return len(value)
+    if isinstance(value, CatalogPage):
+        return len(value.values)
     return None
