@@ -410,6 +410,77 @@ async def test_supported_partition_expression_forms_match_the_evaluator(tmp_path
         assert [value.values for value in actual] == expected
 
 
+async def test_timestamps_and_decimals_match_the_typed_evaluator_in_sqlite(tmp_path: Path) -> None:
+    application, _ = _application(tmp_path / "catalog.sqlite3")
+    await _create_partition_table(
+        application,
+        partition_keys=[
+            {"Name": "instant", "Type": "timestamp"},
+            {"Name": "amount", "Type": "decimal(18, 4)"},
+        ],
+    )
+    values = (
+        ("2026-08-09T01:00:00Z", "2.10"),
+        ("2026-08-09T10:00:00+09:00", "2.20"),
+        ("2026-08-09T01:00:01Z", "10.0000"),
+    )
+    for value in values:
+        await application.create_partition(
+            "account", "analytics", "events", {"Values": list(value)}
+        )
+
+    expression = "instant = '2026-08-09 01:00:00+00:00' AND amount >= 2.2"
+    predicate = PartitionExpressionCompiler(
+        PartitionExpressionPolicy(2048, 512, _SUPPORTED_TYPES)
+    ).compile(
+        expression,
+        (PartitionKey("instant", "timestamp"), PartitionKey("amount", "decimal(18, 4)")),
+    )
+    expected = [value for value in sorted(values) if predicate.matches(value)]
+    actual, token = await application.get_partitions(
+        "account",
+        "analytics",
+        "events",
+        expression=expression,
+        segment=None,
+        next_token=None,
+        max_results=10,
+    )
+
+    assert token is None
+    assert [value.values for value in actual] == expected == [("2026-08-09T10:00:00+09:00", "2.20")]
+
+
+async def test_deleted_partition_invalidates_a_keyset_cursor(tmp_path: Path) -> None:
+    application, _ = _application(tmp_path / "catalog.sqlite3")
+    await _create_partition_table(application, partition_keys=[{"Name": "day", "Type": "date"}])
+    for value in ("2026-08-08", "2026-08-09", "2026-08-10"):
+        await application.create_partition("account", "analytics", "events", {"Values": [value]})
+
+    first, token = await application.get_partitions(
+        "account",
+        "analytics",
+        "events",
+        expression="day >= '2026-08-01'",
+        segment=None,
+        next_token=None,
+        max_results=1,
+    )
+    assert token is not None
+    await application.delete_partition("account", "analytics", "events", first[0].values)
+
+    with pytest.raises(InvalidInputError, match="Pagination token does not match"):
+        await application.get_partitions(
+            "account",
+            "analytics",
+            "events",
+            expression="day >= '2026-08-01'",
+            segment=None,
+            next_token=token,
+            max_results=1,
+        )
+
+
 async def test_partition_segments_are_persisted_and_union_without_duplicate_rows(
     tmp_path: Path,
 ) -> None:
