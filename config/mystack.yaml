@@ -65,9 +65,6 @@ emr:
     initial_backoff_seconds: 0.5
     max_backoff_seconds: 10
     attempt_timeout_seconds: 60
-  spark_ui:
-    port_min: 4040
-    port_max: 4059
   # Optional separate file; relative paths resolve beside this main configuration file.
   # Shape source: https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
   startup_clusters_file: null
@@ -86,8 +83,10 @@ glue:
     host: 0.0.0.0
     port: 8080
   data_root: /var/lib/mystack/glue
-  # The normalized SQLite database is the only durable Glue Data Catalog store. Its parent
-  # directory must be mounted writable; WAL mode also creates sibling -wal and -shm files.
+  state_file: catalog-state.json
+  # This verified runtime policy is a DB-API capability probe, not catalog storage.
+  # The current catalog remains state_file/JsonCatalogRepository; database_file only selects the
+  # writable directory for temporary probe files until a separate persistence migration lands.
   # The preflight prevents a silent use of the AWS Glue base image's older system SQLite.
   # WAL safety and sibling files: https://www.sqlite.org/wal.html
   sqlite:
@@ -106,6 +105,10 @@ glue:
       auto_checkpoint_pages: 1000
   # Glue 4.0+ Iceberg clients use optimistic locking with Glue Table VersionId.
   # Source: https://iceberg.apache.org/docs/1.7.1/aws/#optimistic-locking
+  catalog_lock:
+    file: catalog-state.lock
+    acquire_timeout_seconds: 30
+    poll_interval_seconds: 0.05
   catalog_id: "000000000000"
   api_page_size: 100
   create_default_database: true
@@ -114,8 +117,6 @@ glue:
   partition_expressions:
     max_length: 2048
     max_tokens: 512
-    # Maximum rows a future non-SQL AST node may inspect through keyset streaming.
-    fallback_max_candidates: 1000
     supported_key_types:
       - string
       - date
@@ -207,7 +208,6 @@ tests:
   unit_timeout_seconds: 60
   contract_timeout_seconds: 120
   package_smoke_timeout_seconds: 120
-  compatibility_collection_timeout_seconds: 30
   e2e_timeout_seconds: 1200
   compose_wait_timeout_seconds: 300
   e2e:

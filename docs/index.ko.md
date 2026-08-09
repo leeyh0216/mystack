@@ -39,6 +39,7 @@ Mystack은 Amazon EMR, AWS Glue Data Catalog, Spark, LocalStack S3를 위한 로
 - [boto3, AWS SDK for pandas, Spark Hive, Iceberg로 Glue 사용](glue.ko.md)
 - [Client와 library 호환성 확인](compatibility/client-matrix.ko.md)
 - [사용자 관점 지원 범위 확인](support-scope.ko.md)
+- [Glue SQLite DB-API runtime 검증과 현재 persistence를 하지 않는 경계](protocols/glue-sqlite-runtime.ko.md)
 
 <!-- section: emr -->
 ## Amazon EMR

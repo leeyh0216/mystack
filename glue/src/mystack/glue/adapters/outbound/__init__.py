@@ -14,6 +14,11 @@ from mystack.glue.adapters.outbound.sqlite_runtime import (
     SQLiteRuntimeVerification,
     SQLiteRuntimeVerifier,
 )
+from mystack.glue.adapters.outbound.sqlite_runtime import (
+    SQLiteRuntimeCapabilityError,
+    SQLiteRuntimeVerification,
+    SQLiteRuntimeVerifier,
+)
 from mystack.glue.adapters.outbound.system import SystemClock, SystemIdentifierGenerator
 from mystack.glue.adapters.outbound.table_optimizer_executor import (
     SparkTableOptimizerExecutor,
