@@ -9,15 +9,10 @@ References:
 from __future__ import annotations
 
 from mystack.glue.application.catalog_identity import database, name
-from mystack.glue.application.catalog_ports import (
-    CatalogQueryPort,
-    CatalogReadPort,
-    CatalogWritePort,
-)
-from mystack.glue.application.catalog_query_models import DatabasePageQuery
+from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock
-from mystack.glue.domain import AlreadyExistsError, CatalogDatabase, InvalidInputError
+from mystack.glue.domain import AlreadyExistsError, CatalogDatabase
 
 
 class DatabaseCommands:
@@ -87,19 +82,13 @@ class DatabaseCommands:
 
 
 class DatabaseQueries:
-    def __init__(
-        self,
-        read_catalog: CatalogReadPort,
-        query_catalog: CatalogQueryPort,
-        paginator: Paginator,
-    ) -> None:
-        self._read_catalog = read_catalog
-        self._query_catalog = query_catalog
+    def __init__(self, catalog: CatalogReadPort, paginator: Paginator) -> None:
+        self._catalog = catalog
         self._paginator = paginator
 
     async def get(self, catalog_id: str, database_name: str) -> CatalogDatabase:
         normalized = name(database_name)
-        return await database(self._read_catalog, catalog_id, normalized)
+        return await database(self._catalog, catalog_id, normalized)
 
     async def list(
         self,
@@ -108,12 +97,5 @@ class DatabaseQueries:
         next_token: str | None,
         max_results: int | None,
     ) -> tuple[list[CatalogDatabase], str | None]:
-        page_request = self._paginator.prepare_keyset(next_token, max_results).bind(
-            self._paginator.context("databases", catalog_id)
-        )
-        page = await self._query_catalog.page_databases(
-            DatabasePageQuery(catalog_id, page_request.size, page_request.cursor)
-        )
-        if page.invalid_cursor:
-            raise InvalidInputError("Pagination token does not match this request")
-        return list(page.values), self._paginator.complete_keyset(page_request, page.next_cursor)
+        page_request = self._paginator.prepare(next_token, max_results)
+        return page_request.apply(list(await self._catalog.list_databases(catalog_id)))

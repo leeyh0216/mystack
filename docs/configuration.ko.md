@@ -70,9 +70,6 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 <!-- section: sections -->
 ## 주요 section
 
-[전체 설정 레퍼런스](configuration-reference.generated.md)는 runtime schema와 기본값에서 생성하며,
-`make configuration-reference-check`가 CI에서 drift를 실패 처리합니다.
-
 | 경로 | 책임 |
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
@@ -117,12 +114,6 @@ private DB-API는 schema나 catalog file을 만들기 전에 검증합니다. WA
 JSON catalog fallback이나 migration은 없습니다. Durability, 같은 host WAL 제한, backup 절차, logging,
 수정 경계는 [Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
 [SQLite transaction 계약](protocols/glue-iceberg-commits.ko.md)에 있습니다.
-
-`glue.sqlite`는 현재 Glue 시작 전에 검토한 private SQLite DB-API runtime만 검증합니다.
-JSON catalog을 바꾸거나 `glue.state_file`을 migration하지 않습니다. `database_file`의 parent는
-일시 capability probe를 위한 write 가능한 directory이며 durable catalog state가 아닙니다. 전체
-runtime policy, 명시적인 `rollback` escape hatch, 이후 persistence 경계는
-[Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에서 설명합니다.
 
 Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
 credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며

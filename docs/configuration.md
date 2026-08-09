@@ -72,9 +72,6 @@ and is not required for image consumers.
 <!-- section: sections -->
 ## Main sections
 
-The [complete configuration reference](configuration-reference.generated.md) is generated from
-the runtime schema and defaults; `make configuration-reference-check` rejects drift in CI.
-
 | Path | Responsibility |
 | --- | --- |
 | `logging` | Structured log level and format contract |
@@ -121,12 +118,6 @@ There is no JSON catalog fallback or migration. The full durability, same-host W
 backup procedure, logging, and repair boundary are in the
 [Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md); Iceberg pointer commits use the
 [SQLite transaction contract](protocols/glue-iceberg-commits.md).
-
-`glue.sqlite` currently verifies the reviewed private SQLite DB-API runtime before Glue starts; it
-does not replace the JSON catalog or migrate `glue.state_file`. Its `database_file` parent is the
-writable directory for a temporary capability probe, not durable catalog state. The full runtime
-policy, the explicit `rollback` escape hatch, and the future-persistence boundary are in the
-[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md).
 
 Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
 path-style setting through an injected S3 port. The application never assumes a Compose service

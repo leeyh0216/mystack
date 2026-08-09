@@ -129,7 +129,7 @@
 - 관측: transaction/persist 전·후·rollback·migration event, direct/public boto3 test,
   failure/cancellation/restart 주입 test.
 - 근거: `glue/src/mystack/glue/application/service.py`,
-  `glue/src/mystack/glue/adapters/outbound/repository.py`
+  `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
 - 신뢰도: High
 
 <!-- section: uc-006 -->

@@ -91,7 +91,6 @@ def _application(
     return CatalogApplication(
         catalog,
         catalog,
-        catalog,
         IncrementingClock(),
         CatalogPolicy(
             default_catalog_id="account",
