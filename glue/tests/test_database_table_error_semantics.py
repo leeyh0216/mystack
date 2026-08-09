@@ -46,6 +46,7 @@ def catalog() -> GlueCatalogHarness:
         ErrorScenario(
             "empty", "GetDatabases", {"NextToken": "not-a-token"}, "InvalidInputException"
         ),
+        ErrorScenario("empty", "GetDatabases", {"MaxResults": 0}, "InvalidInputException"),
         ErrorScenario(
             "empty",
             "GetDatabases",
