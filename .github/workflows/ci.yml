@@ -96,9 +96,20 @@ jobs:
           output-dir: ci-artifacts/frontend
           retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
           title: React TypeScript contracts
-      - name: Build both service UIs
+      - id: reusable_ui_cache
+        name: Restore exact SHA-bound UI build cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            .mystack/reusable-ui/manifest.json
+            emr/src/mystack/emr/static/ui
+            glue/src/mystack/glue/static/ui
+          key: mystack-ui-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ hashFiles('package-lock.json', 'package.json', '.node-version') }}
+      - name: Build both service UIs on exact-cache miss
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
         run: npm run frontend:build
       - name: Create immutable reusable-build manifest
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
         run: >-
           uv run python scripts/reusable_build_artifact.py create
           --manifest .mystack/reusable-ui/manifest.json
@@ -110,6 +121,24 @@ jobs:
           --input package-lock.json --input package.json --input .node-version
           --artifact emr/src/mystack/emr/static/ui
           --artifact glue/src/mystack/glue/static/ui
+      - name: Verify cached or freshly built UI provenance
+        run: >-
+          uv run python scripts/reusable_build_artifact.py verify
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA"
+          --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Save exact SHA-bound UI build cache
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            .mystack/reusable-ui/manifest.json
+            emr/src/mystack/emr/static/ui
+            glue/src/mystack/glue/static/ui
+          key: mystack-ui-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ hashFiles('package-lock.json', 'package.json', '.node-version') }}
       - name: Upload SHA-bound UI build for downstream consumers
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

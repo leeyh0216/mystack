@@ -9,6 +9,7 @@ on:
     branches: [main, develop]
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -85,3 +86,4 @@ jobs:
       version: ${{ needs.plan.outputs.version }}
       python_version: ${{ needs.plan.outputs.python_version }}
       source_sha: ${{ needs.plan.outputs.source_sha }}
+      ci_run_id: ${{ github.event.workflow_run.id }}

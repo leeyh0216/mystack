@@ -13,6 +13,12 @@ class ArtifactError(ValueError):
     """A reusable build artifact is stale, corrupt, or from an incompatible producer."""
 
 
+def should_rebuild(download_outcome: str) -> bool:
+    """Only an unavailable artifact may fall back; a downloaded mismatch is rejected."""
+
+    return download_outcome != "success"
+
+
 def _digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
