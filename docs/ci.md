@@ -27,6 +27,30 @@ non-empty required lane.
 The Dev Container job uses the [official CLI](https://github.com/devcontainers/cli) with
 `--frozen-lockfile` to reject feature digest drift and build the image to completion.
 
+<!-- section: test-reports -->
+## Test reports contributors can use
+
+Every Python, frontend, explicit compatibility, Docker compatibility, and browser E2E test job
+writes runner-native JUnit XML. A repository-local renderer then produces three files in one
+downloadable `*-test-report` artifact:
+
+| File | Use |
+| --- | --- |
+| `junit.xml` | Machine-readable result for tools and a stable interchange format between pytest and Vitest |
+| `index.html` | Small static, escaped report that can be opened locally without a service or credentials |
+| `summary.md` | The same short suite/case, duration, pass/fail, and skipped-count view appended to the GitHub Job Summary |
+
+Failed JUnit cases become current-job GitHub annotations, capped at 20 so a broad failure remains
+readable; the HTML report lists the remainder. If a test command stops before producing JUnit XML,
+the report says `incomplete` instead of pretending that no tests failed.
+
+This follows the same separation used by [Spark CI](https://github.com/apache/spark/blob/master/.github/workflows/build_and_test.yml): publish structured results and a summary on every run, while verbose logs are failure-only. [Trino's result-processing action](https://github.com/trinodb/trino/blob/master/.github/actions/process-test-results/action.yml) similarly keeps test reports available and attaches annotations to the existing job rather than creating an unrelated gate.
+
+The normal `*-test-report` artifact is retained for 14 days. The `service-ui-builds` artifact remains
+a one-day internal handoff between frontend and Python jobs; it is not a test result or a Docker
+image artifact. All existing test deadlines remain explicit: pytest receives the selected YAML
+timeout, and Vitest receives its configured test and hook deadlines.
+
 <!-- section: branch-protection -->
 ## Branch protection expectations
 
@@ -66,9 +90,14 @@ A retry resumes only artifacts carrying the same source SHA. Consumers pin the v
 digest; rollback selects a prior verified digest and does not mutate registry history.
 
 <!-- section: artifacts -->
-## Failure artifacts
+## Failure diagnostics and release evidence
 
-CI always attempts to preserve coverage, model drift, Docker logs, and test artifacts. The release
-validation artifact also retains the generated [release acceptance](compatibility/release-acceptance.generated.md),
-compiled matrix, API classification, and deterministic Glue error catalog. Logs must retain
-component boundary and side-effect events but never secrets.
+Compose/service/Spark logs, optimizer-run files, and model/API drift JSON are uploaded only by a
+failed job and retained for 7 days. This keeps a successful run focused on its summary and test
+report while preserving the component and case context needed to repair a failure. Diagnostics must
+retain boundary and side-effect events but never secrets.
+
+The release workflow separately retains its reviewed acceptance evidence (the generated [release
+acceptance](compatibility/release-acceptance.generated.md), compiled matrix, API classification, and
+deterministic Glue error catalog) for 14 days. Local image preflight scan evidence is release
+authorization evidence, not a user-facing test-result artifact.

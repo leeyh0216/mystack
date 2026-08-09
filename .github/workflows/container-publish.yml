@@ -155,16 +155,14 @@ jobs:
               uv run python scripts/run_compatibility_case.py "$case_id"
             done
       - name: Collect component logs
-        if: always()
+        if: failure()
         run: docker compose logs --no-color > docker-compose.log || true
-      - name: Preserve release-blocking acceptance and diagnostics
+      - name: Preserve release-blocking acceptance evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: required-validation-diagnostics
+          name: required-validation-evidence
           path: |
-            docker-compose.log
-            test-artifacts/
             contracts/compatibility-matrix.generated.json
             contracts/api-coverage.json
             contracts/glue-error-conditions.yaml
@@ -175,6 +173,17 @@ jobs:
             docs/compatibility/glue-errors.generated.md
             docs/compatibility/glue-errors.ko.generated.md
           if-no-files-found: ignore
+          retention-days: 14
+      - name: Preserve failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: required-validation-failure-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Stop Mystack
         if: always()
         run: docker compose down --volumes --remove-orphans

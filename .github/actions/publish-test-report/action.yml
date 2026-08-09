@@ -1,0 +1,61 @@
+# JUnit report, job summary, and workflow-command reference:
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
+# Artifact lifecycle reference:
+# https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts
+name: Publish CI test report
+description: Render JUnit XML into a safe static HTML artifact, job summary, and bounded annotations.
+
+inputs:
+  artifact-name:
+    description: Downloadable artifact name for one job or matrix case.
+    required: true
+  junit-files:
+    description: Newline-delimited label=path JUnit XML inputs.
+    required: true
+  output-dir:
+    description: Repository-relative directory where the report files are written.
+    required: true
+  retention-days:
+    description: Bounded retention for normal test evidence.
+    required: true
+  title:
+    description: Human-readable title shown in the report and job summary.
+    required: true
+  max-annotations:
+    description: Maximum failed-test annotations emitted into the current GitHub job.
+    required: false
+    default: "20"
+
+runs:
+  using: composite
+  steps:
+    - name: Render JUnit evidence and current-job annotations
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        JUNIT_FILES: ${{ inputs.junit-files }}
+        MAX_ANNOTATIONS: ${{ inputs.max-annotations }}
+        OUTPUT_DIR: ${{ inputs.output-dir }}
+        REPORT_TITLE: ${{ inputs.title }}
+      run: |
+        set -euo pipefail
+        arguments=()
+        while IFS= read -r junit_input; do
+          test -z "$junit_input" && continue
+          arguments+=(--input "$junit_input")
+        done <<<"$JUNIT_FILES"
+        python3 scripts/ci_test_report.py \
+          --title "$REPORT_TITLE" \
+          --output-dir "$OUTPUT_DIR" \
+          --artifact-name "$ARTIFACT_NAME" \
+          --max-annotations "$MAX_ANNOTATIONS" \
+          --emit-github-annotations \
+          "${arguments[@]}"
+        cat "$OUTPUT_DIR/summary.md" >>"$GITHUB_STEP_SUMMARY"
+    - name: Upload JUnit XML and static test report
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.output-dir }}
+        if-no-files-found: error
+        retention-days: ${{ inputs.retention-days }}

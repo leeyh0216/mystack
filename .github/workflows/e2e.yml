@@ -19,6 +19,7 @@ on:
       - "contracts/compatibility-matrix.generated.json"
       - "scripts/compatibility_matrix.py"
       - "scripts/run_compatibility_case.py"
+      - "scripts/ci_test_report.py"
       - "requirements/**"
       - "config/**"
       - "compose.yaml"
@@ -28,12 +29,17 @@ on:
       - "Makefile"
       - "**/Dockerfile"
       - ".github/workflows/e2e.yml"
+      - ".github/actions/publish-test-report/action.yml"
   schedule:
     - cron: "43 17 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  MYSTACK_TEST_REPORT_RETENTION_DAYS: "14"
+  MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS: "7"
 
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
@@ -91,7 +97,18 @@ jobs:
           uv sync --locked --all-packages
           make compatibility-check
       - name: Run the selected contract case
-        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+        run: >-
+          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          --junitxml "ci-artifacts/selected-contract-${{ matrix.case_id }}/junit.xml"
+      - name: Publish selected contract test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: selected-contract-${{ matrix.case_id }}-test-report
+          junit-files: selected-contract-${{ matrix.case_id }}=ci-artifacts/selected-contract-${{ matrix.case_id }}/junit.xml
+          output-dir: ci-artifacts/selected-contract-${{ matrix.case_id }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Selected contract ${{ matrix.case_id }}
 
   boto-spark-catalog-iceberg:
     name: Compatibility ${{ matrix.case_id }}
@@ -114,23 +131,35 @@ jobs:
       - name: Build and start Mystack
         run: make up
       - name: Run the explicit case in an isolated process
-        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+        run: >-
+          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          --junitxml "ci-artifacts/e2e-${{ matrix.case_id }}/junit.xml"
+      - name: Publish Docker E2E test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: e2e-${{ matrix.case_id }}-test-report
+          junit-files: e2e-${{ matrix.case_id }}=ci-artifacts/e2e-${{ matrix.case_id }}/junit.xml
+          output-dir: ci-artifacts/e2e-${{ matrix.case_id }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Docker E2E ${{ matrix.case_id }}
       - name: Collect component logs
-        if: always()
-        run: docker compose logs --no-color > docker-compose.log
+        if: failure()
+        run: docker compose logs --no-color > docker-compose.log || true
       - name: Collect managed Glue optimizer run logs
-        if: always()
+        if: failure()
         run: |
           mkdir -p test-artifacts
           docker compose cp glue:/var/lib/mystack/glue/table-optimizer-runs test-artifacts/glue-table-optimizer-runs || true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
+        if: failure()
         with:
-          name: e2e-${{ matrix.case_id }}-diagnostics
+          name: e2e-${{ matrix.case_id }}-failure-diagnostics
           path: |
             docker-compose.log
             test-artifacts/
           if-no-files-found: ignore
+          retention-days: ${{ env.MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS }}
       - name: Stop Mystack
         if: always()
         run: docker compose down --volumes --remove-orphans
@@ -165,14 +194,16 @@ jobs:
         run: |
           timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_emr_startup.py -m e2e \
-            --timeout "$timeout" --timeout-method thread -vv
+            --timeout "$timeout" --timeout-method thread -vv \
+            --junitxml=ci-artifacts/console-e2e/startup-junit.xml
       - name: Verify trusted pre-start, inventory, and PID 1 semantics
         env:
           MYSTACK_PRESTART_E2E_REQUIRED: "1"
         run: |
           timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_emr_prestart.py -m e2e \
-            --timeout "$timeout" --timeout-method thread -vv
+            --timeout "$timeout" --timeout-method thread -vv \
+            --junitxml=ci-artifacts/console-e2e/prestart-junit.xml
       - name: Run the browser contract with the configured timeout
         env:
           MYSTACK_BROWSER_E2E_REQUIRED: "1"
@@ -180,18 +211,32 @@ jobs:
         run: |
           timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_console_browser.py -m e2e \
-            --timeout "$timeout" --timeout-method thread -vv
-      - name: Collect component logs
+            --timeout "$timeout" --timeout-method thread -vv \
+            --junitxml=ci-artifacts/console-e2e/browser-junit.xml
+      - name: Publish console E2E test evidence
         if: always()
-        run: docker compose logs --no-color > docker-compose.log
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
+        uses: ./.github/actions/publish-test-report
         with:
-          name: console-e2e-diagnostics
+          artifact-name: console-e2e-test-report
+          junit-files: |
+            startup=ci-artifacts/console-e2e/startup-junit.xml
+            prestart=ci-artifacts/console-e2e/prestart-junit.xml
+            browser=ci-artifacts/console-e2e/browser-junit.xml
+          output-dir: ci-artifacts/console-e2e
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Console accessibility E2E
+      - name: Collect component logs
+        if: failure()
+        run: docker compose logs --no-color > docker-compose.log || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: console-e2e-failure-diagnostics
           path: |
             docker-compose.log
             test-artifacts/
           if-no-files-found: ignore
+          retention-days: ${{ env.MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS }}
       - name: Stop Mystack
         if: always()
         run: docker compose down --volumes --remove-orphans
