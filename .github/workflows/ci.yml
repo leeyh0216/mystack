@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # Normal test evidence is available on successful and failed runs for a bounded period.
+  MYSTACK_TEST_REPORT_RETENTION_DAYS: "14"
+  # Raw logs and drift JSON are retained only after a failed job.
+  MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS: "7"
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -70,11 +76,32 @@ jobs:
           cache: npm
       - name: Install the locked frontend workspace
         run: npm ci --ignore-scripts
-      - name: Lint, type-check, test, and build both service UIs
-        run: npm run frontend:check
+      - name: Lint and type-check both service UIs
+        run: |
+          npm run frontend:lint
+          npm run frontend:typecheck
+      - name: Test both service UIs with configured deadlines
+        run: |
+          mkdir -p ci-artifacts/frontend
+          npm run frontend:test -- \
+            --reporter=default \
+            --reporter=junit \
+            --outputFile=ci-artifacts/frontend/junit.xml
+      - name: Publish frontend test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: frontend-test-report
+          junit-files: frontend=ci-artifacts/frontend/junit.xml
+          output-dir: ci-artifacts/frontend
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: React TypeScript contracts
+      - name: Build both service UIs
+        run: npm run frontend:build
       - name: Upload service-owned UI builds for Python protocol tests
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
+          # Internal cross-job handoff, not a user-facing test-result artifact.
           name: service-ui-builds
           path: |
             emr/src/mystack/emr/static/ui
@@ -123,7 +150,18 @@ jobs:
       - name: Reject manifest and generated-evidence drift
         run: make compatibility-check
       - name: Run the explicit case in an isolated process
-        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+        run: >-
+          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          --junitxml "ci-artifacts/compatibility-${{ matrix.case_id }}/junit.xml"
+      - name: Publish compatibility test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: compatibility-${{ matrix.case_id }}-test-report
+          junit-files: compatibility-${{ matrix.case_id }}=ci-artifacts/compatibility-${{ matrix.case_id }}/junit.xml
+          output-dir: ci-artifacts/compatibility-${{ matrix.case_id }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Compatibility ${{ matrix.case_id }}
 
   python-contracts:
     name: Python ${{ matrix.python-version }} contracts
@@ -205,19 +243,28 @@ jobs:
           --cov=emr/src
           --cov=glue/src
           --cov-report=term-missing
-          --cov-report=xml
+          --junitxml=ci-artifacts/python-${{ matrix.python-version }}/junit.xml
       - name: Build and co-install all namespace distributions
         run: make package-check
-      - name: Upload diagnostics
+      - name: Publish Python test evidence
         if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: python-${{ matrix.python-version }}-test-report
+          junit-files: python-${{ matrix.python-version }}=ci-artifacts/python-${{ matrix.python-version }}/junit.xml
+          output-dir: ci-artifacts/python-${{ matrix.python-version }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Python ${{ matrix.python-version }} contracts
+      - name: Upload failure diagnostics
+        if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: python-${{ matrix.python-version }}-diagnostics
+          name: python-${{ matrix.python-version }}-failure-diagnostics
           path: |
-            coverage.xml
             model-drift-report.json
             api-coverage-drift-report.json
           if-no-files-found: ignore
+          retention-days: ${{ env.MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS }}
 
   devcontainer:
     name: Reproducible Dev Container build

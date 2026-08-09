@@ -185,7 +185,10 @@ def test_each_lane_has_an_explicit_non_cross_product_case_matrix() -> None:
 def test_release_workflow_preserves_compiled_acceptance_evidence() -> None:
     workflow = (ROOT / ".github/workflows/container-publish.yml").read_text(encoding="utf-8")
 
-    assert "Preserve release-blocking acceptance and diagnostics" in workflow
+    assert "Preserve release-blocking acceptance evidence" in workflow
+    assert "required-validation-evidence" in workflow
+    assert "Preserve failure diagnostics" in workflow
+    assert "required-validation-failure-diagnostics" in workflow
     for path in (
         "contracts/compatibility-matrix.generated.json",
         "contracts/api-coverage.json",
@@ -210,6 +213,18 @@ def test_isolated_runner_uses_generated_nodes_and_configured_timeout() -> None:
     assert all("test_ui" not in node for node in nodes)
     assert command[command.index("--timeout") + 1] == str(timeout)
     assert timeout == 120
+
+
+def test_isolated_runner_can_emit_one_junit_file_per_explicit_case() -> None:
+    case = CompiledCaseRepository(DEFAULT_OUTPUT).get("boto3-botocore-1.43.66-contract")
+    runner = IsolatedCaseRunner(
+        root=ROOT,
+        timeout_configuration=TimeoutConfiguration(ROOT / "config/mystack.yaml"),
+    )
+
+    command, _ = runner.command(case, junitxml=Path("ci-artifacts/case/junit.xml"))
+
+    assert command[-2:] == ["--junitxml", "ci-artifacts/case/junit.xml"]
 
 
 def test_isolated_runner_rejects_an_unknown_generated_adapter() -> None:

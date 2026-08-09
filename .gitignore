@@ -17,6 +17,7 @@ logs/
 model-drift-report.json
 api-coverage-drift-report.json
 test-artifacts/
+ci-artifacts/
 .idea/
 .vscode/
 node_modules/

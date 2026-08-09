@@ -26,6 +26,30 @@ lane을 비워도 항상 비어 있지 않은 required lane과 합치므로 유�
 Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의
 `--frozen-lockfile`로 feature digest가 바뀌지 않았는지 확인하고 image를 끝까지 build합니다.
 
+<!-- section: test-reports -->
+## 기여자가 바로 보는 test report
+
+Python, frontend, 명시적 compatibility, Docker compatibility, browser E2E test job은 모두
+runner가 제공하는 JUnit XML을 작성합니다. Repository-local renderer는 다운로드 가능한
+`*-test-report` artifact 하나에 다음 세 file을 만듭니다.
+
+| File | 용도 |
+| --- | --- |
+| `junit.xml` | pytest와 Vitest 사이의 안정적인 교환 형식이며 도구가 읽는 결과 |
+| `index.html` | 별도 service나 credential 없이 local에서 열 수 있는 작고 escape된 정적 report |
+| `summary.md` | suite/case, duration, pass/fail, skipped count를 짧게 보여 주며 GitHub Job Summary에도 추가되는 결과 |
+
+실패한 JUnit case는 현재 GitHub job의 annotation으로 표시합니다. 많은 실패가 있어도 읽기 쉽도록
+20개까지만 annotation을 만들고 나머지는 HTML report에 표시합니다. Test command가 JUnit XML을
+만들기 전에 멈추면 실패가 없었던 것처럼 보이지 않도록 report에 `incomplete`를 표시합니다.
+
+[Spark CI](https://github.com/apache/spark/blob/master/.github/workflows/build_and_test.yml)처럼 모든 실행에는 구조화된 결과와 summary를 제공하고 상세 log는 실패 시에만 남깁니다. [Trino의 result-processing action](https://github.com/trinodb/trino/blob/master/.github/actions/process-test-results/action.yml)도 test report를 보존하고 별도 확인 절차를 만들지 않고 현재 job에 annotation을 연결합니다.
+
+일반 `*-test-report` artifact의 보존 기간은 14일입니다. `service-ui-builds` artifact는 frontend와
+Python job 사이에서만 쓰는 하루짜리 내부 handoff이며 test 결과나 Docker image artifact가 아닙니다.
+기존 test deadline도 유지합니다. pytest는 선택된 YAML timeout을 받고 Vitest는 설정된 test와 hook
+deadline을 받습니다.
+
 <!-- section: branch-protection -->
 ## Branch protection 기대값
 
@@ -66,9 +90,13 @@ visibility는 서로 다른 제어입니다.
 고정하며 rollback은 과거 digest를 선택하고 registry 이력을 변경하지 않습니다.
 
 <!-- section: artifacts -->
-## 실패 artifact
+## 실패 진단과 release 근거
 
-CI는 coverage, model drift, Docker log, test artifact를 항상 보존하려고 시도합니다. Release 검증
-artifact에는 생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md), compiled
-matrix, API 분류, 결정적 Glue 오류 catalog도 보존합니다. 로그는 component 경계와 side effect
-event를 담되 secret은 포함하지 않습니다.
+Compose/service/Spark log, optimizer-run file, model/API drift JSON은 실패한 job에서만 upload하고
+7일 동안 보존합니다. 성공한 실행은 summary와 test report에 집중하면서도 실패 시에는 수정에 필요한
+component와 case 맥락을 남길 수 있습니다. 진단 log는 경계와 side effect event를 담되 secret을
+포함하면 안 됩니다.
+
+Release workflow는 검토한 수용 근거(생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
+compiled matrix, API 분류, 결정적 Glue 오류 catalog)를 별도로 14일 보존합니다. Local image preflight
+scan 근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.
