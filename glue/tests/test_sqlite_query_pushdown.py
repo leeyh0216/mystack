@@ -361,7 +361,7 @@ async def test_partition_segments_are_persisted_and_union_without_duplicate_rows
 async def test_table_partition_key_change_rebuilds_projection_and_reports_later_invalid_values(
     tmp_path: Path,
 ) -> None:
-    application, _ = _application(tmp_path / "catalog.sqlite3")
+    application, connections = _application(tmp_path / "catalog.sqlite3")
     await _create_partition_table(
         application,
         partition_keys=[{"Name": "day", "Type": "string"}],
@@ -381,6 +381,7 @@ async def test_table_partition_key_change_rebuilds_projection_and_reports_later_
         skip_archive=False,
     )
 
+    connections.clear()
     with pytest.raises(InvalidInputError, match="not valid for key type 'date'"):
         await application.get_partitions(
             "account",
@@ -391,6 +392,9 @@ async def test_table_partition_key_change_rebuilds_projection_and_reports_later_
             next_token=None,
             max_results=10,
         )
+    statements = "\n".join(connections.statements)
+    assert "catalog_partition_projection_health" in statements
+    assert "WHERE p.table_id = ? AND (EXISTS" not in statements
 
 
 async def test_table_update_without_partition_key_change_does_not_rebuild_all_projections(

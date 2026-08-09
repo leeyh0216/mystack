@@ -81,9 +81,12 @@ written to logs.
 SQLite stores a stable binary order key and per-total persisted segment assignments. The opaque
 continuation token contains only a version, a request-context fingerprint, and a surrogate row ID;
 it contains no names or partition values. A token from another catalog/table/expression/segment is
-rejected. Ordinary `GetPartitions` does not issue a total-count query. The current ANTLR grammar is
-fully compiled to SQL/UDFs; any future grammar node must receive an explicitly bounded evaluator
-fallback and differential tests before it is advertised as supported.
+rejected. Ordinary `GetPartitions` does not issue a total-count query. Referenced-key validation
+reads durable, neutral health facts by index; it does not search every partition merely because no
+invalid value exists. Result materialization remains bounded to the requested page plus its lookahead.
+The current ANTLR grammar is fully compiled to SQL/UDFs; any future grammar node must receive an
+explicitly bounded evaluator fallback, a configured limit, and differential tests before it is
+advertised as supported.
 
 `glue.partition_expressions.max_length`, `max_tokens`, and `supported_key_types` in the mounted
 Mystack YAML control resource bounds and the compatibility profile. The default length matches the
