@@ -60,9 +60,9 @@ Mystack은 Amazon EMR, AWS Glue Data Catalog, Spark, LocalStack S3를 위한 로
 <!-- section: contributors -->
 ## Contributors
 
-구현, protocol, architecture, 개발 환경, test, CI, release 문서는
+구현, protocol, architecture, 개발 환경, 테스트, CI, release 문서는
 [Contributors 안내](maintainers.ko.md)에서 시작합니다. 사용자 지원 안내와 분리된 전체 AWS
-API/endpoint 인벤토리는 [API 호환성 reference](compatibility/api-coverage.ko.md)에 있습니다.
+API/엔드포인트 인벤토리는 [API 호환성 reference](compatibility/api-coverage.ko.md)에 있습니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

@@ -16,44 +16,45 @@
 <!-- section: overview -->
 ## 개요
 
-사용자용 기능·버전·검증 수준의 간단한 답변은 생성된
-[client compatibility matrix](compatibility/client-matrix.md)를 사용합니다. 전체 유지보수자
-인벤토리는 별도의 [API coverage reference](compatibility/api-coverage.md)에 있습니다.
+사용자용 기능·버전·검증 수준의 간단한 답변은
+[클라이언트와 라이브러리 호환성](compatibility/client-matrix.ko.md)에서 확인합니다. 전체 유지보수자
+목록은 별도의 [API 호환성 범위](compatibility/api-coverage.ko.md)에 있으며, 상세 보고서는 CI 작업
+실행 결과에 첨부합니다.
 
 이 문서는 현재 구현과 장기 목표를 구분합니다. “목표”는 현재 빌드가 이미 호환된다는 뜻이 아닙니다.
 
 | 영역 | 현재 상태 | 목표 |
 | --- | --- | --- |
 | 확장형 Proxy registry | 구현·단위 테스트 완료 | Proxy 코드 변경 없이 새 AWS JSON/SigV4 emulator 등록 |
-| AWS JSON 1.1 codec/model 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
+| AWS JSON 1.1 codec/모델 검증 | 구현·단위 테스트 완료 | EMR/Glue modeled request/response/error 처리 |
 | LocalStack fallback | 구현·단위 테스트 완료 | EMR/Glue 외 요청의 투명 전달 |
-| EMR control plane | 부분 구현: boto3로 검증한 13개 operation과 같은 use case를 거치는 versioned startup-file 생성 | EMR public API 광범위 호환 |
-| EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 local S3A write, 취소, gzip Step/local-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 runtime 정합성 |
-| Glue Data Catalog | API 목록 일부 지원: boto3로 검증한 database/table/version/partition/batch/table-optimizer 28개 operation의 결정적 오류와 선택적 timeout/internal injection 완성 | 더 넓은 Data Catalog API 목록 |
-| Spark + Hive + Glue Catalog | 검증 완료: 공식 Glue 5 image, complex type, type 기반 pruning, partition DDL/repair, 지원하는 Hive V1 table ALTER metadata 의미론, 구현 operation 전체의 결정적 오류 | 더 넓은 Spark/Hive client variant |
-| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Open Table Format create/update 입력, create/read/write/evolution, COW/MOR DML, time travel, branch/tag write, 주요 metadata table, snapshot/maintenance procedure, managed compaction/retention/orphan-file optimizer, rename/drop/추적 file purge, S3 cleanup, 원자적 `VersionId` commit과 concurrent retry | Metadata encryption action, 나머지 option/table과 더 넓은 Iceberg API |
-| AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 client가 사용하는 더 넓은 Glue/S3 함수 |
+| EMR control plane | 부분 구현: boto3로 검증한 13개 API 작업과 같은 use case를 거치는 versioned startup-파일 생성 | EMR 공개 API 광범위 호환 |
+| EMR bootstrap/Spark | 세로 경로 구현: 정보 확인을 포함한 신뢰된 root pre-start, 최종 `hadoop` 사용자, S3 bootstrap virtualenv, Python/JAR/dependency materialize, Spark 3.5.4 로컬 S3A write, 취소, gzip Step/로컬-driver LogUri archive | 더 많은 EMR Step 유형, YARN/executor log와 분산 실행 환경 정합성 |
+| Glue Data Catalog | API 목록 일부 지원: boto3로 검증한 database/table/version/partition/batch/table-optimizer 28개 API 작업의 결정적 오류와 선택적 제한 시간/internal injection 완성 | 더 넓은 Data Catalog API 목록 |
+| Spark + Hive + Glue Catalog | 검증 완료: 공식 Glue 5 image, complex type, type 기반 pruning, partition DDL/repair, 지원하는 Hive V1 table ALTER 메타데이터 의미론, 구현 API 작업 전체의 결정적 오류 | 더 넓은 Spark/Hive 클라이언트 variant |
+| Spark + Iceberg + Glue Catalog | 세로 경로 구현: Open Table Format create/update 입력, create/read/write/evolution, COW/MOR DML, time travel, branch/tag write, 주요 메타데이터 table, snapshot/maintenance procedure, managed compaction/retention/orphan-파일 optimizer, rename/drop/추적 파일 purge, S3 cleanup, 원자적 `VersionId` commit과 concurrent retry | Metadata encryption action, 나머지 option/table과 더 넓은 Iceberg API |
+| AWS SDK for pandas | 세로 경로 구현: 3.17.0 partitioned Parquet S3/Glue write/read E2E | 이 클라이언트가 사용하는 더 넓은 Glue/S3 함수 |
 | Service 소유 Web UI | 구현: React/TypeScript EMR cluster/Step/log UI, Glue database/table/schema/partition explorer, 공통 Tailwind design system, thread/task, keyboard/browser E2E | 실행 중 Spark UI link |
 
 EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다. Proxy의 공개 경로는
 `/_mystack/ui/emr/`, `/_mystack/ui/glue/`이며 호환 경로 `/_mystack/console`은 EMR로 redirect합니다.
-Glue metadata mutation은 짧고 정규화한 SQLite transaction을 사용합니다. Persistence가 실패하면
+Glue 메타데이터 mutation은 짧고 정규화한 SQLite transaction을 사용합니다. Persistence가 실패하면
 mutation 전체를 rollback하며 database/table rename 또는 delete는 하위 table, partition, optimizer와
-run history를 원자적으로 포함합니다. `glue.sqlite.database_file`이 유일한 영속 catalog store이고,
-검증한 기본값은 WAL이며 `rollback`은 명시적인 개발용 escape hatch입니다. JSON catalog fallback이나
+run history를 원자적으로 포함합니다. `glue.sqlite.database_file`이 유일한 영속 카탈로그 store이고,
+검증한 기본값은 WAL이며 `rollback`은 명시적인 개발용 escape hatch입니다. JSON 카탈로그 fallback이나
 migration은 없습니다. Iceberg table도 같은 transaction에서 원자적
-`VersionId`/`metadata_location` compare-and-swap을 적용합니다. Data, manifest, metadata,
+`VersionId`/`metadata_location` compare-and-swap을 적용합니다. Data, manifest, 메타데이터,
 snapshot과 retry는 계속 Iceberg가 소유합니다. 자세한 내용은 [Iceberg commit
 protocol](protocols/glue/glue-iceberg-commits.ko.md)을 참고하세요.
 고정된 partition, schema, sort, identifier 동작은 별도 [Iceberg evolution
 protocol](protocols/glue/glue-iceberg-evolution.ko.md)에 기록합니다. 고정된 `INSERT`/`UPDATE`/`DELETE`/`MERGE`
 동작과 COW/MOR 근거는 [Iceberg row-level DML protocol](protocols/glue/glue-iceberg-row-level-dml.ko.md)에
-있습니다. Time travel, reference, metadata table, snapshot/maintenance procedure, S3 cleanup은
+있습니다. Time travel, reference, 메타데이터 table, snapshot/maintenance procedure, S3 cleanup은
 [Iceberg snapshot/reference/procedure protocol](protocols/glue/glue-iceberg-snapshots-refs-procedures.ko.md)에
-있습니다. Rename, catalog-only drop, 추적 file purge, 보상 작업, Glue/S3 사이 실패 경계는
+있습니다. Rename, 카탈로그-only drop, 추적 파일 purge, 보상 작업, Glue/S3 사이 실패 경계는
 [Iceberg lifecycle protocol](protocols/glue/glue-iceberg-lifecycle.ko.md)에 있습니다.
-`OpenTableFormatInput`과 `UpdateOpenTableFormatInput`을 통한 service 소유 Iceberg v2 metadata
-materialization, S3 보상, catalog CAS는 [Open Table Format 입력
+`OpenTableFormatInput`과 `UpdateOpenTableFormatInput`을 통한 서비스 소유 Iceberg v2 메타데이터
+materialization, S3 보상, 카탈로그 CAS는 [Open Table Format 입력
 protocol](protocols/glue/glue-open-table-format.ko.md)에 있습니다.
 Managed optimizer API, 기본값, scheduling, Spark procedure mapping, 오류, log와 제외 범위는
 [table optimizer protocol](protocols/glue/glue-table-optimizers.ko.md)에 고정했습니다.
@@ -63,23 +64,21 @@ pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIK
 protocol](protocols/glue/glue-partition-expressions.ko.md)을 참고하세요.
 Spark Hive partition add/drop/rename/location과 repair mapping은 [Hive partition DDL
 protocol](protocols/glue/glue-hive-partition-ddl.ko.md)에 정리했습니다.
-지원하는 table-level column/property/SerDe/location 변경과 client가 거부하는 variant는 [Hive
+지원하는 table-level column/property/SerDe/location 변경과 클라이언트가 거부하는 variant는 [Hive
 table ALTER protocol](protocols/glue/glue-hive-table-alter.ko.md)에 정리했습니다.
-구현한 모든 operation은 생성한 [Glue 오류
-matrix](compatibility/api-coverage.md)에 포함됩니다. 우선순위, 안전한 logging, file 기반
-failure injection은 [오류 결정 protocol](protocols/glue/glue-error-decisions.ko.md)에 정의했습니다.
-Database/table/version의 validation, conflict, version, archive, rename, cascade, rollback은
-[resource 오류 계약](protocols/glue/glue-database-table-errors.ko.md)에 고정했습니다.
-Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`, rollback은
-[partition/batch 오류 계약](protocols/glue/glue-partition-batch-errors.ko.md)에 고정했습니다.
+구현한 모든 API 작업은 [API 호환성 범위](compatibility/api-coverage.ko.md)에 포함됩니다. 우선순위,
+안전한 로그 기록, 파일 기반 장애 주입은 [오류 판단 프로토콜](protocols/glue/glue-error-decisions.ko.md)에
+정의했습니다. 데이터베이스/테이블/버전의 유효성 검사, 충돌, 보관, 이름 변경, 연쇄 삭제, 롤백은
+[리소스 오류 계약](protocols/glue/glue-database-table-errors.ko.md)에 고정했습니다. 파티션 값, 목록,
+갱신, 일괄 처리 순서, 항목 오류, `UnprocessedKeys`, 롤백은
+[파티션/일괄 처리 오류 계약](protocols/glue/glue-partition-batch-errors.ko.md)에 고정했습니다.
 
-현재 구현된 control-plane operation 전부(EMR 13개, Glue 28개)는 public Proxy boto3 E2E를
-가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
-정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
-생성된 [release 수용 범위](compatibility/client-matrix.md)는 이 API/오류 계약과
-주석 compatibility test의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
-결합한 release-blocking 기준입니다.
-Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
+현재 구현된 제어 영역 API 작업 전부(EMR 13개, Glue 28개)는 공개 Proxy boto3 E2E를 가집니다.
+이는 구현 범위 검증이며 상위 EMR/Glue 전체를 지원한다는 뜻이 아닙니다. CI는 고정된 botocore
+모델에서 정확한 상위 API 분류를 만듭니다. CI 게시 수용 보고서는 이 API/오류 계약과 주석 호환성
+테스트의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 시나리오를 결합한 게시 차단
+기준입니다.
+Startup-파일 entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
 재시작 후 새 ID로 다시 생성합니다. 자세한 내용은 [시작 클러스터
 protocol](protocols/emr/emr-startup-clusters.ko.md)에 있습니다.
 신뢰된 pre-start script는 명시적으로 활성화하는 EMR container 경계이며 process 안의 plugin API나
@@ -95,9 +94,9 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 - 미문서화된 AWS 버그 재현
 - 인증, 인가, IAM, Lake Formation 의미론
 - Cross-account와 cross-Region 의미론
-- 실 AWS 비교 test와 cloud credential
-- PyIceberg, Flink, Trino, Glue Iceberg REST endpoint
-- Open Table Format metadata encryption-key action
+- 실 AWS 비교 테스트와 cloud credential
+- PyIceberg, Flink, Trino, Glue Iceberg REST 엔드포인트
+- Open Table Format 메타데이터 encryption-key action
 - EC2/YARN/HDFS 물리적 분산 환경 재현
 - Spark History Server
 
@@ -105,15 +104,15 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 ## 버전 기준선
 
 - Python API 서비스: Python 3.11
-- Protocol model: botocore 1.43.66, `contracts/service-model-manifest.json`에서 추적
-- Spark: 3.5.x, Glue 상호운용 profile은 Spark 3.5.4
+- Protocol 모델: botocore 1.43.66, `contracts/service-model-manifest.json`에서 추적
+- Spark: 3.5.x, Glue 상호운용 프로필은 Spark 3.5.4
 - Java: 17
-- Iceberg: Glue 5.0 profile 기준 1.7.1
+- Iceberg: Glue 5.0 프로필 기준 1.7.1
 - AWS SDK for pandas: 3.17.0
 
 Glue 버전은 [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html)와 [공식 Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), EMR 의미론은 [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)를 기준으로 합니다.
-게시하는 Glue image는 Spark/Iceberg catalog 경로를 유지하지만 넓은 개발용 base에서 범위 밖인 Job,
-Delta, Hudi, Flink, streaming, Redshift asset을 제거합니다. 이 image는 신뢰된 local emulator이며 보안
+게시하는 Glue image는 Spark/Iceberg 카탈로그 경로를 유지하지만 넓은 개발용 base에서 범위 밖인 Job,
+Delta, Hudi, Flink, streaming, Redshift asset을 제거합니다. 이 image는 신뢰된 로컬 emulator이며 보안
 경계가 아니므로 운영자가 관리하는 Glue dataset만 사용해야 합니다. 만료되는 정확한 scan 판정과
 upstream advisory는 [container release 운영](container-release.ko.md)에 정리했습니다.
 

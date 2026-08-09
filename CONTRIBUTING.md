@@ -96,15 +96,14 @@ values.
 <!-- section: compatibility-evidence -->
 ## Test-declared compatibility evidence
 
-Compatibility evidence has three owners:
+Compatibility verification has three owners:
 
 - The EMR/Glue inbound operation inventories own implementation status.
 - The annotated `contract` or `e2e` test owns the exact client, runtime,
   scenario, operation, capability, and support claim that it actually proves.
-- Typed pytest compatibility annotations, `contracts/compatibility-scope-policy.yaml`, and
-  `contracts/api-coverage.generated.json` are the generated compatibility sources
-  parity baselines during this migration; the Glue error-condition catalog and
-  its precedence policy remain independent required contracts.
+- Typed pytest compatibility annotations and `contracts/compatibility-scope-policy.yaml` are the
+  source inputs. CI writes the derived reports to `ci-artifacts/compatibility/`; the Glue
+  error-condition catalog and its precedence policy remain independent required contracts.
 
 Collection verifies the annotated operation union against the literal code-owned
 EMR/Glue dispatcher inventories. An annotation cannot make an unregistered
@@ -119,12 +118,10 @@ For a client or runtime change:
 2. Decorate the smallest real `@pytest.mark.contract` or `@pytest.mark.e2e`
    test with `@compatibility_evidence(...)`. Declare only operations and
    scenarios exercised by that test body.
-3. Run `make compatibility-evidence-generate`, review
-   `contracts/compatibility-evidence.generated.json` and its Korean/English
-   tables, then run `make compatibility-evidence-check`.
-4. Run `make compatibility-case CASE=<id>` for the changed case. During the
-   migration also run `make compatibility-check`; do not hand-edit generated
-   evidence or remove either retained baseline.
+3. Run `make compatibility-evidence-generate`, review the report in
+   `ci-artifacts/compatibility/`, then run `make compatibility-evidence-check`.
+4. Run `make compatibility-case CASE=<id>` for the changed case, then run
+   `make compatibility-check`; do not hand-edit CI reports.
 
 The smallest annotation is deliberately close to the test it proves:
 
@@ -169,7 +166,7 @@ test body uses its ordinary contract or E2E YAML timeout.
 | Operation is absent from the pinned botocore model | The inbound handler, pinned model review, and test annotation |
 | Locked client/runtime mismatch | `uv.lock`, `tests/support/compatibility_profiles.py`, and `config/runtime/mystack.yaml` |
 | Collection deadline expires | `tests.compatibility_collection_timeout_seconds` or imports made while collecting the annotated test |
-| Generated output differs | Run `make compatibility-evidence-generate`; never edit generated files by hand |
+| CI report differs | Run `make compatibility-evidence-generate`; never edit the report by hand |
 
 <!-- section: issues -->
 ## Bilingual issues

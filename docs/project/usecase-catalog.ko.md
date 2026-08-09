@@ -10,9 +10,9 @@
 
 - [Metadata와 범위](#metadata와-범위)
 - [UC-001: AWS request routing](#uc-001-aws-request-routing)
-- [UC-002: AWS JSON 1.1 operation 실행](#uc-002-aws-json-11-operation-실행)
+- [UC-002: AWS JSON 1.1 API 작업 실행](#uc-002-aws-json-11-api-작업-실행)
 - [UC-003: EMR cluster와 step 관리](#uc-003-emr-cluster와-step-관리)
-- [UC-004: Bootstrap/Spark artifact 준비와 local 실행](#uc-004-bootstrapspark-artifact-준비와-local-실행)
+- [UC-004: Bootstrap/Spark 산출물 준비와 로컬 실행](#uc-004-bootstrapspark-산출물-준비와-로컬-실행)
 - [UC-005: Glue database 관리](#uc-005-glue-database-관리)
 - [UC-006: Glue table과 version 관리](#uc-006-glue-table과-version-관리)
 - [UC-007: Glue partition과 batch result 관리](#uc-007-glue-partition과-batch-result-관리)
@@ -20,11 +20,11 @@
 - [UC-009: Thread/task stack 조회](#uc-009-threadtask-stack-조회)
 - [UC-010: Browser management console 운영](#uc-010-browser-management-console-운영)
 - [UC-011: Public multi-platform image 게시와 검증](#uc-011-public-multi-platform-image-게시와-검증)
-- [UC-012: AWS SDK for pandas data와 metadata 왕복](#uc-012-aws-sdk-for-pandas-data와-metadata-왕복)
-- [UC-013: 문서화된 Glue timeout 또는 internal failure 재현](#uc-013-문서화된-glue-timeout-또는-internal-failure-재현)
-- [UC-014: 결정적인 Glue catalog 오류 판단 적용](#uc-014-결정적인-glue-catalog-오류-판단-적용)
+- [UC-012: AWS SDK for pandas data와 메타데이터 왕복](#uc-012-aws-sdk-for-pandas-data와-메타데이터-왕복)
+- [UC-013: 문서화된 Glue 제한 시간 또는 internal failure 재현](#uc-013-문서화된-glue-제한-시간-또는-internal-failure-재현)
+- [UC-014: 결정적인 Glue 카탈로그 오류 판단 적용](#uc-014-결정적인-glue-카탈로그-오류-판단-적용)
 - [UC-015: Glue Iceberg table optimizer 관리와 실행](#uc-015-glue-iceberg-table-optimizer-관리와-실행)
-- [UC-016: Test 선언 compatibility evidence 생성](#uc-016-test-선언-compatibility-evidence-생성)
+- [UC-016: Test 선언 compatibility 검증 정보 생성](#uc-016-test-선언-compatibility-검증-정보-생성)
 - [후보 차이: 사용자 문서와 contributor 근거](#후보-차이-사용자-문서와-contributor-근거)
 <!-- toc:end -->
 
@@ -32,42 +32,42 @@
 ## Metadata와 범위
 
 - 상태: approved
-- 갱신일: 2026-08-09
+- 갱신일: 2026-08-10
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
-- 포함: HTTP endpoint, application operation, runtime process, management UI, release CLI/workflow
+- 포함: HTTP 엔드포인트, application API 작업, 실행 환경 process, management UI, release CLI/워크플로
 - 제외: process 내부 사용자 plugin, Glue Job/JobRun/Crawler
-- 근거 우선순위: 코드 > test > commit/issue > 문서
+- 근거 우선순위: 코드 > 테스트 > commit/issue > 문서
 - 공식 inventory: [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data)
 
 <!-- section: uc-001 -->
 ## UC-001: AWS request routing
 
-- 목적/actor/trigger: AWS CLI, boto3, 기타 SDK가 public Proxy로 HTTP를 보냅니다.
+- 목적/actor/trigger: AWS CLI, boto3, 기타 SDK가 공개 Proxy로 HTTP를 보냅니다.
 - 입력: 필수 method/path/body/header, 선택 query, YAML route registry. Target/signing/host claim
   중복과 형식을 시작 시 검증합니다.
 - 출력: backend status, 안전한 header, raw response byte이며 저장 data/event는 없습니다.
 - 부수효과: EMR, Glue, LocalStack 중 하나로 outbound HTTP 한 번을 보냅니다.
-- 선행조건/규칙: target prefix → SigV4 signing service → host prefix → fallback; signed byte를
+- 선행조건/규칙: 대상 prefix → SigV4 signing 서비스 → host prefix → fallback; signed byte를
   재직렬화하지 않습니다.
-- 실패: 시작 시 중복/잘못된 route, 실행 중 연결/명시적 request timeout.
+- 실패: 시작 시 중복/잘못된 route, 실행 중 연결/명시적 request 제한 시간.
 - 관측: route 이유, backend, body size/hash, status, duration; authorization/body는 제외합니다.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/routing.py:32`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/forwarder.py:57`
 - 신뢰도: High
 
 <!-- section: uc-002 -->
-## UC-002: AWS JSON 1.1 operation 실행
+## UC-002: AWS JSON 1.1 API 작업 실행
 
-- 목적/actor/trigger: EMR/Glue inbound endpoint가 `X-Amz-Target` POST를 처리합니다.
-- 입력: target과 JSON object 필수, SigV4 metadata 선택. Dispatch 전에 고정 입력 구조의
+- 목적/actor/trigger: EMR/Glue inbound 엔드포인트가 `X-Amz-Target` POST를 처리합니다.
+- 입력: 대상과 JSON object 필수, SigV4 메타데이터 선택. Dispatch 전에 고정 입력 구조의
   required/type/enum/pattern을 검증합니다.
 - 출력: modeled JSON 200 또는 AWS-compatible error body/status/header입니다.
 - 부수효과: 명시적으로 등록된 built-in handler 하나를 정확히 한 번 실행합니다.
-- 선행조건/규칙: 공식 recognized operation이며 recognized 미지원 operation은 501입니다.
-- 등록 규칙: 각 handler는 service별 family 하나에 속하며 registry는 dispatcher 생성 전에 그
+- 선행조건/규칙: 공식 recognized API 작업이며 recognized 미지원 API 작업은 501입니다.
+- 등록 규칙: 각 handler는 서비스별 family 하나에 속하며 registry는 dispatcher 생성 전에 그
   합집합이 검토한 구현 범위와 정확히 같은지 확인합니다.
-- 실패: unknown operation, serialization/validation, domain error, 보호된 internal error.
-- 관측: service/operation/model fingerprint, input/output member, request ID, duration.
+- 실패: unknown API 작업, serialization/유효성 검사, domain error, 보호된 internal error.
+- 관측: 서비스/API 작업/모델 fingerprint, input/output member, request ID, duration.
 - 근거: `shared/src/mystack/aws_protocol/endpoint.py`,
   `shared/src/mystack/aws_protocol/operation_registry.py`,
   `emr/src/mystack/emr/adapters/inbound/aws.py`,
@@ -77,15 +77,15 @@
 <!-- section: uc-003 -->
 ## UC-003: EMR cluster와 step 관리
 
-- 목적/actor/trigger: boto3/CLI가 Proxy를 통해 구현된 EMR 13개 operation 중 하나를 호출합니다.
+- 목적/actor/trigger: boto3/CLI가 Proxy를 통해 구현된 EMR 13개 API 작업 중 하나를 호출합니다.
 - 입력: cluster/step spec, ID, marker/page size, tag, cancel/terminate flag. 공식 데이터 구조, state invariant,
   marker 형식을 검증합니다.
 - 출력: cluster/step description/list, ID, cancel status 또는 빈 modeled response입니다.
-- 저장/변경: process-local cluster, step, tag, protection/visibility state와 timestamp입니다.
+- 저장/변경: process-로컬 cluster, step, tag, protection/visibility state와 timestamp입니다.
 - 부수효과: 비동기 bootstrap/step driver를 schedule하며 cancel/terminate가 child process를 멈춥니다.
 - 선행조건/규칙: 문서화된 state transition, failure action, cluster별 queue 정책.
-- 실패: validation, not found, invalid state, termination protection, bad marker.
-- 관측: transition, scheduling, process lifecycle, public boto3 contract/E2E.
+- 실패: 유효성 검사, not found, invalid state, termination protection, bad marker.
+- 관측: transition, scheduling, process lifecycle, 공개 boto3 계약/E2E.
 - 책임: cluster command, Step command, query가 독립된 최소 port를 사용하며 비동기 runner와
   scheduling은 queue driver만 소유합니다.
 - 근거: `emr/src/mystack/emr/application/cluster.py`,
@@ -94,18 +94,18 @@
 - 신뢰도: High
 
 <!-- section: uc-004 -->
-## UC-004: Bootstrap/Spark artifact 준비와 local 실행
+## UC-004: Bootstrap/Spark 산출물 준비와 로컬 실행
 
 - 목적/actor/trigger: EMR background driver가 bootstrap action 또는 제출된 Spark step을 시작합니다.
-- 입력: S3/local URI, 명시적 arg vector, cluster/step ID, LocalStack endpoint/credential,
-  Spark/JAR/Python 설정과 timeout.
-- 출력: runtime exit code/reason, stdout/stderr log이며 Spark가 LocalStack S3 object를 쓸 수 있습니다.
+- 입력: S3/로컬 URI, 명시적 arg vector, cluster/step ID, LocalStack 엔드포인트/credential,
+  Spark/JAR/Python 설정과 제한 시간.
+- 출력: 실행 환경 exit code/reason, stdout/stderr log이며 Spark가 LocalStack S3 object를 쓸 수 있습니다.
 - 저장/변경: work/log directory와 EMR state transition입니다.
 - 부수효과: shell 없이 S3 download와 subprocess start/signal/kill/cleanup을 수행합니다.
 - 선행조건/규칙: 허용 URI/scheme과 runner, 시작 전을 포함한 idempotent cancel. Runtime Build는
   background 작업을 시작하지 않고 Start가 scheduling을 활성화하며 Close가 설정 deadline으로
-  task와 child를 cancel/await한 뒤 artifact를 닫습니다.
-- 실패: artifact 없음, bootstrap 실패, process timeout/exit, cancel, 잘못된 application args.
+  task와 child를 cancel/await한 뒤 산출물를 닫습니다.
+- 실패: 산출물 없음, bootstrap 실패, process 제한 시간/exit, cancel, 잘못된 application args.
 - 관측: S3/process 전/후/실패 event, Python/JAR Spark S3A/cancel E2E.
 - 근거: `emr/src/mystack/emr/runtime.py`,
   `emr/src/mystack/emr/adapters/outbound/runtime.py`,
@@ -122,12 +122,12 @@
 - 저장/변경: normalized SQLite database와 선택적 초기 default database입니다.
 - 책임: `CatalogDatabase`가 normalized name과 방어적 document snapshot을 소유하고
   `DatabaseCommands`, `DatabaseQueries`, `CatalogInitializer`가 flow를 분리합니다.
-- 부수효과: 상한이 있는 SQLite transaction commit과 durable catalog publish입니다.
+- 부수효과: 상한이 있는 SQLite transaction commit과 durable 카탈로그 publish입니다.
 - 선행조건/규칙: case-normalized key, uniqueness, child constraint, 직렬화한 candidate transaction,
   최대 크기가 정해진 pagination.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, 잘못된 pagination token.
-- 관측: SQLite transaction/schema 전·후·rollback·retry event, direct/public boto3 test,
-  failure/cancellation/restart 주입 test.
+- 관측: SQLite transaction/schema 전·후·rollback·retry event, direct/공개 boto3 테스트,
+  failure/cancellation/restart 주입 테스트.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
 - 신뢰도: High
@@ -143,19 +143,19 @@
 - 책임: `CatalogTable`이 revision/archive/CAS를 소유하고 table command, query, version-query
   handler를 분리합니다.
 - 부수효과: table rename, archived version, 하위 partition key를 하나의 candidate로 commit합니다.
-  일반 GlueCatalog update는 전달받은 `metadata_location`을 원자적으로 교체하며 Mystack이 client 소유
-  Iceberg metadata를 parse하거나 rewrite하지 않습니다. 별도의 공식 Open Table Format 입력은 storage
-  port를 통해 Iceberg v2 metadata candidate를 materialize한 뒤 catalog CAS와 보상으로 공개합니다.
-  실제 client E2E로 Iceberg가 소유한 partition/schema/
+  일반 GlueCatalog update는 전달받은 `metadata_location`을 원자적으로 교체하며 Mystack이 클라이언트 소유
+  Iceberg 메타데이터를 parse하거나 rewrite하지 않습니다. 별도의 공식 Open Table Format 입력은 storage
+  port를 통해 Iceberg v2 메타데이터 candidate를 materialize한 뒤 카탈로그 CAS와 보상으로 공개합니다.
+  실제 클라이언트 E2E로 Iceberg가 소유한 partition/schema/
   sort/identifier evolution, COW/MOR row-level commit, ref, snapshot/maintenance procedure commit,
   rename/drop/purge가 이 무손실 pointer 경로와 Iceberg 소유 lifecycle 순서에서 유지되는지
   확인합니다.
 - 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작이며 하나의
-  normalized SQLite catalog가 설정한 busy timeout과 상한이 있는 writer retry를 적용합니다.
+  normalized SQLite 카탈로그가 설정한 busy 제한 시간과 상한이 있는 writer retry를 적용합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput과 modeled `ConcurrentModificationException`으로
   변환하는 domain version mismatch입니다. 잘못된 Open Table Format document는 같은 결정적
   `InvalidInputException` 경계를 사용합니다.
-- 관측: 안전한 Iceberg commit/version/conflict/persistence event, spawn process CAS test, COW/MOR
+- 관측: 안전한 Iceberg commit/version/conflict/persistence event, spawn process CAS 테스트, COW/MOR
   snapshot 근거, snapshot/ref/procedure 및 lifecycle 근거와 두 container 실제 Spark/Iceberg retry
   E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
@@ -172,22 +172,22 @@
 <!-- section: uc-007 -->
 ## UC-007: Glue partition과 batch result 관리
 
-- 목적/actor/trigger: boto3/CLI가 Create/Get/List/Update/DeletePartition 또는 batch 4개 operation을
+- 목적/actor/trigger: boto3/CLI가 Create/Get/List/Update/DeletePartition 또는 batch 4개 API 작업을
   호출합니다.
 - 입력: Catalog/database/table, partition value/input, expression, segment, pagination/schema flag.
 - 출력: Partition/list/batch document입니다. Mutation batch error는 항목별 결과입니다. 상위
   resource 부재와 `BatchGetPartition` value 수 오류는 전체 호출을 실패시킵니다. 찾지 못한 유효한
   get key는 `UnprocessedKeys`로 반환합니다.
-- 저장/변경: catalog/database/table/value tuple key의 partition record입니다.
+- 저장/변경: 카탈로그/database/table/value tuple key의 partition record입니다.
 - 책임: `CatalogPartition`이 immutable value와 cardinality를 소유하고 command, query,
   부분 성공 batch handler를 분리합니다.
 - 부수효과: 각 성공 entry mutation 뒤 candidate를 원자적으로 persist하고 publish합니다.
 - 선행조건/규칙: 상위 table 사전 확인, value와 partition key 수 일치, 지원 predicate/segment,
-  입력 순서 처리입니다. Spark Hive rename은 AWS 유지보수 Glue client의 `UpdatePartition` 경로를
+  입력 순서 처리입니다. Spark Hive rename은 AWS 유지보수 Glue 클라이언트의 `UpdatePartition` 경로를
   사용합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, item별 ErrorDetail.
-- 관측: 값을 제외한 batch 전·항목·후와 expression 단계 log, 결정적 wire contract, Glue 28개 전체
-  public Proxy E2E입니다.
+- 관측: 값을 제외한 batch 전·항목·후와 expression 단계 log, 결정적 wire 계약, Glue 28개 전체
+  공개 Proxy E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/inbound/aws.py`,
   `docs/protocols/glue/glue-partition-batch-errors.ko.md`
@@ -196,14 +196,14 @@
 <!-- section: uc-008 -->
 ## UC-008: Service resource와 EMR log 조회
 
-- 목적/actor/trigger: operator/service 소유 UI가 direct 또는 Proxy를 통해 versioned management endpoint를 호출합니다.
+- 목적/actor/trigger: operator/서비스 소유 UI가 direct 또는 Proxy를 통해 versioned management 엔드포인트를 호출합니다.
 - 입력: component/path, resource/log query, 설정된 page limit이며 management credential은 의도적으로 없습니다.
-- 출력: EMR cluster/step/log read model 또는 Glue database/table/partition tree입니다.
+- 출력: EMR cluster/step/log read 모델 또는 Glue database/table/partition tree입니다.
 - 저장/변경/event: resource mutation 없이 management access audit event만 있습니다.
-- 부수효과: 공개 gateway path를 사용하면 Proxy가 internal management HTTP를 한 번 호출합니다. 제출·resolved Step argument vector는 인증 없는 local UI에 의도적으로 제공하지만 그 값을 구조화 log에 기록하지 않습니다.
-- 선행조건/규칙: 알려진 component, 활성화한 endpoint, application API pagination, 신뢰하는 local-network 배포.
-- 실패: 비활성 endpoint, unknown component/resource, internal timeout.
-- 관측: management forwarding/component adapter log와 UI E2E.
+- 부수효과: 공개 gateway path를 사용하면 Proxy가 internal management HTTP를 한 번 호출합니다. 제출·resolved Step argument vector는 인증 없는 로컬 UI에 의도적으로 제공하지만 그 값을 구조화 log에 기록하지 않습니다.
+- 선행조건/규칙: 알려진 component, 활성화한 엔드포인트, application API pagination, 신뢰하는 로컬-network 배포.
+- 실패: 비활성 엔드포인트, unknown component/resource, internal 제한 시간.
+- 관측: management forwarding/component 어댑터 log와 UI E2E.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/proxy/src/mystack/proxy/app.py:122`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/emr/src/mystack/emr/app.py:134`,
   `/Users/leeyh0216/Documents/project/ministack-enhanced/glue/src/mystack/glue/app.py:120`
@@ -214,23 +214,23 @@
 
 - 목적/actor/trigger: operator/UI가 `/_mystack/diagnostics/threads` 또는 `/tasks`를 호출합니다.
 - 입력: diagnostic kind와 설정된 stack frame limit이며 인증 입력은 의도적으로 없습니다.
-- 출력: frame local을 제외한 thread/task metadata와 source stack line입니다.
+- 출력: frame 로컬을 제외한 thread/task 메타데이터와 원본 stack line입니다.
 - 저장/변경/event: resource mutation 없이 diagnostic access audit log만 있습니다.
-- 선행조건/규칙: diagnostics 활성화와 신뢰하는 local-network 배포.
+- 선행조건/규칙: diagnostics 활성화와 신뢰하는 로컬-network 배포.
 - 실패: disabled 또는 알 수 없는 diagnostic kind.
-- 관측: access result, component, client, 명시적인 `authentication=disabled-by-design` 근거.
+- 관측: access result, component, 클라이언트, 명시적인 `authentication=disabled-by-design` 근거.
 - 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/shared/src/mystack/aws_protocol/diagnostics.py:55`
 - 신뢰도: High
 
 <!-- section: uc-010 -->
 ## UC-010: Browser management console 운영
 
-- 목적/actor/trigger: local operator가 Proxy의 `/_mystack/ui/emr/`, `/_mystack/ui/glue/` 또는 emulator direct `/_mystack/ui/`를 엽니다.
+- 목적/actor/trigger: 로컬 operator가 Proxy의 `/_mystack/ui/emr/`, `/_mystack/ui/glue/` 또는 emulator direct `/_mystack/ui/`를 엽니다.
 - 입력: cluster/Step form과 action, database/table/tab 선택, refresh, log stream control.
-- 출력: 접근 가능한 lifecycle/status, log/publication 근거, Glue schema/partition metadata, route/stack view입니다.
-- 저장/변경: browser 선택 상태를 유지합니다. Read는 management endpoint, EMR mutation은 public AWS endpoint와 기존 application use case를 사용합니다.
-- 선행조건/규칙: 각 emulator가 자기 React/TypeScript application을 package하고 Proxy는 안정 path만 전달합니다. 공통 primitive와 Tailwind semantic token은 service 방향으로만 의존하며 설정 polling 주기, keyboard/ARIA tab 계약, array를 shell parsing하지 않는 규칙을 지킵니다.
-- 실패: unavailable component/endpoint 또는 modeled AWS error는 secret 없이 표시하며 가능한 경우 AWS code/request ID를 보존합니다.
+- 출력: 접근 가능한 lifecycle/status, log/publication 근거, Glue schema/partition 메타데이터, route/stack view입니다.
+- 저장/변경: browser 선택 상태를 유지합니다. Read는 management 엔드포인트, EMR mutation은 공개 AWS 엔드포인트와 기존 application use case를 사용합니다.
+- 선행조건/규칙: 각 emulator가 자기 React/TypeScript application을 package하고 Proxy는 안정 path만 전달합니다. 공통 primitive와 Tailwind semantic token은 서비스 방향으로만 의존하며 설정 polling 주기, keyboard/ARIA tab 계약, array를 shell parsing하지 않는 규칙을 지킵니다.
+- 실패: unavailable component/엔드포인트 또는 modeled AWS error는 secret 없이 표시하며 가능한 경우 AWS code/request ID를 보존합니다.
 - 관측: Playwright cluster/Step/Glue/keyboard/browser E2E, protocol 경계 log와 screenshot.
 - 근거: `ui/src/components.tsx`, `emr/ui/src/App.tsx`, `glue/ui/src/App.tsx`,
   `proxy/src/mystack/proxy/forwarder.py`, `tests/e2e/test_console_browser.py`
@@ -242,36 +242,36 @@
 - 목적/actor/trigger: `develop` 또는 `main` 직접 push의 CI가 성공하면 정확한 SHA의 post-CI 게시를
   승인합니다.
 - 입력: root `VERSION`, branch/event 정책, 파일 설정 package, Dockerfile, platform, Trivy 정책,
-  명시적 timeout.
-- 출력: 변경 불가 GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index, scan/release artifact입니다.
-  익명 public pull은 일회성 package visibility 전환 뒤에만 가능합니다.
-- 저장/변경: GHCR package, workflow artifact, 정식 main release의 annotated Git tag와 GitHub
+  명시적 제한 시간.
+- 출력: 변경 불가 GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index, scan/release 산출물입니다.
+  익명 공개 pull은 일회성 package visibility 전환 뒤에만 가능합니다.
+- 저장/변경: GHCR package, 워크플로 산출물, 정식 main release의 annotated Git tag와 GitHub
   Release입니다.
 - 부수효과: 게시자 token login, image build/push/pull, scanner DB/image download와 1회성 수동
   package visibility 전환입니다.
-- 선행조건/규칙: 정확한 SHA의 `CI` 성공, 허용된 source event와 branch, 같은 SHA의 변경 불가 재시도,
-  일회성 `GITHUB_TOKEN`, public consumer visibility, amd64+arm64 index, `latest` 미사용.
+- 선행조건/규칙: 정확한 SHA의 `CI` 성공, 허용된 원본 event와 branch, 같은 SHA의 변경 불가 재시도,
+  일회성 `GITHUB_TOKEN`, 공개 consumer visibility, amd64+arm64 index, `latest` 미사용.
 - 실패: Version 불일치 또는 비증가, 다른 SHA binding, permission, build/push, 익명 platform 검증,
-  timeout, vulnerability policy.
-- 관측: registry 전/후/실패 event와 upload evidence.
+  제한 시간, vulnerability policy.
+- 관측: registry 전/후/실패 event와 upload 검증 정보.
 - 근거: `.github/workflows/release.yml`, `.github/workflows/container-publish.yml`,
   `scripts/release/release_policy.py`, `scripts/release/github_release.py`, `scripts/release/registry_release.py`
-- 신뢰도: 결정적 정책과 transaction test는 High이며 remote 게시는 GitHub runner 및 package
+- 신뢰도: 결정적 정책과 transaction 테스트는 High이며 remote 게시는 GitHub runner 및 package
   visibility 상태의 영향을 받습니다.
 
 <!-- section: uc-012 -->
-## UC-012: AWS SDK for pandas data와 metadata 왕복
+## UC-012: AWS SDK for pandas data와 메타데이터 왕복
 
 - 목적/actor/trigger: Python application이 AWS SDK for pandas 3.17.0으로 S3 Parquet dataset과
-  Glue Catalog metadata를 함께 관리합니다.
+  Glue Catalog 메타데이터를 함께 관리합니다.
 - 입력: DataFrame, S3 dataset URI, database/table 이름, partition column과 boto3 session입니다.
 - 출력: 기록한 object 경로, Glue type/table/partition, 다시 읽은 DataFrame입니다.
 - 저장/변경: LocalStack S3의 partitioned Parquet object와 Glue emulator의 database/table/partition입니다.
-- 부수효과: 모든 S3와 Glue 호출을 하나의 공개 Proxy endpoint로 보냅니다.
+- 부수효과: 모든 S3와 Glue 호출을 하나의 공개 Proxy 엔드포인트로 보냅니다.
 - 선행조건/규칙: `AWS_ENDPOINT_URL_S3`와 `AWS_ENDPOINT_URL_GLUE`를 같은 Proxy로 지정하며
   `HeadObject`의 representation `Content-Length`를 보존합니다.
-- 실패: S3 metadata 손실, 지원하지 않는 Glue operation, Parquet data 손상, 명시적 E2E timeout입니다.
-- 관측: Proxy route/forward 전·후·실패 event와 Glue operation/repository event를 남기며 test는
+- 실패: S3 메타데이터 손실, 지원하지 않는 Glue API 작업, Parquet data 손상, 명시적 E2E 제한 시간입니다.
+- 관측: Proxy route/forward 전·후·실패 event와 Glue API 작업/repository event를 남기며 테스트는
   생성한 resource를 정리합니다.
 - 검증: partition 두 개의 write/read, Glue table type과 partition, S3
   [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)를 확인합니다.
@@ -280,20 +280,20 @@
 - 신뢰도: High
 
 <!-- section: uc-013 -->
-## UC-013: 문서화된 Glue timeout 또는 internal failure 재현
+## UC-013: 문서화된 Glue 제한 시간 또는 internal failure 재현
 
 - 목적/actor/trigger: Maintainer가 Glue emulator 시작 전에 YAML fault rule을 활성화하고 해당
-  operation에 유효한 boto3/CLI 요청을 보냅니다.
-- 입력: 고유 rule ID, 구현한 28개 operation 중 하나, `OperationTimeoutException` 또는
+  API 작업에 유효한 boto3/CLI 요청을 보냅니다.
+- 입력: 고유 rule ID, 구현한 28개 API 작업 중 하나, `OperationTimeoutException` 또는
   `InternalServiceException`, response message입니다.
 - 출력: 결정적인 code/status/message와 request ID가 있는 modeled AWS JSON error입니다.
-- 저장/변경: 없으며 handler와 catalog repository를 호출하지 않습니다.
+- 저장/변경: 없으며 handler와 카탈로그 repository를 호출하지 않습니다.
 - 책임: Type이 있는 application policy가 설정 값을 보유하고 inbound `GlueFaultInjector`가 rule을
   선택하며 공통 controller가 wire serialization을 담당합니다.
 - 부수효과: Configuration loading 뒤에는 없습니다.
-- 선행조건/규칙: 공식 요청 구조/value 검증이 injection보다 먼저이며 operation마다 rule 하나만
-  허용합니다. 인증·인가 오류와 알 수 없는 operation은 시작 시 거부합니다.
-- 실패: 잘못된 설정은 service 시작을 막고 일치하지 않는 operation은 자연스러운 catalog 경로를
+- 선행조건/규칙: 공식 요청 구조/value 검증이 injection보다 먼저이며 API 작업마다 rule 하나만
+  허용합니다. 인증·인가 오류와 알 수 없는 API 작업은 시작 시 거부합니다.
+- 실패: 잘못된 설정은 서비스 시작을 막고 일치하지 않는 API 작업은 자연스러운 카탈로그 경로를
   따릅니다.
 - 관측: `glue.error.decision`이 요청 값과 설정 response message 없이 condition/rule/phase/code와
   mutation 보장을 기록합니다.
@@ -303,15 +303,15 @@
 - 신뢰도: High
 
 <!-- section: uc-014 -->
-## UC-014: 결정적인 Glue catalog 오류 판단 적용
+## UC-014: 결정적인 Glue 카탈로그 오류 판단 적용
 
-- 목적/actor/trigger: boto3, Spark, AWS SDK for pandas client가 구현된 database, table,
-  table-version, import-status operation 중 하나를 수행합니다.
-- 입력: 공식 model 요청과 현재 local catalog 상태이며 version, projection, pagination, archive,
+- 목적/actor/trigger: boto3, Spark, AWS SDK for pandas 클라이언트가 구현된 database, table,
+  table-version, import-status API 작업 중 하나를 수행합니다.
+- 입력: 공식 모델 요청과 현재 로컬 카탈로그 상태이며 version, projection, pagination, archive,
   설정 fault 값은 선택입니다.
-- 출력: 성공 document 또는 첫 번째 결정적인 modeled validation/not-found/conflict/concurrency/system
+- 출력: 성공 document 또는 첫 번째 결정적인 modeled 유효성 검사/not-found/conflict/concurrency/system
   오류입니다.
-- 저장/변경: 성공 mutation은 새 catalog revision 하나를 commit하고 실패 candidate는 visible/durable
+- 저장/변경: 성공 mutation은 새 카탈로그 revision 하나를 commit하고 실패 candidate는 visible/durable
   snapshot을 보존합니다.
 - 책임: Inbound family는 wire 전용 projection, application aggregate는 resource 순서/archive/rename/
   cascade, repository는 atomic persistence, error boundary는 code를 담당합니다.
@@ -320,7 +320,7 @@
   durable commit → publication 순서이며 인증과 외부 federation 상태는 제외합니다.
 - 실패: `InvalidInputException`, `EntityNotFoundException`, `AlreadyExistsException`,
   `ConcurrentModificationException`, 정제되거나 설정한 system 오류입니다.
-- 관측: 요청 값 없이 operation boundary, condition ID, mutation 보장, transaction rollback,
+- 관측: 요청 값 없이 API 작업 boundary, condition ID, mutation 보장, transaction rollback,
   persistence 전·후·실패 event를 기록합니다.
 - 근거: `docs/protocols/glue/glue-database-table-errors.ko.md`,
   `glue/tests/test_database_table_error_semantics.py`,
@@ -330,22 +330,22 @@
 <!-- section: uc-015 -->
 ## UC-015: Glue Iceberg table optimizer 관리와 실행
 
-- 목적/actor/trigger: boto3가 compaction, retention, orphan-file optimizer를 관리하고 service
+- 목적/actor/trigger: boto3가 compaction, retention, orphan-파일 optimizer를 관리하고 서비스
   scheduler가 실행 시각이 된 run을 claim합니다.
-- 입력: catalog/database/table/type, 공식 `TableOptimizerConfiguration`, pagination, file에 설정한
+- 입력: 카탈로그/database/table/type, 공식 `TableOptimizerConfiguration`, pagination, 파일에 설정한
   scheduler/process limit입니다.
 - 출력: AWS API 여섯 개 응답, 부분 batch 실패, 상한이 있는 run history, typed metric, run별 Spark
   stdout/stderr입니다.
-- 저장/변경: catalog schema 3 안의 optimizer configuration, revision, next-run time, 연속 실패 수,
-  run history입니다. Iceberg procedure가 metadata를 commit하고 LocalStack S3 object를 바꿀 수 있습니다.
+- 저장/변경: 카탈로그 schema 3 안의 optimizer 설정, revision, next-run time, 연속 실패 수,
+  run history입니다. Iceberg procedure가 메타데이터를 commit하고 LocalStack S3 object를 바꿀 수 있습니다.
 - 책임: optimizer domain이 기본값과 transition, application command/query가 aggregate mutation,
-  runtime이 task, outbound adapter가 subprocess/file, Spark entrypoint가 Iceberg procedure를 소유합니다.
+  실행 환경이 task, outbound 어댑터가 subprocess/파일, Spark entrypoint가 Iceberg procedure를 소유합니다.
 - 선행조건/규칙: Iceberg table과 location 존재, compaction은 Parquet, retention/orphan 주기 3–168시간,
-  table 내부 orphan location, 설정된 concurrency와 timeout입니다.
-- 실패: InvalidInput, EntityNotFound, AlreadyExists, 항목별 batch 오류, 결정적인 process timeout/failure,
+  table 내부 orphan location, 설정된 concurrency와 제한 시간입니다.
+- 실패: InvalidInput, EntityNotFound, AlreadyExists, 항목별 batch 오류, 결정적인 process 제한 시간/failure,
   네 번 실패한 compaction 비활성화입니다. IAM/인가는 없습니다.
 - 관측: claim, transition, scheduler, process, result decode 전후/stale/failure event와 수정 안내를
-  기록하며 raw configuration과 credential은 제외합니다.
+  기록하며 raw 설정과 credential은 제외합니다.
 - 근거: `glue/src/mystack/glue/application/table_optimizer.py`,
   `glue/src/mystack/glue/application/table_optimizer_runtime.py`,
   `glue/src/mystack/glue/adapters/outbound/table_optimizer_executor.py`,
@@ -354,21 +354,21 @@
 - 신뢰도: 문서화한 Glue 5/Spark 3.5.4/Iceberg 1.7.1 경로는 High.
 
 <!-- section: uc-016 -->
-## UC-016: Test 선언 compatibility evidence 생성
+## UC-016: Test 선언 compatibility 검증 정보 생성
 
-- 목적/actor/trigger: Contributor가 contract 또는 E2E test에 typed compatibility annotation을 추가한 뒤
-  compatibility evidence check 또는 generation 명령을 실행합니다.
-- 입력: 수집한 pytest metadata, 고정 workspace/runtime 사실, 등록된 EMR/Glue operation, commit된
-  generated artifact입니다.
-- 출력: 결정적인 case evidence, 한·영 annotated-evidence 문서, CI matrix이며 check는 중복/잘못된
-  metadata, stale output, evidence/registry 불일치를 보고합니다.
-- 저장/변경: generation은 review 가능한 compatibility evidence artifact만 갱신하며 collection은 test
-  body를 실행하지 않습니다.
-- 선행조건/규칙: strict pytest marker 등록, 상한이 있는 collection timeout, collection 중 금지한
-  heavyweight client import 없음, public-Proxy 호환 verification boundary입니다.
-- 실패: 잘못되거나 중복된 case ID, 알 수 없는 operation, source/test metadata 누락, timeout 또는
-  generated-file drift입니다.
-- 관측: case count와 source digest를 포함하는 collection/compile/parity 구조화 event입니다.
+- 목적/actor/trigger: Contributor가 계약 또는 E2E 테스트에 typed compatibility annotation을 추가한 뒤
+  compatibility 검증 정보 check 또는 generation 명령을 실행합니다.
+- 입력: 수집한 pytest 메타데이터, 고정된 작업 공간/런타임 정보, 등록된 EMR/Glue API 작업, 원본 정책
+  파일입니다.
+- 출력: 결정적인 사례 기록, 한·영 주석 보고서, CI 매트릭스이며 검사는 중복·잘못된 메타데이터,
+  오래된 출력, 검증 정보/레지스트리 불일치를 보고합니다.
+- 저장/변경: 생성은 무시되는 `ci-artifacts/compatibility/` 파일만 쓰며 수집은 테스트 본문을 실행하지
+  않습니다.
+- 선행조건/규칙: strict pytest marker 등록, 상한이 있는 collection 제한 시간, collection 중 금지한
+  heavyweight 클라이언트 import 없음, 공개-Proxy 호환 verification boundary입니다.
+- 실패: 잘못되거나 중복된 사례 ID, 알 수 없는 API 작업, 원본/테스트 메타데이터 누락, 제한 시간 초과
+  또는 산출물 불일치입니다.
+- 관측: case count와 원본 digest를 포함하는 collection/compile/parity 구조화 event입니다.
 - 근거: `scripts/compatibility/compatibility_evidence.py`, `tests/support/compatibility_plugin.py`,
   `contracts/compatibility-scope-policy.yaml`, `tests/test_compatibility_evidence.py`.
 - 신뢰도: High
@@ -379,9 +379,9 @@
 - 범위: Markdown-first 탐색 계층이 사용자 작업과 구현 인벤토리를 분리하며 정적 문서 site는 나중에
   결정합니다.
 - 사용자 결과: 사용자는 구현 detail 없이 Compose를 시작하고 Glue 또는 EMR을 고르며 설정·운영 문서와
-  지원 또는 미지원 client 경로를 찾을 수 있어야 합니다.
-- Contributor 결과: contributor는 사용자 문서를 과도하게 늘리지 않고 API/endpoint 인벤토리, runtime
-  architecture, configuration key, CI 근거, protocol 수정 위치를 찾을 수 있어야 합니다.
+  지원 또는 미지원 클라이언트 경로를 찾을 수 있어야 합니다.
+- Contributor 결과: contributor는 사용자 문서를 과도하게 늘리지 않고 API/엔드포인트 인벤토리, 실행 환경
+  architecture, 설정 key, CI 근거, protocol 수정 위치를 찾을 수 있어야 합니다.
 - 근거: #79, #81, #87; [Spark 문서 index](https://spark.apache.org/docs/latest/),
   [Trino deployment 문서](https://trino.io/docs/current/installation/deployment.html).
 - 신뢰도: Candidate이며 구현은 issue로 추적하고 정적 site를 아직 확정하지 않았습니다.

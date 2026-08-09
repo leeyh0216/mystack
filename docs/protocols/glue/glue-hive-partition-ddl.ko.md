@@ -17,7 +17,7 @@
 
 Mystack은 Spark SQL을 parse하지 않습니다. Spark 3.5가 DDL 문법, type 검사, `IF EXISTS`/
 `IF NOT EXISTS`, S3 directory 탐색, cache 무효화, command 오류를 소유합니다. Mystack은 공식
-Glue Hive metastore client가 사용하는 Glue catalog operation을 제공합니다. 이 경계는 AWS가
+Glue Hive metastore 클라이언트가 사용하는 Glue 카탈로그 API 작업을 제공합니다. 이 경계는 AWS가
 [Data Catalog를 외부 Hive
 metastore](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)로
 설명한 내용을 따릅니다.
@@ -25,7 +25,7 @@ metastore](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-g
 <!-- section: mapping -->
 ## DDL과 Glue mapping
 
-| Spark/Hive 동작 | Glue catalog surface |
+| Spark/Hive 동작 | Glue 카탈로그 surface |
 | --- | --- |
 | `ADD PARTITION`, 다중 add | `CreatePartition`, `BatchCreatePartition` |
 | 존재 여부 검사와 `SHOW PARTITIONS` | `GetPartition`, `BatchGetPartition`, `GetPartitions` |
@@ -45,42 +45,42 @@ DDL 형식과 type이 있는 partition literal은 공식 [Spark 3.5 `ALTER TABLE
 
 Partition identity는 table `PartitionKeys` 순서의 tuple입니다. `/`, `=`, 공백, Unicode를 포함한
 value를 string 그대로 보존합니다. Rename은 이 tuple을 변경하고 목적지가 이미 있으면 거부합니다.
-이때 model에 있는 `InvalidInputException`을 반환합니다. Rename은 AWS가 관리하는 Glue Hive client의
-`UpdatePartition` 호출을 따릅니다. API 문서와 client code 차이, 정확한 첫 오류 순서는
+이때 모델에 있는 `InvalidInputException`을 반환합니다. Rename은 AWS가 관리하는 Glue Hive 클라이언트의
+`UpdatePartition` 호출을 따릅니다. API 문서와 클라이언트 code 차이, 정확한 첫 오류 순서는
 [partition/batch 오류 계약](glue-partition-batch-errors.ko.md)에 기록했습니다. `SET LOCATION`은 Hive
-client가 전달한 partition input으로 교체하면서 creation time을 유지합니다.
+클라이언트가 전달한 partition input으로 교체하면서 creation time을 유지합니다.
 Partition mutation은 새 table version을 만들지 않습니다.
 
-Glue batch API는 결정적 partial-success operation입니다. Entry를 request 순서로 실행하고 성공한
-entry는 commit 상태로 남기며 실패한 각 entry는 `Errors`에 포함합니다. 단건 operation은 request
+Glue batch API는 결정적 partial-success API 작업입니다. Entry를 request 순서로 실행하고 성공한
+entry는 commit 상태로 남기며 실패한 각 entry는 `Errors`에 포함합니다. 단건 API 작업은 request
 전체가 실패합니다. Spark가 API를 선택하기 전에 자체 preflight 검사를 할 수 있으므로 SQL 수준
-exception은 Spark가 소유하고 최종 metadata는 Glue가 소유합니다.
+exception은 Spark가 소유하고 최종 메타데이터는 Glue가 소유합니다.
 
-Emulator에서 Glue metadata 호출은 S3 object를 생성·복사·rename·삭제하지 않습니다. Repair 탐색과
-filesystem side effect는 Spark/Hadoop이 소유합니다. CI contract는 external table의 catalog
+Emulator에서 Glue 메타데이터 호출은 S3 object를 생성·복사·rename·삭제하지 않습니다. Repair 탐색과
+filesystem side effect는 Spark/Hadoop이 소유합니다. CI 계약는 external table의 카탈로그
 partition을 drop해도 기존 S3 data가 남는지 증명합니다. `SET LOCATION`은 data를 복사하지 않고
-metadata만 갱신합니다.
+메타데이터만 갱신합니다.
 
 <!-- section: diagnose -->
 ## 검증과 진단
 
-실제 port를 사용하는 좁은 boto3 contract는 add, partial multi-add, rename, location update,
+실제 port를 사용하는 좁은 boto3 계약는 add, partial multi-add, rename, location update,
 collision, partial delete, 복잡한 값, table version 불변을 검사합니다. CI 전용 Glue 5/Spark 3.5
-scenario는 LocalStack S3를 대상으로 단건/다건 add, 두 `IF` 변형, rename, location update, drop,
+시나리오는 LocalStack S3를 대상으로 단건/다건 add, 두 `IF` 변형, rename, location update, drop,
 기본/ADD/DROP/SYNC repair와 `ALTER TABLE RECOVER PARTITIONS`를 실행합니다. 각 SQL 경계 전후에
-`MYSTACK_E2E_SCENARIO`를 출력하며 설정된 E2E timeout을 사용합니다.
+`MYSTACK_E2E_SCENARIO`를 출력하며 설정된 E2E 제한 시간을 사용합니다.
 
-이후 Spark나 Glue Hive client 변경에 대응할 때 generic AWS dispatcher의 operation 및 payload
+이후 Spark나 Glue Hive 클라이언트 변경에 대응할 때 generic AWS dispatcher의 API 작업 및 payload
 fingerprint log와 repository transaction event를 먼저 확인합니다. SQL이 Mystack에 도착하지 않으면
-Spark/Glue client 설정이나 E2E SQL을 수정합니다. Operation 요청 구조가 바뀌면 inbound partition/batch
-operation family, metadata 규칙이 바뀌면 partition command나 batch application handler를
-수정합니다. Repository adapter는 collection persistence만 유지합니다.
+Spark/Glue 클라이언트 설정이나 E2E SQL을 수정합니다. Operation 요청 구조가 바뀌면 inbound partition/batch
+API 작업 family, 메타데이터 규칙이 바뀌면 partition command나 batch application handler를
+수정합니다. Repository 어댑터는 collection persistence만 유지합니다.
 
 <!-- section: exclusions -->
 ## 제외 범위
 
 Hive authorization, lock, transaction, statistics, crawler discovery, managed table data 삭제,
-문서화되지 않은 client 동작은 여기서 보장하지 않습니다. 일반 인증·인가, Lake Formation,
+문서화되지 않은 클라이언트 동작은 여기서 보장하지 않습니다. 일반 인증·인가, Lake Formation,
 cross-account, cross-Region 의미론도 프로젝트 범위 밖입니다.
 
 <!-- section: sources -->

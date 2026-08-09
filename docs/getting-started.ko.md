@@ -9,12 +9,12 @@
 ## 목차
 
 - [Docker Compose 시작](#docker-compose-시작)
-- [AWS client 연결](#aws-client-연결)
+- [AWS 클라이언트 연결](#aws-클라이언트-연결)
 - [작업별 다음 문서](#작업별-다음-문서)
 - [공식 참고 자료](#공식-참고-자료)
 <!-- toc:end -->
 
-게시된 Docker Compose stack을 시작하고 동작을 확인한 뒤 AWS client를 로컬 endpoint에 연결합니다.
+게시된 Docker Compose stack을 시작하고 동작을 확인한 뒤 AWS 클라이언트를 로컬 엔드포인트에 연결합니다.
 
 <!-- section: start -->
 ## Docker Compose 시작
@@ -32,13 +32,13 @@ docker compose -f compose.ghcr.yaml up --detach --wait --wait-timeout 300
 curl --fail http://localhost:4566/_mystack/health
 ```
 
-Host endpoint는 `http://localhost:4566`입니다. 같은 Compose network의 container에서는
+Host 엔드포인트는 `http://localhost:4566`입니다. 같은 Compose network의 container에서는
 `http://proxy:8080`을 사용합니다.
 
 <!-- section: clients -->
-## AWS client 연결
+## AWS 클라이언트 연결
 
-각 AWS service client에 같은 endpoint와 로컬 개발용 credential을 사용합니다.
+각 AWS 서비스 클라이언트에 같은 엔드포인트와 로컬 개발용 credential을 사용합니다.
 
 ```bash
 export AWS_ACCESS_KEY_ID=test
@@ -72,7 +72,7 @@ Linux에서는 필요한 경우 Docker `host-gateway` mapping을 추가합니다
 
 - [Glue Data Catalog](glue.ko.md): boto3, AWS SDK for pandas, Spark Hive, Iceberg.
 - [Amazon EMR](emr.ko.md): cluster, bootstrap action, Spark/PySpark Step, log.
-- [설정](configuration.ko.md): port, timeout, path, mount configuration.
+- [설정](configuration.ko.md): port, 제한 시간, path, mount 설정.
 - [운영](operations.ko.md): 관리 UI, 진단, upgrade, cleanup.
 
 <!-- section: sources -->

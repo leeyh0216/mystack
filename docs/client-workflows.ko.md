@@ -9,7 +9,7 @@
 ## 목차
 
 - [작업 흐름 선택](#작업-흐름-선택)
-- [하나의 endpoint와 두 서비스](#하나의-endpoint와-두-서비스)
+- [하나의 엔드포인트와 두 서비스](#하나의-엔드포인트와-두-서비스)
 - [AWS CLI와 boto3](#aws-cli와-boto3)
 - [AWS SDK for pandas](#aws-sdk-for-pandas)
 - [Spark Hive와 Iceberg](#spark-hive와-iceberg)
@@ -19,7 +19,7 @@
 <!-- toc:end -->
 
 이 문서에서는 클라이언트별 요청 경로와 필요한 설정을 먼저 확인한 뒤 예제를 실행합니다. Mystack은
-AWS protocol control plane을 위한 로컬 endpoint이며, 모든 AWS 분석 서비스를 대체하지는 않습니다.
+AWS protocol control plane을 위한 로컬 엔드포인트이며, 모든 AWS 분석 서비스를 대체하지는 않습니다.
 
 <!-- section: choose -->
 ## 작업 흐름 선택
@@ -31,15 +31,15 @@ AWS protocol control plane을 위한 로컬 endpoint이며, 모든 AWS 분석 �
 | Spark SQL | Hive metastore 호환 Glue Catalog | Proxy의 Glue, LocalStack S3 | 수직 경로 검증됨 |
 | Spark Iceberg | Iceberg `GlueCatalog` | Proxy의 Glue, LocalStack S3 | 수직 경로 검증됨 |
 
-정확한 지원 operation과 version은 [호환성 matrix](compatibility/client-matrix.ko.md)를 확인합니다.
+정확한 지원 API 작업과 version은 [호환성 matrix](compatibility/client-matrix.ko.md)를 확인합니다.
 
 <!-- section: endpoint -->
-## 하나의 endpoint와 두 서비스
+## 하나의 엔드포인트와 두 서비스
 
 호스트에서는 모든 AWS control-plane 요청을 `http://localhost:4566`으로 보냅니다. Mystack Compose
-network에 연결한 client container에서는 Glue/EMR에 `http://proxy:8080`, S3 object에는
-`http://localstack:4566`을 사용합니다. Proxy는 Glue target을 Glue service로, EMR target을 EMR
-service로, emulation하지 않는 service를 LocalStack으로 전달합니다.
+network에 연결한 클라이언트 container에서는 Glue/EMR에 `http://proxy:8080`, S3 object에는
+`http://localstack:4566`을 사용합니다. Proxy는 Glue 대상을 Glue 서비스로, EMR 대상을 EMR
+서비스로, emulation하지 않는 서비스를 LocalStack으로 전달합니다.
 
 ```text
 client -> proxy:8080 -> Glue Catalog API -> SQLite catalog
@@ -47,7 +47,7 @@ client -> proxy:8080 -> Glue Catalog API -> SQLite catalog
                   `-> S3 API           -> LocalStack S3
 ```
 
-SDK client에는 아래 local credential을 설정합니다.
+SDK 클라이언트에는 아래 로컬 credential을 설정합니다.
 
 ```bash
 export AWS_ACCESS_KEY_ID=test
@@ -59,8 +59,8 @@ export AWS_EC2_METADATA_DISABLED=true
 <!-- section: aws -->
 ## AWS CLI와 boto3
 
-두 service에 동일한 public endpoint를 사용합니다. Glue 호출은 Catalog metadata를 생성하거나 읽고,
-EMR 호출은 local cluster model을 생성하며 Step 요청 시 Spark 작업을 queue에 넣습니다.
+두 서비스에 동일한 공개 엔드포인트를 사용합니다. Glue 호출은 Catalog 메타데이터를 생성하거나 읽고,
+EMR 호출은 로컬 cluster 모델을 생성하며 Step 요청 시 Spark 작업을 queue에 넣습니다.
 
 ```bash
 aws --endpoint-url http://localhost:4566 glue create-database \
@@ -76,7 +76,7 @@ Step은 S3 bucket 생성, application upload, `RunJobFlow`, `WAITING` 대기, `A
 <!-- section: pandas -->
 ## AWS SDK for pandas
 
-AWS SDK for pandas의 catalog/S3 helper는 내부적으로 boto3 client를 사용합니다. 두 endpoint를 Mystack으로
+AWS SDK for pandas의 카탈로그/S3 helper는 내부적으로 boto3 클라이언트를 사용합니다. 두 엔드포인트를 Mystack으로
 설정한 뒤 일반 dataset write/read 흐름을 사용합니다.
 
 ```bash
@@ -98,13 +98,13 @@ wr.s3.to_parquet(
 )
 ```
 
-이 경로는 dataset metadata에 Glue, file에 S3를 사용합니다. Athena 기반 helper는 현재 로컬 범위 밖입니다.
+이 경로는 dataset 메타데이터에 Glue, 파일에 S3를 사용합니다. Athena 기반 helper는 현재 로컬 범위 밖입니다.
 
 <!-- section: spark -->
 ## Spark Hive와 Iceberg
 
-Spark는 metadata에는 Glue 호환 Catalog, data에는 LocalStack을 연결합니다. Compose client container에서는
-두 endpoint를 별도로 설정합니다.
+Spark는 메타데이터에는 Glue 호환 Catalog, data에는 LocalStack을 연결합니다. Compose 클라이언트 container에서는
+두 엔드포인트를 별도로 설정합니다.
 
 ```text
 # Hive metastore 호환 Catalog
@@ -125,7 +125,7 @@ spark.sql.catalog.mystack.warehouse=s3://mystack-example/warehouse
 ```
 
 Hive table에는 Hive SQL을, Iceberg table에는 `mystack.namespace.table` 이름을 사용합니다. data와
-Iceberg metadata는 S3에서 client가 소유하고, Mystack은 Glue Catalog 요청과 versioning을 처리합니다.
+Iceberg 메타데이터는 S3에서 클라이언트가 소유하고, Mystack은 Glue Catalog 요청과 versioning을 처리합니다.
 
 <!-- section: format -->
 ## 이 문서를 읽는 방법
@@ -133,12 +133,12 @@ Iceberg metadata는 S3에서 client가 소유하고, Mystack은 Glue Catalog 요
 이 흐름은 AWS, Spark, Trino 문서의 task 중심 형식을 따릅니다. workload를 고르고, 사전조건을 확인한 뒤,
 최소 설정을 적용하고, 하나의 완전한 command 또는 program을 실행한 다음 결과와 제한을 확인합니다. Trino는
 connector의 metastore와 filesystem 사전조건을 설명하는 형식 참고 자료이며 Mystack 지원 주장에는 포함되지
-않습니다. workflow에 client를 채택하기 전 [지원 범위](support-scope.ko.md)와 호환성 matrix를 확인합니다.
+않습니다. 워크플로에 클라이언트를 채택하기 전 [지원 범위](support-scope.ko.md)와 호환성 표를 확인합니다.
 
 <!-- section: labs -->
 ## 해당 lab 실행
 
-아래 folder에는 client image, Compose override, sample workload, stack과 client를 함께 시작하는 명령이
+아래 folder에는 클라이언트 image, Compose override, sample workload, stack과 클라이언트를 함께 시작하는 명령이
 있습니다.
 
 - `examples/clients/aws/` — AWS CLI, boto3, AWS SDK for pandas

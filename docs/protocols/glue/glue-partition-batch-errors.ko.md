@@ -9,7 +9,7 @@
 ## 목차
 
 - [검증 계층과 첫 번째 오류](#검증-계층과-첫-번째-오류)
-- [단일 operation 판단](#단일-operation-판단)
+- [단일 API 작업 판단](#단일-api-작업-판단)
 - [Update와 Spark Hive rename](#update와-spark-hive-rename)
 - [Batch 순서와 부분 성공](#batch-순서와-부분-성공)
 - [Logging, 시험과 수정 위치](#logging-시험과-수정-위치)
@@ -17,8 +17,8 @@
 - [공식 참고 자료](#공식-참고-자료)
 <!-- toc:end -->
 
-이 문서는 Mystack이 구현한 partition operation 9개의 결정적인 동작을 정의합니다. 공개 AWS Glue
-API 문서와 고정한 botocore model을 기준으로 합니다. 실 AWS 계정을 호출하는 시험이나 판단은
+이 문서는 Mystack이 구현한 partition API 작업 9개의 결정적인 동작을 정의합니다. 공개 AWS Glue
+API 문서와 고정한 botocore 모델을 기준으로 합니다. 실 AWS 계정을 호출하는 시험이나 판단은
 없습니다. Operation 목록의 단일 기준은 생성한 [Glue 오류
 표](../../compatibility/api-coverage.md)입니다.
 
@@ -41,7 +41,7 @@ AWS가 여러 오류 조건 사이의 우선순위를 공개하지 않은 경우
 문서화되지 않은 AWS 순서와 같다고 주장하지 않습니다.
 
 <!-- section: operations -->
-## 단일 operation 판단
+## 단일 API 작업 판단
 
 | Operation | Wire 검증과 오류 주입 뒤의 application 순서 |
 | --- | --- |
@@ -60,21 +60,21 @@ AWS가 여러 오류 조건 사이의 우선순위를 공개하지 않은 경우
 
 공개 [`UpdatePartition`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdatePartition.html)
 문서는 `PartitionInput.Values`를 바꿀 수 없다고 설명합니다. 하지만 AWS가 관리하는 Glue Hive
-client의 `renamePartition`은 이전 `PartitionValueList`와 새 partition value를
-`UpdatePartition`에 전달합니다([고정한 client
+클라이언트의 `renamePartition`은 이전 `PartitionValueList`와 새 partition value를
+`UpdatePartition`에 전달합니다([고정한 클라이언트
 코드](https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore/blob/53d09f0c97edb913b02e00904b6620ea7468e8f5/aws-glue-datacatalog-spark-client/src/main/java/com/amazonaws/glue/catalog/metastore/AWSCatalogMetastoreClient.java#L1351-L1385),
 [delegate
 코드](https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore/blob/53d09f0c97edb913b02e00904b6620ea7468e8f5/aws-glue-datacatalog-client-common/src/main/java/com/amazonaws/glue/catalog/metastore/GlueMetastoreClientDelegate.java#L1814-L1822)).
 
-Mystack은 공식 유지보수 client의 Spark/Hive rename 경로를 지원합니다. `Values`를 생략하면 기존
-tuple을 유지합니다. 새 tuple이 이미 있으면 model에 있는 `InvalidInputException`을 반환합니다.
-`UpdatePartition` API 문서와 고정 botocore operation model에는 `AlreadyExistsException`이 없기
-때문입니다. 이 호환성 결정은 local contract와 CI 전용 Spark Hive DDL 시나리오에서 검증합니다.
+Mystack은 공식 유지보수 클라이언트의 Spark/Hive rename 경로를 지원합니다. `Values`를 생략하면 기존
+tuple을 유지합니다. 새 tuple이 이미 있으면 모델에 있는 `InvalidInputException`을 반환합니다.
+`UpdatePartition` API 문서와 고정 botocore API 작업 모델에는 `AlreadyExistsException`이 없기
+때문입니다. 이 호환성 결정은 로컬 계약와 CI 전용 Spark Hive DDL 시나리오에서 검증합니다.
 
 <!-- section: batches -->
 ## Batch 순서와 부분 성공
 
-모든 batch는 항목 처리 전에 상위 table을 확인합니다. 상위 table이 없으면 operation 수준의
+모든 batch는 항목 처리 전에 상위 table을 확인합니다. 상위 table이 없으면 API 작업 수준의
 `EntityNotFoundException`을 반환합니다. 항목 오류나 비어 있는 성공 응답으로 바꾸지 않습니다.
 
 - `BatchCreatePartition`은 잘못된 항목과 이미 존재하는 항목을 `PartitionError`에 입력 순서대로
@@ -83,8 +83,8 @@ tuple을 유지합니다. 새 tuple이 이미 있으면 model에 있는 `Invalid
   기록합니다. 반복한 원본 key는 앞 항목의 결과가 반영된 상태에서 처리합니다.
 - `BatchGetPartition`은 찾은 partition을 요청 순서대로 반환합니다. 반복 key도 유지합니다.
   반환하지 못한 유효한 key는 `UnprocessedKeys`에 요청 순서대로 기록합니다. 이 응답에는 항목 오류
-  field가 없으므로 value 수가 잘못되면 전체 operation이 `InvalidInputException`으로 실패합니다.
-- 항목 오류가 앞에서 성공한 항목을 rollback하지 않습니다. Persistence 실패는 operation 수준의
+  field가 없으므로 value 수가 잘못되면 전체 API 작업이 `InvalidInputException`으로 실패합니다.
+- 항목 오류가 앞에서 성공한 항목을 rollback하지 않습니다. Persistence 실패는 API 작업 수준의
   `InternalServiceException`을 반환합니다. 실패 candidate는 rollback하고 앞의 durable entry는
   유지하며 뒤의 entry는 시도하지 않습니다.
 
@@ -97,22 +97,22 @@ tuple을 유지합니다. 새 tuple이 이미 있으면 model에 있는 `Invalid
 <!-- section: maintenance -->
 ## Logging, 시험과 수정 위치
 
-`glue.partition_batch.before`, `.item.failed`, `.after` event는 operation, 항목 수, 안전한 항목
+`glue.partition_batch.before`, `.item.failed`, `.after` event는 API 작업, 항목 수, 안전한 항목
 index, failure type과 결과 수를 기록합니다. Partition value는 기록하지 않습니다. Expression의
 parse, schema 결합, 평가, segment event도 fingerprint, 연산자 구조, type과 개수만 기록합니다.
 
-Client 변경으로 호환성이 깨지면 다음 순서로 확인합니다.
+클라이언트 변경으로 호환성이 깨지면 다음 순서로 확인합니다.
 
-1. `protocol.validation.failed`는 고정 model 또는 `shared/aws_protocol/model.py`의 공통 검증을
+1. `protocol.validation.failed`는 고정 모델 또는 `shared/aws_protocol/model.py`의 공통 검증을
    확인하라는 뜻입니다.
 2. `adapter.mapping_failure`는 `glue/adapters/inbound/aws_partition.py` 또는 `aws_batch.py`를
    확인하라는 뜻입니다.
 3. Batch 항목과 순서는 `glue/application/batch.py`를 확인합니다. Value, update, 목록 순서는
-   `glue/application/partition.py`와 immutable domain model을 확인합니다.
+   `glue/application/partition.py`와 immutable domain 모델을 확인합니다.
 4. `persistence.side_effect_failed`는 repository transaction의 전·후·rollback event를 확인합니다.
 
-빠른 contract는 `glue/tests/test_partition_batch_error_semantics.py`입니다. Public Proxy boto3,
-Spark Hive, AWS SDK for pandas 경로는 CI에서만 실행하며 명시적인 timeout을 적용합니다.
+빠른 계약는 `glue/tests/test_partition_batch_error_semantics.py`입니다. Public Proxy boto3,
+Spark Hive, AWS SDK for pandas 경로는 CI에서만 실행하며 명시적인 제한 시간을 적용합니다.
 
 <!-- section: exclusions -->
 ## 제외 범위

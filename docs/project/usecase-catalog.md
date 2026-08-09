@@ -32,7 +32,7 @@
 ## Metadata and scope
 
 - Status: approved
-- Updated: 2026-08-09
+- Updated: 2026-08-10
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 - Included: HTTP endpoints, application operations, runtime processes, management UI, release CLI/workflow
 - Excluded: in-process user plugins and Glue Jobs/JobRuns/Crawlers
@@ -361,15 +361,15 @@
 - Purpose/actor/trigger: a contributor runs the compatibility evidence check or generation command
   after adding typed compatibility annotations to a contract or E2E test.
 - Input: collected pytest metadata, pinned workspace/runtime facts, registered EMR/Glue operations,
-  and checked-in generated artifacts.
-- Output: deterministic case evidence, bilingual annotated-evidence documents, and CI matrices; a
+  and source policy files.
+- Output: deterministic case records, bilingual annotated reports, and CI matrices; a
   check reports duplicate/invalid metadata, stale outputs, or evidence/registry mismatches.
-- Stored/changed data: generation updates only reviewed compatibility evidence artifacts; collection
+- Stored/changed data: generation writes only ignored `ci-artifacts/compatibility/` files; collection
   executes no test body.
 - Preconditions/rules: registered strict pytest marker, bounded collection timeout, no forbidden
   heavyweight client imports during collection, and public-Proxy-compatible verification boundary.
 - Failures: malformed/duplicate case IDs, unknown operations, missing source/test metadata, timeout,
-  or generated-file drift.
+  or artifact drift.
 - Observability: structured collection/compile/parity events with case count and source digest.
 - Evidence: `scripts/compatibility/compatibility_evidence.py`, `tests/support/compatibility_plugin.py`,
   `contracts/compatibility-scope-policy.yaml`, `tests/test_compatibility_evidence.py`.

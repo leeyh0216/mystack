@@ -17,7 +17,7 @@
 <!-- toc:end -->
 
 `RunJobFlow.LogUri`가 S3 URI이면 Mystack은 terminal Step의 process log를 보관합니다. Step
-경로는 Amazon EMR이 문서화한 S3 배치를 따릅니다. Spark는 local/client mode로 실행되므로
+경로는 Amazon EMR이 문서화한 S3 배치를 따릅니다. Spark는 로컬/클라이언트 mode로 실행되므로
 `containers/` 아래 application ID는 의도적으로 만든 synthetic ID이며 YARN application을
 의미하지 않습니다.
 
@@ -54,21 +54,21 @@ s3://my-logs/team-a/j-ABC/containers/application_local_j_ABC_s_123/
   container_local_j_ABC_s_123_01_000001/stderr.gz
 ```
 
-6개 object 모두 `Content-Encoding: gzip`을 사용합니다. `stdout`, `stderr`는 local
-`spark-submit` process stream 원문입니다. `controller`는 local process 시작/종료를 투영합니다.
-`syslog`는 EC2 node, YARN, node syslog가 없음을 명시합니다. Application object 2개는 local/client
+6개 object 모두 `Content-Encoding: gzip`을 사용합니다. `stdout`, `stderr`는 로컬
+`spark-submit` process stream 원문입니다. `controller`는 로컬 process 시작/종료를 투영합니다.
+`syslog`는 EC2 node, YARN, node syslog가 없음을 명시합니다. Application object 2개는 로컬/클라이언트
 driver stream을 복제하며 executor/container log 집계를 지원한다고 주장하지 않습니다.
 
 Amazon EMR은 Step log를 `<cluster-id>/steps/<step-id>/`, YARN container log를
-`<cluster-id>/containers/` 아래에 둔다고 문서화합니다. Client mode Spark driver output은 Step
+`<cluster-id>/containers/` 아래에 둔다고 문서화합니다. 클라이언트 mode Spark driver output은 Step
 log에 있고 cluster mode driver output은 application master에 있다고도 설명합니다. Mystack은
-local/client runtime에서 표현할 수 있는 관찰 경로를 구현하고 차이를 명시합니다.
+로컬/클라이언트 실행 환경에서 표현할 수 있는 관찰 경로를 구현하고 차이를 명시합니다.
 
 <!-- section: outcomes -->
 ## 성공, 실패, 취소
 
 Local process가 종료되거나 Step 준비가 실패한 뒤, 결과 terminal Step 상태가 관찰되기 전에
-게시합니다. 따라서 `LogUri`가 유효하면 성공, 0이 아닌 종료, 누락 artifact, 사용자 취소 모두
+게시합니다. 따라서 `LogUri`가 유효하면 성공, 0이 아닌 종료, 누락 산출물, 사용자 취소 모두
 같은 object 이름 집합을 만듭니다. 준비 실패는 process stream이 비어 있고 `controller`와
 publication record의 `process_started=false`로 표시합니다. 취소한 process의 실제 signal 종료
 code를 기록하며 `CANCELLED`와 `FAILED`의 판정 권한은 EMR 상태 machine에 있습니다.
@@ -90,16 +90,16 @@ Local `<work_root>/<cluster-id>/<step-id>/log-publication.json`은 schema versio
 Step이 Spark를 준비하기 전에 Mystack은 `execution-journal.json`을 atomic하게 씁니다. Terminal
 process fact를 먼저 commit한 뒤 S3 게시를 시작합니다. `publication-request.json`은 durable
 outbox이며 `pending`, `publishing`, `retrying`, `failed`, `published` 상태와 attempt, 결정적인
-object key를 기록합니다. 각 `put_object`에는 설정한 timeout이 있고 retry는 상한이 있는
+object key를 기록합니다. 각 `put_object`에는 설정한 제한 시간이 있고 retry는 상한이 있는
 exponential backoff를 사용합니다. 같은 key를 overwrite하므로 부분 성공도 안전하게 반복합니다.
 
 EMR 시작 시 `running` journal은 `interrupted`로 바뀝니다. `LogUri`가 있는 terminal journal 중
 게시가 끝나지 않은 것은 새 startup cluster를 만들기 전에 replay합니다. Console은 journal 기반
-log를 탐색할 수 있지만 이전 process-local boto3 cluster는 의도적으로 복원하지 않습니다.
+log를 탐색할 수 있지만 이전 process-로컬 boto3 cluster는 의도적으로 복원하지 않습니다.
 `emr.log_retention_seconds`는 `published` 또는 `skipped` publication record가 있는 오래된 terminal
 work directory만 지우며 실패 증거는 보존합니다.
 
-Live read는 무제한 연결로 file을 follow하지 않습니다. Backend는 stdout/stderr별 byte offset에서
+Live read는 무제한 연결로 파일을 follow하지 않습니다. Backend는 stdout/stderr별 byte offset에서
 최대 `emr.live_log_chunk_bytes`만 반환합니다. EMR은 반복 read를 표준 `text/event-stream`으로
 변환하고 event ID를 `<stdout-offset>:<stderr-offset>`로 지정합니다. Browser는 `Last-Event-ID`
 또는 명시적 offset으로 재연결합니다. 이 extension은
@@ -113,11 +113,11 @@ Live read는 무제한 연결로 file을 follow하지 않습니다. Backend는 s
 - 실행 journal, retention, 시작 replay: `mystack.emr.adapters.outbound.journal`
 - Process capture와 publication 호출 경계: `mystack.emr.adapters.outbound.runtime`
 - Console/API 투영: `mystack.emr.adapters.inbound.management`
-- SSE service adapter: `mystack.emr.adapters.inbound.log_stream`
-- Runtime client 소유권과 close 순서: `mystack.emr.runtime`, `mystack.emr.app`
+- SSE 서비스 어댑터: `mystack.emr.adapters.inbound.log_stream`
+- Runtime 클라이언트 소유권과 close 순서: `mystack.emr.runtime`, `mystack.emr.app`
 - boto3/LocalStack Docker 검증: `tests/e2e/test_emr_spark.py`
 
-AWS의 문서화된 directory 계약이 바뀌면 집중된 log adapter, 이 문서, unit test와 Docker E2E를
+AWS의 문서화된 directory 계약이 바뀌면 집중된 log 어댑터, 이 문서, unit 테스트와 Docker E2E를
 함께 수정합니다. S3 책임을 Domain, repository 또는 AWS request mapper로 옮기지 않습니다.
 
 <!-- section: sources -->

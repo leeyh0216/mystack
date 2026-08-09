@@ -54,9 +54,25 @@
 | payload | 요청 본문, 응답 본문, 전송 데이터 |
 | public edge | 공개 API 경계 |
 | fail closed | 안전하게 거부 |
+| client | 클라이언트 |
+| runtime | 실행 환경 |
+| operation | API 작업 |
+| endpoint | 엔드포인트 |
+| workflow | 워크플로 |
+| scenario | 시나리오 |
+| matrix | 표 또는 매트릭스 설정 |
+| evidence | 검증 정보 |
+| contract | 계약 |
+| artifact | 산출물 |
+| coverage | 범위 |
+| adapter | 어댑터 |
+| service | 서비스 |
+| catalog | 카탈로그 |
+| metadata | 메타데이터 |
+| report | 보고서 |
 
-실제 필드명이나 안정적인 식별자라면 원문을 바꾸지 않습니다. 처음 나올 때만 한국어
-설명을 덧붙입니다.
+실제 필드명이나 안정적인 식별자라면 원문을 바꾸지 않습니다. 코드 블록, 명령, 경로, 설정 키,
+API 이름, 제품명도 원문을 유지합니다. 처음 나올 때만 한국어 설명을 덧붙입니다.
 
 <!-- section: status -->
 ## 지원 상태

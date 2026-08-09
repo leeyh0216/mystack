@@ -11,11 +11,10 @@ does not define runtime behavior by itself. Read the human-facing guides in
 2. `glue-error-conditions.yaml` — deterministic Glue error conditions and their precedence.
 3. `service-model-manifest.json` — pinned upstream botocore model versions and fingerprints.
 
-The remaining `*.generated.json` files are reproducible review baselines. They are compiled from
-the source policy, typed pytest annotations, and pinned models; no developer edits them by hand.
-GitHub Actions regenerates them before it selects compatibility cases, and `make
-compatibility-check` proves that a proposed change has not left a stale baseline. Their readable
-counterparts are in `docs/compatibility/`.
+GitHub Actions compiles source policy, typed pytest annotations, and pinned models into ignored
+`ci-artifacts/compatibility/` reports before it selects compatibility cases. No developer edits
+those reports by hand. `make compatibility-check` verifies that the current source produces the
+expected local artifact. The human-facing explanation is in `docs/compatibility/`.
 
 ## Where to make a change
 
