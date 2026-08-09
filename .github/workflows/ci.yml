@@ -98,12 +98,24 @@ jobs:
           title: React TypeScript contracts
       - name: Build both service UIs
         run: npm run frontend:build
-      - name: Upload service-owned UI builds for Python protocol tests
+      - name: Create immutable reusable-build manifest
+        run: >-
+          uv run python scripts/reusable_build_artifact.py create
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA"
+          --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --producer-workflow "$GITHUB_WORKFLOW"
+          --producer-run-id "$GITHUB_RUN_ID"
+          --retention-days 2
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Upload SHA-bound UI build for downstream consumers
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          # Internal cross-job handoff, not a user-facing test-result artifact.
-          name: service-ui-builds
+          name: service-ui-builds-${{ github.sha }}
           path: |
+            .mystack/reusable-ui/manifest.json
             emr/src/mystack/emr/static/ui
             glue/src/mystack/glue/static/ui
           if-no-files-found: error
@@ -182,11 +194,28 @@ jobs:
         python-version: ["3.11"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Download service-owned UI builds
+      - id: reusable_ui
+        name: Download SHA-bound service UI build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
         with:
-          name: service-ui-builds
+          name: service-ui-builds-${{ github.sha }}
           path: .
+      - name: Verify reusable UI build provenance
+        if: steps.reusable_ui.outcome == 'success'
+        run: >-
+          uv run python scripts/reusable_build_artifact.py verify
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA" --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Rebuild UI after unavailable artifact
+        if: steps.reusable_ui.outcome != 'success'
+        run: |
+          echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}'
+          npm ci --ignore-scripts
+          npm run frontend:build
       # Official setup-uv action: https://github.com/astral-sh/setup-uv
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
