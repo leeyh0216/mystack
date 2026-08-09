@@ -84,6 +84,9 @@ def main() -> None:
             """
         )
         hive_count = spark.table(f"`{hive_database}`.`{hive_table}`").count()
+        hive_tables = {
+            row.tableName for row in spark.sql(f"SHOW TABLES IN `{hive_database}`").collect()
+        }
         spark.sql(
             f"""
             CREATE TABLE `{hive_database}`.`{hive_partition_table}` (
@@ -161,6 +164,12 @@ def main() -> None:
         )
         spark.sql(f"ALTER TABLE {qualified_table} ADD COLUMN note STRING")
         iceberg_count = spark.table(qualified_table).count()
+        iceberg_namespaces = {
+            row.namespace for row in spark.sql(f"SHOW NAMESPACES IN {args.catalog_name}").collect()
+        }
+        iceberg_tables = {
+            row.tableName for row in spark.sql(f"SHOW TABLES IN {qualified_namespace}").collect()
+        }
         iceberg_evolution = exercise_iceberg_evolution(
             spark,
             catalog_name=args.catalog_name,
@@ -192,6 +201,7 @@ def main() -> None:
                     "spark_version": spark.version,
                     "hive_database": hive_database,
                     "hive_count": hive_count,
+                    "hive_tables": sorted(hive_tables),
                     "hive_pruned_count": hive_pruned_count,
                     "hive_ddl_table": hive_ddl_table,
                     "hive_ddl_partitions": sorted(hive_ddl_partitions),
@@ -201,6 +211,8 @@ def main() -> None:
                     "hive_alter_failures": hive_alter_failures,
                     "iceberg_database": iceberg_database,
                     "iceberg_count": iceberg_count,
+                    "iceberg_namespaces": sorted(iceberg_namespaces),
+                    "iceberg_tables": sorted(iceberg_tables),
                     **open_table_format,
                     **iceberg_evolution,
                     **iceberg_row_level,
@@ -212,12 +224,15 @@ def main() -> None:
         )
         if (
             hive_count != 1
+            or hive_table not in hive_tables
             or hive_pruned_count != 2
             or len(hive_ddl_partitions) != 2
             or len(hive_repair_partitions) != 2
             or set(hive_alter_failures)
             != {"drop-column", "rename-column", "change-column-type", "rename-table"}
             or iceberg_count != 2
+            or iceberg_database not in iceberg_namespaces
+            or iceberg_table not in iceberg_tables
             or open_table_format["iceberg_open_table_format_initial_count"] != 1
             or open_table_format["iceberg_open_table_format_evolved_columns"]
             != ["id", "category", "note"]

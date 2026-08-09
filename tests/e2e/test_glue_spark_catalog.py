@@ -176,6 +176,7 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     )
     result = json.loads(result_line.partition("=")[2])
     assert result["hive_count"] == 1
+    assert "hive_types" in result["hive_tables"]
     assert result["hive_pruned_count"] == 2
     assert len(result["hive_ddl_partitions"]) == 2
     assert len(result["hive_repair_partitions"]) == 2
@@ -186,6 +187,8 @@ def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
         "rename-table",
     }
     assert result["iceberg_count"] == 2
+    assert result["iceberg_database"] in result["iceberg_namespaces"]
+    assert "iceberg_types" in result["iceberg_tables"]
     assert result["iceberg_open_table_format_initial_columns"] == ["id", "category"]
     assert result["iceberg_open_table_format_initial_count"] == 1
     assert result["iceberg_open_table_format_evolved_columns"] == ["id", "category", "note"]
