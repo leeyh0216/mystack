@@ -117,7 +117,6 @@ make ghcr-compose-check
 make compatibility-check
 make compatibility-evidence-generate
 make compatibility-evidence-check
-make compatibility-evidence-parity
 make antlr-check
 make glue-errors-check
 make version-show
