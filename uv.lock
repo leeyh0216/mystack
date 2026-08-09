@@ -348,7 +348,7 @@ wheels = [
 
 [[package]]
 name = "mystack-aws-protocol"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "shared" }
 dependencies = [
     { name = "botocore" },
@@ -367,7 +367,7 @@ requires-dist = [
 
 [[package]]
 name = "mystack-dev"
-version = "0.1.5"
+version = "0.1.6"
 source = { virtual = "." }
 
 [package.dev-dependencies]
@@ -402,7 +402,7 @@ dev = [
 
 [[package]]
 name = "mystack-emr"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "emr" }
 dependencies = [
     { name = "boto3" },
@@ -423,7 +423,7 @@ requires-dist = [
 
 [[package]]
 name = "mystack-glue"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "glue" }
 dependencies = [
     { name = "antlr4-python3-runtime" },
@@ -444,7 +444,7 @@ requires-dist = [
 
 [[package]]
 name = "mystack-proxy"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "proxy" }
 dependencies = [
     { name = "fastapi" },

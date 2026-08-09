@@ -2,7 +2,7 @@
 CONFIG ?= config/runtime/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
-MYSTACK_VERSION ?= 0.1.5
+MYSTACK_VERSION ?= 0.1.6
 
 .PHONY: help bootstrap sync frontend pre-commit requirements lint format docs configuration-reference-generate configuration-reference-check antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-generate coverage-check compatibility-generate compatibility-check compatibility-evidence-generate compatibility-evidence-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
 
