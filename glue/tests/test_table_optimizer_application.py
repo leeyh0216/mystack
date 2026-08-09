@@ -60,6 +60,7 @@ def _application(tmp_path: Path) -> tuple[CatalogApplication, ManualClock]:
     application = CatalogApplication(
         catalog,
         catalog,
+        catalog,
         clock,
         CatalogPolicy(
             default_catalog_id="account",

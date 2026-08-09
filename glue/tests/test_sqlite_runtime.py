@@ -117,7 +117,7 @@ def test_health_exposes_the_runtime_verified_before_catalog_initialization(tmp_p
     database_file = tmp_path / "catalog.sqlite3"
     assert database_file.is_file()
     with sqlite3.connect(database_file) as connection:
-        assert connection.execute("SELECT schema_version FROM catalog_metadata").fetchone() == (1,)
+        assert connection.execute("SELECT schema_version FROM catalog_metadata").fetchone() == (2,)
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 

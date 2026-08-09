@@ -31,10 +31,11 @@ Glue client -> proxy -> Glue AWS JSON adapter -> application command/query
 <!-- section: persistence -->
 ## Persistence와 Iceberg 경계
 
-현재 production catalog는 atomic candidate publication과 상한이 있는 cross-process lock을 쓰는 JSON 기반입니다.
-Source-built SQLite runtime은 검증된 실행 가능 여부 확인 절차일 뿐 normalized SQLite persistence는 아직 활성화되지
-않았습니다. Hive와 Iceberg client는 public Glue endpoint를 사용하며 table metadata와 data file은 client/S3가
-소유합니다.
+Production catalog는 SQLite 전용입니다. Application command/query port는 DB-API와 SQL을 outbound adapter에
+가두고, normalized row에는 catalog entity, typed partition projection, 안정적인 segment assignment를 저장합니다.
+`GetPartitions`는 지원되는 bound AST expression을 parameterized SQLite predicate로 compile하고
+`(order_key, partition_id)` keyset continuation을 사용하므로 한 page를 위해 catalog 전체를 materialize하지 않습니다.
+Hive와 Iceberg client는 public Glue endpoint를 사용하며 table metadata와 data file은 client/S3가 소유합니다.
 
 ```text
 Spark Hive / Iceberg -> Glue Catalog API -> table VersionId CAS

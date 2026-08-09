@@ -12,7 +12,11 @@ from mystack.glue.application.batch import (
     PartitionBatchGetResult,
     PartitionBatchHandler,
 )
-from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
+from mystack.glue.application.catalog_ports import (
+    CatalogQueryPort,
+    CatalogReadPort,
+    CatalogWritePort,
+)
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.initialization import CatalogInitializer
@@ -61,6 +65,7 @@ class CatalogApplication:
     def __init__(
         self,
         read_catalog: CatalogReadPort,
+        query_catalog: CatalogQueryPort,
         write_catalog: CatalogWritePort,
         clock: Clock,
         policy: CatalogPolicy,
@@ -72,9 +77,9 @@ class CatalogApplication:
         paginator = Paginator(policy.api_page_size)
         self._write_catalog = write_catalog
         self._database_commands = DatabaseCommands(write_catalog, clock)
-        self._database_queries = DatabaseQueries(read_catalog, paginator)
+        self._database_queries = DatabaseQueries(read_catalog, query_catalog, paginator)
         self._table_commands = TableCommands(write_catalog, clock, IcebergCommitObserver())
-        self._table_queries = TableQueries(read_catalog, paginator)
+        self._table_queries = TableQueries(read_catalog, query_catalog, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
         self._open_table_format = OpenTableFormatCommands(
             databases=self._database_queries,
@@ -88,6 +93,7 @@ class CatalogApplication:
         self._partition_commands = PartitionCommands(write_catalog, clock)
         self._partition_queries = PartitionQueries(
             read_catalog,
+            query_catalog,
             paginator,
             PartitionExpressionCompiler(policy.partition_expressions),
         )
