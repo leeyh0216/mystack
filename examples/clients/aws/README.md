@@ -21,12 +21,13 @@ uses Mystack's public Proxy for Glue, EMR, and S3-compatible requests, then:
 | --- | --- |
 | [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy` to become healthy, and defines the `aws-client` container with local test credentials and `AWS_ENDPOINT_URL=http://proxy:8080`. |
 | [`compose.env`](compose.env) | Sets `MYSTACK_PORT=0`, so this lab does not claim the host's usual `4566` port. Containers communicate over the internal Compose network. |
-| [`Dockerfile`](Dockerfile) | Builds the small Python client image, installs the pinned packages in `requirements.txt`, and makes `verify.py` its default command. |
-| [`verify.py`](verify.py) | The executable workload: creates `mystack-client-lab` and `client_lab`, writes a two-row partitioned `events` Parquet dataset with `awswrangler`, reads its Glue table, then calls EMR `ListClusters` and prints the result. |
-| [`requirements.txt`](requirements.txt) | Pins `boto3`, `awswrangler`, and `pandas` used by the workload. |
+| [`Dockerfile`](Dockerfile) | Builds the small Python client image, installs the distribution AWS CLI without changing Python SDK pins in `requirements.txt`, and makes `lab.sh` its default command. |
+| [`lab.sh`](lab.sh) | The executable lab entrypoint. It wraps `aws` so every CLI command uses the running Proxy endpoint, prints each command, runs the SDK workload, then inspects the created Glue and S3 resources with AWS CLI. |
+| [`verify.py`](verify.py) | The SDK workload: creates `mystack-client-lab` and `client_lab`, writes a two-row partitioned `events` Parquet dataset with `awswrangler`, reads its Glue table, then calls EMR `ListClusters` and prints the result. |
+| [`requirements.txt`](requirements.txt) | Pins the Python SDK dependencies (`boto3`, `awswrangler`, and `pandas`) used by the workload. |
 
-The command `docker compose up … --exit-code-from aws-client` uses `verify.py` as the success
-signal: a nonzero exit means one of those API calls or the data write/read failed.
+The command `docker compose up … --exit-code-from aws-client` uses `lab.sh` as the success signal:
+a nonzero exit means an SDK operation, an AWS CLI inspection, or the data write/read failed.
 
 ## Run the lab
 
@@ -43,10 +44,11 @@ remain available after the client exits.
 
 ## Check the result
 
-The final client log must include a result like this (the EMR count can vary):
+The log first prints every AWS CLI command, then contains both the SDK result and the final marker:
 
 ```text
 {'glue_database': 'client_lab', 'glue_table': 'events', 'emr_cluster_count': 0}
+== RESULT: AWS CLI and SDK for pandas completed through the Proxy ==
 ```
 
 Use these commands to inspect the completed workload or the services:
@@ -65,7 +67,7 @@ curl --fail http://localhost:4566/_mystack/health
 To repeat the workflow without deleting the lab data, start a new one-off client container:
 
 ```bash
-docker compose run --rm aws-client python verify.py
+docker compose run --rm aws-client
 ```
 
 ## Clean up
