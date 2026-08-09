@@ -5,6 +5,19 @@
 
 # EMR과 Glue 전송 프로토콜 분석
 
+<!-- toc:start -->
+## 목차
+
+- [기준 자료](#기준-자료)
+- [서비스 metadata](#서비스-metadata)
+- [HTTP 요청 계약](#http-요청-계약)
+- [직렬화와 검증](#직렬화와-검증)
+- [응답과 오류](#응답과-오류)
+- [SigV4 동작](#sigv4-동작)
+- [EMR 실행 mapping](#emr-실행-mapping)
+- [Glue Catalog runtime mapping](#glue-catalog-runtime-mapping)
+<!-- toc:end -->
+
 <!-- section: sources -->
 ## 기준 자료
 

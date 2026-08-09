@@ -5,6 +5,18 @@
 
 # Development setup
 
+<!-- toc:start -->
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Ten-minute setup](#ten-minute-setup)
+- [Dev Container setup](#dev-container-setup)
+- [Configuration precedence](#configuration-precedence)
+- [Daily commands](#daily-commands)
+- [Where to make changes](#where-to-make-changes)
+- [Troubleshooting](#troubleshooting)
+<!-- toc:end -->
+
 <!-- section: prerequisites -->
 ## Prerequisites
 
@@ -103,6 +115,8 @@ make requirements
 make coverage-check
 make ghcr-compose-check
 make compatibility-check
+make compatibility-evidence-generate
+make compatibility-evidence-check
 make antlr-check
 make glue-errors-check
 make version-show
@@ -119,7 +133,7 @@ make threads
 make down
 ```
 
-Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible.
+Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible. The annotation collector has its own bounded child process at `tests.compatibility_collection_timeout_seconds`; it does not execute tests.
 
 `make frontend` runs ESLint, TypeScript project-reference checking, Vitest component contracts, and
 both Vite production builds. Set `MYSTACK_FRONTEND_TEST_TIMEOUT_MS` to a positive millisecond value
@@ -130,12 +144,18 @@ generated interoperability/error evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 
-Compatibility scenarios select explicit SDK/protocol pytest node IDs. They do not select tests that
-require generated React assets. The ordinary Python CI job downloads both frontend build artifacts
-before running the full contract modules, while the browser E2E job owns rendered UI behavior. This
-keeps SDK matrix failures attributable to protocol code without reducing UI coverage. The artifact
-lifecycle follows the official [GitHub Actions artifact
-contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
+Compatibility scenarios are declared next to real `contract` or `e2e` tests with typed pytest
+annotations. `make compatibility-evidence-generate` runs collection only, produces the CI matrix
+and bilingual evidence, and never executes those test bodies. `make compatibility-evidence-check`
+rejects marker, lock/runtime, modeled-operation, or API-evidence drift.
+`CompatibilityProfile.expected_duration_minutes` is the generated GitHub Actions job ceiling, not
+the local collection deadline or a pytest timeout.
+Use `make compatibility-check` to verify the generated matrix and explicit scope policy too.
+CI creates one SHA-bound frontend bundle with a manifest containing source, lock/config, platform,
+producer-run, and file digests. Python CI, Docker E2E, and release preflight verify that manifest
+before reuse; an unavailable artifact triggers a local rebuild while a stale or corrupt artifact is
+rejected. Browser E2E remains independently executable. The lifecycle follows the official [GitHub
+Actions artifact contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
 
 `VERSION` is the sole stable version authority and the pre-commit hook rejects derived-file drift.
 Use the [version and branch guide](versioning.md) before opening a release PR. The version command
@@ -184,6 +204,6 @@ imported module, violated rule, and suggested repair.
 - `api-coverage-drift-report.json` names unclassified, removed, shape-changed, or
   misclassified operations and the owning boundary to update.
 - A compatibility failure logs the case ID, exact versions, scenario IDs, model fingerprints,
-  evidence hash, and a repair hint. Run `make compatibility-generate` only after reviewing the
-  matching official source and explicit YAML case.
+  evidence hash, and a repair hint. Review the matching official source and test annotation, then
+  run `make compatibility-evidence-generate` and `make compatibility-evidence-check`.
 - E2E failure artifacts include all container logs.

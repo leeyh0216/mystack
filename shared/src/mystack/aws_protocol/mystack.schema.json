@@ -107,6 +107,7 @@
         "live_log_chunk_bytes",
         "log_retention_seconds",
         "log_publication",
+        "spark_ui",
         "startup_clusters_file",
         "command_runner_jars",
         "api_page_size",
@@ -134,6 +135,15 @@
             "initial_backoff_seconds": {"type": "number", "minimum": 0},
             "max_backoff_seconds": {"type": "number", "minimum": 0},
             "attempt_timeout_seconds": {"$ref": "#/$defs/positive_number"}
+          }
+        },
+        "spark_ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["port_min", "port_max"],
+          "properties": {
+            "port_min": {"type": "integer", "minimum": 1024, "maximum": 65535},
+            "port_max": {"type": "integer", "minimum": 1024, "maximum": 65535}
           }
         },
         "startup_clusters_file": {
@@ -164,19 +174,40 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_lock", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "table_optimizers", "runtime_profile"],
+      "required": ["listen", "data_root", "sqlite", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "table_optimizers", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
-        "state_file": {"$ref": "#/$defs/non_empty_string"},
-        "catalog_lock": {
+        "sqlite": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["file", "acquire_timeout_seconds", "poll_interval_seconds"],
+          "required": ["database_file", "driver", "journal_mode", "synchronous", "busy_timeout_milliseconds", "retry_limit", "checkpoint"],
           "properties": {
-            "file": {"$ref": "#/$defs/non_empty_string"},
-            "acquire_timeout_seconds": {"$ref": "#/$defs/positive_number"},
-            "poll_interval_seconds": {"$ref": "#/$defs/positive_number"}
+            "database_file": {"$ref": "#/$defs/non_empty_string"},
+            "driver": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["module", "expected_version", "minimum_wal_version", "manifest_file"],
+              "properties": {
+                "module": {"$ref": "#/$defs/non_empty_string"},
+                "expected_version": {"$ref": "#/$defs/sqlite_version"},
+                "minimum_wal_version": {"$ref": "#/$defs/sqlite_version"},
+                "manifest_file": {"$ref": "#/$defs/non_empty_string"}
+              }
+            },
+            "journal_mode": {"enum": ["wal", "rollback"]},
+            "synchronous": {"enum": ["off", "normal", "full", "extra"]},
+            "busy_timeout_milliseconds": {"type": "integer", "minimum": 1},
+            "retry_limit": {"type": "integer", "minimum": 0},
+            "checkpoint": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mode", "auto_checkpoint_pages"],
+              "properties": {
+                "mode": {"enum": ["passive", "full", "restart", "truncate"]},
+                "auto_checkpoint_pages": {"type": "integer", "minimum": 0}
+              }
+            }
           }
         },
         "catalog_id": {"type": "string", "pattern": "^[0-9]{12}$"},
@@ -185,10 +216,11 @@
         "partition_expressions": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["max_length", "max_tokens", "supported_key_types"],
+          "required": ["max_length", "max_tokens", "fallback_max_candidates", "supported_key_types"],
           "properties": {
             "max_length": {"type": "integer", "minimum": 1},
             "max_tokens": {"type": "integer", "minimum": 1},
+            "fallback_max_candidates": {"type": "integer", "minimum": 1},
             "supported_key_types": {"$ref": "#/$defs/non_empty_string_array"}
           }
         },
@@ -268,11 +300,12 @@
     "tests": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_timeout_seconds", "contract_timeout_seconds", "package_smoke_timeout_seconds", "e2e_timeout_seconds", "compose_wait_timeout_seconds", "e2e"],
+      "required": ["unit_timeout_seconds", "contract_timeout_seconds", "package_smoke_timeout_seconds", "compatibility_collection_timeout_seconds", "e2e_timeout_seconds", "compose_wait_timeout_seconds", "e2e"],
       "properties": {
         "unit_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "contract_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "package_smoke_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "compatibility_collection_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "e2e_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "compose_wait_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "e2e": {
@@ -330,6 +363,7 @@
   },
   "$defs": {
     "non_empty_string": {"type": "string", "minLength": 1},
+    "sqlite_version": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+){2,3}$"},
     "positive_number": {"type": "number", "exclusiveMinimum": 0},
     "uri": {"type": "string", "format": "uri"},
     "listen": {

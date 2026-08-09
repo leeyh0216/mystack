@@ -5,6 +5,16 @@
 
 # Client와 library 호환성
 
+<!-- toc:start -->
+## 목차
+
+- [상태 기준](#상태-기준)
+- [검증한 Client](#검증한-client)
+- [닫힌 Client 집합](#닫힌-client-집합)
+- [현재 제외](#현재-제외)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 문서는 AWS protocol을 사용하는 외부 client가 Mystack의 단일 공개 endpoint에서 실제로
 검증됐는지 기록합니다. 특정 library의 일부 경로 통과를 해당 library 전체 지원으로 확대해서
 해석하지 않습니다.
@@ -22,10 +32,12 @@
 <!-- section: verified -->
 ## 검증한 Client
 
-[생성된 정확한 version 근거](client-matrix.ko.generated.md)는 GitHub Actions가 사용하는 기준
-목록입니다. 관리자는 `compatibility/cases.yaml`에 명시적 case 한 개를 추가합니다. compiler는
-시험 시작 전에 알 수 없는 field, 변경 가능한 artifact, 잘못된 runtime 조합과 service model
-변경을 거부합니다.
+[test 선언으로 생성한 정확한 version 근거](annotated-evidence.ko.generated.md)는 GitHub Actions가
+사용하는 기준 목록입니다. 관리자는 type이 있는 profile을 만들거나 재사용하고 실제 `contract` 또는
+`e2e` test에 검증한 scenario와 operation을 선언합니다. Collection compiler는 잘못된 marker,
+lock/runtime 불일치, 알 수 없는 modeled operation, 빠진 지원 API 근거, case 선택 차이를 test body
+실행 전에 거부합니다. 이행 기간에는 [기존 정확한 version 근거](client-matrix.ko.generated.md)와
+주석으로 수집한 증거와 `contracts/compatibility-scope-policy.yaml`을 기준으로 생성합니다.
 
 | Client | 고정 버전 | 상태 | 검증 경로 |
 | --- | --- | --- | --- |

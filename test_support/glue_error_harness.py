@@ -8,16 +8,25 @@ Official references:
 from __future__ import annotations
 
 import copy
+import json
+import sqlite3
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from mystack.aws_protocol import AwsJsonRpcEndpoint, AwsServiceModel
 from mystack.glue.adapters.inbound.aws import GlueAwsAdapter
-from mystack.glue.adapters.outbound import CatalogStateStore, TransactionalCatalogRepository
+from mystack.glue.adapters.outbound import SqliteCatalogRepository
 from mystack.glue.application import CatalogApplication, CatalogPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
 from mystack.glue.application.policies import GlueFaultInjectionPolicy
-from mystack.glue.domain import CatalogState
+from mystack.glue.application.sqlite_runtime import (
+    SQLiteCheckpointSettings,
+    SQLiteDriverSettings,
+    SQLiteRuntimeSettings,
+)
 
 
 class InMemoryIcebergMetadataStore:
@@ -54,21 +63,35 @@ class IncrementingClock:
         return self._value
 
 
-class ToggleFailureStore(CatalogStateStore):
+class ToggleCommitFailpoint:
+    """Test-only SQLite transaction hook; no catalog data is stored in memory."""
+
     def __init__(self) -> None:
-        self._committed = CatalogState()
         self.fail = False
         self.save_attempts = 0
         self.fail_on_attempt: int | None = None
 
-    def load(self) -> CatalogState:
-        return copy.deepcopy(self._committed)
-
-    async def save(self, candidate: CatalogState) -> None:
+    async def before_commit(
+        self,
+        *,
+        operation: str,
+        resource_key: tuple[object, ...],
+        mutated: bool,
+    ) -> None:
+        del operation, resource_key, mutated
         self.save_attempts += 1
         if self.fail or self.save_attempts == self.fail_on_attempt:
             raise OSError("deterministic test persistence failure")
-        self._committed = copy.deepcopy(candidate)
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogDurableView:
+    """SQLite-derived test inspection only; it is not a production aggregate or store."""
+
+    databases: dict[tuple[str, str], tuple[str, float]]
+    tables: dict[tuple[str, str, str], tuple[str, str, float, float]]
+    partitions: dict[tuple[str, str, str, tuple[str, ...]], tuple[str, float, float]]
+    optimizers: dict[tuple[str, str, str, str], tuple[str, int, float | None]]
 
 
 class GlueCatalogHarness:
@@ -76,14 +99,33 @@ class GlueCatalogHarness:
 
     def __init__(
         self,
-        store: ToggleFailureStore | None = None,
+        failpoint: ToggleCommitFailpoint | None = None,
         fault_injection: GlueFaultInjectionPolicy | None = None,
     ) -> None:
-        self.store = store or ToggleFailureStore()
+        self.failpoint = failpoint or ToggleCommitFailpoint()
+        self._temporary_directory = tempfile.TemporaryDirectory(prefix="mystack-glue-harness-")
+        database_file = Path(self._temporary_directory.name) / "catalog.sqlite3"
         self.metadata_store = InMemoryIcebergMetadataStore()
-        repository = TransactionalCatalogRepository(self.store)
+        settings = SQLiteRuntimeSettings(
+            database_file=database_file,
+            driver=SQLiteDriverSettings(
+                module="sqlite3",
+                expected_version="3.53.4",
+                minimum_wal_version="3.51.3",
+                manifest_file=database_file.with_name("unused-runtime-manifest.json"),
+            ),
+            journal_mode="rollback",
+            synchronous="full",
+            busy_timeout_milliseconds=250,
+            retry_limit=0,
+            checkpoint=SQLiteCheckpointSettings(mode="passive", auto_checkpoint_pages=1000),
+        )
+        self._database_file = database_file
+        catalog = SqliteCatalogRepository(settings, transaction_hook=self.failpoint)
         application = CatalogApplication(
-            repository,
+            catalog,
+            catalog,
+            catalog,
             IncrementingClock(),
             CatalogPolicy(
                 default_catalog_id="000000000000",
@@ -127,7 +169,10 @@ class GlueCatalogHarness:
         self._client = TestClient(app)
 
     def close(self) -> None:
-        self._client.close()
+        try:
+            self._client.close()
+        finally:
+            self._temporary_directory.cleanup()
 
     def call(self, operation: str, payload: dict):
         return self._client.post(
@@ -174,5 +219,86 @@ class GlueCatalogHarness:
             return
         raise AssertionError(f"Unknown test arrangement {arrangement}")
 
-    def durable_state(self) -> CatalogState:
-        return self.store.load()
+    def durable_state(self) -> CatalogDurableView:
+        """Inspect committed normalized rows directly for wire-level error assertions."""
+        if not self._database_file.exists():
+            return CatalogDurableView({}, {}, {}, {})
+        connection = sqlite3.connect(self._database_file)
+        try:
+            schema = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'catalog_databases'"
+            ).fetchone()
+            if schema is None:
+                return CatalogDurableView({}, {}, {}, {})
+            databases = {
+                (str(catalog_id), str(name)): (str(definition), float(create_time))
+                for catalog_id, name, definition, create_time in connection.execute(
+                    "SELECT catalog_id, name, definition_json, create_time FROM catalog_databases"
+                )
+            }
+            tables = {
+                (str(catalog_id), str(database_name), str(table_name)): (
+                    str(definition),
+                    str(version_id),
+                    float(create_time),
+                    float(update_time),
+                )
+                for (
+                    catalog_id,
+                    database_name,
+                    table_name,
+                    definition,
+                    version_id,
+                    create_time,
+                    update_time,
+                ) in connection.execute(
+                    "SELECT d.catalog_id, d.name, t.name, t.definition_json, t.version_id, "
+                    "t.create_time, t.update_time FROM catalog_tables AS t "
+                    "JOIN catalog_databases AS d ON d.database_id = t.database_id"
+                )
+            }
+            partitions = {
+                (str(catalog_id), str(database_name), str(table_name), tuple(json.loads(values))): (
+                    str(definition),
+                    float(create_time),
+                    float(update_time),
+                )
+                for (
+                    catalog_id,
+                    database_name,
+                    table_name,
+                    values,
+                    definition,
+                    create_time,
+                    update_time,
+                ) in connection.execute(
+                    "SELECT d.catalog_id, d.name, t.name, p.values_json, p.definition_json, "
+                    "p.creation_time, p.update_time FROM catalog_partitions AS p "
+                    "JOIN catalog_tables AS t ON t.table_id = p.table_id "
+                    "JOIN catalog_databases AS d ON d.database_id = t.database_id"
+                )
+            }
+            optimizers = {
+                (str(catalog_id), str(database_name), str(table_name), str(optimizer_type)): (
+                    str(configuration),
+                    int(revision),
+                    None if next_run is None else float(next_run),
+                )
+                for (
+                    catalog_id,
+                    database_name,
+                    table_name,
+                    optimizer_type,
+                    configuration,
+                    revision,
+                    next_run,
+                ) in connection.execute(
+                    "SELECT d.catalog_id, d.name, t.name, o.optimizer_type, o.configuration_json, "
+                    "o.revision, o.next_run_time FROM catalog_table_optimizers AS o "
+                    "JOIN catalog_tables AS t ON t.table_id = o.table_id "
+                    "JOIN catalog_databases AS d ON d.database_id = t.database_id"
+                )
+            }
+        finally:
+            connection.close()
+        return CatalogDurableView(databases, tables, partitions, optimizers)

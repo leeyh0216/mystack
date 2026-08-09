@@ -5,6 +5,20 @@
 
 # Contributing to Mystack
 
+<!-- toc:start -->
+## Contents
+
+- [Define scope before implementation](#define-scope-before-implementation)
+- [Architecture rules](#architecture-rules)
+- [Provenance and compatibility rules](#provenance-and-compatibility-rules)
+- [Bilingual documentation](#bilingual-documentation)
+- [Tests and timeouts](#tests-and-timeouts)
+- [Test-declared compatibility evidence](#test-declared-compatibility-evidence)
+- [Bilingual issues](#bilingual-issues)
+- [Issue-sized changes and publication](#issue-sized-changes-and-publication)
+- [Change description](#change-description)
+<!-- toc:end -->
+
 <!-- section: scope -->
 ## Define scope before implementation
 
@@ -78,6 +92,84 @@ public protocol with boto3 and AWS CLI. Validate Spark integration with real
 Spark, Glue Catalog, Hive, and Iceberg execution paths. Every test has an
 explicit timeout. See the [testing strategy](docs/testing.md) for local and CI
 values.
+
+<!-- section: compatibility-evidence -->
+## Test-declared compatibility evidence
+
+Compatibility evidence has three owners:
+
+- The EMR/Glue inbound operation inventories own implementation status.
+- The annotated `contract` or `e2e` test owns the exact client, runtime,
+  scenario, operation, capability, and support claim that it actually proves.
+- Typed pytest compatibility annotations, `contracts/compatibility-scope-policy.yaml`, and
+  `contracts/api-coverage.generated.json` are the generated compatibility sources
+  parity baselines during this migration; the Glue error-condition catalog and
+  its precedence policy remain independent required contracts.
+
+Collection verifies the annotated operation union against the literal code-owned
+EMR/Glue dispatcher inventories. An annotation cannot make an unregistered
+operation compatible, and the botocore-only model-drift job extracts those
+literal inventories without importing an emulator.
+
+For a client or runtime change:
+
+1. Create or reuse a typed `CompatibilityProfile` in
+   `test_support/compatibility_profiles.py` with exact versions, runtime,
+   lane, GitHub Actions job-duration ceiling, and official source URLs.
+2. Decorate the smallest real `@pytest.mark.contract` or `@pytest.mark.e2e`
+   test with `@compatibility_evidence(...)`. Declare only operations and
+   scenarios exercised by that test body.
+3. Run `make compatibility-evidence-generate`, review
+   `contracts/compatibility-evidence.generated.json` and its Korean/English
+   tables, then run `make compatibility-evidence-check`.
+4. Run `make compatibility-case CASE=<id>` for the changed case. During the
+   migration also run `make compatibility-check`; do not hand-edit generated
+   evidence or remove either retained baseline.
+
+The smallest annotation is deliberately close to the test it proves:
+
+```python
+import pytest
+
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+
+
+@pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-get-database",),
+    operations={"glue": ("GetDatabase",)},
+    capabilities=("glue-database-read",),
+)
+def test_get_database() -> None:
+    ...
+```
+
+The generator invokes pytest with `--collect-only`: it resolves markers and
+node IDs without executing test bodies. It fails when the execution marker,
+pinned lock/runtime, API evidence, or legacy case selection drifts. This uses
+the [pytest marker](https://docs.pytest.org/en/stable/how-to/mark.html) and
+[collection invocation](https://docs.pytest.org/en/stable/how-to/usage.html)
+contracts; GitHub Actions consumes the generated `include` entries through the
+[shared matrix pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
+To keep that local check lightweight, it explicitly loads only the configured
+timeout/asyncio plugins and rejects `awswrangler` or `pyarrow` imports during
+collection. Keep optional clients inside the test body; pytest documents this
+[plugin-loading control](https://docs.pytest.org/en/stable/how-to/plugins.html#disabling-plugin-autoloading).
+`CompatibilityProfile.expected_duration_minutes` becomes the outer GitHub
+Actions job ceiling. It is not a pytest timeout: the collection subprocess is
+bounded by `tests.compatibility_collection_timeout_seconds`, and a selected
+test body uses its ordinary contract or E2E YAML timeout.
+
+| Failure category | Repair location |
+| --- | --- |
+| Marker/profile shape or execution marker | The annotated test and `test_support/compatibility.py` |
+| Claimed operation is absent from the implementation inventory | The owning `emr` or `glue` `adapters/inbound/aws_*.py` registry, then its test annotation |
+| Operation is absent from the pinned botocore model | The inbound handler, pinned model review, and test annotation |
+| Locked client/runtime mismatch | `uv.lock`, `test_support/compatibility_profiles.py`, and `config/mystack.yaml` |
+| Collection deadline expires | `tests.compatibility_collection_timeout_seconds` or imports made while collecting the annotated test |
+| Generated output differs | Run `make compatibility-evidence-generate`; never edit generated files by hand |
 
 <!-- section: issues -->
 ## Bilingual issues

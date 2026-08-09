@@ -32,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 _S3_SCHEMES = frozenset({"s3", "s3a", "s3n"})
 _SPARK_RESOURCE_OPTIONS = frozenset({"--archives", "--files", "--jars", "--py-files"})
 _RESOLVED_COMMAND_FILE = "resolved-command.json"
+_SPARK_UI_FILE = "spark-ui.json"
 
 
 class ObjectStoreConfiguration(Protocol):
@@ -70,6 +71,25 @@ class EmrRuntimeConfiguration(Protocol):
     object_store: ObjectStoreConfiguration
     runtimes: Mapping[str, SparkRuntimeConfiguration]
     policy: RuntimePolicyConfiguration
+    spark_ui: object
+
+
+class SparkUiPortLeases:
+    """Process-local exclusive leases; Spark itself remains bound to loopback."""
+
+    def __init__(self, port_min: int, port_max: int) -> None:
+        self._available = set(range(port_min, port_max + 1))
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> int:
+        async with self._lock:
+            if not self._available:
+                raise RuntimeError("No configured Spark UI port is available")
+            return self._available.pop()
+
+    async def release(self, port: int) -> None:
+        async with self._lock:
+            self._available.add(port)
 
 
 class ArtifactResolver(Protocol):
@@ -526,21 +546,32 @@ class LocalSparkStepRunner:
         self._executor = executor
         self._materializer = SparkSubmitArtifactMaterializer(artifacts)
         self._journal = journal
+        self._ui_ports = SparkUiPortLeases(settings.spark_ui.port_min, settings.spark_ui.port_max)
 
     async def run(self, cluster: Cluster, step: Step) -> RuntimeResult:
         work_dir = self._settings.work_root / cluster.id / step.id
         try:
             await self._journal.begin(cluster, step, work_dir)
-            command = await self._command(cluster, step, work_dir)
-            await self._record_resolved_command(cluster, step, work_dir, command)
-            outcome = await self._executor.execute(
-                cluster_id=cluster.id,
-                operation_id=step.id,
-                command=command,
-                work_dir=work_dir,
-                timeout_seconds=self._settings.process_timeout_seconds,
-                environment=_aws_environment(self._settings.object_store),
-            )
+            ui_port = await self._ui_ports.acquire()
+            try:
+                command = await self._command(cluster, step, work_dir, ui_port)
+                await self._record_resolved_command(cluster, step, work_dir, command)
+                await asyncio.to_thread(
+                    (work_dir / _SPARK_UI_FILE).write_text,
+                    json.dumps({"schema_version": 1, "host": "127.0.0.1", "port": ui_port}) + "\n",
+                    encoding="utf-8",
+                )
+                outcome = await self._executor.execute(
+                    cluster_id=cluster.id,
+                    operation_id=step.id,
+                    command=command,
+                    work_dir=work_dir,
+                    timeout_seconds=self._settings.process_timeout_seconds,
+                    environment=_aws_environment(self._settings.object_store),
+                )
+            finally:
+                await asyncio.to_thread((work_dir / _SPARK_UI_FILE).unlink, missing_ok=True)
+                await self._ui_ports.release(ui_port)
         except Exception as error:
             log_event(
                 _LOGGER,
@@ -618,7 +649,9 @@ class LocalSparkStepRunner:
                 exc_info=True,
             )
 
-    async def _command(self, cluster: Cluster, step: Step, work_dir: Path) -> list[str]:
+    async def _command(
+        self, cluster: Cluster, step: Step, work_dir: Path, ui_port: int
+    ) -> list[str]:
         if step.config.jar not in self._settings.command_runner_jars:
             raise ValueError(f"Unsupported step Jar {step.config.jar!r}")
         if not step.config.args:
@@ -637,6 +670,16 @@ class LocalSparkStepRunner:
             command.extend(("--master", runtime.master))
         if runtime.packages and "--packages" not in submit_args:
             command.extend(("--packages", ",".join(runtime.packages)))
+        command.extend(
+            (
+                "--conf",
+                "spark.ui.enabled=true",
+                "--conf",
+                "spark.ui.port=" + str(ui_port),
+                "--conf",
+                "spark.ui.bindAddress=127.0.0.1",
+            )
+        )
         for key, value in (*runtime.conf, *_s3_conf(self._settings.object_store)):
             command.extend(("--conf", f"{key}={value}"))
         for key, value in step.config.properties:

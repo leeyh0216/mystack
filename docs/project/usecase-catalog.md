@@ -5,6 +5,29 @@
 
 # Implementation-derived UseCase catalog
 
+<!-- toc:start -->
+## Contents
+
+- [Metadata and scope](#metadata-and-scope)
+- [UC-001: Route an AWS request](#uc-001-route-an-aws-request)
+- [UC-002: Execute an AWS JSON 1.1 operation](#uc-002-execute-an-aws-json-11-operation)
+- [UC-003: Manage EMR clusters and steps](#uc-003-manage-emr-clusters-and-steps)
+- [UC-004: Materialize bootstrap/Spark artifacts and execute locally](#uc-004-materialize-bootstrapspark-artifacts-and-execute-locally)
+- [UC-005: Manage Glue databases](#uc-005-manage-glue-databases)
+- [UC-006: Manage Glue tables and versions](#uc-006-manage-glue-tables-and-versions)
+- [UC-007: Manage Glue partitions and batch results](#uc-007-manage-glue-partitions-and-batch-results)
+- [UC-008: Inspect service resources and EMR logs](#uc-008-inspect-service-resources-and-emr-logs)
+- [UC-009: Inspect thread/task stacks](#uc-009-inspect-threadtask-stacks)
+- [UC-010: Operate the browser management console](#uc-010-operate-the-browser-management-console)
+- [UC-011: Publish and verify public multi-platform images](#uc-011-publish-and-verify-public-multi-platform-images)
+- [UC-012: Round-trip data and metadata with AWS SDK for pandas](#uc-012-round-trip-data-and-metadata-with-aws-sdk-for-pandas)
+- [UC-013: Reproduce a documented Glue timeout or internal failure](#uc-013-reproduce-a-documented-glue-timeout-or-internal-failure)
+- [UC-014: Apply a deterministic Glue catalog error decision](#uc-014-apply-a-deterministic-glue-catalog-error-decision)
+- [UC-015: Manage and execute Glue Iceberg table optimizers](#uc-015-manage-and-execute-glue-iceberg-table-optimizers)
+- [UC-016: Generate test-declared compatibility evidence](#uc-016-generate-test-declared-compatibility-evidence)
+- [Candidate gap: User documentation and contributor evidence](#candidate-gap-user-documentation-and-contributor-evidence)
+<!-- toc:end -->
+
 <!-- section: metadata -->
 ## Metadata and scope
 
@@ -97,17 +120,17 @@
 - Input: CatalogId, name, DatabaseInput, pagination token/page size; official shape and normalized non-empty
   name rules.
 - Output: modeled database documents/list/next token or empty response.
-- Stored/changed data: JSON-backed database record; optional default database on initialization.
+- Stored/changed data: normalized SQLite database record; optional default database on initialization.
 - Responsibility: `CatalogDatabase` owns normalized name and defensive document snapshots;
   `DatabaseCommands`, `DatabaseQueries`, and `CatalogInitializer` own separate flows.
-- Side effects: persist/fsync/atomic replacement followed by visible candidate publication.
+- Side effects: bounded SQLite transaction commit and durable catalog publication.
 - Preconditions/rules: case-normalized keys, uniqueness, child constraints, serialized candidate
   transaction, and bounded pagination.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and invalid pagination token.
-- Observability: transaction/persist before, after, rollback and migration events; direct/public boto3
+- Observability: SQLite transaction/schema before, after, rollback and retry events; direct/public boto3
   tests plus injected failure/cancellation/restart tests.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
-  `glue/src/mystack/glue/adapters/outbound/repository.py`
+  `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
 - Confidence: High
 
 <!-- section: uc-006 -->
@@ -127,7 +150,7 @@
   identifier evolution, COW/MOR row-level commits, refs, snapshot/maintenance procedure commits,
   and rename/drop/purge survive this lossless pointer path and Iceberg-owned lifecycle sequence.
 - Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
-  JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
+  one normalized SQLite catalog applies configured busy timeouts and bounded writer retries.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
   modeled `ConcurrentModificationException`; invalid Open Table Format documents use the same
   deterministic `InvalidInputException` boundary.
@@ -218,8 +241,9 @@
   publication for its exact SHA.
 - Input: root `VERSION`, branch/event policy, file-configured packages, Dockerfiles, platforms,
   Trivy policy, and explicit timeouts.
-- Output: anonymously pullable public GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index and
-  scan/release artifacts.
+- Output: immutable GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index, and scan/release
+  artifacts. Anonymous public pulls become available only after the one-time package-visibility
+  transition.
 - Stored/changed data: GHCR packages, workflow artifacts, and for stable main releases an annotated
   Git tag plus GitHub Release.
 - Side effects: publisher token login, image build/push/pull, scanner DB/image downloads, and the
@@ -330,3 +354,36 @@
   `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`, and
   `docs/protocols/glue-table-optimizers.md`.
 - Confidence: High for the documented Glue 5/Spark 3.5.4/Iceberg 1.7.1 path.
+
+<!-- section: uc-016 -->
+## UC-016: Generate test-declared compatibility evidence
+
+- Purpose/actor/trigger: a contributor runs the compatibility evidence check or generation command
+  after adding typed compatibility annotations to a contract or E2E test.
+- Input: collected pytest metadata, pinned workspace/runtime facts, registered EMR/Glue operations,
+  and checked-in generated artifacts.
+- Output: deterministic case evidence, bilingual annotated-evidence documents, and CI matrices; a
+  check reports duplicate/invalid metadata, stale outputs, or evidence/registry mismatches.
+- Stored/changed data: generation updates only reviewed compatibility evidence artifacts; collection
+  executes no test body.
+- Preconditions/rules: registered strict pytest marker, bounded collection timeout, no forbidden
+  heavyweight client imports during collection, and public-Proxy-compatible verification boundary.
+- Failures: malformed/duplicate case IDs, unknown operations, missing source/test metadata, timeout,
+  or generated-file drift.
+- Observability: structured collection/compile/parity events with case count and source digest.
+- Evidence: `scripts/compatibility_evidence.py`, `test_support/compatibility_plugin.py`,
+  `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
+- Confidence: High
+
+<!-- section: candidate-documentation -->
+## Candidate gap: User documentation and contributor evidence
+
+- Scope: a Markdown-first navigation layer separates user actions from implementation inventory;
+  a static documentation site remains deferred.
+- User outcome: a user can start Compose, choose Glue or EMR, find configuration and operations,
+  and read a supported/not-supported client path without implementation detail.
+- Contributor outcome: a contributor can find API/endpoint inventory, runtime architecture,
+  configuration keys, CI evidence, and protocol repair locations without overloading user pages.
+- Evidence: #79, #81, #87; [Spark documentation index](https://spark.apache.org/docs/latest/),
+  [Trino deployment documentation](https://trino.io/docs/current/installation/deployment.html).
+- Confidence: Candidate; implementation is issue-tracked and not yet a static-site commitment.

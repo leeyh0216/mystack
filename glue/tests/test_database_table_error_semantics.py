@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from test_support.glue_error_harness import GlueCatalogHarness, ToggleFailureStore
+from test_support.glue_error_harness import GlueCatalogHarness, ToggleCommitFailpoint
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +46,7 @@ def catalog() -> GlueCatalogHarness:
         ErrorScenario(
             "empty", "GetDatabases", {"NextToken": "not-a-token"}, "InvalidInputException"
         ),
+        ErrorScenario("empty", "GetDatabases", {"MaxResults": 0}, "InvalidInputException"),
         ErrorScenario(
             "empty",
             "GetDatabases",
@@ -325,12 +326,12 @@ def test_projection_archive_rename_and_cascade_semantics(catalog: GlueCatalogHar
 
 
 def test_persistence_failure_is_internal_and_never_publishes_candidate() -> None:
-    store = ToggleFailureStore()
-    catalog = GlueCatalogHarness(store)
+    failpoint = ToggleCommitFailpoint()
+    catalog = GlueCatalogHarness(failpoint)
     try:
         catalog.arrange("table")
         before = catalog.durable_state()
-        store.fail = True
+        failpoint.fail = True
 
         response = catalog.call(
             "UpdateTable",

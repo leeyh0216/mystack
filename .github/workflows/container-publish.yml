@@ -23,8 +23,13 @@ on:
         description: Exact successful CI SHA to build and publish
         required: true
         type: string
+      ci_run_id:
+        description: Successful CI run that produced reusable prerequisite artifacts
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -129,6 +134,31 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
+      - id: reusable_ui
+        name: Download UI build from the authorized CI run
+        continue-on-error: true
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: service-ui-builds-${{ inputs.source_sha }}
+          path: .
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify downloaded UI build provenance
+        if: steps.reusable_ui.outcome == 'success'
+        run: >-
+          python3 scripts/reusable_build_artifact.py verify
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "${{ inputs.source_sha }}"
+          --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Rebuild UI after unavailable CI artifact
+        if: steps.reusable_ui.outcome != 'success'
+        run: |
+          echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}'
+          npm ci --ignore-scripts
+          npm run frontend:build
       - name: Install and run repository-local required checks
         run: |
           uv sync --locked --all-packages
@@ -136,13 +166,12 @@ jobs:
           uv run pre-commit run --all-files
           npm run frontend:typecheck
           npm run frontend:test
-          npm run frontend:build
-          make test package-check compatibility-check
+          make test package-check compatibility-check compatibility-evidence-check
       - name: Run required contract cases as isolated processes
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_contract.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
               uv run python scripts/run_compatibility_case.py "$case_id"
             done
       - name: Build and start Mystack for required Docker cases
@@ -151,30 +180,42 @@ jobs:
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_e2e.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
               uv run python scripts/run_compatibility_case.py "$case_id"
             done
       - name: Collect component logs
-        if: always()
+        if: failure()
         run: docker compose logs --no-color > docker-compose.log || true
-      - name: Preserve release-blocking acceptance and diagnostics
+      - name: Preserve release-blocking acceptance evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
-          name: required-validation-diagnostics
+          name: required-validation-evidence
           path: |
-            docker-compose.log
-            test-artifacts/
             contracts/compatibility-matrix.generated.json
-            contracts/api-coverage.json
+            contracts/compatibility-evidence.generated.json
+            contracts/api-coverage.generated.json
             contracts/glue-error-conditions.yaml
             docs/compatibility/release-acceptance.generated.md
             docs/compatibility/release-acceptance.ko.generated.md
             docs/compatibility/api-coverage.generated.md
             docs/compatibility/api-coverage.ko.generated.md
+            docs/compatibility/annotated-evidence.generated.md
+            docs/compatibility/annotated-evidence.ko.generated.md
             docs/compatibility/glue-errors.generated.md
             docs/compatibility/glue-errors.ko.generated.md
           if-no-files-found: ignore
+          retention-days: 14
+      - name: Preserve failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: required-validation-failure-diagnostics
+          path: |
+            docker-compose.log
+            test-artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Stop Mystack
         if: always()
         run: docker compose down --volumes --remove-orphans
@@ -215,6 +256,20 @@ jobs:
           cache-to: type=gha,mode=max,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
           provenance: false
           sbom: false
+      - name: Verify the source-built Glue SQLite runtime on this architecture
+        if: matrix.name == 'glue'
+        env:
+          IMAGE_NAME: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ inputs.source_sha }}
+          PREFLIGHT_TIMEOUT_MINUTES: ${{ needs.prepare.outputs.preflight_timeout_minutes }}
+        run: |
+          set -euo pipefail
+          directory="release-artifacts/preflight/${{ matrix.name }}/${{ matrix.platform_slug }}"
+          mkdir -p "$directory"
+          python3 scripts/verify_glue_sqlite_runtime.py \
+            --image "$IMAGE_NAME" \
+            --platform "${{ matrix.platform }}" \
+            --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \
+            --report "$directory/sqlite-runtime.json"
       - name: Install the pinned vulnerability scanner
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:
@@ -477,16 +532,18 @@ jobs:
     needs: [prepare, publish]
     if: ${{ success() }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: ${{ fromJSON(needs.prepare.outputs.preflight_timeout_minutes) }}
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha }}
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - name: Prove every exact tag is anonymously readable and bound to this SHA
+      - name: Prove every exact tag is anonymously readable, source-bound, and runtime-verified
         env:
+          PREFLIGHT_TIMEOUT_MINUTES: ${{ needs.prepare.outputs.preflight_timeout_minutes }}
           REGISTRY: ${{ needs.prepare.outputs.registry }}
           SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
@@ -514,6 +571,24 @@ jobs:
               fi
               python3 -m scripts.release_policy binding \
                 --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
+              if [ "$name" = glue ]; then
+                platform_digest=$(jq -er --arg platform "$platform" '
+                  [.manifests[]
+                  | select(.platform.os + "/" + .platform.architecture == $platform)
+                  | .digest]
+                  | if length == 1 then .[0] else error("expected one published platform digest") end' \
+                  "release-evidence/$name-index.json")
+                platform_slug=${platform//\//-}
+                directory="release-evidence/$name-$platform_slug"
+                mkdir -p "$directory"
+                echo "event=registry.anonymous.sqlite_runtime.before image=$image digest=$platform_digest platform=$platform"
+                python3 scripts/verify_glue_sqlite_runtime.py \
+                  --image "$image@$platform_digest" \
+                  --platform "$platform" \
+                  --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \
+                  --report "$directory/sqlite-runtime.json"
+                echo "event=registry.anonymous.sqlite_runtime.after image=$image digest=$platform_digest platform=$platform"
+              fi
             done
             python3 scripts/registry_release.py verify-index \
               --component "$name" --image "$image" --tag "$VERSION" --digest "$digest" \
@@ -536,12 +611,14 @@ jobs:
             '{schema_version: 1, channel: $channel, version: $version, source_sha: $source_sha,
               snapshot_retention_days: (if $channel == "snapshot" then $snapshot_retention_days else null end),
               deletion_automated: false}' >release-evidence/retention.json
-      - name: Upload anonymous index and retention evidence
+      - name: Upload anonymous index, SQLite runtime, and retention evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: published-release-evidence-${{ needs.prepare.outputs.version }}
           path: release-evidence/
-          if-no-files-found: error
+          if-no-files-found: warn
+          retention-days: 14
 
   finalize-stable-release:
     name: Create or resume the GitHub Release after image verification

@@ -5,6 +5,17 @@
 
 # Glue database, table, and version error semantics
 
+<!-- toc:start -->
+## Contents
+
+- [Supported decisions](#supported-decisions)
+- [Archive, rename, and delete state](#archive-rename-and-delete-state)
+- [System failures and concurrency](#system-failures-and-concurrency)
+- [Explicit exclusions](#explicit-exclusions)
+- [Verification and maintenance](#verification-and-maintenance)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack implements deterministic local-catalog decisions for the 13 database, table, table-version,
 and import-status operations listed below. The pinned botocore model validates the public request
 shape first. Application values are then validated before catalog lookup wherever they do not

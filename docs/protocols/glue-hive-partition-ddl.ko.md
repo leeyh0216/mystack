@@ -5,6 +5,16 @@
 
 # Glue를 통한 Spark Hive partition DDL
 
+<!-- toc:start -->
+## 목차
+
+- [DDL과 Glue mapping](#ddl과-glue-mapping)
+- [Catalog와 side effect 의미론](#catalog와-side-effect-의미론)
+- [검증과 진단](#검증과-진단)
+- [제외 범위](#제외-범위)
+- [공식 출처](#공식-출처)
+<!-- toc:end -->
+
 Mystack은 Spark SQL을 parse하지 않습니다. Spark 3.5가 DDL 문법, type 검사, `IF EXISTS`/
 `IF NOT EXISTS`, S3 directory 탐색, cache 무효화, command 오류를 소유합니다. Mystack은 공식
 Glue Hive metastore client가 사용하는 Glue catalog operation을 제공합니다. 이 경계는 AWS가

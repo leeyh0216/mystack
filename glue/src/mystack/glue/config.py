@@ -18,6 +18,11 @@ from mystack.aws_protocol.configuration import (
 from mystack.glue.application import CatalogPolicy, TableOptimizerPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
 from mystack.glue.application.policies import GlueFaultInjectionPolicy, GlueFaultRule
+from mystack.glue.application.sqlite_runtime import (
+    SQLiteCheckpointSettings,
+    SQLiteDriverSettings,
+    SQLiteRuntimeSettings,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,15 +33,6 @@ class GlueRuntimeProfile:
     python_version: str
     java_version: str
     iceberg_version: str
-
-
-@dataclass(frozen=True, slots=True)
-class GlueCatalogLockSettings:
-    """Bounded inter-process lock settings for the durable catalog file."""
-
-    lock_file: Path
-    acquire_timeout_seconds: float
-    poll_interval_seconds: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,8 +83,7 @@ class GlueSettings:
     listen_host: str
     listen_port: int
     data_root: Path
-    state_file: Path
-    catalog_lock: GlueCatalogLockSettings
+    sqlite: SQLiteRuntimeSettings
     object_store: GlueObjectStoreSettings
     table_optimizers: GlueTableOptimizerSettings
     default_region: str
@@ -105,7 +100,9 @@ class GlueSettings:
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
         expression = require_mapping(glue, "partition_expressions")
-        catalog_lock = require_mapping(glue, "catalog_lock")
+        sqlite = require_mapping(glue, "sqlite")
+        sqlite_driver = require_mapping(sqlite, "driver")
+        sqlite_checkpoint = require_mapping(sqlite, "checkpoint")
         fault_injection = require_mapping(glue, "fault_injection")
         table_optimizers = require_mapping(glue, "table_optimizers")
         optimizer_scheduler = require_mapping(table_optimizers, "scheduler")
@@ -114,42 +111,44 @@ class GlueSettings:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
             data_root = Path(str(glue["data_root"]))
-            configured_state_file = Path(str(glue["state_file"]))
-            state_file = (
-                configured_state_file
-                if configured_state_file.is_absolute()
-                else data_root / configured_state_file
+            configured_database_file = Path(str(sqlite["database_file"]))
+            database_file = (
+                configured_database_file
+                if configured_database_file.is_absolute()
+                else data_root / configured_database_file
             )
-            configured_lock_file = Path(str(catalog_lock["file"]))
-            lock_file = (
-                configured_lock_file
-                if configured_lock_file.is_absolute()
-                else data_root / configured_lock_file
+            configured_manifest_file = Path(str(sqlite_driver["manifest_file"]))
+            manifest_file = (
+                configured_manifest_file
+                if configured_manifest_file.is_absolute()
+                else Path(loaded.source).parent / configured_manifest_file
             )
-            lock_timeout_seconds = float(catalog_lock["acquire_timeout_seconds"])
-            lock_poll_interval_seconds = float(catalog_lock["poll_interval_seconds"])
             configured_optimizer_root = Path(str(table_optimizers["work_root"]))
             optimizer_root = (
                 configured_optimizer_root
                 if configured_optimizer_root.is_absolute()
                 else data_root / configured_optimizer_root
             )
-            if lock_file.resolve(strict=False) == state_file.resolve(strict=False):
-                raise ConfigurationError("glue.catalog_lock.file must differ from glue.state_file")
-            if lock_poll_interval_seconds > lock_timeout_seconds:
-                raise ConfigurationError(
-                    "glue.catalog_lock.poll_interval_seconds must be no greater than "
-                    "glue.catalog_lock.acquire_timeout_seconds"
-                )
             return cls(
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
                 data_root=data_root,
-                state_file=state_file,
-                catalog_lock=GlueCatalogLockSettings(
-                    lock_file=lock_file,
-                    acquire_timeout_seconds=lock_timeout_seconds,
-                    poll_interval_seconds=lock_poll_interval_seconds,
+                sqlite=SQLiteRuntimeSettings(
+                    database_file=database_file,
+                    driver=SQLiteDriverSettings(
+                        module=str(sqlite_driver["module"]),
+                        expected_version=str(sqlite_driver["expected_version"]),
+                        minimum_wal_version=str(sqlite_driver["minimum_wal_version"]),
+                        manifest_file=manifest_file,
+                    ),
+                    journal_mode=str(sqlite["journal_mode"]),
+                    synchronous=str(sqlite["synchronous"]),
+                    busy_timeout_milliseconds=int(sqlite["busy_timeout_milliseconds"]),
+                    retry_limit=int(sqlite["retry_limit"]),
+                    checkpoint=SQLiteCheckpointSettings(
+                        mode=str(sqlite_checkpoint["mode"]),
+                        auto_checkpoint_pages=int(sqlite_checkpoint["auto_checkpoint_pages"]),
+                    ),
                 ),
                 object_store=GlueObjectStoreSettings(
                     endpoint_url=str(localstack["endpoint_url"]),
@@ -201,6 +200,7 @@ class GlueSettings:
                         supported_key_types=tuple(
                             str(value) for value in expression["supported_key_types"]
                         ),
+                        fallback_max_candidates=int(expression["fallback_max_candidates"]),
                     ),
                 ),
                 fault_injection=GlueFaultInjectionPolicy(
@@ -217,6 +217,10 @@ class GlueSettings:
             raise ConfigurationError(
                 f"Glue configuration is missing required key: {error.args[0]}"
             ) from error
+        except ValueError as error:
+            if isinstance(error, ConfigurationError):
+                raise
+            raise ConfigurationError(str(error)) from error
 
 
 def _fault_rule(value: object, index: int) -> GlueFaultRule:

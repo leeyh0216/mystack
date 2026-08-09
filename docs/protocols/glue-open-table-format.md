@@ -5,6 +5,19 @@
 
 # Glue Open Table Format input contract
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Create protocol](#create-protocol)
+- [Schema, partition, and sort support](#schema-partition-and-sort-support)
+- [Update and concurrency protocol](#update-and-concurrency-protocol)
+- [Errors and evaluation order](#errors-and-evaluation-order)
+- [Configuration, logging, and repair locations](#configuration-logging-and-repair-locations)
+- [Verification evidence and limits](#verification-evidence-and-limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract defines the supported `CreateTable.OpenTableFormatInput` and
 `UpdateTable.UpdateOpenTableFormatInput` paths. The wire shape comes from the official AWS Glue
 [`CreateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html),
@@ -118,7 +131,7 @@ When a botocore, Glue, or Iceberg upgrade breaks this path, inspect in this orde
 2. `glue/domain/open_table_format.py` for type, action, transform, or Iceberg spec drift.
 3. `glue/application/open_table_format.py` for ordering, CAS, or compensation drift.
 4. `glue/adapters/outbound/iceberg_metadata.py` for LocalStack/S3 codec or endpoint drift.
-5. `glue/scripts/e2e/open_table_format.py` and `compatibility/cases.yaml` for real-client evidence.
+5. `glue/scripts/e2e/open_table_format.py` and typed pytest annotations for real-client evidence.
 
 <!-- section: evidence -->
 ## Verification evidence and limits

@@ -21,6 +21,7 @@ from mystack.glue.application.policies import GlueFaultInjectionPolicy
 from mystack.glue.domain import AlreadyExistsError
 
 from scripts.api_coverage import IMPLEMENTED
+from scripts.operation_inventory import extract_implemented_operation_inventory
 
 
 class _FailingDatabaseCommands:
@@ -54,7 +55,8 @@ def test_glue_families_are_disjoint_complete_and_match_coverage() -> None:
         "table-optimizer",
     ]
     assert len(owners) == len(set(owners))
-    assert set(owners) == IMPLEMENTED_GLUE_OPERATIONS == IMPLEMENTED["glue"]
+    extracted = extract_implemented_operation_inventory()
+    assert set(owners) == IMPLEMENTED_GLUE_OPERATIONS == extracted["glue"] == IMPLEMENTED["glue"]
 
 
 @pytest.mark.asyncio

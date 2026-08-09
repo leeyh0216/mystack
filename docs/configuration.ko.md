@@ -5,6 +5,15 @@
 
 # 설정과 재현 가능한 컨테이너
 
+<!-- toc:start -->
+## 목차
+
+- [적용 순서](#적용-순서)
+- [Docker 실행 방식](#docker-실행-방식)
+- [주요 section](#주요-section)
+- [재현 가능한 build 입력](#재현-가능한-build-입력)
+<!-- toc:end -->
+
 Mystack의 runtime 동작은 versioned `config/mystack.yaml`에 둡니다. Service endpoint,
 credential, release mapping, process deadline, Spark submit parsing table, route 등록, test
 deadline의 fallback을 application 코드에 두지 않습니다. Docker 공식 지침이 구분하는
@@ -38,7 +47,7 @@ mystack-proxy
 ## Docker 실행 방식
 
 일반 사용자는 `compose.ghcr.yaml`을 사용합니다. 게시 image마다 같은 release에서 검토한
-`/etc/mystack/mystack.yaml`이 포함되므로 repository clone이나 config mount가 필요하지 않습니다.
+`/etc/mystack/mystack.yaml`이 포함됩니다.
 `MYSTACK_IMAGE_TAG`는 필수입니다. Digest를 고정할 때는 component별 전체 image reference를
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, `MYSTACK_GLUE_IMAGE`로 지정할 수 있습니다. Compose가
 nested fallback을 평가하므로 세 override를 모두 써도 tag를 정의해야 합니다.
@@ -61,6 +70,9 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 <!-- section: sections -->
 ## 주요 section
 
+[전체 설정 레퍼런스](configuration-reference.generated.md)는 runtime schema와 기본값에서 생성하며,
+`make configuration-reference-check`가 CI에서 drift를 실패 처리합니다.
+
 | 경로 | 책임 |
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
@@ -69,7 +81,7 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 | `proxy` | listener, fallback, outbound timeout, 확장 가능한 route registry |
 | `localstack` | S3 endpoint, region, account, local credential, path-style 동작 |
 | `emr` | 작업 저장소, deadline, process 정책, release profile, operation limit |
-| `glue` | durable catalog state/lock, catalog ID, paging, partition expression/fault 정책, runtime profile |
+| `glue` | 영속 SQLite catalog, catalog ID, paging, partition expression/fault 정책, optimizer, runtime profile |
 | `runtime_profiles` | Spark command/master/package/conf/parser option과 Glue version |
 | `tests` | Unit/contract/E2E/Compose deadline과 black-box client/runtime 설정 |
 
@@ -82,13 +94,29 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 `supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
 protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
 
-`glue.catalog_lock`은 JSON catalog의 process 간 경계를 설정합니다. `file`은 absolute가 아니면
-`glue.data_root` 아래에서 해석하며 `glue.state_file`과 달라야 합니다.
-`acquire_timeout_seconds`는 다른 emulator process의 lock을 기다리는 시간을 제한하고
-`poll_interval_seconds`는 non-blocking POSIX `flock` 재시도 주기이며 timeout보다 클 수 없습니다.
-State file을 공유하는 모든 process가 같은 lock file을 mount하고 설정해야 합니다. [Iceberg
-GlueCatalog commit 계약](protocols/glue-iceberg-commits.ko.md)과 Python 공식
-[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) 문서를 참고하세요.
+`glue.sqlite`는 유일한 영속 Glue catalog store를 설정합니다. `database_file`은 absolute가 아니면
+`glue.data_root` 아래에서 해석합니다. Database file 하나만 mount하지 말고 parent directory 전체를
+write 가능하게 mount해야 합니다. WAL은 그곳에 `-wal`, `-shm` sibling을 유지합니다. Image의 고정한
+private DB-API는 schema나 catalog file을 만들기 전에 검증합니다. WAL이 기본이며 검증에 실패하면
+시작을 거부합니다. `rollback`은 명시적인 개발용 escape hatch이고 자동 fallback이 아닙니다.
+
+| Key | 효과 |
+| --- | --- |
+| `database_file` | 정규화한 영속 catalog path; 상대 path는 `glue.data_root` 아래에서 해석 |
+| `driver.module` | image 또는 명시적인 개발 driver가 선택하는 private DB-API module |
+| `driver.expected_version` | WAL에 필요한 source-built SQLite의 정확한 version |
+| `driver.minimum_wal_version` | 안전한 WAL의 최저 version; `3.51.3` 이상이어야 함 |
+| `driver.manifest_file` | WAL 시작 검증 절차에서 source-build provenance를 확인하는 manifest |
+| `journal_mode` | 기본 `wal` 또는 명시적 `rollback` (`DELETE` journal) |
+| `synchronous` | SQLite durability 설정: `off`, `normal`, `full`, `extra` |
+| `busy_timeout_milliseconds` | busy SQLite operation 하나를 기다리는 최대 시간 |
+| `retry_limit` | busy writer 결과 뒤에 추가하는 상한 있는 retry 횟수 |
+| `checkpoint.mode` | 요청하는 maintenance checkpoint mode: `passive`, `full`, `restart`, `truncate` |
+| `checkpoint.auto_checkpoint_pages` | SQLite 자동 WAL checkpoint page threshold |
+
+JSON catalog fallback이나 migration은 없습니다. Durability, 같은 host WAL 제한, backup 절차, logging,
+수정 경계는 [Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
+[SQLite transaction 계약](protocols/glue-iceberg-commits.ko.md)에 있습니다.
 
 Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
 credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며
@@ -209,6 +237,10 @@ Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
 격리된 wheel 동시 설치 제한 시간은 `tests.package_smoke_timeout_seconds`로 설정합니다.
+`tests.compatibility_collection_timeout_seconds`는 type이 있는 compatibility annotation을 찾는 pytest
+`--collect-only` subprocess만 제한합니다. Test body는 실행하지 않습니다.
+`CompatibilityProfile.expected_duration_minutes`는 별도로 생성한 GitHub Actions 바깥 job 시간 상한이고,
+선택한 contract 또는 E2E test는 기존 YAML test timeout을 사용합니다.
 `tests.e2e.glue_iceberg_contention_script`는 CI 전용 두 container optimistic-commit 시나리오에서
 사용하는 image 내부 Spark job path입니다. Custom Glue image가 harness 위치를 바꾸더라도 test
 코드를 고치지 않도록 file 설정으로 둡니다.

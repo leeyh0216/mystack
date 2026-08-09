@@ -3,7 +3,6 @@
 Reference: https://docs.aws.amazon.com/glue/latest/dg/catalog-and-crawler.html
 """
 
-from mystack.glue.domain.catalog_state import CatalogState
 from mystack.glue.domain.errors import (
     AlreadyExistsError,
     EntityNotFoundError,
@@ -39,7 +38,6 @@ __all__ = [
     "CatalogDocument",
     "CatalogName",
     "CatalogPartition",
-    "CatalogState",
     "CatalogTable",
     "CatalogTableVersion",
     "EntityNotFoundError",

@@ -1,0 +1,33 @@
+# Run from this directory: docker compose up --build --abort-on-container-exit
+# The client image is the same pinned Glue 5/Spark 3.5 runtime used by Mystack's CI scenario.
+name: mystack-spark-client-lab
+
+include:
+  - path: ../../../compose.yaml
+    env_file: compose.env
+
+services:
+  spark-client:
+    image: mystack/spark-client-lab:dev
+    build:
+      context: .
+      args:
+        MYSTACK_GLUE_CLIENT_IMAGE: ${MYSTACK_GLUE_CLIENT_IMAGE:-mystack/glue:dev}
+    entrypoint: [/workspace/run.sh]
+    command:
+      - --master
+      - local[2]
+      - /workspace/verify.py
+    depends_on:
+      proxy:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_ENDPOINT_URL_GLUE: http://proxy:8080
+      AWS_ENDPOINT_URL_S3: http://localstack:4566
+      AWS_ENDPOINT_URL_STS: http://localstack:4566
+    networks: [mystack]

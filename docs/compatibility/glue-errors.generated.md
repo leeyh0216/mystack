@@ -5,6 +5,13 @@
 
 # Glue error contracts (generated)
 
+<!-- toc:start -->
+## Contents
+
+- [Decision order](#decision-order)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This document is generated deterministically from `contracts/glue-error-conditions.yaml`; do not edit it directly.
 
 <!-- section: matrix -->

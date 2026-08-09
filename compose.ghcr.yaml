@@ -1,6 +1,5 @@
-# Image-only user deployment. No local source tree or build context is required.
+# Published image deployment with explicit version tags.
 # Compose interpolation: https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/
-# Public GHCR anonymous pulls: https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages
 name: mystack
 
 x-mystack-service: &mystack-service

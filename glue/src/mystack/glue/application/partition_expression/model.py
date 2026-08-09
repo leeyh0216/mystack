@@ -89,3 +89,8 @@ class PartitionExpressionPolicy:
     max_length: int
     max_tokens: int
     supported_key_types: tuple[str, ...]
+    fallback_max_candidates: int = 1_000
+
+    def __post_init__(self) -> None:
+        if self.fallback_max_candidates <= 0:
+            raise ValueError("fallback_max_candidates must be positive")

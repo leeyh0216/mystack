@@ -5,6 +5,17 @@
 
 # Public GHCR 이미지 게시
 
+<!-- toc:start -->
+## 목차
+
+- [Image와 소유권](#image와-소유권)
+- [게시 계약](#게시-계약)
+- [게시와 최초 visibility 설정](#게시와-최초-visibility-설정)
+- [취약점과 rollback 의미](#취약점과-rollback-의미)
+- [실패 대응표](#실패-대응표)
+- [게시하지 않는 local 검사](#게시하지-않는-local-검사)
+<!-- toc:end -->
+
 이 문서는 container 소비와 registry 운영을 설명합니다. Maintainer는 먼저 전체 [버전과 branch
 흐름](versioning.ko.md)을 읽어야 합니다. Mystack은 GitHub 공식 [Container
 registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)와
@@ -37,6 +48,10 @@ pattern, snapshot 보존 기간을 관리합니다. `latest`는 게시하지 않
 - BuildKit provenance와 SBOM을 연결합니다. Runtime descriptor는 공식 [OCI image
   index](https://github.com/opencontainers/image-spec/blob/main/image-index.md)를 만족해야 하며
   `unknown/unknown`인 attestation descriptor는 제외합니다.
+- Release를 마무리하기 전에 익명 runner가 게시한 Glue platform manifest digest를 각각 찾고 정확한
+  `image@platform-digest`에 상한이 있는 `--verify-sqlite-runtime` command를 실행합니다. 이 report는
+  앞선 local build 결과만 믿지 않고 artifact에서 source-built SQLite version, 검증한 WAL 경로,
+  runtime architecture를 보여줍니다.
 - 고정 Trivy는 공식 [image 명령
   계약](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/)을 따릅니다. 모든
   job, scan, test, 외부 명령에는 명시적 timeout이 있습니다.
@@ -80,6 +95,12 @@ public container package의 익명 접근을 설명합니다. Visibility 실패�
 platform image를 검사합니다. 검증, build, timeout, 근거 누락, 설정된 취약점 중 하나라도 실패하면
 authorization을 만들지 않습니다. 진단용 raw `preflight-*` artifact는 남습니다.
 
+Push 뒤 Glue runtime probe에도 상한을 둡니다. Nonzero exit, timeout, 잘못된 report가 발생하면
+release를 멈추기 전에 published-release evidence artifact 아래에 실패한 `sqlite-runtime.json`을
+작성합니다. Document에는 최대 4,096자인 redacted stdout/stderr tail만 남기며 전체 container output,
+token, credential, query value는 넣지 않습니다. Probe가 실패해도 evidence upload를 수행하고 14일간
+보존합니다.
+
 취약점 판정 기준은 기본적으로 설정 severity를 모두 거부합니다. 알려진 upstream runtime finding은
 `config/registry-release.json`의 정확한 항목으로만 허용할 수 있습니다. Component, CVE, package,
 설치 version, image 상대 JAR path가 모두 일치하고 검토 날짜가 `expires_on`을 넘지 않아야 합니다.
@@ -115,6 +136,7 @@ metadata에는 30일 보존 목표를 기록하지만 삭제는 아직 자동화
 | Push 중 package permission 거부 | Workflow와 package 연결 불일치 | Workflow permission과 package access |
 | 익명 검증 거부 | Package가 아직 private | 1회성 visibility 변경 후 같은 SHA 재실행 |
 | `registry.index.verify.failed` | Runtime platform 누락 | Dockerfile base manifest 또는 설정 platform |
+| `glue.sqlite.preflight.failed` | 게시한 Glue platform digest가 SQLite runtime을 증명하지 못함 | 보존한 redacted `sqlite-runtime.json`, Dockerfile dependency resolver, runtime policy 확인 |
 | `registry.scan.exception.matched` | 정확히 검토한 finding의 한시 허용 | Coordinate, 사유, 출처, 만료일 검토 |
 | `registry.scan.exception.expired` | Risk decision 검토 기한 도달 | Runtime patch 또는 검토 후 새 버전으로 갱신 |
 | `registry.scan.evaluate.failed` | 승인하지 않은 설정 severity finding 존재 | Runtime/base를 고치고 새 버전 사용 |

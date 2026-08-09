@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
-from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any
 
@@ -28,44 +26,12 @@ from mystack.glue.application.partition_expression.model import (
     Range,
     TokenKind,
 )
+from mystack.glue.application.partition_expression.value_codec import (
+    LikePatternCompiler,
+    PartitionValueCodec,
+    PartitionValueError,
+)
 from mystack.glue.domain import InvalidInputError
-
-_INTEGER_TYPES = {"int", "bigint", "long", "tinyint", "smallint"}
-_DECIMAL_TYPE = re.compile(r"^decimal(?:\(\d+\s*,\s*\d+\))?$")
-
-
-class LikePatternCompiler:
-    """Compile Glue SQL and Spark Hive metastore ``LIKE`` pattern dialects.
-
-    Spark 3.5 converts ``StartsWith``, ``EndsWith`` and ``Contains`` partition
-    predicates to ``.*`` patterns before the Glue Hive client submits them:
-    https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala
-    """
-
-    def compile(self, value: str) -> str:
-        parts: list[str] = []
-        position = 0
-        escaped = False
-        while position < len(value):
-            character = value[position]
-            if escaped:
-                parts.append(re.escape(character))
-                escaped = False
-            elif character == "\\":
-                escaped = True
-            elif character == "%":
-                parts.append(".*")
-            elif character == "_":
-                parts.append(".")
-            elif character == "." and position + 1 < len(value) and value[position + 1] == "*":
-                parts.append(".*")
-                position += 1
-            else:
-                parts.append(re.escape(character))
-            position += 1
-        if escaped:
-            parts.append(re.escape("\\"))
-        return "".join(parts)
 
 
 class TruthValue(Enum):
@@ -77,50 +43,6 @@ class TruthValue(Enum):
         if self is TruthValue.UNKNOWN:
             return self
         return TruthValue.FALSE if self is TruthValue.TRUE else TruthValue.TRUE
-
-
-class PartitionValueCodec:
-    """Convert catalog strings and expression literals through one type policy."""
-
-    def __init__(self, policy: PartitionExpressionPolicy) -> None:
-        self._supported = {value.casefold() for value in policy.supported_key_types}
-
-    def normalized_type(self, type_name: str) -> str:
-        normalized = type_name.strip().casefold()
-        family = "decimal" if _DECIMAL_TYPE.fullmatch(normalized) else normalized
-        if family not in self._supported:
-            raise InvalidInputError(
-                f"Partition key type {type_name!r} is not supported in expressions"
-            )
-        return family
-
-    def decode(self, value: str | None, type_name: str) -> Any | None:
-        if value is None:
-            return None
-        family = self.normalized_type(type_name)
-        try:
-            if family == "string":
-                return value
-            if family in _INTEGER_TYPES:
-                return int(value)
-            if family == "decimal":
-                return Decimal(value)
-            if family == "date":
-                return date.fromisoformat(value)
-            if family == "timestamp":
-                return self._timestamp(value)
-        except (InvalidOperation, TypeError, ValueError) as error:
-            raise InvalidInputError(
-                f"Partition value is not valid for key type {type_name!r}"
-            ) from error
-        raise InvalidInputError(f"Partition key type {type_name!r} is not supported")
-
-    @staticmethod
-    def _timestamp(value: str) -> datetime:
-        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value.endswith("Z") else value)
-        if parsed.tzinfo is not None:
-            parsed = parsed.astimezone(UTC).replace(tzinfo=None)
-        return parsed
 
 
 @dataclass(frozen=True, slots=True)
@@ -151,16 +73,19 @@ class PartitionExpressionEvaluator:
     """Evaluate an AST without parsing, I/O, pagination, or repository access."""
 
     def __init__(self, policy: PartitionExpressionPolicy) -> None:
-        self._codec = PartitionValueCodec(policy)
+        self._codec = PartitionValueCodec(policy.supported_key_types)
         self._like_patterns = LikePatternCompiler()
 
     def validate(self, expression: Expression, keys: tuple[PartitionKey, ...]) -> None:
         schema = PartitionRow.create(keys, (None,) * len(keys)).schema
-        for field in self._fields(expression):
-            key = schema.get(field.casefold())
-            if key is None:
-                raise InvalidInputError(f"Unknown partition key {field!r} in expression")
-            self._codec.normalized_type(key.type_name)
+        try:
+            for field in self._fields(expression):
+                key = schema.get(field.casefold())
+                if key is None:
+                    raise InvalidInputError(f"Unknown partition key {field!r} in expression")
+                self._codec.normalized_type(key.type_name)
+        except PartitionValueError as error:
+            raise InvalidInputError(str(error)) from error
 
     def matches(self, expression: Expression, row: PartitionRow) -> bool:
         return self._evaluate(expression, row) is TruthValue.TRUE
@@ -230,10 +155,16 @@ class PartitionExpressionEvaluator:
         key = row.schema.get(normalized)
         if key is None:
             raise InvalidInputError(f"Unknown partition key {field!r} in expression")
-        return key, self._codec.decode(row.values[normalized], key.type_name)
+        return key, self._decode(row.values[normalized], key.type_name)
 
     def _literal(self, literal: Literal, key: PartitionKey) -> Any | None:
-        return self._codec.decode(literal.value, key.type_name)
+        return self._decode(literal.value, key.type_name)
+
+    def _decode(self, value: str | None, type_name: str) -> Any | None:
+        try:
+            return self._codec.decode(value, type_name)
+        except PartitionValueError as error:
+            raise InvalidInputError(str(error)) from error
 
     @staticmethod
     def _truth(value: bool) -> TruthValue:

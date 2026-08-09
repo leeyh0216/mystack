@@ -1,6 +1,6 @@
 {
   "name": "mystack-frontend-workspace",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,10 +14,10 @@
   "scripts": {
     "frontend:lint": "eslint ui emr/ui glue/ui",
     "frontend:typecheck": "tsc -b",
-    "frontend:test": "vitest run --testTimeout=10000 --hookTimeout=10000",
+    "frontend:test": "vitest run",
     "frontend:build": "npm run build --workspace @mystack/emr-ui && npm run build --workspace @mystack/glue-ui",
-    "frontend:check:emr": "eslint ui emr/ui && tsc -b ui emr/ui && vitest run ui/tests emr/ui/src --testTimeout=10000 --hookTimeout=10000 && npm run build --workspace @mystack/emr-ui",
-    "frontend:check:glue": "eslint ui glue/ui && tsc -b ui glue/ui && vitest run ui/tests glue/ui/src --testTimeout=10000 --hookTimeout=10000 && npm run build --workspace @mystack/glue-ui",
+    "frontend:check:emr": "eslint ui emr/ui && tsc -b ui emr/ui && vitest run ui/tests emr/ui/src && npm run build --workspace @mystack/emr-ui",
+    "frontend:check:glue": "eslint ui glue/ui && tsc -b ui glue/ui && vitest run ui/tests glue/ui/src && npm run build --workspace @mystack/glue-ui",
     "frontend:check": "npm run frontend:lint && npm run frontend:typecheck && npm run frontend:test && npm run frontend:build"
   },
   "devDependencies": {

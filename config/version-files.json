@@ -74,34 +74,6 @@
       "expected_matches": 1
     },
     {
-      "path": "README.md",
-      "kind": "regex",
-      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
-      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
-      "expected_matches": 1
-    },
-    {
-      "path": "README.ko.md",
-      "kind": "regex",
-      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
-      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
-      "expected_matches": 1
-    },
-    {
-      "path": "docs/getting-started.md",
-      "kind": "regex",
-      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+  # replace with a published tag",
-      "replacement": "export MYSTACK_IMAGE_TAG=v{version}  # replace with a published tag",
-      "expected_matches": 1
-    },
-    {
-      "path": "docs/getting-started.ko.md",
-      "kind": "regex",
-      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+  # 실제 게시 tag로 교체",
-      "replacement": "export MYSTACK_IMAGE_TAG=v{version}  # 실제 게시 tag로 교체",
-      "expected_matches": 1
-    },
-    {
       "path": "docs/protocols/emr-prestart.md",
       "kind": "regex",
       "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",

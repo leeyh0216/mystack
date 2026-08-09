@@ -5,6 +5,20 @@
 
 # Project baseline
 
+<!-- toc:start -->
+## Contents
+
+- [Metadata](#metadata)
+- [Purpose and runtime](#purpose-and-runtime)
+- [Code-derived facts](#code-derived-facts)
+- [Entry points and commands](#entry-points-and-commands)
+- [Confirmed architecture decisions](#confirmed-architecture-decisions)
+- [Consistency result](#consistency-result)
+- [Remaining candidate gaps](#remaining-candidate-gaps)
+- [Sequential confirmation log](#sequential-confirmation-log)
+- [Recommended next sequence](#recommended-next-sequence)
+<!-- toc:end -->
+
 <!-- section: metadata -->
 ## Metadata
 
@@ -53,11 +67,11 @@ contracts.
   cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
   closes artifacts, and releases driver locks.
 - Glue: 28 operations covering database, table/version, partition/batch, and table optimizers with
-  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. Serialized
-  candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
-  schema 1, and keep rename/cascade/version checks atomic. A bounded POSIX lock and latest-state
-  reload extend the same transaction across emulator processes; documented domain errors translate
-  at the inbound adapter.
+  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. The
+  source-built SQLite DB-API runtime is capability-gated before catalog initialization. A normalized
+  SQLite catalog uses bounded writer retries, WAL, transactional schema initialization, and atomic
+  database/table rename, cascade, and VersionId checks; documented domain errors translate at the
+  inbound adapter.
 - Glue responsibilities: immutable lossless domain snapshots own name/revision/archive/partition
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
   policy; a separate Open Table Format planner/orchestrator owns Iceberg v2 input validation,
@@ -73,13 +87,15 @@ contracts.
 - Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
   resource/log views, route/thread/task diagnostics, and structured boundary logs without
   authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.
-- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
+- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11 CI,
   nightly/manual Docker E2E, model/API drift gates, immutable develop snapshots and main releases,
-  anonymously consumable public GHCR multi-platform images, SBOM/provenance, OCI index validation,
-  and Trivy policy.
+  multi-platform GHCR image publication, SBOM/provenance, OCI index validation, and Trivy policy.
 - Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
   explicit configured timeouts.
+- CI reporting publishes concise job summaries plus downloadable escaped HTML/JUnit test reports.
+  Compatibility CI matrices and evidence are collected from typed pytest annotations without
+  executing test bodies; the legacy YAML/API baselines remain required parity guards pending #87.
 
 <!-- section: entry-points -->
 ## Entry points and commands
@@ -122,11 +138,16 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
 - The previous baseline and use-case catalog still listed implemented EMR, Glue, Spark/Iceberg,
   Docker E2E, UI, and compatibility generation as future gaps. This scan replaces those stale claims.
 - The previous test count described an early shared/Proxy slice rather than the current workspace.
+- The 2026-08-09 documentation/CI scan found 92 Markdown documents without a common top index,
+  mixed user and contributor material, 115 configuration leaf paths with only top-level coverage,
+  and raw rather than human-readable test diagnostics. The Markdown-first navigation (#75) and
+  readable CI reports (#80) are now implemented; a static-site decision remains deferred.
 
 ### Unconfirmed
 
-- The first all-component GHCR publication was still running during this scan; workflow structure is
-  implemented, but this baseline does not claim all three remote packages passed their first scan.
+- The `v0.1.3` workflow pushed all three images, but the anonymous external pull verification failed
+  because package visibility has not yet been changed. GitHub Release creation was skipped; #45
+  records that external blocker.
 
 <!-- section: candidates -->
 ## Remaining candidate gaps
@@ -139,11 +160,14 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 
 - 2026-08-08: the user superseded the earlier A/B/C design and requested complete removal of the
   in-process SPI while retaining Proxy route extensibility.
+- 2026-08-09: after reviewing Spark, Trino, and the repository documentation/CI structure, the user
+  selected a Markdown-first user documentation rewrite. A static documentation site is deferred.
 
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Strengthen the GHCR release pre-push gate and GHCR-first onboarding.
-2. Keep protocol and client drift repair hints synchronized with the implemented compatibility
-   manifest.
-3. Add newly reviewed clients and runtimes as explicit non-cross-product cases.
+1. Continue expanding implemented Glue and EMR operations only with their documented semantic,
+   pagination, conflict, and state-transition contracts.
+2. Keep the generated API inventory and client workflow labs synchronized with each supported client
+   and pinned dependency version.
+3. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).

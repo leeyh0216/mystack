@@ -352,7 +352,12 @@ def _workflow(path: str) -> dict:
 def test_publication_workflow_is_reusable_only_and_write_permission_is_final() -> None:
     workflow = _workflow(".github/workflows/container-publish.yml")
     assert set(workflow["on"]) == {"workflow_call"}
-    assert workflow["permissions"] == {"contents": "read"}
+    assert workflow["permissions"] == {"actions": "read", "contents": "read"}
+    assert set(workflow["on"]["workflow_call"]["inputs"]) >= {
+        "channel",
+        "ci_run_id",
+        "source_sha",
+    }
 
     jobs = workflow["jobs"]
     package_writers = [
@@ -386,12 +391,41 @@ def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
     assert '"push": "false"' in preflight
     assert '"load": "true"' in preflight
     assert "record-preflight" in preflight
+    assert "verify_glue_sqlite_runtime.py" in preflight
+    assert "Verify the source-built Glue SQLite runtime" in preflight
     assert "docker/login-action" in publish
     assert '"push": "true"' in publish
     assert "authorize-publication" in publish
     assert publish.index("authorize-publication") < publish.index("docker/login-action")
     assert "-m scripts.release_policy binding" in publish
     assert "steps.identity.outputs.exists != 'true'" in publish
+
+
+def test_publication_reprobes_each_published_glue_platform_digest_before_release() -> None:
+    jobs = _workflow(".github/workflows/container-publish.yml")["jobs"]
+    verification_steps = jobs["verify-publication"]["steps"]
+    publication_verification = json.dumps(verification_steps, sort_keys=True)
+    runtime_probe = next(
+        step
+        for step in verification_steps
+        if step.get("name")
+        == "Prove every exact tag is anonymously readable, source-bound, and runtime-verified"
+    )
+    evidence_upload = next(
+        step
+        for step in verification_steps
+        if step.get("name") == "Upload anonymous index, SQLite runtime, and retention evidence"
+    )
+
+    assert "docker/setup-qemu-action" in publication_verification
+    assert "verify_glue_sqlite_runtime.py" in publication_verification
+    assert "platform_digest=$(jq -er" in runtime_probe["run"]
+    assert '--image "$image@$platform_digest"' in runtime_probe["run"]
+    assert "PREFLIGHT_TIMEOUT_MINUTES" in runtime_probe["run"]
+    assert "sqlite-runtime.json" in runtime_probe["run"]
+    assert evidence_upload["if"] == "always()"
+    assert evidence_upload["with"]["retention-days"] == "14"
+    assert jobs["finalize-stable-release"]["needs"] == ["prepare", "verify-publication"]
 
 
 def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
@@ -404,6 +438,7 @@ def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     publish = workflow["jobs"]["publish"]
     assert publish["uses"] == "./.github/workflows/container-publish.yml"
     assert publish["permissions"] == {"contents": "write", "packages": "write"}
+    assert publish["with"]["ci_run_id"] == "${{ github.event.workflow_run.id }}"
     assert "pull_request" not in json.dumps(workflow["on"])
 
 

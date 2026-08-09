@@ -8,13 +8,18 @@ References:
 
 from __future__ import annotations
 
-import copy
 import re
 
+from mystack.glue.application.catalog_identity import database, name, table
+from mystack.glue.application.catalog_ports import (
+    CatalogQueryPort,
+    CatalogReadPort,
+    CatalogWritePort,
+)
+from mystack.glue.application.catalog_query_models import TablePageQuery
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock
-from mystack.glue.application.state import database, name, rename_table_children, table
 from mystack.glue.domain import (
     AlreadyExistsError,
     CatalogTable,
@@ -23,17 +28,16 @@ from mystack.glue.domain import (
     InvalidInputError,
     VersionMismatchError,
 )
-from mystack.glue.domain.repositories import CatalogRepository
 
 
 class TableCommands:
     def __init__(
         self,
-        repository: CatalogRepository,
+        catalog: CatalogWritePort,
         clock: Clock,
         iceberg_commits: IcebergCommitObserver,
     ) -> None:
-        self._repository = repository
+        self._catalog = catalog
         self._clock = clock
         self._iceberg_commits = iceberg_commits
 
@@ -51,14 +55,18 @@ class TableCommands:
             self._clock.now(),
         )
         key = (catalog_id, normalized_database, value.name)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="create-table",
             resource_key=key,
-        ) as state:
-            database(state, catalog_id, normalized_database)
-            if key in state.tables:
+        ) as transaction:
+            await database(transaction, catalog_id, normalized_database)
+            if (
+                await transaction.find_table(catalog_id, normalized_database, value.name)
+                is not None
+            ):
                 raise AlreadyExistsError(f"Table {normalized_database}.{value.name} already exists")
-            state.tables[key] = copy.deepcopy(value)
+            if not await transaction.insert_table(value):
+                raise AlreadyExistsError(f"Table {normalized_database}.{value.name} already exists")
         return value
 
     async def update(
@@ -79,11 +87,11 @@ class TableCommands:
         old_key = (catalog_id, normalized_database, normalized_old)
         attempt = None
         try:
-            async with self._repository.transaction(
+            async with self._catalog.transaction(
                 operation="update-table",
                 resource_key=old_key,
-            ) as state:
-                current = table(state, catalog_id, normalized_database, normalized_old)
+            ) as transaction:
+                current = await table(transaction, catalog_id, normalized_database, normalized_old)
                 attempt = self._iceberg_commits.begin(
                     current,
                     definition,
@@ -91,7 +99,11 @@ class TableCommands:
                     skip_archive=skip_archive,
                 )
                 new_key = (catalog_id, normalized_database, revised_name)
-                if new_key != old_key and new_key in state.tables:
+                if (
+                    new_key != old_key
+                    and await transaction.find_table(catalog_id, normalized_database, revised_name)
+                    is not None
+                ):
                     raise AlreadyExistsError(
                         f"Table {normalized_database}.{revised_name} already exists"
                     )
@@ -108,17 +120,30 @@ class TableCommands:
                     raise
                 if attempt is not None:
                     attempt.accepted(revised.version_id)
-                state.tables.pop(old_key)
-                state.tables[new_key] = revised
                 if new_key != old_key:
-                    rename_table_children(
-                        state,
+                    for optimizer in await transaction.list_optimizers_for_table(
                         catalog_id,
                         normalized_database,
                         normalized_old,
-                        revised.name,
-                        now=self._clock.now(),
-                    )
+                    ):
+                        if optimizer.active_run is None:
+                            continue
+                        cancelled = optimizer.cancel_active_run(
+                            now=self._clock.now(),
+                            reason="Owning Glue table was renamed during optimizer execution",
+                        )
+                        if not await transaction.replace_optimizer(optimizer, cancelled):
+                            raise RuntimeError(
+                                "SQLite catalog optimizer changed during table rename"
+                            )
+                if not await transaction.replace_table(current, revised):
+                    if version_id is not None:
+                        if attempt is not None:
+                            attempt.conflicted()
+                        raise VersionMismatchError(
+                            f"Expected table version {version_id}, current version changed"
+                        )
+                    raise RuntimeError("SQLite catalog table changed during update")
                 if attempt is not None:
                     attempt.persisting(revised.version_id)
         except VersionMismatchError:
@@ -134,21 +159,24 @@ class TableCommands:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
         key = (catalog_id, normalized_database, normalized_table)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="delete-table",
             resource_key=key,
-        ) as state:
-            table(state, catalog_id, normalized_database, normalized_table)
-            state.tables.pop(key)
-            for partition_key in [value for value in state.partitions if value[:3] == key]:
-                state.partitions.pop(partition_key)
-            for optimizer_key in [value for value in state.optimizers if value[:3] == key]:
-                state.optimizers.pop(optimizer_key)
+        ) as transaction:
+            current = await table(transaction, catalog_id, normalized_database, normalized_table)
+            if not await transaction.delete_table(current):
+                raise RuntimeError("SQLite catalog table changed during delete")
 
 
 class TableQueries:
-    def __init__(self, repository: CatalogRepository, paginator: Paginator) -> None:
-        self._repository = repository
+    def __init__(
+        self,
+        read_catalog: CatalogReadPort,
+        query_catalog: CatalogQueryPort,
+        paginator: Paginator,
+    ) -> None:
+        self._read_catalog = read_catalog
+        self._query_catalog = query_catalog
         self._paginator = paginator
 
     async def get(
@@ -159,8 +187,7 @@ class TableQueries:
     ) -> CatalogTable:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        state = await self._repository.snapshot()
-        return table(state, catalog_id, normalized_database, normalized_table)
+        return await table(self._read_catalog, catalog_id, normalized_database, normalized_table)
 
     async def list(
         self,
@@ -172,26 +199,28 @@ class TableQueries:
         max_results: int | None,
     ) -> tuple[list[CatalogTable], str | None]:
         normalized_database = name(database_name)
-        page_request = self._paginator.prepare(next_token, max_results)
-        pattern = None
+        page_request = self._paginator.prepare_keyset(next_token, max_results)
         if expression:
             try:
-                pattern = re.compile(expression)
+                re.compile(expression)
             except re.error as error:
                 raise InvalidInputError(f"Invalid table expression: {error}") from error
-        state = await self._repository.snapshot()
-        database(state, catalog_id, normalized_database)
-        values = sorted(
-            [
-                value
-                for key, value in state.tables.items()
-                if key[:2] == (catalog_id, normalized_database)
-            ],
-            key=lambda item: item.name,
+        await database(self._read_catalog, catalog_id, normalized_database)
+        page_request = page_request.bind(
+            self._paginator.context("tables", catalog_id, normalized_database, expression)
         )
-        if pattern is not None:
-            values = [value for value in values if pattern.search(value.name)]
-        return page_request.apply(values)
+        page = await self._query_catalog.page_tables(
+            TablePageQuery(
+                catalog_id,
+                normalized_database,
+                page_request.size,
+                page_request.cursor,
+                expression,
+            )
+        )
+        if page.invalid_cursor:
+            raise InvalidInputError("Pagination token does not match this request")
+        return list(page.values), self._paginator.complete_keyset(page_request, page.next_cursor)
 
 
 class TableVersionQueries:

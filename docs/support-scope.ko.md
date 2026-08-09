@@ -5,8 +5,20 @@
 
 # 지원 범위
 
+<!-- toc:start -->
+## 목차
+
+- [개요](#개요)
+- [명시적 제외](#명시적-제외)
+- [버전 기준선](#버전-기준선)
+<!-- toc:end -->
+
 <!-- section: overview -->
 ## 개요
+
+사용자용 기능·버전·검증 수준의 간단한 답변은 생성된
+[client compatibility matrix](compatibility/client-matrix.generated.md)를 사용합니다. 전체 유지보수자
+인벤토리는 별도의 [API coverage reference](compatibility/api-coverage.generated.md)에 있습니다.
 
 이 문서는 현재 구현과 장기 목표를 구분합니다. “목표”는 현재 빌드가 이미 호환된다는 뜻이 아닙니다.
 
@@ -25,12 +37,12 @@
 
 EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다. Proxy의 공개 경로는
 `/_mystack/ui/emr/`, `/_mystack/ui/glue/`이며 호환 경로 `/_mystack/console`은 EMR로 redirect합니다.
-Glue metadata mutation은 직렬화한
-candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를
-모두 유지하고 database/table rename 또는 delete는 하위 table, partition, optimizer와 run history를
-한 commit에 포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema 1과 2는
-다음 mutation에서 schema 3으로 migration합니다. Iceberg table에서는 process 간 file lock, 최신 state reload,
-원자적 `VersionId`/`metadata_location` compare-and-swap도 적용합니다. Data, manifest, metadata,
+Glue metadata mutation은 짧고 정규화한 SQLite transaction을 사용합니다. Persistence가 실패하면
+mutation 전체를 rollback하며 database/table rename 또는 delete는 하위 table, partition, optimizer와
+run history를 원자적으로 포함합니다. `glue.sqlite.database_file`이 유일한 영속 catalog store이고,
+검증한 기본값은 WAL이며 `rollback`은 명시적인 개발용 escape hatch입니다. JSON catalog fallback이나
+migration은 없습니다. Iceberg table도 같은 transaction에서 원자적
+`VersionId`/`metadata_location` compare-and-swap을 적용합니다. Data, manifest, metadata,
 snapshot과 retry는 계속 Iceberg가 소유합니다. 자세한 내용은 [Iceberg commit
 protocol](protocols/glue-iceberg-commits.ko.md)을 참고하세요.
 고정된 partition, schema, sort, identifier 동작은 별도 [Iceberg evolution
@@ -65,7 +77,7 @@ Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`,
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
 생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md)는 이 API/오류 계약과
-`compatibility/cases.yaml`의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
+주석 compatibility test의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
 결합한 release-blocking 기준입니다.
 Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
 재시작 후 새 ID로 다시 생성합니다. 자세한 내용은 [시작 클러스터
@@ -92,7 +104,7 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 <!-- section: versions -->
 ## 버전 기준선
 
-- Python API 서비스: Python 3.11, CI에서 3.11/3.12 검증
+- Python API 서비스: Python 3.11
 - Protocol model: botocore 1.43.66, `contracts/service-model-manifest.json`에서 추적
 - Spark: 3.5.x, Glue 상호운용 profile은 Spark 3.5.4
 - Java: 17

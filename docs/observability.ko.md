@@ -5,6 +5,15 @@
 
 # 관찰성과 진단
 
+<!-- toc:start -->
+## 목차
+
+- [필수 event 단계](#필수-event-단계)
+- [공통 field](#공통-field)
+- [Live 진단](#live-진단)
+- [Upstream drift 진단](#upstream-drift-진단)
+<!-- toc:end -->
+
 Mystack은 Controller, component 경계, 상태 전이, 모든 외부 side effect에서 구조화 JSON을 기록합니다. 기준은 [AWS Well-Architected observability 지침](https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/observability.html)입니다.
 
 <!-- section: event-phases -->

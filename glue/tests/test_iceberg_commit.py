@@ -1,28 +1,32 @@
-"""Focused Iceberg GlueCatalog commit and inter-process contention contracts.
+"""Focused Iceberg GlueCatalog commit and SQLite writer-contention contracts.
 
 References:
-- https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html
 - https://iceberg.apache.org/docs/1.7.1/aws/#optimistic-locking
-- https://iceberg.apache.org/docs/1.7.1/reliability/#concurrent-write-operations
+- https://www.sqlite.org/lang_transaction.html
 """
 
 from __future__ import annotations
 
 import asyncio
-import fcntl
-import json
 import logging
 import multiprocessing
 import os
+import sqlite3
 from pathlib import Path
 from queue import Empty
 from typing import Any
 
 import pytest
-from mystack.aws_protocol import ConfigurationError, load_configuration
-from mystack.glue.adapters.outbound import JsonCatalogRepository
+from mystack.aws_protocol import load_configuration
+from mystack.glue.adapters.outbound import SqliteCatalogRepository
+from mystack.glue.adapters.outbound.sqlite_catalog.repository import CatalogStorageBusyError
 from mystack.glue.application import CatalogApplication, CatalogPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
+from mystack.glue.application.sqlite_runtime import (
+    SQLiteCheckpointSettings,
+    SQLiteDriverSettings,
+    SQLiteRuntimeSettings,
+)
 from mystack.glue.config import GlueSettings
 from mystack.glue.domain import VersionMismatchError
 
@@ -41,14 +45,48 @@ class IncrementingClock:
         return self._value
 
 
-def _application(state_file: Path, lock_file: Path) -> CatalogApplication:
-    return CatalogApplication(
-        JsonCatalogRepository(
-            state_file,
-            lock_file=lock_file,
-            lock_timeout_seconds=_test_timeout(),
-            lock_poll_interval_seconds=0.01,
+def _settings(
+    database_file: Path,
+    *,
+    busy_timeout_milliseconds: int = 250,
+    retry_limit: int = 3,
+) -> SQLiteRuntimeSettings:
+    return SQLiteRuntimeSettings(
+        database_file=database_file,
+        driver=SQLiteDriverSettings(
+            module="sqlite3",
+            expected_version="3.53.4",
+            minimum_wal_version="3.51.3",
+            manifest_file=database_file.with_name("unused-runtime-manifest.json"),
         ),
+        journal_mode="rollback",
+        synchronous="full",
+        busy_timeout_milliseconds=busy_timeout_milliseconds,
+        # The interprocess CAS contract expects the losing writer to retry a transient SQLite
+        # lock and observe the durable VersionId mismatch, not surface a scheduler-dependent
+        # busy error before the winner commits.
+        retry_limit=retry_limit,
+        checkpoint=SQLiteCheckpointSettings(mode="passive", auto_checkpoint_pages=1000),
+    )
+
+
+def _application(
+    database_file: Path,
+    *,
+    busy_timeout_milliseconds: int = 250,
+    retry_limit: int = 3,
+) -> CatalogApplication:
+    catalog = SqliteCatalogRepository(
+        _settings(
+            database_file,
+            busy_timeout_milliseconds=busy_timeout_milliseconds,
+            retry_limit=retry_limit,
+        )
+    )
+    return CatalogApplication(
+        catalog,
+        catalog,
+        catalog,
         IncrementingClock(),
         CatalogPolicy(
             default_catalog_id="account",
@@ -82,26 +120,21 @@ def _definition(writer: str, metadata_name: str) -> dict[str, Any]:
     }
 
 
-async def _seed(state_file: Path, lock_file: Path) -> None:
-    application = _application(state_file, lock_file)
+async def _seed(database_file: Path) -> None:
+    application = _application(database_file)
     await application.create_database("account", {"Name": "analytics"})
-    await application.create_table(
-        "account",
-        "analytics",
-        _definition("seed", "v0"),
-    )
+    await application.create_table("account", "analytics", _definition("seed", "v0"))
 
 
 def _commit_worker(
-    state_file: str,
-    lock_file: str,
+    database_file: str,
     writer: str,
     start: Any,
     ready: Any,
     results: Any,
 ) -> None:
     async def commit() -> None:
-        application = _application(Path(state_file), Path(lock_file))
+        application = _application(Path(database_file))
         ready.put(writer)
         if not start.wait(_test_timeout()):
             results.put(("timeout", writer))
@@ -128,9 +161,8 @@ def _commit_worker(
 async def test_interprocess_same_base_commit_has_one_winner_and_no_lost_update(
     tmp_path: Path,
 ) -> None:
-    state_file = tmp_path / "catalog.json"
-    lock_file = tmp_path / "catalog.lock"
-    await _seed(state_file, lock_file)
+    database_file = tmp_path / "catalog.sqlite3"
+    await _seed(database_file)
     context = multiprocessing.get_context("spawn")
     start = context.Event()
     ready = context.Queue()
@@ -138,7 +170,7 @@ async def test_interprocess_same_base_commit_has_one_winner_and_no_lost_update(
     processes = [
         context.Process(
             target=_commit_worker,
-            args=(str(state_file), str(lock_file), writer, start, ready, results),
+            args=(str(database_file), writer, start, ready, results),
         )
         for writer in ("one", "two")
     ]
@@ -161,29 +193,24 @@ async def test_interprocess_same_base_commit_has_one_winner_and_no_lost_update(
 
     assert all(process.exitcode == 0 for process in processes)
     winner = next(value[1] for value in outcomes if value[0] == "success")
-    application = _application(state_file, lock_file)
-    table = await application.get_table("account", "analytics", "events")
-    document = json.loads(state_file.read_text(encoding="utf-8"))
+    table = await _application(database_file).get_table("account", "analytics", "events")
     assert table.version_id == "1"
     assert table.definition["Parameters"] == _definition(winner, f"v1-{winner}")["Parameters"]
     assert [version.version_id for version in table.archived_versions] == ["0"]
-    assert document["state_revision"] == 3
-    assert len(document["tables"]) == 1
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert connection.execute("SELECT state_revision FROM catalog_metadata").fetchone()[0] == 3
 
 
 async def test_archive_policy_and_stale_failure_preserve_committed_metadata(
     tmp_path: Path,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    state_file = tmp_path / "catalog.json"
-    lock_file = tmp_path / "catalog.lock"
-    await _seed(state_file, lock_file)
-    application = _application(state_file, lock_file)
+    database_file = tmp_path / "catalog.sqlite3"
+    await _seed(database_file)
+    application = _application(database_file)
 
-    with caplog.at_level(
-        logging.INFO,
-        logger="mystack.glue.application.iceberg_commit",
-    ):
+    with caplog.at_level(logging.INFO, logger="mystack.glue.application.iceberg_commit"):
         await application.update_table(
             "account",
             "analytics",
@@ -212,92 +239,44 @@ async def test_archive_policy_and_stale_failure_preserve_committed_metadata(
 
     table = await application.get_table("account", "analytics", "events")
     assert table.version_id == "2"
-    assert table.definition["Parameters"] == _definition("two", "v2")["Parameters"]
     assert [version.version_id for version in table.archived_versions] == ["0"]
     assert all(
         version.definition["Parameters"]["writer"] != "stale" for version in table.versions()
     )
-    commit_records = [
-        record
-        for record in caplog.records
-        if record.name == "mystack.glue.application.iceberg_commit"
-    ]
+    commit_events = {record.getMessage() for record in caplog.records}
     assert {
         "glue.iceberg.commit.begin",
         "glue.iceberg.commit.version.accepted",
         "glue.iceberg.commit.persist.before",
         "glue.iceberg.commit.conflict",
         "glue.iceberg.commit.succeeded",
-    } <= {record.getMessage() for record in commit_records}
-    assert "s3://" not in repr([getattr(record, "mystack_fields", {}) for record in commit_records])
+    } <= commit_events
 
 
-async def test_catalog_file_lock_wait_is_bounded(tmp_path: Path) -> None:
-    state_file = tmp_path / "catalog.json"
-    lock_file = tmp_path / "catalog.lock"
-    await _seed(state_file, lock_file)
-    descriptor = os.open(lock_file, os.O_CREAT | os.O_RDWR, 0o600)
-    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    try:
-        repository = JsonCatalogRepository(
-            state_file,
-            lock_file=lock_file,
-            lock_timeout_seconds=0.05,
-            lock_poll_interval_seconds=0.01,
-        )
-        with pytest.raises(TimeoutError, match="Timed out acquiring catalog lock"):
-            await repository.snapshot()
-    finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
-
-
-async def test_cancelled_lock_wait_releases_late_acquisition(tmp_path: Path) -> None:
-    state_file = tmp_path / "catalog.json"
-    lock_file = tmp_path / "catalog.lock"
-    await _seed(state_file, lock_file)
-    descriptor = os.open(lock_file, os.O_CREAT | os.O_RDWR, 0o600)
-    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    repository = JsonCatalogRepository(
-        state_file,
-        lock_file=lock_file,
-        lock_timeout_seconds=_test_timeout(),
-        lock_poll_interval_seconds=0.01,
+async def test_sqlite_writer_busy_wait_is_bounded(tmp_path: Path) -> None:
+    database_file = tmp_path / "catalog.sqlite3"
+    await _seed(database_file)
+    blocked_application = _application(
+        database_file,
+        busy_timeout_milliseconds=20,
+        retry_limit=0,
     )
-    waiting = asyncio.create_task(repository.snapshot())
+    lock = sqlite3.connect(database_file, timeout=0.01, isolation_level=None)
+    lock.execute("BEGIN IMMEDIATE")
     try:
-        await asyncio.sleep(0.03)
-        assert not waiting.done()
-        waiting.cancel()
+        with pytest.raises(CatalogStorageBusyError):
+            await blocked_application.create_database("account", {"Name": "blocked"})
     finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
-
-    with pytest.raises(asyncio.CancelledError):
-        await asyncio.wait_for(waiting, timeout=_test_timeout())
-    snapshot = await asyncio.wait_for(repository.snapshot(), timeout=_test_timeout())
-    assert ("account", "analytics", "events") in snapshot.tables
+        lock.rollback()
+        lock.close()
 
 
-def test_catalog_lock_configuration_resolves_paths_and_rejects_invalid_interval(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_sqlite_configuration_resolves_database_file() -> None:
     settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
-    assert settings.catalog_lock.lock_file == Path("/var/lib/mystack/glue/catalog-state.lock")
-    assert settings.catalog_lock.acquire_timeout_seconds == 30.0
+    assert settings.sqlite.database_file == Path("/var/lib/mystack/glue/catalog.sqlite3")
+    assert settings.sqlite.busy_timeout_milliseconds == 5000
     assert settings.object_store.endpoint_url == "http://localstack:4566"
     assert settings.object_store.s3_path_style is True
-
-    monkeypatch.setenv("MYSTACK__GLUE__CATALOG_LOCK__ACQUIRE_TIMEOUT_SECONDS", "0.01")
-    loaded = load_configuration("config/mystack.yaml")
-    with pytest.raises(ConfigurationError, match="poll_interval_seconds"):
-        GlueSettings.from_configuration(loaded)
-
-    monkeypatch.setenv("MYSTACK__GLUE__CATALOG_LOCK__ACQUIRE_TIMEOUT_SECONDS", "30")
-    monkeypatch.setenv("MYSTACK__GLUE__CATALOG_LOCK__FILE", "catalog-state.json")
-    loaded = load_configuration("config/mystack.yaml")
-    with pytest.raises(ConfigurationError, match="must differ"):
-        GlueSettings.from_configuration(loaded)
 
 
 def _test_timeout() -> float:

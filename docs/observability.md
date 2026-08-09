@@ -5,6 +5,15 @@
 
 # Observability and diagnostics
 
+<!-- toc:start -->
+## Contents
+
+- [Required event phases](#required-event-phases)
+- [Common fields](#common-fields)
+- [Live diagnostics](#live-diagnostics)
+- [Upstream drift diagnosis](#upstream-drift-diagnosis)
+<!-- toc:end -->
+
 Mystack emits structured JSON at controllers, component boundaries, state transitions, and every external side effect. This follows the [AWS Well-Architected observability guidance](https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/observability.html).
 
 <!-- section: event-phases -->

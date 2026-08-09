@@ -5,6 +5,16 @@
 
 # EMR 시작 클러스터 파일
 
+<!-- toc:start -->
+## 목차
+
+- [Versioned 형식](#versioned-형식)
+- [검증과 시작 동작](#검증과-시작-동작)
+- [게시 image의 Compose 사용법](#게시-image의-compose-사용법)
+- [진단과 유지보수](#진단과-유지보수)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 Mystack은 health endpoint가 준비되기 전에 검토된 process-local EMR cluster 목록을 생성할 수
 있습니다. 이 기능은 emulator 배포 입력이며 새로운 AWS operation이 아닙니다. 각 `clusters`
 entry는 공식 [`RunJobFlow` 요청 member](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html)를

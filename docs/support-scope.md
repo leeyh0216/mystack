@@ -5,8 +5,20 @@
 
 # Support scope
 
+<!-- toc:start -->
+## Contents
+
+- [Overview](#overview)
+- [Explicit exclusions](#explicit-exclusions)
+- [Version baseline](#version-baseline)
+<!-- toc:end -->
+
 <!-- section: overview -->
 ## Overview
+
+Use the generated [client compatibility matrix](compatibility/client-matrix.generated.md) for a
+compact client-facing feature/version/verification answer. The exhaustive maintainer inventory is
+the separate [API coverage reference](compatibility/api-coverage.generated.md).
 
 This document distinguishes implemented behavior from long-term targets. “Target” never means that the current build is already compatible.
 
@@ -25,13 +37,12 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 
 EMR and Glue serve their UIs directly at `/_mystack/ui/`; Proxy exposes them at
 `/_mystack/ui/emr/` and `/_mystack/ui/glue/`. The compatibility path `/_mystack/console` redirects
-to EMR. Glue metadata mutations use serialized
-candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
-database/table rename or deletion includes child tables, partitions, optimizers, and run history in
-one commit. The versioned JSON document is stored at `glue.state_file`; schemas 1 and 2 migrate to
-schema 3 on the next mutation.
-For Iceberg tables, this transaction now includes inter-process file locking, latest-state reload,
-and an atomic `VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
+to EMR. Glue metadata mutations use short, normalized SQLite transactions: persistence failure rolls
+back the whole mutation, and database/table rename or deletion includes child tables, partitions,
+optimizers, and run history atomically. `glue.sqlite.database_file` is the sole durable catalog
+store; WAL is the verified default and `rollback` is an explicit development escape hatch. There is
+no JSON catalog fallback or migration. For Iceberg tables, the same transaction applies an atomic
+`VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
 metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
 The fixed partition, schema, sort, and identifier behavior is recorded separately in the
 [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md).
@@ -66,7 +77,7 @@ E2E coverage. This is implementation coverage, not a claim that all upstream EMR
 are supported; the exact upstream classification is generated from the pinned botocore model.
 The generated [release acceptance](compatibility/release-acceptance.generated.md) is the
 release-blocking view that joins these API/error contracts with the exact Hive, Iceberg, AWS SDK
-for pandas, and EMR PySpark/S3 scenarios from `compatibility/cases.yaml`.
+for pandas, and EMR PySpark/S3 scenarios from annotated compatibility tests.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are
 recreated with new IDs after EMR process restart. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
 Trusted pre-start scripts are an opt-in EMR container boundary, not an in-process plugin API or an
@@ -90,7 +101,7 @@ EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract
 <!-- section: versions -->
 ## Version baseline
 
-- Python API services: Python 3.11, tested on 3.11 and 3.12
+- Python API services: Python 3.11
 - Protocol model: botocore 1.43.66; tracked by `contracts/service-model-manifest.json`
 - Spark: 3.5.x; Glue interoperability profile uses Spark 3.5.4
 - Java: 17

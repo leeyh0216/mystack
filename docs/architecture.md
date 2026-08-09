@@ -5,6 +5,21 @@
 
 # Architecture
 
+<!-- toc:start -->
+## Contents
+
+- [Goals](#goals)
+- [System boundaries](#system-boundaries)
+- [Dependency rule](#dependency-rule)
+- [Executable architecture contract](#executable-architecture-contract)
+- [Runtime topology](#runtime-topology)
+- [Compatibility strategy](#compatibility-strategy)
+- [Logging](#logging)
+- [Persistence and execution](#persistence-and-execution)
+- [Non-goals](#non-goals)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 <!-- section: goals -->
 ## Goals
 
@@ -46,8 +61,9 @@ adapters
 bootstrap / FastAPI app
 ```
 
-- Domain: entities, value objects, state machines, domain exceptions, repository port protocols.
-- Application: use-case services and orchestration. Depends only on Domain and declared ports.
+- Domain: entities, value objects, state machines, and domain exceptions.
+- Application: use-case services, orchestration, and typed read/write port protocols. Depends only on
+  Domain and declared ports.
 - Adapters: AWS JSON inbound mapping; SQLite/in-memory, S3, Docker/subprocess and clock/ID outbound implementations.
 - Composition root: creates concrete objects and FastAPI routes. No lower module imports it.
 
@@ -66,9 +82,9 @@ planning is storage-neutral; its application handler coordinates the injected me
 existing table commands, unique candidates, compensation, and `VersionId` CAS. The concrete
 LocalStack-compatible S3 adapter is created only at the composition root, following AWS's
 [hexagonal architecture guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/overview.html).
-`CatalogApplication` is a delegation-only compatibility
-facade for inbound ports. Rename and cascade policy belongs to these handlers; repositories expose
-only snapshot and candidate-transaction capabilities.
+`CatalogApplication` is a delegation-only compatibility facade for inbound ports. Rename and cascade
+policy belongs to these handlers; application-owned read/write ports return immutable values and a
+scoped typed write transaction, never a mutable catalog aggregate, SQL, or a DB-API connection.
 
 Managed table optimizers add a focused domain aggregate, command/query handlers, an executor port,
 and a lifecycle-owned scheduler. The scheduler can claim and transition work only through the
@@ -110,6 +126,9 @@ graph, and rejects the following dependency changes before they reach runtime:
 | `adapter-sibling-dependency` | An inbound adapter imports an outbound adapter, or the reverse |
 | `inbound-concrete-facade` | An inbound adapter imports a concrete Application facade |
 | `service-import-cycle` | Internal modules form a direct or indirect import cycle |
+| `inner-sqlite-driver-dependency` | Glue Domain/Application imports a SQLite DB-API driver |
+| `inner-sql-execution` | Glue Domain/Application executes a literal SQL statement |
+| `sqlite-adapter-domain-error-*` | SQLite adapter imports or raises a Glue domain error |
 
 Inbound adapters depend on the minimal Protocols in `application/use_cases.py` and immutable values
 in `application/commands.py`. Concrete adapters may be imported and constructed only by
@@ -181,15 +200,33 @@ change.
 <!-- section: persistence -->
 ## Persistence and execution
 
-- Glue Application code applies each mutation to an isolated `CatalogState` candidate while the
-  repository serializes transactions. The JSON state store persists and fsyncs schema version 3,
-  atomically replaces the previous document, and only then publishes the candidate to readers.
-  Persistence failure rolls the candidate back, while cancellation during a successful durable
-  commit completes visible publication before cancellation is returned. Schema versions 1 and 2
-  load read-only and migrate on the next successful mutation. Optimizers and bounded run history
-  are children of the same database/table aggregate transaction.
-- Persistence is composed behind the repository transaction; the JSON repository does not inherit
-  in-memory mutation behavior. EMR cluster state remains process-local.
+- Glue uses one normalized SQLite catalog selected by `glue.sqlite.database_file`; there is no JSON
+  state, in-memory production store, or migration fallback. Runtime verification succeeds before
+  schema creation. The application owns validation/error precedence and chooses an operation over
+  typed ports; the outbound adapter owns connections, SQL, foreign keys, and commit/rollback.
+
+  ```text
+  AWS JSON request
+        |
+  inbound Glue adapter
+        |
+  application command/query ---- CatalogReadPort ----> short read connection
+        |                         CatalogWritePort
+        |                                |
+        +---- domain validation -> scoped CatalogTransaction
+                                         |
+                                  BEGIN IMMEDIATE
+                                         |
+                         normalized SQLite rows + foreign-key cascades
+                                         |
+                              conditional VersionId update / COMMIT
+  ```
+
+  A writer holds a short `BEGIN IMMEDIATE` transaction, applies a conditional `VersionId` update,
+  writes archive/child rows, increments the diagnostic catalog revision, and commits. Persistence
+  failure rolls the whole transaction back. An in-flight commit is shielded from cancellation, then
+  its durable outcome is reported. WAL is the verified default; rollback journaling is explicit.
+  EMR cluster state remains process-local.
 - The EMR startup-file adapter validates a complete versioned `RunJobFlow` plan before side effects,
   maps it to `CreateCluster` commands, and calls the existing Application port after the queue driver
   starts. It never knows or mutates the repository. Container restart intentionally creates new

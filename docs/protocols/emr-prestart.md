@@ -5,6 +5,19 @@
 
 # Configure the EMR image before Mystack starts
 
+<!-- toc:start -->
+## Contents
+
+- [Start a published image with reviewed scripts](#start-a-published-image-with-reviewed-scripts)
+- [Lifecycle and identity contract](#lifecycle-and-identity-contract)
+- [Trust and file checks](#trust-and-file-checks)
+- [Certificates, proxies, Python, and Java](#certificates-proxies-python-and-java)
+- [Inspect the image instead of guessing](#inspect-the-image-instead-of-guessing)
+- [Diagnose startup safely](#diagnose-startup-safely)
+- [Supported scope](#supported-scope)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 Use this operator-only hook when a published EMR image needs enterprise CA certificates, proxy
 variables, or another machine-level prerequisite before its service, bootstrap actions, and Spark
 Steps start. It is disabled by default and runs only in the EMR container.
@@ -17,7 +30,7 @@ Replace the placeholder certificate path before starting. The directory is mount
 Docker's [bind-mount contract](https://docs.docker.com/engine/storage/bind-mounts/).
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.3  # replace with a published tag
+export MYSTACK_IMAGE_TAG=v0.1.4  # replace with a published tag
 mkdir -p mystack-runtime/emr-prestart.d && cd mystack-runtime
 for path in compose.ghcr.yaml compose.emr-prestart.yaml; do
   gh api -H "Accept: application/vnd.github.raw+json" \

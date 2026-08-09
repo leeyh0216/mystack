@@ -1,25 +1,22 @@
-"""Management read model for Glue Data Catalog resources.
-
-The UI consumes this adapter rather than importing Domain types. Official resource model:
-https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.html
-"""
+# ruff: noqa: E501
+"""Bounded management read models for the Glue Catalog explorer."""
 
 from __future__ import annotations
 
 import logging
-from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from typing import Any
 
 from mystack.aws_protocol.observability import log_event
 from mystack.glue.application.use_cases import GlueManagementQueries
 from mystack.glue.domain import CatalogDatabase, CatalogPartition, CatalogTable
 
 _LOGGER = logging.getLogger(__name__)
-_Item = TypeVar("_Item")
 
 
 class GlueManagementAdapter:
+    """Expose only UI pages and details; never materialize a catalog tree."""
+
     def __init__(
         self,
         application: GlueManagementQueries,
@@ -32,86 +29,104 @@ class GlueManagementAdapter:
         config_fingerprint: str,
     ) -> None:
         self._application = application
-        self._catalog_id = catalog_id
-        self._api_page_size = api_page_size
-        self._implemented_operations = implemented_operations
-        self._model_operation_count = model_operation_count
-        self._runtime_profile = runtime_profile
-        self._config_fingerprint = config_fingerprint
+        self._catalog_id, self._api_page_size = catalog_id, api_page_size
+        self._implemented_operations, self._model_operation_count = (
+            implemented_operations,
+            model_operation_count,
+        )
+        self._runtime_profile, self._config_fingerprint = runtime_profile, config_fingerprint
 
-    async def resources(self) -> dict[str, Any]:
-        log_event(
-            _LOGGER,
-            logging.INFO,
-            "glue.management.resources.before",
-            catalog_id=self._catalog_id,
+    async def databases(self, *, cursor: str | None, limit: int | None) -> dict[str, Any]:
+        values, next_cursor = await self._application.get_databases(
+            self._catalog_id, next_token=cursor, max_results=limit or self._api_page_size
         )
-        try:
-            return await self._resources()
-        except Exception:
-            log_event(
-                _LOGGER,
-                logging.ERROR,
-                "glue.management.resources.failed",
-                catalog_id=self._catalog_id,
-                fix_hint=(
-                    "Inspect Glue application pagination and durable catalog repository state."
-                ),
-                exc_info=True,
-            )
-            raise
+        return self._page(
+            "databases",
+            [_database(value) for value in values],
+            next_cursor,
+            await self._application.count_databases(self._catalog_id),
+        )
 
-    async def _resources(self) -> dict[str, Any]:
-        databases = await self._all(
-            lambda token: self._application.get_databases(
-                self._catalog_id,
-                next_token=token,
-                max_results=self._api_page_size,
-            )
+    async def tables(
+        self, database_name: str, *, cursor: str | None, limit: int | None
+    ) -> dict[str, Any]:
+        values, next_cursor = await self._application.get_tables(
+            self._catalog_id,
+            database_name,
+            expression=None,
+            next_token=cursor,
+            max_results=limit or self._api_page_size,
         )
-        rendered: list[dict[str, Any]] = []
-        table_count = 0
-        partition_count = 0
-        for database in databases:
-            tables = await self._all(
-                lambda token, name=database.name: self._application.get_tables(
-                    self._catalog_id,
-                    name,
-                    expression=None,
-                    next_token=token,
-                    max_results=self._api_page_size,
-                )
-            )
-            rendered_tables: list[dict[str, Any]] = []
-            for table in tables:
-                partitions = await self._all(
-                    lambda token, database_name=database.name, table_name=table.name: (
-                        self._application.get_partitions(
-                            self._catalog_id,
-                            database_name,
-                            table_name,
-                            expression=None,
-                            segment=None,
-                            next_token=token,
-                            max_results=self._api_page_size,
-                        )
-                    )
-                )
-                rendered_tables.append(_table(table, partitions))
-                partition_count += len(partitions)
-            table_count += len(tables)
-            rendered.append(_database(database, rendered_tables))
-        log_event(
-            _LOGGER,
-            logging.INFO,
-            "glue.management.resources.after",
-            catalog_id=self._catalog_id,
-            database_count=len(rendered),
-            table_count=table_count,
-            partition_count=partition_count,
+        return self._page(
+            "tables",
+            [_table(value) for value in values],
+            next_cursor,
+            await self._application.count_tables(self._catalog_id, database_name),
         )
+
+    async def table(self, database_name: str, table_name: str) -> dict[str, Any]:
+        value = await self._application.get_table(self._catalog_id, database_name, table_name)
         return {
-            "schema_version": 1,
+            "schema_version": 2,
+            "resource": _table(value),
+            "partition_count": await self._application.count_partitions(
+                self._catalog_id, database_name, table_name
+            ),
+            "diagnostics": self._diagnostics("table-detail", "sqlite-point-lookup", 1),
+        }
+
+    async def partitions(
+        self, database_name: str, table_name: str, *, cursor: str | None, limit: int | None
+    ) -> dict[str, Any]:
+        values, next_cursor = await self._application.get_partitions(
+            self._catalog_id,
+            database_name,
+            table_name,
+            expression=None,
+            segment=None,
+            next_token=cursor,
+            max_results=limit or self._api_page_size,
+        )
+        return self._page(
+            "partitions",
+            [_partition(value) for value in values],
+            next_cursor,
+            await self._application.count_partitions(self._catalog_id, database_name, table_name),
+        )
+
+    def _page(
+        self, category: str, values: list[dict[str, Any]], next_cursor: str | None, total: int
+    ) -> dict[str, Any]:
+        document = {
+            "schema_version": 2,
+            "items": values,
+            "next_cursor": next_cursor,
+            "total_count": total,
+            "diagnostics": self._diagnostics(category, "sqlite-keyset-page", len(values)),
+        }
+        log_event(
+            _LOGGER,
+            logging.INFO,
+            "glue.management.page.after",
+            query_category=category,
+            query_strategy="sqlite-keyset-page",
+            returned_count=len(values),
+            total_count=total,
+            has_next=next_cursor is not None,
+        )
+        return document
+
+    def _diagnostics(self, category: str, strategy: str, returned: int) -> dict[str, Any]:
+        return {
+            "query_category": category,
+            "query_strategy": strategy,
+            "returned_count": returned,
+            "catalog_id": self._catalog_id,
+        }
+
+    def document(self) -> dict[str, Any]:
+        return {
+            "schema_version": 2,
             "service": "glue",
             "emulator": {
                 "mode": "Glue Data Catalog",
@@ -125,28 +140,10 @@ class GlueManagementAdapter:
                 "model_operation_count": self._model_operation_count,
                 "implemented_operations": sorted(self._implemented_operations),
             },
-            "counts": {
-                "databases": len(rendered),
-                "tables": table_count,
-                "partitions": partition_count,
-            },
-            "resources": {"databases": rendered},
         }
 
-    async def _all(
-        self,
-        page: Callable[[str | None], Awaitable[tuple[list[_Item], str | None]]],
-    ) -> list[_Item]:
-        values: list[_Item] = []
-        token: str | None = None
-        while True:
-            current, token = await page(token)
-            values.extend(current)
-            if token is None:
-                return values
 
-
-def _database(value: CatalogDatabase, tables: list[dict[str, Any]]) -> dict[str, Any]:
+def _database(value: CatalogDatabase) -> dict[str, Any]:
     return {
         "id": value.name,
         "name": value.name,
@@ -154,12 +151,10 @@ def _database(value: CatalogDatabase, tables: list[dict[str, Any]]) -> dict[str,
         "description": value.definition.get("Description"),
         "location_uri": value.definition.get("LocationUri"),
         "parameters": value.definition.get("Parameters", {}),
-        "definition": value.definition,
-        "tables": tables,
     }
 
 
-def _table(value: CatalogTable, partitions: list[CatalogPartition]) -> dict[str, Any]:
+def _table(value: CatalogTable) -> dict[str, Any]:
     storage = value.definition.get("StorageDescriptor", {})
     return {
         "id": f"{value.database_name}/{value.name}",
@@ -175,7 +170,6 @@ def _table(value: CatalogTable, partitions: list[CatalogPartition]) -> dict[str,
         "created_at": _timestamp(value.create_time),
         "updated_at": _timestamp(value.update_time),
         "definition": value.definition,
-        "partitions": [_partition(partition) for partition in partitions],
     }
 
 

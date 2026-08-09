@@ -5,6 +5,18 @@
 
 # Iceberg snapshots, references, and procedures through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Guaranteed profile](#guaranteed-profile)
+- [Glue wire and atomicity contract](#glue-wire-and-atomicity-contract)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the snapshot inspection and maintenance surface for Glue 5.0, Spark 3.5.4,
 and Iceberg 1.7.1. The SQL behavior comes from Iceberg's official
 [queries](https://iceberg.apache.org/docs/1.7.1/spark-queries/),
@@ -71,8 +83,9 @@ When an Iceberg or Spark upgrade breaks this profile, inspect:
 1. `glue/scripts/e2e/iceberg_snapshot_refs.py` for SQL, result-schema, or procedure changes.
 2. `test_support/iceberg_metadata.py` for Iceberg metadata-format representation changes.
 3. `glue/adapters/inbound/aws_table.py` for modeled Glue request-member changes.
-4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for CAS or archive loss.
-5. `compatibility/cases.yaml` for pinned runtime and capability evidence.
+4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for CAS
+   or archive loss.
+5. Typed pytest compatibility annotations for pinned runtime and capability evidence.
 
 <!-- section: limits -->
 ## Limits

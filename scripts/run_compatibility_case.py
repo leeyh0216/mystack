@@ -1,9 +1,10 @@
 """Run one compiled compatibility case in an isolated pytest process.
 
-The runner consumes generated evidence rather than interpreting the authoring YAML. This keeps
-GitHub Actions and local execution on the same reviewed contract.
+The runner consumes generated test-declared evidence rather than interpreting authoring metadata.
+This keeps GitHub Actions and local execution on the same reviewed contract.
 
 Official pytest invocation reference: https://docs.pytest.org/en/stable/how-to/usage.html
+JUnit XML output reference: https://docs.pytest.org/en/stable/how-to/output.html
 """
 
 from __future__ import annotations
@@ -42,7 +43,8 @@ class CompiledCaseRepository:
         cases = document.get("cases")
         if not isinstance(cases, list):
             raise CaseSelectionError(
-                "generated matrix has no case list; fix_hint=run-make-compatibility-generate"
+                "generated evidence has no case list; "
+                "fix_hint=run-make-compatibility-evidence-generate"
             )
         LOGGER.info("event=compatibility.case_repository.read.after cases=%d", len(cases))
         return cases
@@ -84,7 +86,9 @@ class IsolatedCaseRunner:
         self._root = root
         self._timeouts = timeout_configuration
 
-    def command(self, case: dict[str, Any]) -> tuple[list[str], int]:
+    def command(
+        self, case: dict[str, Any], *, junitxml: Path | None = None
+    ) -> tuple[list[str], int]:
         runner = case["runner"]
         scenario = case["scenario"]
         kind = runner.get("kind")
@@ -95,7 +99,7 @@ class IsolatedCaseRunner:
         if runner.get("command_prefix") != prefix or scenario.get("kind") != marker:
             raise CaseSelectionError(
                 f"generated runner contract mismatch case_id={case.get('id')} "
-                "fix_hint=regenerate-and-review-matrix"
+                "fix_hint=regenerate-and-review-evidence"
             )
         nodes = scenario.get("test_nodes")
         if not isinstance(nodes, list) or not nodes:
@@ -112,10 +116,18 @@ class IsolatedCaseRunner:
             "thread",
             "-vv",
         ]
+        if junitxml is not None:
+            command.extend(("--junitxml", str(junitxml)))
         return command, timeout
 
-    def run(self, case: dict[str, Any], *, dry_run: bool = False) -> int:
-        command, timeout = self.command(case)
+    def run(
+        self,
+        case: dict[str, Any],
+        *,
+        dry_run: bool = False,
+        junitxml: Path | None = None,
+    ) -> int:
+        command, timeout = self.command(case, junitxml=junitxml)
         profiles = case.get("compatibility_profiles", {})
         versions = {
             name: value
@@ -129,7 +141,8 @@ class IsolatedCaseRunner:
         }
         LOGGER.info(
             "event=compatibility.case.run.before case_id=%s evidence_sha256=%s lane=%s "
-            "versions=%s model_fingerprints=%s scenario_ids=%s timeout_seconds=%d dry_run=%s",
+            "versions=%s model_fingerprints=%s scenario_ids=%s timeout_seconds=%d junitxml=%s "
+            "dry_run=%s",
             case["id"],
             case["evidence_sha256"],
             case["lane"],
@@ -137,11 +150,15 @@ class IsolatedCaseRunner:
             json.dumps(fingerprints, sort_keys=True, separators=(",", ":")),
             json.dumps(case["scenario"]["scenario_ids"], separators=(",", ":")),
             timeout,
+            junitxml,
             str(dry_run).lower(),
         )
         if dry_run:
             print(json.dumps({"case_id": case["id"], "command": command, "timeout": timeout}))
             return 0
+        if junitxml is not None:
+            output_path = junitxml if junitxml.is_absolute() else self._root / junitxml
+            output_path.parent.mkdir(parents=True, exist_ok=True)
         environment = os.environ.copy()
         environment["MYSTACK_COMPATIBILITY_CASE_ID"] = case["id"]
         environment["MYSTACK_COMPATIBILITY_EVIDENCE_SHA256"] = case["evidence_sha256"]
@@ -176,7 +193,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case_id", nargs="?")
     parser.add_argument(
-        "--matrix", type=Path, default=ROOT / "contracts/compatibility-matrix.generated.json"
+        "--matrix", type=Path, default=ROOT / "contracts/compatibility-evidence.generated.json"
     )
     parser.add_argument(
         "--config",
@@ -185,6 +202,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--junitxml",
+        type=Path,
+        help="Write the selected pytest case result as JUnit XML for CI evidence.",
+    )
     return parser.parse_args()
 
 
@@ -203,7 +225,7 @@ def main() -> None:
             root=ROOT,
             timeout_configuration=TimeoutConfiguration(args.config),
         )
-        raise SystemExit(runner.run(case, dry_run=args.dry_run))
+        raise SystemExit(runner.run(case, dry_run=args.dry_run, junitxml=args.junitxml))
     except CaseSelectionError as error:
         LOGGER.error("event=compatibility.case.failed error=%s", error)
         raise SystemExit(2) from error

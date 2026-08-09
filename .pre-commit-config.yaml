@@ -30,6 +30,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: configuration-reference
+        name: Generated configuration reference drift
+        entry: make configuration-reference-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: glue-expression-grammar
         name: Glue ANTLR grammar generated-source drift
         entry: make antlr-check
@@ -43,7 +49,7 @@ repos:
         pass_filenames: false
         always_run: true
       - id: ghcr-compose-contract
-        name: Source-free public GHCR user contract
+        name: Published-image Compose user contract
         entry: make ghcr-compose-check
         language: system
         pass_filenames: false
@@ -61,8 +67,14 @@ repos:
         pass_filenames: false
         always_run: true
       - id: compatibility-matrix
-        name: Manifest-driven interoperability matrix drift
+        name: Annotation-backed interoperability matrix drift
         entry: uv run python scripts/compatibility_matrix.py --check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: annotated-compatibility-evidence
+        name: Test-declared compatibility evidence drift
+        entry: make compatibility-evidence-check
         language: system
         pass_filenames: false
         always_run: true
@@ -74,7 +86,7 @@ repos:
         always_run: true
       - id: api-coverage
         name: Complete API classification and generated matrix drift
-        entry: uv run python scripts/api_coverage.py --check contracts/api-coverage.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md
+        entry: uv run python scripts/api_coverage.py --check contracts/api-coverage.generated.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md
         language: system
         pass_filenames: false
         always_run: true

@@ -5,6 +5,15 @@
 
 # Glue managed table optimizer protocol
 
+<!-- toc:start -->
+## 목차
+
+- [사용자에게 보이는 계약](#사용자에게-보이는-계약)
+- [기본값과 검증](#기본값과-검증)
+- [Scheduler와 Spark 실행](#scheduler와-spark-실행)
+- [설정과 변경 시 수정 위치](#설정과-변경-시-수정-위치)
+<!-- toc:end -->
+
 <!-- section: user-contract -->
 ## 사용자에게 보이는 계약
 

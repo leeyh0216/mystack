@@ -5,6 +5,15 @@
 
 # Configuration and reproducible containers
 
+<!-- toc:start -->
+## Contents
+
+- [Resolution order](#resolution-order)
+- [Docker modes](#docker-modes)
+- [Main sections](#main-sections)
+- [Reproducible build inputs](#reproducible-build-inputs)
+<!-- toc:end -->
+
 Mystack keeps runtime behavior in the versioned `config/mystack.yaml` document. The application
 does not contain fallback service endpoints, credentials, release mappings, process deadlines,
 Spark submit parsing tables, route registrations, or test deadlines. Docker's official guidance
@@ -40,7 +49,7 @@ between ordinary environment configuration and [secrets](https://docs.docker.com
 ## Docker modes
 
 The normal user command uses `compose.ghcr.yaml`. Each published image contains the reviewed
-`/etc/mystack/mystack.yaml` from the same release, so no repository clone or config mount is needed.
+`/etc/mystack/mystack.yaml` from the same release.
 `MYSTACK_IMAGE_TAG` is required and component-specific full image references can be supplied through
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, and `MYSTACK_GLUE_IMAGE` for digest pinning. Keep the tag
 defined even when all three overrides are present because Compose evaluates nested fallbacks.
@@ -63,6 +72,9 @@ and is not required for image consumers.
 <!-- section: sections -->
 ## Main sections
 
+The [complete configuration reference](configuration-reference.generated.md) is generated from
+the runtime schema and defaults; `make configuration-reference-check` rejects drift in CI.
+
 | Path | Responsibility |
 | --- | --- |
 | `logging` | Structured log level and format contract |
@@ -71,7 +83,7 @@ and is not required for image consumers.
 | `proxy` | Listener, fallback, outbound timeout, and extensible route registry |
 | `localstack` | S3 endpoint, region, account, local credentials, and path-style behavior |
 | `emr` | Work storage, deadlines, process policy, release profiles, and operation limits |
-| `glue` | Durable catalog state/lock, catalog ID, paging, partition-expression/fault policies, and runtime profile |
+| `glue` | Durable SQLite catalog, catalog ID, paging, partition-expression/fault policies, optimizer, and runtime profile |
 | `runtime_profiles` | Spark command, master, packages, conf, parser options, and Glue versions |
 | `tests` | Unit/contract/E2E/Compose deadlines and black-box client/runtime settings |
 
@@ -85,13 +97,30 @@ variables.
 and `supported_key_types` defines the typed compatibility profile. See the
 [partition-expression protocol](protocols/glue-partition-expressions.md).
 
-`glue.catalog_lock` configures the inter-process boundary for the JSON catalog. `file` resolves
-under `glue.data_root` unless absolute and must differ from `glue.state_file`.
-`acquire_timeout_seconds` bounds waiting for another emulator process;
-`poll_interval_seconds` controls non-blocking POSIX `flock` retries and cannot exceed the timeout.
-All processes sharing a state file must mount and configure the same lock file. See the
-[Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md) and Python's official
-[`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) reference.
+`glue.sqlite` configures the only durable Glue catalog store. `database_file` resolves below
+`glue.data_root` unless absolute. Mount its parent directory writable, rather than mounting only the
+database file: WAL retains `-wal` and `-shm` siblings there. The image's pinned private DB-API is
+verified before the schema or catalog file is created. WAL is the default and fails closed; `rollback`
+is an explicit development escape hatch, never an automatic fallback.
+
+| Key | Effect |
+| --- | --- |
+| `database_file` | Durable normalized catalog path; relative paths resolve under `glue.data_root` |
+| `driver.module` | Private DB-API module selected by the image or an explicit development driver |
+| `driver.expected_version` | Exact source-built SQLite version required for WAL |
+| `driver.minimum_wal_version` | Lowest safe WAL version; must be at least `3.51.3` |
+| `driver.manifest_file` | Source-build provenance manifest used for a WAL startup gate |
+| `journal_mode` | `wal` by default, or explicit `rollback` (`DELETE` journal) |
+| `synchronous` | SQLite durability setting: `off`, `normal`, `full`, or `extra` |
+| `busy_timeout_milliseconds` | Maximum wait for one busy SQLite operation |
+| `retry_limit` | Additional bounded retries after a busy writer result |
+| `checkpoint.mode` | Requested maintenance checkpoint mode: `passive`, `full`, `restart`, or `truncate` |
+| `checkpoint.auto_checkpoint_pages` | SQLite automatic WAL checkpoint page threshold |
+
+There is no JSON catalog fallback or migration. The full durability, same-host WAL restriction,
+backup procedure, logging, and repair boundary are in the
+[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md); Iceberg pointer commits use the
+[SQLite transaction contract](protocols/glue-iceberg-commits.md).
 
 Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
 path-style setting through an injected S3 port. The application never assumes a Compose service
@@ -207,6 +236,11 @@ Browser interaction deadlines and whether missing Chromium is fatal are configur
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
 The isolated wheel co-installation deadline is `tests.package_smoke_timeout_seconds`.
+`tests.compatibility_collection_timeout_seconds` bounds only the pytest
+`--collect-only` subprocess that discovers typed compatibility annotations. It
+does not execute test bodies. `CompatibilityProfile.expected_duration_minutes`
+is separately compiled into the outer GitHub Actions job ceiling, while a
+selected contract or E2E test uses its ordinary YAML test timeout.
 `tests.e2e.glue_iceberg_contention_script` names the image-owned Spark job used by the CI-only
 two-container optimistic-commit scenario; it is a file setting so custom Glue images can relocate
 the harness without changing test code.

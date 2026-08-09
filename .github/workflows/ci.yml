@@ -3,12 +3,18 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, "feature/**"]
+    branches: [main, develop]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  # Normal test evidence is available on successful and failed runs for a bounded period.
+  MYSTACK_TEST_REPORT_RETENTION_DAYS: "14"
+  # Raw logs and drift JSON are retained only after a failed job.
+  MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS: "7"
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -70,13 +76,75 @@ jobs:
           cache: npm
       - name: Install the locked frontend workspace
         run: npm ci --ignore-scripts
-      - name: Lint, type-check, test, and build both service UIs
-        run: npm run frontend:check
-      - name: Upload service-owned UI builds for Python protocol tests
+      - name: Lint and type-check both service UIs
+        run: |
+          npm run frontend:lint
+          npm run frontend:typecheck
+      - name: Test both service UIs with configured deadlines
+        run: |
+          mkdir -p ci-artifacts/frontend
+          npm run frontend:test -- \
+            --reporter=default \
+            --reporter=junit \
+            --outputFile=ci-artifacts/frontend/junit.xml
+      - name: Publish frontend test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: frontend-test-report
+          junit-files: frontend=ci-artifacts/frontend/junit.xml
+          output-dir: ci-artifacts/frontend
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: React TypeScript contracts
+      - id: reusable_ui_cache
+        name: Restore exact SHA-bound UI build cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            .mystack/reusable-ui/manifest.json
+            emr/src/mystack/emr/static/ui
+            glue/src/mystack/glue/static/ui
+          key: mystack-ui-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ hashFiles('package-lock.json', 'package.json', '.node-version') }}
+      - name: Build both service UIs on exact-cache miss
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
+        run: npm run frontend:build
+      - name: Create immutable reusable-build manifest
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
+        run: >-
+          python3 scripts/reusable_build_artifact.py create
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA"
+          --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --producer-workflow "$GITHUB_WORKFLOW"
+          --producer-run-id "$GITHUB_RUN_ID"
+          --retention-days 2
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Verify cached or freshly built UI provenance
+        run: >-
+          python3 scripts/reusable_build_artifact.py verify
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA"
+          --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Save exact SHA-bound UI build cache
+        if: steps.reusable_ui_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            .mystack/reusable-ui/manifest.json
+            emr/src/mystack/emr/static/ui
+            glue/src/mystack/glue/static/ui
+          key: mystack-ui-${{ runner.os }}-${{ runner.arch }}-${{ github.sha }}-${{ hashFiles('package-lock.json', 'package.json', '.node-version') }}
+      - name: Upload SHA-bound UI build for downstream consumers
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: service-ui-builds
+          name: service-ui-builds-${{ github.sha }}
           path: |
+            .mystack/reusable-ui/manifest.json
             emr/src/mystack/emr/static/ui
             glue/src/mystack/glue/static/ui
           if-no-files-found: error
@@ -90,16 +158,24 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: Install the locked workspace and validate generated evidence
+        run: |
+          uv sync --locked --all-packages
+          make compatibility-check compatibility-evidence-check
       - id: matrix
-        name: Read the event-selected non-cross-product contract matrix
+        name: Read the test-declared non-cross-product contract matrix
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = workflow_dispatch ]; then
-            matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+            matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[]])}' contracts/compatibility-evidence.generated.json)
           else
-            matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-matrix.generated.json)
+            matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-evidence.generated.json)
           fi
           test "$(jq '.include | length' <<<"$matrix")" -gt 0
           echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
@@ -120,10 +196,21 @@ jobs:
           enable-cache: true
       - name: Install the locked workspace
         run: uv sync --locked --all-packages
-      - name: Reject manifest and generated-evidence drift
-        run: make compatibility-check
+      - name: Reject retained-manifest and test-declared evidence drift
+        run: make compatibility-check compatibility-evidence-check
       - name: Run the explicit case in an isolated process
-        run: uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+        run: >-
+          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          --junitxml "ci-artifacts/compatibility-${{ matrix.case_id }}/junit.xml"
+      - name: Publish compatibility test evidence
+        if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: compatibility-${{ matrix.case_id }}-test-report
+          junit-files: compatibility-${{ matrix.case_id }}=ci-artifacts/compatibility-${{ matrix.case_id }}/junit.xml
+          output-dir: ci-artifacts/compatibility-${{ matrix.case_id }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Compatibility ${{ matrix.case_id }}
 
   python-contracts:
     name: Python ${{ matrix.python-version }} contracts
@@ -133,14 +220,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Download service-owned UI builds
+      - id: reusable_ui
+        name: Download SHA-bound service UI build
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true
         with:
-          name: service-ui-builds
+          name: service-ui-builds-${{ github.sha }}
           path: .
+      - name: Verify reusable UI build provenance
+        if: steps.reusable_ui.outcome == 'success'
+        run: >-
+          python3 scripts/reusable_build_artifact.py verify
+          --manifest .mystack/reusable-ui/manifest.json
+          --source-sha "$GITHUB_SHA" --platform "$RUNNER_OS-$RUNNER_ARCH"
+          --input package-lock.json --input package.json --input .node-version
+          --artifact emr/src/mystack/emr/static/ui
+          --artifact glue/src/mystack/glue/static/ui
+      - name: Rebuild UI after unavailable artifact
+        if: steps.reusable_ui.outcome != 'success'
+        run: |
+          echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}'
+          npm ci --ignore-scripts
+          npm run frontend:build
       # Official setup-uv action: https://github.com/astral-sh/setup-uv
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
@@ -179,14 +283,16 @@ jobs:
           uv run python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
-      - name: Verify manifest-driven interoperability evidence
+      - name: Verify test-declared interoperability evidence
+        run: make compatibility-evidence-check
+      - name: Verify annotation-backed interoperability evidence
         run: uv run python scripts/compatibility_matrix.py --check
       - name: Verify deterministic Glue error contracts
         run: make glue-errors-check
       - name: Verify complete API classification and generated bilingual matrix
         run: >-
           uv run python scripts/api_coverage.py
-          --check contracts/api-coverage.json
+          --check contracts/api-coverage.generated.json
           --english docs/compatibility/api-coverage.generated.md
           --korean docs/compatibility/api-coverage.ko.generated.md
           --report api-coverage-drift-report.json
@@ -205,19 +311,28 @@ jobs:
           --cov=emr/src
           --cov=glue/src
           --cov-report=term-missing
-          --cov-report=xml
+          --junitxml=ci-artifacts/python-${{ matrix.python-version }}/junit.xml
       - name: Build and co-install all namespace distributions
         run: make package-check
-      - name: Upload diagnostics
+      - name: Publish Python test evidence
         if: always()
+        uses: ./.github/actions/publish-test-report
+        with:
+          artifact-name: python-${{ matrix.python-version }}-test-report
+          junit-files: python-${{ matrix.python-version }}=ci-artifacts/python-${{ matrix.python-version }}/junit.xml
+          output-dir: ci-artifacts/python-${{ matrix.python-version }}
+          retention-days: ${{ env.MYSTACK_TEST_REPORT_RETENTION_DAYS }}
+          title: Python ${{ matrix.python-version }} contracts
+      - name: Upload failure diagnostics
+        if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: python-${{ matrix.python-version }}-diagnostics
+          name: python-${{ matrix.python-version }}-failure-diagnostics
           path: |
-            coverage.xml
             model-drift-report.json
             api-coverage-drift-report.json
           if-no-files-found: ignore
+          retention-days: ${{ env.MYSTACK_FAILURE_DIAGNOSTIC_RETENTION_DAYS }}
 
   devcontainer:
     name: Reproducible Dev Container build

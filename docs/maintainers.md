@@ -3,9 +3,22 @@
 
 [한국어](maintainers.ko.md) | [English](maintainers.md)
 
-# Maintainer guide
+# Contributors
 
-This map is for people implementing, reviewing, operating, or releasing Mystack. If you consume
+<!-- toc:start -->
+## Contents
+
+- [Start contributing](#start-contributing)
+- [Architecture and dependencies](#architecture-and-dependencies)
+- [Protocol and compatibility](#protocol-and-compatibility)
+- [Implementation boundaries](#implementation-boundaries)
+- [Tests and CI](#tests-and-ci)
+- [Observability and release](#observability-and-release)
+- [Issue-sized workflow](#issue-sized-workflow)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
+This map is for contributors implementing, reviewing, operating, or releasing Mystack. If you use
 Mystack from an application, start with the [user guide](index.md).
 
 <!-- section: start -->

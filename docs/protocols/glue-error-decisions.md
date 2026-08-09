@@ -5,6 +5,17 @@
 
 # Deterministic Glue error decisions
 
+<!-- toc:start -->
+## Contents
+
+- [Decision precedence](#decision-precedence)
+- [Taxonomy and wire response](#taxonomy-and-wire-response)
+- [Reproducible failure injection](#reproducible-failure-injection)
+- [Logging and maintenance](#logging-and-maintenance)
+- [Exclusions](#exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack defines Glue errors from public API documentation, the pinned botocore model, and internal
 catalog invariants. It never queries a live AWS account. The source of truth is
 `contracts/glue-error-conditions.yaml`; `scripts/glue_error_contracts.py` requires all 28 implemented

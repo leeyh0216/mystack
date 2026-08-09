@@ -2,9 +2,9 @@
 CONFIG ?= config/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
-MYSTACK_VERSION ?= 0.1.3
+MYSTACK_VERSION ?= 0.1.4
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs configuration-reference-generate configuration-reference-check antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-generate coverage-check compatibility-generate compatibility-check compatibility-evidence-generate compatibility-evidence-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -35,6 +35,12 @@ format: ## Format source and apply safe lint fixes.
 docs: ## Validate bilingual identity, section order, links, sources, and Korean style.
 	@uv run python scripts/check_docs.py
 
+configuration-reference-generate: ## Render the complete schema-backed configuration reference.
+	@uv run python scripts/config_reference.py
+
+configuration-reference-check: ## Reject configuration schema/reference drift.
+	@uv run python scripts/config_reference.py --check
+
 antlr-generate: ## Regenerate the pinned Glue partition-expression parser from its G4 grammar.
 	@uv run python scripts/generate_glue_expression_parser.py --write
 
@@ -60,7 +66,7 @@ devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycl
 devcontainer-verify-images: ## Compare Dev Container image tags with locked registry digests.
 	@uv run python scripts/check_devcontainer.py --verify-images
 
-ghcr-compose-check: ## Prove image-only Compose and anonymous public-image onboarding policy.
+ghcr-compose-check: ## Prove image-only Compose and concise published-image user guidance.
 	@uv run python scripts/check_ghcr_compose.py
 	@MYSTACK_IMAGE_TAG="$${MYSTACK_IMAGE_TAG:-v0.0.0}" \
 	  docker compose -f compose.ghcr.yaml config --quiet
@@ -68,19 +74,31 @@ ghcr-compose-check: ## Prove image-only Compose and anonymous public-image onboa
 model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 
-coverage-check: ## Verify exhaustive API statuses and bilingual generated matrices.
+coverage-generate: compatibility-evidence-generate ## Render API classification from generated evidence.
 	@uv run python scripts/api_coverage.py \
-	  --check contracts/api-coverage.json \
+	  --write contracts/api-coverage.generated.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
 
-compatibility-generate: ## Compile YAML cases into deterministic CI and bilingual evidence.
+coverage-check: compatibility-evidence-check ## Verify generated API classification and bilingual matrices.
+	@uv run python scripts/api_coverage.py \
+	  --check contracts/api-coverage.generated.json \
+	  --english docs/compatibility/api-coverage.generated.md \
+	  --korean docs/compatibility/api-coverage.ko.generated.md
+
+compatibility-generate: compatibility-evidence-generate coverage-generate ## Compile annotated cases into CI and bilingual evidence.
 	@uv run python scripts/compatibility_matrix.py --write
 
-compatibility-check: ## Reject interoperability manifest, runtime, and generated-output drift.
+compatibility-check: compatibility-evidence-check coverage-check ## Reject annotation, policy, and generated-output drift.
 	@uv run python scripts/compatibility_matrix.py --check
 
-compatibility-case: ## Run CASE=id as one bounded, isolated compatibility process.
+compatibility-evidence-generate: ## Generate CI cases and bilingual evidence from pytest annotations.
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --write
+
+compatibility-evidence-check: ## Reject pytest annotation, operation evidence, and generated-output drift.
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --check
+
+compatibility-case: ## Run CASE=id from annotated evidence in one bounded, isolated process.
 	@test -n "$(CASE)" || (echo "CASE is required; run: make compatibility-case CASE=<id>" >&2; exit 2)
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/run_compatibility_case.py "$(CASE)"
 

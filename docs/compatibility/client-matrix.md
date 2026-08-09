@@ -5,6 +5,16 @@
 
 # Client and library compatibility
 
+<!-- toc:start -->
+## Contents
+
+- [Status levels](#status-levels)
+- [Verified clients](#verified-clients)
+- [Closed client set](#closed-client-set)
+- [Current exclusions](#current-exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This document records whether an external AWS-protocol client has actually been verified through
 Mystack's single public endpoint. A passing vertical path for one library is never a claim of support
 for that library's entire API.
@@ -22,10 +32,14 @@ for that library's entire API.
 <!-- section: verified -->
 ## Verified clients
 
-The [generated exact-version evidence](client-matrix.generated.md) is the authoritative list used by
-GitHub Actions. Maintainers add one explicit case to `compatibility/cases.yaml`; the compiler rejects
-unknown fields, mutable artifacts, invalid runtime combinations, and service-model drift before a
-test starts.
+The [test-declared exact-version evidence](annotated-evidence.generated.md) is the authoritative
+list used by GitHub Actions. Maintainers add or reuse a typed profile and decorate the smallest
+real `contract` or `e2e` test with its tested scenarios and operations. The collection compiler
+rejects invalid markers, lock/runtime mismatches, unknown modeled operations, missing supported-API
+evidence, and case-selection drift before a test body starts. The retained
+[generated annotation evidence](annotated-evidence.generated.md) and
+`contracts/compatibility-scope-policy.yaml` define
+parity baselines during the migration.
 
 | Client | Pinned version | Status | Verified path |
 | --- | --- | --- | --- |

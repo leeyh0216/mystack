@@ -6,6 +6,7 @@ https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures
 
 from __future__ import annotations
 
+import argparse
 import re
 from pathlib import Path
 
@@ -20,6 +21,10 @@ OFFICIAL_SOURCES = (
     "https://direnv.net",
     "https://www.korean.go.kr",
     "https://learn.microsoft.com",
+    "https://spark.apache.org",
+    "https://trino.io",
+    "https://github.com/apache/spark",
+    "https://github.com/trinodb/trino",
 )
 DOC_ID_PATTERN = re.compile(r"<!--\s*doc-id:\s*([a-z0-9./_-]+)\s*-->")
 SECTION_PATTERN = re.compile(r"<!--\s*section:\s*([a-z0-9_-]+)\s*-->")
@@ -28,6 +33,11 @@ MARKDOWN_LINK_PATTERN = re.compile(r"\[[^]]+\]\(([^)]+)\)")
 INLINE_CODE_PATTERN = re.compile(r"`[^`]*`")
 LINK_DESTINATION_PATTERN = re.compile(r"\]\([^)]+\)")
 HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->")
+TOC_START = "<!-- toc:start -->"
+TOC_END = "<!-- toc:end -->"
+TOC_BLOCK_PATTERN = re.compile(rf"{re.escape(TOC_START)}.*?{re.escape(TOC_END)}\n*", re.DOTALL)
+HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
+MARKDOWN_LINK_LABEL_PATTERN = re.compile(r"\[([^]]+)\]\([^)]+\)")
 PLAIN_NARRATIVE_ENDING = re.compile(
     r"(한다|된다|있다|없다|이다|아니다|둔다|남는다|따른다|"
     r"보존한다|거부한다|사용한다|관리한다|적용한다|구성한다|"
@@ -52,7 +62,7 @@ def counterpart(path: Path) -> Path:
 
 
 def document_language(path: Path) -> str:
-    return "ko" if path.name.endswith(".ko.md") else "en"
+    return "ko" if path.name.endswith((".ko.md", ".ko.generated.md")) else "en"
 
 
 def first_match(pattern: re.Pattern[str], text: str) -> str:
@@ -77,6 +87,131 @@ def maintained_documents() -> list[Path]:
         *sorted((ROOT / "docs").rglob("*.md")),
     ]
     return [path for path in documents if not path.name.endswith(".generated.md")]
+
+
+def all_documentation_documents() -> list[Path]:
+    """Return every repository-owned Markdown document, including generated references."""
+
+    return [
+        ROOT / "README.md",
+        ROOT / "README.ko.md",
+        ROOT / "CONTRIBUTING.md",
+        ROOT / "CONTRIBUTING.ko.md",
+        *sorted((ROOT / "docs").rglob("*.md")),
+    ]
+
+
+def _without_toc(text: str) -> str:
+    return TOC_BLOCK_PATTERN.sub("", text)
+
+
+def _headings(text: str) -> list[tuple[int, str]]:
+    """Read Markdown headings while ignoring fenced code blocks and a previous contents block."""
+
+    headings: list[tuple[int, str]] = []
+    in_code_fence = False
+    for line in _without_toc(text).splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            in_code_fence = not in_code_fence
+            continue
+        if in_code_fence:
+            continue
+        match = HEADING_PATTERN.match(line)
+        if match:
+            headings.append((len(match.group(1)), match.group(2).strip()))
+    return headings
+
+
+def _display_heading(value: str) -> str:
+    return MARKDOWN_LINK_LABEL_PATTERN.sub(r"\1", value).replace("`", "")
+
+
+def _github_anchor(value: str, seen: dict[str, int]) -> str:
+    """Render the GitHub-compatible anchor used by the intentionally simple H2 index."""
+
+    normalized = _display_heading(value).casefold().strip()
+    characters = [
+        character if character.isalnum() or character in {"-", "_", " "} else ""
+        for character in normalized
+    ]
+    anchor = "".join(characters).replace(" ", "-")
+    anchor = re.sub(r"-+", "-", anchor).strip("-")
+    occurrence = seen.get(anchor, 0)
+    seen[anchor] = occurrence + 1
+    return anchor if occurrence == 0 else f"{anchor}-{occurrence}"
+
+
+def rendered_toc(path: Path, text: str) -> str:
+    """Return the compact H2-only top-of-document index for one Markdown document."""
+
+    headings = _headings(text)
+    if not headings or headings[0][0] != 1:
+        raise ValueError(f"document has no H1 heading: {path.relative_to(ROOT)}")
+    seen: dict[str, int] = {}
+    entries = [
+        (_display_heading(heading), _github_anchor(heading, seen))
+        for level, heading in headings
+        if level == 2
+    ]
+    if not entries:
+        raise ValueError(
+            f"document has no H2 headings for its contents index: {path.relative_to(ROOT)}"
+        )
+    title = "목차" if document_language(path) == "ko" else "Contents"
+    lines = [TOC_START, f"## {title}", ""]
+    lines.extend(f"- [{display}](#{anchor})" for display, anchor in entries)
+    lines.extend([TOC_END])
+    return "\n".join(lines)
+
+
+def with_rendered_toc(path: Path, text: str) -> str:
+    """Insert or replace the single contents block directly after the document H1."""
+
+    without_toc = _without_toc(text).rstrip() + "\n"
+    lines = without_toc.splitlines()
+    in_code_fence = False
+    h1_index: int | None = None
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(("```", "~~~")):
+            in_code_fence = not in_code_fence
+            continue
+        match = HEADING_PATTERN.match(line)
+        if not in_code_fence and match and len(match.group(1)) == 1:
+            h1_index = index
+            break
+    if h1_index is None:
+        raise ValueError(f"document has no H1 heading: {path.relative_to(ROOT)}")
+    suffix = lines[h1_index + 1 :]
+    while suffix and not suffix[0].strip():
+        suffix.pop(0)
+    rendered = rendered_toc(path, without_toc)
+    return "\n".join([*lines[: h1_index + 1], "", rendered, "", *suffix]).rstrip() + "\n"
+
+
+def write_tocs(documents: list[Path]) -> int:
+    updated = 0
+    for document in documents:
+        original = document.read_text(encoding="utf-8")
+        rendered = with_rendered_toc(document, original)
+        if original != rendered:
+            document.write_text(rendered, encoding="utf-8")
+            updated += 1
+    return updated
+
+
+def validate_toc(path: Path, text: str, violations: list[str]) -> None:
+    try:
+        expected = with_rendered_toc(path, text)
+    except ValueError as error:
+        violations.append(str(error))
+        return
+    if text != expected:
+        violations.append(
+            f"missing or stale top-of-document contents index: {path.relative_to(ROOT)}; "
+            "run uv run python scripts/check_docs.py --write-toc"
+        )
 
 
 def validate_document(path: Path, text: str, violations: list[str]) -> None:
@@ -153,8 +288,22 @@ def validate_korean_style(path: Path, text: str, violations: list[str]) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--write-toc",
+        action="store_true",
+        help="Render the compact top-of-document contents index into every Markdown document",
+    )
+    args = parser.parse_args()
+    all_documents = all_documentation_documents()
+    if args.write_toc:
+        updated = write_tocs(all_documents)
+        print(f"documentation.toc.updated documents={updated} total={len(all_documents)}")
+        return
     documents = maintained_documents()
     violations: list[str] = []
+    for document in all_documents:
+        validate_toc(document, document.read_text(encoding="utf-8"), violations)
     for document in documents:
         text = document.read_text(encoding="utf-8")
         validate_document(document, text, violations)

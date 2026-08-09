@@ -1,6 +1,13 @@
 # Generated API compatibility matrix
 
-This file is generated from `contracts/api-coverage.json`; do not edit it directly. The official inventory is the [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data).
+<!-- toc:start -->
+## Contents
+
+- [Summary](#summary)
+- [Operations](#operations)
+<!-- toc:end -->
+
+This file is generated from annotated pytest evidence and operation inventory; do not edit it directly. The official inventory is the [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data).
 
 botocore: `1.43.66`
 
@@ -10,6 +17,8 @@ botocore: `1.43.66`
 | --- | ---: | ---: | ---: | ---: | ---: |
 | EMR | 13 | 0 | 52 | 0 | 65 |
 | GLUE | 28 | 0 | 243 | 28 | 299 |
+
+## Operations
 
 | Service | Operation | Status | Meaning |
 | --- | --- | --- | --- |

@@ -17,9 +17,9 @@ from iceberg_evolution import exercise_iceberg_evolution
 from iceberg_lifecycle import exercise_iceberg_lifecycle
 from iceberg_row_level import exercise_iceberg_row_level_writes
 from iceberg_snapshot_refs import exercise_iceberg_snapshots_and_procedures
+from mystack.glue.runtime.spark_catalog import GlueSparkCatalogSettings
 from open_table_format import exercise_open_table_format
 from pyspark.sql import SparkSession
-from spark_catalog_session import GlueSparkCatalogSettings
 
 
 @dataclass(frozen=True, slots=True)

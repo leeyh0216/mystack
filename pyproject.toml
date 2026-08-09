@@ -1,8 +1,8 @@
 [project]
 name = "mystack-dev"
-version = "0.1.3"
+version = "0.1.4"
 description = "Development workspace for Mystack"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.12"
 dependencies = []
 
 [dependency-groups]
@@ -40,6 +40,7 @@ markers = [
   "browser: browser-driven console and accessibility contract",
   "contract: boto3 or wire-level protocol contract test",
   "e2e: Docker and real runtime end-to-end test",
+  "mystack_compatibility: typed client/runtime/operation evidence collected for generated CI cases",
 ]
 
 [tool.ruff]

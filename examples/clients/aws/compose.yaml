@@ -1,0 +1,21 @@
+# Run from this directory: docker compose up --build --abort-on-container-exit
+# Docker Compose include: https://docs.docker.com/reference/compose-file/include/
+name: mystack-aws-client-lab
+
+include:
+  - path: ../../../compose.yaml
+    env_file: compose.env
+
+services:
+  aws-client:
+    build: .
+    depends_on:
+      proxy:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_ENDPOINT_URL: http://proxy:8080
+    networks: [mystack]

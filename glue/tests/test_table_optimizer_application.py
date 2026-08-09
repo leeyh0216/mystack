@@ -5,10 +5,17 @@ Official API: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-table-opti
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
-from mystack.glue.adapters.outbound import InMemoryCatalogRepository
+from mystack.glue.adapters.outbound import SqliteCatalogRepository
 from mystack.glue.application import CatalogApplication, CatalogPolicy, TableOptimizerPolicy
 from mystack.glue.application.partition_expression import PartitionExpressionPolicy
+from mystack.glue.application.sqlite_runtime import (
+    SQLiteCheckpointSettings,
+    SQLiteDriverSettings,
+    SQLiteRuntimeSettings,
+)
 from mystack.glue.domain import AlreadyExistsError, EntityNotFoundError, InvalidInputError
 
 from test_support.glue_error_harness import InMemoryIcebergMetadataStore
@@ -31,10 +38,29 @@ class Identifiers:
         return f"run-{self.value}"
 
 
-def _application() -> tuple[CatalogApplication, ManualClock]:
+def _application(tmp_path: Path) -> tuple[CatalogApplication, ManualClock]:
     clock = ManualClock()
+    database_file = tmp_path / "catalog.sqlite3"
+    catalog = SqliteCatalogRepository(
+        SQLiteRuntimeSettings(
+            database_file=database_file,
+            driver=SQLiteDriverSettings(
+                module="sqlite3",
+                expected_version="3.53.4",
+                minimum_wal_version="3.51.3",
+                manifest_file=database_file.with_name("unused-runtime-manifest.json"),
+            ),
+            journal_mode="rollback",
+            synchronous="full",
+            busy_timeout_milliseconds=250,
+            retry_limit=0,
+            checkpoint=SQLiteCheckpointSettings(mode="passive", auto_checkpoint_pages=1000),
+        )
+    )
     application = CatalogApplication(
-        InMemoryCatalogRepository(),
+        catalog,
+        catalog,
+        catalog,
         clock,
         CatalogPolicy(
             default_catalog_id="account",
@@ -79,8 +105,10 @@ async def _create_tables(application: CatalogApplication) -> None:
     )
 
 
-async def test_optimizer_commands_enforce_iceberg_duplicate_and_missing_invariants() -> None:
-    application, _ = _application()
+async def test_optimizer_commands_enforce_iceberg_duplicate_and_missing_invariants(
+    tmp_path: Path,
+) -> None:
+    application, _ = _application(tmp_path)
     await _create_tables(application)
     await application.create_table_optimizer(
         "account", "db", "iceberg", "compaction", {"enabled": False}
@@ -105,8 +133,8 @@ async def test_optimizer_commands_enforce_iceberg_duplicate_and_missing_invarian
         )
 
 
-async def test_optimizer_run_history_moves_and_cascades_with_owning_table() -> None:
-    application, clock = _application()
+async def test_optimizer_run_history_moves_and_cascades_with_owning_table(tmp_path: Path) -> None:
+    application, clock = _application(tmp_path)
     await _create_tables(application)
     await application.create_table_optimizer(
         "account", "db", "iceberg", "compaction", {"enabled": True}

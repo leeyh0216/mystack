@@ -5,6 +5,18 @@
 
 # Iceberg row-level DML through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Guaranteed profile](#guaranteed-profile)
+- [Glue wire and failure contract](#glue-wire-and-failure-contract)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the supported row-level write behavior for the Glue 5.0, Spark 3.5.4, and
 Iceberg 1.7.1 profile. It follows Iceberg's official
 [Spark writes](https://iceberg.apache.org/docs/1.7.1/spark-writes/) and
@@ -82,8 +94,9 @@ If an upgraded client breaks this profile, inspect:
 1. `glue/scripts/e2e/iceberg_row_level.py` for Spark SQL or Iceberg write-mode changes.
 2. `test_support/iceberg_metadata.py` for Iceberg snapshot-summary representation changes.
 3. `glue/adapters/inbound/aws_table.py` for Glue request-member changes.
-4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for CAS/version loss.
-5. `compatibility/cases.yaml` for pinned profile and scenario drift.
+4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
+   CAS/version loss.
+5. Typed pytest compatibility annotations for pinned profile and scenario drift.
 
 <!-- section: limits -->
 ## Limits

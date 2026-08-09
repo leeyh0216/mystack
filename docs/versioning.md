@@ -5,6 +5,18 @@
 
 # Versioning and branch delivery
 
+<!-- toc:start -->
+## Contents
+
+- [Local command surface](#local-command-surface)
+- [GitHub UI flow](#github-ui-flow)
+- [Branch and event policy](#branch-and-event-policy)
+- [Publication transaction](#publication-transaction)
+- [Repository rulesets](#repository-rulesets)
+- [Failure and recovery map](#failure-and-recovery-map)
+- [Supported and excluded policy](#supported-and-excluded-policy)
+<!-- toc:end -->
+
 This is the maintainer guide for the `feature/*` → `develop` → `main` workflow. `VERSION` is the
 only committed version authority. It contains a stable [Semantic Versioning](https://semver.org/)
 core such as `1.4.0`; contributors never commit a snapshot suffix.

@@ -5,6 +5,17 @@
 
 # Public GHCR image publication
 
+<!-- toc:start -->
+## Contents
+
+- [Images and ownership](#images-and-ownership)
+- [Publication contract](#publication-contract)
+- [Publishing and first-time visibility](#publishing-and-first-time-visibility)
+- [Vulnerability and rollback semantics](#vulnerability-and-rollback-semantics)
+- [Failure map](#failure-map)
+- [Local non-publishing checks](#local-non-publishing-checks)
+<!-- toc:end -->
+
 This page covers container consumption and registry operations. Maintainers should read the full
 [version and branch workflow](versioning.md) first. Mystack uses GitHub's official [Container
 registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
@@ -37,6 +48,10 @@ timeouts, exact tag patterns, and snapshot retention. `latest` is not published.
 - BuildKit provenance and SBOM are attached. Runtime descriptors must satisfy the official [OCI
   image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md); attestation
   descriptors with `unknown/unknown` are ignored.
+- Before finalizing a release, an anonymous runner resolves every published Glue platform manifest
+  digest and runs the bounded `--verify-sqlite-runtime` command against that exact
+  `image@platform-digest`. Its report proves the source-built SQLite version, verified WAL path,
+  and runtime architecture in the artifact, rather than relying only on the earlier local build.
 - Pinned Trivy follows its official [image command
   contract](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/). Every job,
   scan, test, and external command has an explicit timeout.
@@ -79,6 +94,12 @@ GHCR has no ECR-style scan-on-push contract used by this project. Mystack scans 
 images before authentication. A validation, build, timeout, missing-evidence, or configured
 vulnerability failure prevents authorization. Raw `preflight-*` artifacts remain for diagnosis.
 
+The post-push Glue runtime probe is also bounded. On a nonzero exit, timeout, or invalid report it
+writes a failed `sqlite-runtime.json` under the published-release evidence artifact before stopping
+the release. The document retains only redacted, 4,096-character stdout/stderr tails; it never
+contains full container output, tokens, credentials, or query values. The evidence upload runs even
+after the failed probe and is retained for 14 days.
+
 The scan gate rejects every configured severity by default. A known upstream runtime finding may
 be accepted only through the exact entries in `config/registry-release.json`: component, CVE,
 package, installed version, and image-relative JAR path must all match, and the review date must not
@@ -115,6 +136,7 @@ Snapshot metadata records a 30-day retention target, but deletion is not yet aut
 | package permission denied during push | Workflow/package association differs | Workflow permission and package access |
 | anonymous verification denied | Package is still private | Complete the one-time visibility change and rerun the same SHA |
 | `registry.index.verify.failed` | Runtime platform is missing | Dockerfile base manifest or configured platforms |
+| `glue.sqlite.preflight.failed` | A published Glue platform digest did not prove its SQLite runtime | Inspect the retained redacted `sqlite-runtime.json`, Dockerfile dependency resolver, and runtime policy |
 | `registry.scan.exception.matched` | Exact reviewed finding is time-bounded | Review coordinate, rationale, sources, and expiry |
 | `registry.scan.exception.expired` | A risk decision reached its deadline | Patch runtime or renew through review and a new version |
 | `registry.scan.evaluate.failed` | Unapproved configured-severity finding exists | Patch runtime/base and use a new version |
