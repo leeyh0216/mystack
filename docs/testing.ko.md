@@ -11,6 +11,7 @@
 - [계층](#계층)
 - [Contract 규칙](#contract-규칙)
 - [실제 runtime E2E](#실제-runtime-e2e)
+- [Upstream interoperability 매핑](#upstream-interoperability-매핑)
 - [재현성](#재현성)
 - [Local 호환성 기준](#local-호환성-기준)
 <!-- toc:end -->
@@ -114,6 +115,17 @@
   protocol](protocols/glue/glue-iceberg-evolution.ko.md), [Iceberg commit
   protocol](protocols/glue/glue-iceberg-commits.ko.md), [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
   참고하세요.
+
+<!-- section: upstream-mapping -->
+## Upstream interoperability 매핑
+
+Spark catalog E2E는 [AWS Glue Libraries](https://github.com/awslabs/aws-glue-libs)가 공개한 Glue 5
+runtime profile(Spark 3.5.4, Python 3.11)을 따르며 Apache Iceberg Java 구현을 기준 integration으로
+검증합니다. Catalog discovery 회귀는 생성 뒤 Spark SQL `SHOW TABLES`, `SHOW NAMESPACES`를 실행합니다.
+즉 public Proxy가 직접 table handle뿐 아니라 Hive metastore와 Iceberg GlueCatalog의 발견 경로도
+보존함을 증명합니다. Iceberg upstream project는 이 scenario에 쓰는 Spark module을 engine integration으로
+정의합니다. 더 넓은 Trino/Flink/Hive integration은 이 프로젝트의 지원 주장 범위 밖입니다. [Iceberg
+project module](https://github.com/apache/iceberg)을 참고합니다.
 
 <!-- section: reproducibility -->
 ## 재현성

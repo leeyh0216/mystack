@@ -11,6 +11,7 @@
 - [Layers](#layers)
 - [Contract rules](#contract-rules)
 - [Real-runtime E2E](#real-runtime-e2e)
+- [Upstream interoperability mapping](#upstream-interoperability-mapping)
 - [Reproducibility](#reproducibility)
 - [Local compatibility authority](#local-compatibility-authority)
 <!-- toc:end -->
@@ -116,6 +117,18 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   [Iceberg evolution protocol](protocols/glue/glue-iceberg-evolution.md),
   [Iceberg commit protocol](protocols/glue/glue-iceberg-commits.md), and
   [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
+
+<!-- section: upstream-mapping -->
+## Upstream interoperability mapping
+
+The Spark catalog E2E intentionally follows the public Glue 5 runtime profile (Spark 3.5.4 and
+Python 3.11) published by [AWS Glue Libraries](https://github.com/awslabs/aws-glue-libs), and the
+Apache Iceberg Java implementation is the reference integration under test. Its catalog discovery
+regression uses Spark SQL `SHOW TABLES` and `SHOW NAMESPACES` after creation: the test proves the
+public Proxy preserves both Hive metastore and Iceberg GlueCatalog discovery, rather than only
+proving a direct table handle remains usable. Iceberg's upstream project defines its Spark module
+as the engine integration used for this scenario; its broader Trino/Flink/Hive integrations remain
+outside this project's support claim. See the [Iceberg project modules](https://github.com/apache/iceberg).
 
 <!-- section: reproducibility -->
 ## Reproducibility
