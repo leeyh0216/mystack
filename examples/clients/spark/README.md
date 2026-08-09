@@ -11,6 +11,20 @@ No AWS account or cloud credentials are required.
 - Docker Compose v2 supports [`include`](https://docs.docker.com/reference/compose-file/include/).
 - Run the commands from this directory, not the repository root.
 
+## What Compose runs
+
+| File | Role when you run the lab |
+| --- | --- |
+| [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy`, and starts `spark-client` with Glue, S3, and STS endpoint variables directed at Mystack/LocalStack. |
+| [`compose.env`](compose.env) | Sets `MYSTACK_PORT=0`, avoiding a collision with another local Mystack stack. The client uses internal Compose hostnames instead. |
+| [`Dockerfile`](Dockerfile) | Uses the pinned Glue 5 / Spark 3.5 client image and copies the two workload files into `/workspace`. |
+| [`run.sh`](run.sh) | The container entrypoint. It creates `mystack-spark-client-lab` in LocalStack S3 if needed, then invokes `spark-submit` with the Compose command arguments. |
+| [`verify.py`](verify.py) | The Spark application: configures the Glue-backed Hive and Iceberg catalogs, creates two namespaces and tables, inserts one row into each, reads both tables, prints their counts, and stops Spark. |
+
+The command `docker compose up … --exit-code-from spark-client` treats the exit status of
+`run.sh` → `spark-submit` → `verify.py` as the lab result. A nonzero exit identifies a failed
+catalog, object-store, or Spark operation.
+
 ## Run the lab
 
 Copy and paste this block. The first execution can take several minutes because it builds the
@@ -62,6 +76,5 @@ Stop the lab and remove its containers, network, and local volumes:
 docker compose down --volumes --remove-orphans
 ```
 
-The workload is [`verify.py`](verify.py); [`run.sh`](run.sh) creates the S3 bucket before Spark
-starts. See [client workflows](../../../docs/client-workflows.md) for the Hive/Iceberg API path and
-the compatibility matrix for the exact support boundary.
+See [client workflows](../../../docs/client-workflows.md) for the Hive/Iceberg API path and the
+compatibility matrix for the exact support boundary.

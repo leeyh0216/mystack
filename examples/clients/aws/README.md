@@ -15,6 +15,19 @@ uses Mystack's public Proxy for Glue, EMR, and S3-compatible requests, then:
 - Docker Compose v2 supports [`include`](https://docs.docker.com/reference/compose-file/include/).
 - Run the commands from this directory, not the repository root.
 
+## What Compose runs
+
+| File | Role when you run the lab |
+| --- | --- |
+| [`compose.yaml`](compose.yaml) | Includes the repository stack, waits for the public `proxy` to become healthy, and defines the `aws-client` container with local test credentials and `AWS_ENDPOINT_URL=http://proxy:8080`. |
+| [`compose.env`](compose.env) | Sets `MYSTACK_PORT=0`, so this lab does not claim the host's usual `4566` port. Containers communicate over the internal Compose network. |
+| [`Dockerfile`](Dockerfile) | Builds the small Python client image, installs the pinned packages in `requirements.txt`, and makes `verify.py` its default command. |
+| [`verify.py`](verify.py) | The executable workload: creates `mystack-client-lab` and `client_lab`, writes a two-row partitioned `events` Parquet dataset with `awswrangler`, reads its Glue table, then calls EMR `ListClusters` and prints the result. |
+| [`requirements.txt`](requirements.txt) | Pins `boto3`, `awswrangler`, and `pandas` used by the workload. |
+
+The command `docker compose up … --exit-code-from aws-client` uses `verify.py` as the success
+signal: a nonzero exit means one of those API calls or the data write/read failed.
+
 ## Run the lab
 
 Copy and paste this block. The first run downloads and builds the client image.
@@ -63,5 +76,5 @@ Stop the lab and remove its containers, network, and local volumes:
 docker compose down --volumes --remove-orphans
 ```
 
-The workload source is [`verify.py`](verify.py). See [client workflows](../../../docs/client-workflows.md)
-for the API path, supported scope, and production-client configuration.
+See [client workflows](../../../docs/client-workflows.md) for the API path, supported scope, and
+production-client configuration.
