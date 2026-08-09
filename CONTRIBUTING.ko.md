@@ -106,7 +106,7 @@ botocore만 설치한 model-drift job도 emulator import 없이 이 literal inve
 
 Client 또는 runtime을 바꿀 때는 다음 순서를 사용합니다.
 
-1. `test_support/compatibility_profiles.py`에서 정확한 version, runtime, lane,
+1. `tests/support/compatibility_profiles.py`에서 정확한 version, runtime, lane,
    GitHub Actions job 실행 시간 상한, 공식 출처 URL을 가진 `CompatibilityProfile`을 만들거나 재사용합니다.
 2. 가장 작은 실제 `@pytest.mark.contract` 또는 `@pytest.mark.e2e` 시험에
    `@compatibility_evidence(...)`를 붙입니다. 그 test body가 실행하는 operation과 scenario만
@@ -123,8 +123,8 @@ Client 또는 runtime을 바꿀 때는 다음 순서를 사용합니다.
 ```python
 import pytest
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
 
 
 @pytest.mark.contract
@@ -155,10 +155,10 @@ E2E YAML timeout을 사용합니다.
 
 | 실패 종류 | 수정 위치 |
 | --- | --- |
-| Marker/profile 구조 또는 execution marker | annotation을 붙인 test와 `test_support/compatibility.py` |
+| Marker/profile 구조 또는 execution marker | annotation을 붙인 test와 `tests/support/compatibility.py` |
 | Claim한 operation이 구현 inventory에 없음 | 소유한 `emr` 또는 `glue` `adapters/inbound/aws_*.py` registry와 test annotation |
 | Operation이 고정한 botocore model에 없음 | inbound handler, 고정 model 검토, test annotation |
-| Lock client/runtime 불일치 | `uv.lock`, `test_support/compatibility_profiles.py`, `config/mystack.yaml` |
+| Lock client/runtime 불일치 | `uv.lock`, `tests/support/compatibility_profiles.py`, `config/mystack.yaml` |
 | Collection 제한 시간 초과 | `tests.compatibility_collection_timeout_seconds` 또는 annotation test collection 중 import한 항목 |
 | 생성 output 차이 | `make compatibility-evidence-generate` 실행; 생성 file을 직접 수정하지 않음 |
 

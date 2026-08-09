@@ -12,9 +12,9 @@ from typing import Any
 import pytest
 from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import BOTO3_BOTOCORE_PUBLIC_PROXY
-from test_support.glue_catalog import exercise_all_glue_catalog_operations
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import BOTO3_BOTOCORE_PUBLIC_PROXY
+from tests.support.glue_catalog import exercise_all_glue_catalog_operations
 
 
 @pytest.mark.e2e

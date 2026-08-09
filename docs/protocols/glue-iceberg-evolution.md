@@ -95,7 +95,7 @@ types, identifier fields, and the full sort order.
 logging table bodies or S3 paths. If a Spark or Iceberg upgrade breaks this profile, inspect:
 
 1. `glue/tests/workloads/iceberg_evolution.py` for changed Spark DDL or runtime behavior.
-2. `test_support/iceberg_metadata.py` for a changed Iceberg metadata-spec representation.
+2. `tests/support/iceberg_metadata.py` for a changed Iceberg metadata-spec representation.
 3. `glue/adapters/inbound/aws_table.py` for changed Glue wire members.
 4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
    pointer/version loss.

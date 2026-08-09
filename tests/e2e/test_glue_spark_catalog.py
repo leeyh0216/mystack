@@ -18,9 +18,9 @@ from typing import Any
 import pytest
 from botocore.exceptions import ClientError
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import GLUE_SPARK_HIVE_ICEBERG
-from test_support.iceberg_metadata import IcebergMetadataDocument
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import GLUE_SPARK_HIVE_ICEBERG
+from tests.support.iceberg_metadata import IcebergMetadataDocument
 
 _ROW_LEVEL_MODE_PROPERTIES = (
     "write.delete.mode",

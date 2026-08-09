@@ -23,7 +23,7 @@ from mystack.aws_protocol import LoadedConfiguration, load_configuration
 from mystack.glue.app import create_app
 from mystack.glue.application.ports import TableOptimizerExecutionResult
 
-from test_support.glue_error_harness import (
+from tests.support.glue_error_harness import (
     IncrementingIdentifierGenerator,
     InMemoryIcebergMetadataStore,
 )

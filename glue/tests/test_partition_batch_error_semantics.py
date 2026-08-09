@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import pytest
 from mystack.glue.application.policies import GlueFaultInjectionPolicy, GlueFaultRule
 
-from test_support.glue_error_harness import GlueCatalogHarness, ToggleCommitFailpoint
+from tests.support.glue_error_harness import GlueCatalogHarness, ToggleCommitFailpoint
 
 
 @dataclass(frozen=True, slots=True)

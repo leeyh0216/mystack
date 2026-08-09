@@ -113,7 +113,7 @@ def collect_annotations(*, config_path: Path | None = None) -> dict[str, Any]:
             "-p",
             "pytest_asyncio.plugin",
             "-p",
-            "test_support.compatibility_plugin",
+            "tests.support.compatibility_plugin",
             "--mystack-compatibility-forbidden-import",
             "awswrangler",
             "--mystack-compatibility-forbidden-import",

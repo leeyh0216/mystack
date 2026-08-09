@@ -27,8 +27,8 @@ from scripts.compatibility.compatibility_evidence import (
     GeneratedArtifacts,
     collect_annotations,
 )
-from test_support.compatibility import CompatibilityProfile, ExecutionKind, Lane
-from test_support.compatibility_plugin import (
+from tests.support.compatibility import CompatibilityProfile, ExecutionKind, Lane
+from tests.support.compatibility_plugin import (
     CompatibilityCollectionError,
     _reject_forbidden_imports,
     collect_compatibility_items,
@@ -168,7 +168,7 @@ def test_pytest_collection_writes_evidence_without_executing_test_body(tmp_path:
         """
 import pytest
 
-from test_support.compatibility import (
+from tests.support.compatibility import (
     CompatibilityProfile,
     ExecutionKind,
     Lane,
@@ -207,7 +207,7 @@ def test_body_must_not_execute():
             "--collect-only",
             "-q",
             "-p",
-            "test_support.compatibility_plugin",
+            "tests.support.compatibility_plugin",
             "--mystack-compatibility-output",
             str(output),
             str(test_module),

@@ -19,8 +19,8 @@ from typing import Any
 import httpx
 import pytest
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import EMR_LOCAL_SPARK
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import EMR_LOCAL_SPARK
 
 
 @pytest.mark.e2e

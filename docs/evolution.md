@@ -36,7 +36,7 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 <!-- section: manifest -->
 ## Adding a client or runtime version
 
-1. Add or reuse a `CompatibilityProfile` in `test_support/compatibility_profiles.py`. It records
+1. Add or reuse a `CompatibilityProfile` in `tests/support/compatibility_profiles.py`. It records
    exact client versions, runtime, lane, outer GitHub Actions job ceiling, and official URLs.
 2. Add `@compatibility_evidence(...)` to the smallest real `contract` or `e2e` test that proves
    the client behavior. Its scenario, operation, capability, and support values must describe the

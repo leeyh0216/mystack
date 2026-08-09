@@ -15,8 +15,8 @@ from typing import Any
 import boto3
 import pytest
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import AWSWRANGLER_GLUE_S3
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import AWSWRANGLER_GLUE_S3
 
 
 @pytest.mark.e2e

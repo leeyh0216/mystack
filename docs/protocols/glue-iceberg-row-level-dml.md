@@ -92,7 +92,7 @@ pointer decision and persistence lifecycle using fingerprints rather than SQL bo
 If an upgraded client breaks this profile, inspect:
 
 1. `glue/tests/workloads/iceberg_row_level.py` for Spark SQL or Iceberg write-mode changes.
-2. `test_support/iceberg_metadata.py` for Iceberg snapshot-summary representation changes.
+2. `tests/support/iceberg_metadata.py` for Iceberg snapshot-summary representation changes.
 3. `glue/adapters/inbound/aws_table.py` for Glue request-member changes.
 4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
    CAS/version loss.

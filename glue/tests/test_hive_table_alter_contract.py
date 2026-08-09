@@ -13,8 +13,8 @@ import copy
 import pytest
 from botocore.exceptions import ClientError
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
 
 
 @pytest.mark.contract
