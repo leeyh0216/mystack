@@ -10,6 +10,7 @@
 
 - [Workflow](#workflow)
 - [기여자가 바로 보는 test report](#기여자가-바로-보는-test-report)
+- [Frontend test 격리](#frontend-test-격리)
 - [Branch protection 기대값](#branch-protection-기대값)
 - [Dependency update](#dependency-update)
 - [GHCR 게시](#ghcr-게시)
@@ -69,6 +70,15 @@ timeout을 받고 Vitest는 설정된 test와 hook deadline을 받습니다.
 
 CI는 pull request와 `main` 또는 `develop` push에서 실행합니다. 같은 feature branch revision에 frontend
 producer lane이 두 번 생기는 것을 막습니다.
+
+<!-- section: frontend-test-isolation -->
+## Frontend test 격리
+
+Root Vitest 설정은 각 test file 전에 `ui/tests/setup.ts`를 불러옵니다. 공유 setup은 Vitest
+`afterEach` hook에서 React Testing Library `cleanup`을 호출하므로 render된 React tree가 jsdom 종료 전에
+unmount됩니다. 이 동작은 test harness에 두고 EMR 또는 Glue production component에는 test 전용
+`window` guard를 추가하지 않습니다. 구현은 공식 [Vitest setup-file 안내](https://vitest.dev/config/setupfiles)와
+[React Testing Library cleanup 안내](https://testing-library.com/docs/react-testing-library/setup/)를 따릅니다.
 
 <!-- section: branch-protection -->
 ## Branch protection 기대값
