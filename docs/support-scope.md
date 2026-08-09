@@ -16,6 +16,10 @@
 <!-- section: overview -->
 ## Overview
 
+Use the generated [client compatibility matrix](compatibility/client-matrix.generated.md) for a
+compact client-facing feature/version/verification answer. The exhaustive maintainer inventory is
+the separate [API coverage reference](compatibility/api-coverage.generated.md).
+
 This document distinguishes implemented behavior from long-term targets. “Target” never means that the current build is already compatible.
 
 | Area | Current status | Target |
