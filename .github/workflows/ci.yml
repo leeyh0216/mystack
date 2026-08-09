@@ -162,9 +162,13 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
-      - name: Install the locked workspace and validate generated evidence
+      - name: Install the locked workspace
         run: |
           uv sync --locked --all-packages
+      - name: Generate CI compatibility evidence
+        uses: ./.github/actions/generate-compatibility-evidence
+      - name: Validate generated evidence
+        run: |
           make compatibility-check compatibility-evidence-check
       - id: matrix
         name: Read the test-declared non-cross-product contract matrix
@@ -196,6 +200,8 @@ jobs:
           enable-cache: true
       - name: Install the locked workspace
         run: uv sync --locked --all-packages
+      - name: Generate CI compatibility evidence
+        uses: ./.github/actions/generate-compatibility-evidence
       - name: Reject retained-manifest and test-declared evidence drift
         run: make compatibility-check compatibility-evidence-check
       - name: Run the explicit case in an isolated process
@@ -252,6 +258,8 @@ jobs:
           enable-cache: true
       - name: Install the locked workspace
         run: uv sync --locked --all-packages
+      - name: Generate CI compatibility evidence
+        uses: ./.github/actions/generate-compatibility-evidence
       - name: Lint
         run: uv run ruff check .
       - name: Check formatting

@@ -1,0 +1,14 @@
+name: Generate compatibility evidence
+description: Build the deterministic compatibility artifacts that CI matrices and release gates consume.
+
+runs:
+  using: composite
+  steps:
+    - name: Generate evidence from source policy and annotated tests
+      shell: bash
+      run: |
+        set -euo pipefail
+        make compatibility-evidence-generate
+        make compatibility-generate
+        make coverage-generate
+        make glue-errors-generate
