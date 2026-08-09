@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.release_policy import (
+from scripts.release.release_policy import (
     BindingAction,
     BranchPublicationPolicy,
     PolicyError,
@@ -16,7 +16,7 @@ from scripts.release_policy import (
     WorkflowContext,
     decide_binding,
 )
-from scripts.version import StableVersion
+from scripts.release.version import StableVersion
 
 VERSION = StableVersion.parse("1.2.3")
 SHA = "1234567890abcdef1234567890abcdef12345678"

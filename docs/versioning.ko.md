@@ -29,8 +29,8 @@ make version-show
 make version-check
 make version-bump PART=patch
 make version-bump PART=minor VERSION_ARGS=--dry-run
-uv run python scripts/version.py set 1.4.0
-uv run python scripts/version.py check --base-ref origin/main
+uv run python scripts/release/version.py set 1.4.0
+uv run python scripts/release/version.py check --base-ref origin/main
 ```
 
 `version-bump`와 `set`은 `config/release/version-files.json`에 선언한 모든 파일을 바꾸고 unified diff를

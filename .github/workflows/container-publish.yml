@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       version:
-        description: Exact immutable OCI tag derived by release_policy.py
+        description: Exact immutable OCI tag derived by scripts/release/release_policy.py
         required: true
         type: string
       python_version:
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           config=config/registry-release.json
           python3 scripts/registry_release.py --config "$config" check-config
-          python3 scripts/version.py check
+          python3 scripts/release/version.py check
           test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
           grep -Eq '^[0-9a-f]{40}$' <<<"$SOURCE_SHA"
           test "$CHANNEL" = stable -o "$CHANNEL" = snapshot
@@ -368,11 +368,11 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          python3 scripts/version.py check \
+          python3 scripts/release/version.py check \
             --require-unreleased \
             --github-repository "$GITHUB_REPOSITORY" \
             --allow-existing-at-sha "$SOURCE_SHA"
-          python3 -m scripts.github_release \
+          python3 -m scripts.release.github_release \
             --repository "$GITHUB_REPOSITORY" \
             --timeout-seconds 30 \
             ensure-tag --tag "$VERSION" --sha "$SOURCE_SHA"
@@ -443,7 +443,7 @@ jobs:
               echo "event=registry.tag.check.failed image=$image tag=$VERSION fix_hint=existing-tag-has-no-mystack-revision-label" >&2
               exit 2
             fi
-            python3 -m scripts.release_policy binding \
+            python3 -m scripts.release.release_policy binding \
               --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
             manifest_json=$(docker buildx imagetools inspect \
               --format '{{json .Manifest}}' "$image:$VERSION")
@@ -569,7 +569,7 @@ jobs:
                 echo "event=registry.anonymous.verify.failed component=$name platform=$platform fix_hint=inspect-published-oci-labels" >&2
                 exit 2
               fi
-              python3 -m scripts.release_policy binding \
+              python3 -m scripts.release.release_policy binding \
                 --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
               if [ "$name" = glue ]; then
                 platform_digest=$(jq -er --arg platform "$platform" '
@@ -647,7 +647,7 @@ jobs:
             "- \`ghcr.io/$owner/mystack-glue:$VERSION\`" \
             "" \
             "Publication and anonymous-pull evidence: $run_url")
-          python3 -m scripts.github_release \
+          python3 -m scripts.release.github_release \
             --repository "$GITHUB_REPOSITORY" \
             --timeout-seconds 30 \
             ensure-release --tag "$VERSION" --sha "$SOURCE_SHA" --body "$body"

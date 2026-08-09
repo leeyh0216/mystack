@@ -103,16 +103,16 @@ compatibility-case: ## Run CASE=id from annotated evidence in one bounded, isola
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/compatibility/run_compatibility_case.py "$(CASE)"
 
 registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
-	@uv run python scripts/registry_release.py check-config
-	@uv run ruff check scripts/registry_release.py tests/test_registry_release.py
+	@uv run python scripts/release/registry_release.py check-config
+	@uv run ruff check scripts/release/registry_release.py tests/test_registry_release.py
 	@uv run pytest tests/test_registry_release.py --timeout 60 --timeout-method thread -vv
 
 rulesets-check: ## Validate the file-driven main/develop repository governance policy.
-	@uv run python scripts/github_rulesets.py check
+	@uv run python scripts/release/github_rulesets.py check
 
 rulesets-apply: ## Converge only Mystack-owned rulesets; use REPOSITORY=owner/name DRY_RUN=--dry-run.
 	@test -n "$(REPOSITORY)" || (echo "REPOSITORY is required" >&2; exit 2)
-	@uv run python scripts/github_rulesets.py apply --repository "$(REPOSITORY)" $(DRY_RUN)
+	@uv run python scripts/release/github_rulesets.py apply --repository "$(REPOSITORY)" $(DRY_RUN)
 
 version-show: ## Show the stable version authority; use CHANNEL=snapshot RUN_NUMBER=N SHA=hex.
 	@args="--json"; \
@@ -121,7 +121,7 @@ version-show: ## Show the stable version authority; use CHANNEL=snapshot RUN_NUM
 	    (echo "RUN_NUMBER and SHA are required for CHANNEL=snapshot" >&2; exit 2); \
 	  args="--channel snapshot --run-number $(RUN_NUMBER) --sha $(SHA) --json"; \
 	fi; \
-	uv run python scripts/version.py show $$args
+	uv run python scripts/release/version.py show $$args
 
 version-check: ## Reject version authority drift; optionally pass BASE_REF and RELEASE_REPOSITORY.
 	@args=""; \
@@ -129,12 +129,12 @@ version-check: ## Reject version authority drift; optionally pass BASE_REF and R
 	if [ -n "$(RELEASE_REPOSITORY)" ]; then \
 	  args="$$args --require-unreleased --github-repository $(RELEASE_REPOSITORY)"; \
 	fi; \
-	uv run python scripts/version.py check $$args
+	uv run python scripts/release/version.py check $$args
 
 version-bump: ## Update all managed version files; PART=patch|minor|major, VERSION_ARGS=--dry-run.
 	@test "$(PART)" = major -o "$(PART)" = minor -o "$(PART)" = patch || \
 	  (echo "PART must be major, minor, or patch" >&2; exit 2)
-	@uv run python scripts/version.py bump --part "$(PART)" $(VERSION_ARGS)
+	@uv run python scripts/release/version.py bump --part "$(PART)" $(VERSION_ARGS)
 
 package-check: ## Build and co-install all wheels under the implicit Mystack namespace.
 	@uv build --all-packages

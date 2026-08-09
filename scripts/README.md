@@ -6,7 +6,7 @@ first; root-level files remain only for cross-cutting bootstrap, architecture, a
 | Area | Location | Purpose |
 | --- | --- | --- |
 | Compatibility | [`compatibility/`](compatibility/) | Collect pytest annotations, compile CI matrices, classify API coverage, validate Glue error contracts, and run one selected compatibility case. |
-| Release | root `registry_release.py`, `release_policy.py`, `github_release.py`, `github_rulesets.py`, `version.py` | Resolve release policy, version updates, GitHub release/tag actions, and repository governance. |
+| Release | [`release/`](release/) | Resolve release policy, version updates, GitHub release/tag actions, and repository governance. |
 | Quality | root `check_docs.py`, `config_reference.py`, `model_manifest.py`, `architecture_contract.py` | Documentation, configuration, upstream-model, and dependency-boundary verification. |
 | Development | root `bootstrap.sh`, `devcontainer-setup.sh`, `export_requirements.py`, `reusable_build_artifact.py` | Local environment setup and reproducible build inputs. |
 

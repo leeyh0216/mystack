@@ -47,9 +47,9 @@ jobs:
           SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
         run: |
           set -euo pipefail
-          python3 scripts/version.py check
+          python3 scripts/release/version.py check
           stable=$(tr -d '\n' <VERSION)
-          plan=$(python3 -m scripts.release_policy plan \
+          plan=$(python3 -m scripts.release.release_policy plan \
             --event-name workflow_run \
             --ref-name "$BRANCH" \
             --source-event "$SOURCE_EVENT" \

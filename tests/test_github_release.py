@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from scripts.github_release import GitHubCommandError, ReleaseTransaction
-from scripts.release_policy import BindingAction, PolicyError
+from scripts.release.github_release import GitHubCommandError, ReleaseTransaction
+from scripts.release.release_policy import BindingAction, PolicyError
 
 SHA = "1234567890abcdef1234567890abcdef12345678"
 OTHER_SHA = "abcdef1234567890abcdef1234567890abcdef12"

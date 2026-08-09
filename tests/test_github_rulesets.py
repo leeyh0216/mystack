@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from scripts.github_rulesets import DEFAULT_CONFIG, config_report, converge, load_config
+from scripts.release.github_rulesets import DEFAULT_CONFIG, config_report, converge, load_config
 
 
 @dataclass

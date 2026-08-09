@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.version import (
+from scripts.release.version import (
     DEFAULT_CONFIG,
     ROOT,
     StableVersion,

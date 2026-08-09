@@ -255,7 +255,7 @@
   timeout, vulnerability policy.
 - 관측: registry 전/후/실패 event와 upload evidence.
 - 근거: `.github/workflows/release.yml`, `.github/workflows/container-publish.yml`,
-  `scripts/release_policy.py`, `scripts/github_release.py`, `scripts/registry_release.py`
+  `scripts/release/release_policy.py`, `scripts/release/github_release.py`, `scripts/release/registry_release.py`
 - 신뢰도: 결정적 정책과 transaction test는 High이며 remote 게시는 GitHub runner 및 package
   visibility 상태의 영향을 받습니다.
 

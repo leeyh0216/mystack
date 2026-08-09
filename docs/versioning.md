@@ -29,8 +29,8 @@ make version-show
 make version-check
 make version-bump PART=patch
 make version-bump PART=minor VERSION_ARGS=--dry-run
-uv run python scripts/version.py set 1.4.0
-uv run python scripts/version.py check --base-ref origin/main
+uv run python scripts/release/version.py set 1.4.0
+uv run python scripts/release/version.py check --base-ref origin/main
 ```
 
 `version-bump` and `set` update every file declared in `config/release/version-files.json`, print a unified
