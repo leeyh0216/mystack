@@ -200,6 +200,7 @@ class GlueSettings:
                         supported_key_types=tuple(
                             str(value) for value in expression["supported_key_types"]
                         ),
+                        fallback_max_candidates=int(expression["fallback_max_candidates"]),
                     ),
                 ),
                 fault_injection=GlueFaultInjectionPolicy(

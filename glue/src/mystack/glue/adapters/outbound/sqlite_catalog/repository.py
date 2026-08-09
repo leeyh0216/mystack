@@ -39,6 +39,7 @@ from mystack.glue.adapters.outbound.sqlite_catalog.projection import PartitionVa
 from mystack.glue.adapters.outbound.sqlite_catalog.query_compiler import (
     ProjectionRequirement,
     SqlitePartitionQueryCompiler,
+    UnsupportedPartitionSqlExpression,
 )
 from mystack.glue.adapters.outbound.sqlite_catalog.schema import initialize_schema
 from mystack.glue.application.catalog_ports import (
@@ -338,7 +339,16 @@ class SqliteCatalogRepository(CatalogStore):
                 cursor_order_key = bytes(cursor[0])
                 cursor_identifier = int(cursor[1])
 
-            compiled = SqlitePartitionQueryCompiler().compile(query.predicate)
+            try:
+                compiled = SqlitePartitionQueryCompiler().compile(query.predicate)
+            except UnsupportedPartitionSqlExpression:
+                return _bounded_partition_expression_fallback(
+                    connection,
+                    table_id,
+                    query,
+                    cursor_order_key,
+                    cursor_identifier,
+                )
             preflight = _partition_projection_issue(
                 connection,
                 table_id,
@@ -1257,6 +1267,80 @@ def _table_id(
         (catalog_id, database_name, table_name),
     ).fetchone()
     return None if row is None else int(row[0])
+
+
+def _bounded_partition_expression_fallback(
+    connection: Any,
+    table_id: int,
+    query: PartitionPageQuery,
+    cursor_order_key: bytes | None,
+    cursor_identifier: int | None,
+) -> PartitionCatalogPage[CatalogPartition]:
+    """Seek-stream a future AST node without materializing a catalog collection."""
+
+    joins: list[str] = []
+    parameters: list[object] = []
+    if query.total_segments is not None:
+        joins.append(
+            "JOIN catalog_partition_segments AS ps "
+            "ON ps.partition_id = p.partition_id AND ps.total_segments = ? "
+            "AND ps.segment_number = ?"
+        )
+        parameters.extend((query.total_segments, query.segment_number))
+    seek = ""
+    if cursor_order_key is not None and cursor_identifier is not None:
+        seek = " AND (p.order_key > ? OR (p.order_key = ? AND p.partition_id > ?))"
+    parameters.append(table_id)
+    if cursor_order_key is not None and cursor_identifier is not None:
+        parameters.extend((cursor_order_key, cursor_order_key, cursor_identifier))
+    rows = connection.execute(
+        "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
+        "p.definition_json, p.creation_time, p.update_time "
+        "FROM catalog_partitions AS p "
+        "JOIN catalog_tables AS t ON t.table_id = p.table_id "
+        "JOIN catalog_databases AS d ON d.database_id = t.database_id "
+        + " ".join(joins)
+        + " WHERE p.table_id = ?"
+        + seek
+        + " ORDER BY p.order_key, p.partition_id",
+        tuple(parameters),
+    )
+    inspected = 0
+    matched: list[tuple[int, CatalogPartition]] = []
+    has_next = False
+    for row in rows:
+        inspected += 1
+        if inspected > query.fallback_max_candidates:
+            return PartitionCatalogPage(
+                (),
+                None,
+                0,
+                "sqlite-keyset-bounded-evaluator",
+                fallback_candidate_limit_exceeded=True,
+            )
+        candidate = partition_from_row(tuple(row[1:]))
+        if query.predicate.matches(candidate.values):
+            matched.append((int(row[0]), candidate))
+            if len(matched) > query.page_size:
+                has_next = True
+                break
+    page = matched[: query.page_size]
+    next_cursor = SeekCursor(page[-1][0]) if has_next and page else None
+    log_event(
+        _LOGGER,
+        logging.INFO,
+        "glue.partition_query.fallback",
+        query_strategy="sqlite-keyset-bounded-evaluator",
+        inspected_candidates=inspected,
+        candidate_limit=query.fallback_max_candidates,
+        returned_count=len(page),
+    )
+    return PartitionCatalogPage(
+        tuple(value for _, value in page),
+        next_cursor,
+        len(page),
+        "sqlite-keyset-bounded-evaluator",
+    )
 
 
 class _PartitionProjectionIssue:

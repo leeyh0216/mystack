@@ -84,15 +84,19 @@ it contains no names or partition values. A token from another catalog/table/exp
 rejected. Ordinary `GetPartitions` does not issue a total-count query. Referenced-key validation
 reads durable, neutral health facts by index; it does not search every partition merely because no
 invalid value exists. Result materialization remains bounded to the requested page plus its lookahead.
-The current ANTLR grammar is fully compiled to SQL/UDFs; any future grammar node must receive an
-explicitly bounded evaluator fallback, a configured limit, and differential tests before it is
-advertised as supported.
+The current ANTLR grammar is fully compiled to SQL/UDFs. If a future evaluator-supported node has
+no exact SQLite compiler yet, the repository uses `ORDER BY (order_key, partition_id)` seek
+streaming and evaluates at most `fallback_max_candidates` rows; it never snapshots a catalog list.
+Crossing that cap returns a deterministic `InvalidInputException` with a safe narrowing hint. The
+fallback emits `sqlite-keyset-bounded-evaluator`; it contains neither the expression nor a stored
+value. A future node needs this bounded differential coverage before it is advertised as supported.
 
-`glue.partition_expressions.max_length`, `max_tokens`, and `supported_key_types` in the mounted
+`glue.partition_expressions.max_length`, `max_tokens`, `fallback_max_candidates`, and `supported_key_types` in the mounted
 Mystack YAML control resource bounds and the compatibility profile. The default length matches the
 official API model; the token bound is a local denial-of-service guard. Structured events
 `glue.partition_expression.parse.*`, `glue.partition_expression.bind.*`,
-`glue.partition_query.plan.*`, `glue.partition_query.preflight.failed`, and
+`glue.partition_query.plan.*`, `glue.partition_query.preflight.failed`,
+`glue.partition_query.fallback`, and
 `glue.sqlite_catalog.query.page.after` are emitted at `INFO`. They include only an expression
 fingerprint, operator-only shape, key types, segment coordinates, requested/returned page counts,
 strategy, duration, and a targeted fix hint. They never include literals, tokens, partition values,
