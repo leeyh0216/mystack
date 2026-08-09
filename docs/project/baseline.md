@@ -71,7 +71,8 @@ contracts.
   candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
   schema 1, and keep rename/cascade/version checks atomic. A bounded POSIX lock and latest-state
   reload extend the same transaction across emulator processes; documented domain errors translate
-  at the inbound adapter.
+  at the inbound adapter. Its source-built SQLite DB-API runtime is capability-gated before catalog
+  initialization, but catalog persistence remains JSON-backed until the SQLite-port migration.
 - Glue responsibilities: immutable lossless domain snapshots own name/revision/archive/partition
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
   policy; a separate Open Table Format planner/orchestrator owns Iceberg v2 input validation,
@@ -93,6 +94,9 @@ contracts.
 - Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
   explicit configured timeouts.
+- CI reporting publishes concise job summaries plus downloadable escaped HTML/JUnit test reports.
+  Compatibility CI matrices and evidence are collected from typed pytest annotations without
+  executing test bodies; the legacy YAML/API baselines remain required parity guards pending #87.
 
 <!-- section: entry-points -->
 ## Entry points and commands
@@ -137,8 +141,8 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
 - The previous test count described an early shared/Proxy slice rather than the current workspace.
 - The 2026-08-09 documentation/CI scan found 92 Markdown documents without a common top index,
   mixed user and contributor material, 115 configuration leaf paths with only top-level coverage,
-  and raw rather than human-readable test diagnostics. The Markdown-first rewrite is now tracked
-  separately from the later static-site decision.
+  and raw rather than human-readable test diagnostics. The Markdown-first navigation (#75) and
+  readable CI reports (#80) are now implemented; a static-site decision remains deferred.
 
 ### Unconfirmed
 
@@ -163,9 +167,10 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Complete the Markdown-first user navigation, service guides, top-of-document indexes, and
-   contributor routing (#75).
-2. Document service runtime architecture, then generate a complete configuration reference and
-   user support matrix after the SQLite catalog configuration is stable (#81, #79).
-3. Replace raw CI diagnostics with a concise job summary and downloadable HTML/JUnit evidence (#80).
-4. Complete the external GHCR visibility verification and GitHub Release (#45, #55).
+1. Migrate the JSON-backed Glue catalog to normalized SQLite ports, then move filtering/pagination
+   and the management explorer to bounded SQLite reads (#77, #74, #78; parent #73).
+2. Document the service runtime architecture and generate configuration/support references against
+   the stabilized SQLite configuration (#81, #79).
+3. Replace the retained compatibility YAML/API parity baselines with the final generated inventory
+   workflow (#87).
+4. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).
