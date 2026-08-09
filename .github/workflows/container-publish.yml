@@ -224,6 +224,20 @@ jobs:
           cache-to: type=gha,mode=max,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
           provenance: false
           sbom: false
+      - name: Verify the source-built Glue SQLite runtime on this architecture
+        if: matrix.name == 'glue'
+        env:
+          IMAGE_NAME: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ inputs.source_sha }}
+          PREFLIGHT_TIMEOUT_MINUTES: ${{ needs.prepare.outputs.preflight_timeout_minutes }}
+        run: |
+          set -euo pipefail
+          directory="release-artifacts/preflight/${{ matrix.name }}/${{ matrix.platform_slug }}"
+          mkdir -p "$directory"
+          python3 scripts/verify_glue_sqlite_runtime.py \
+            --image "$IMAGE_NAME" \
+            --platform "${{ matrix.platform }}" \
+            --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \
+            --report "$directory/sqlite-runtime.json"
       - name: Install the pinned vulnerability scanner
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
         with:

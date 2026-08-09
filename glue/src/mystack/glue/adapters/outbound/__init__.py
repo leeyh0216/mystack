@@ -16,6 +16,11 @@ from mystack.glue.adapters.outbound.repository import (
     TransactionalCatalogRepository,
     VolatileCatalogStateStore,
 )
+from mystack.glue.adapters.outbound.sqlite_runtime import (
+    SQLiteRuntimeCapabilityError,
+    SQLiteRuntimeVerification,
+    SQLiteRuntimeVerifier,
+)
 from mystack.glue.adapters.outbound.system import SystemClock, SystemIdentifierGenerator
 from mystack.glue.adapters.outbound.table_optimizer_executor import (
     SparkTableOptimizerExecutor,
@@ -31,6 +36,9 @@ __all__ = [
     "JsonCatalogStateStore",
     "LocalCatalogStateSynchronizer",
     "S3IcebergMetadataStore",
+    "SQLiteRuntimeCapabilityError",
+    "SQLiteRuntimeVerification",
+    "SQLiteRuntimeVerifier",
     "SparkTableOptimizerExecutor",
     "SparkTableOptimizerExecutorSettings",
     "SystemClock",

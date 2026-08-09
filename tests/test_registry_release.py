@@ -386,6 +386,8 @@ def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
     assert '"push": "false"' in preflight
     assert '"load": "true"' in preflight
     assert "record-preflight" in preflight
+    assert "verify_glue_sqlite_runtime.py" in preflight
+    assert "Verify the source-built Glue SQLite runtime" in preflight
     assert "docker/login-action" in publish
     assert '"push": "true"' in publish
     assert "authorize-publication" in publish
