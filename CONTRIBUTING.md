@@ -114,7 +114,7 @@ literal inventories without importing an emulator.
 For a client or runtime change:
 
 1. Create or reuse a typed `CompatibilityProfile` in
-   `test_support/compatibility_profiles.py` with exact versions, runtime,
+   `tests/support/compatibility_profiles.py` with exact versions, runtime,
    lane, GitHub Actions job-duration ceiling, and official source URLs.
 2. Decorate the smallest real `@pytest.mark.contract` or `@pytest.mark.e2e`
    test with `@compatibility_evidence(...)`. Declare only operations and
@@ -131,8 +131,8 @@ The smallest annotation is deliberately close to the test it proves:
 ```python
 import pytest
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
 
 
 @pytest.mark.contract
@@ -164,10 +164,10 @@ test body uses its ordinary contract or E2E YAML timeout.
 
 | Failure category | Repair location |
 | --- | --- |
-| Marker/profile shape or execution marker | The annotated test and `test_support/compatibility.py` |
+| Marker/profile shape or execution marker | The annotated test and `tests/support/compatibility.py` |
 | Claimed operation is absent from the implementation inventory | The owning `emr` or `glue` `adapters/inbound/aws_*.py` registry, then its test annotation |
 | Operation is absent from the pinned botocore model | The inbound handler, pinned model review, and test annotation |
-| Locked client/runtime mismatch | `uv.lock`, `test_support/compatibility_profiles.py`, and `config/mystack.yaml` |
+| Locked client/runtime mismatch | `uv.lock`, `tests/support/compatibility_profiles.py`, and `config/mystack.yaml` |
 | Collection deadline expires | `tests.compatibility_collection_timeout_seconds` or imports made while collecting the annotated test |
 | Generated output differs | Run `make compatibility-evidence-generate`; never edit generated files by hand |
 

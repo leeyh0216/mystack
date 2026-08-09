@@ -21,7 +21,7 @@ from typing import Any
 
 import pytest
 
-from test_support.compatibility import EvidenceValidationError, ExecutionKind, marker_payload
+from tests.support.compatibility import EvidenceValidationError, ExecutionKind, marker_payload
 
 
 class CompatibilityCollectionError(ValueError):

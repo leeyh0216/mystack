@@ -7,7 +7,7 @@ transition, so this module does not silently create a version cross-product.
 
 from __future__ import annotations
 
-from test_support.compatibility import CompatibilityProfile, ExecutionKind, Lane
+from tests.support.compatibility import CompatibilityProfile, ExecutionKind, Lane
 
 _BOTOCORE_MODEL = "https://github.com/boto/botocore/tree/develop/botocore/data"
 _EMR_RELEASE = "https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html"

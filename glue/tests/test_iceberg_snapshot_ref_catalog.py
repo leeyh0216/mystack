@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from test_support.glue_error_harness import GlueCatalogHarness
-from test_support.iceberg_metadata import IcebergMetadataDocument
+from tests.support.glue_error_harness import GlueCatalogHarness
+from tests.support.iceberg_metadata import IcebergMetadataDocument
 
 
 def _table_input(metadata_name: str) -> dict[str, Any]:

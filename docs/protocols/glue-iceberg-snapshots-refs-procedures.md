@@ -81,7 +81,7 @@ catalog CAS and persistence boundary without logging SQL, table locations, or pa
 When an Iceberg or Spark upgrade breaks this profile, inspect:
 
 1. `glue/tests/workloads/iceberg_snapshot_refs.py` for SQL, result-schema, or procedure changes.
-2. `test_support/iceberg_metadata.py` for Iceberg metadata-format representation changes.
+2. `tests/support/iceberg_metadata.py` for Iceberg metadata-format representation changes.
 3. `glue/adapters/inbound/aws_table.py` for modeled Glue request-member changes.
 4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for CAS
    or archive loss.

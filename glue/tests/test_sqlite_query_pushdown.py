@@ -38,7 +38,7 @@ from mystack.glue.application.sqlite_runtime import (
 )
 from mystack.glue.domain import InvalidInputError
 
-from test_support.glue_error_harness import (
+from tests.support.glue_error_harness import (
     IncrementingClock,
     IncrementingIdentifierGenerator,
     InMemoryIcebergMetadataStore,

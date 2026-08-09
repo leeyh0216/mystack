@@ -36,7 +36,7 @@ Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container
 <!-- section: manifest -->
 ## Client 또는 runtime version 추가
 
-1. `test_support/compatibility_profiles.py`에서 `CompatibilityProfile`을 만들거나 재사용합니다.
+1. `tests/support/compatibility_profiles.py`에서 `CompatibilityProfile`을 만들거나 재사용합니다.
    정확한 client version, runtime, lane, GitHub Actions 바깥 job 시간 상한, 공식 URL을 기록합니다.
 2. 실제 client 동작을 검증하는 가장 작은 `contract` 또는 `e2e` 시험에
    `@compatibility_evidence(...)`를 붙입니다. scenario, operation, capability, support 값은

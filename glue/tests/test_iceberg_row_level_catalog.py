@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from test_support.glue_error_harness import GlueCatalogHarness
+from tests.support.glue_error_harness import GlueCatalogHarness
 
 
 def _table_input(metadata_name: str, write_mode: str) -> dict[str, Any]:

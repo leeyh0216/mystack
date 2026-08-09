@@ -18,7 +18,7 @@ from mystack.glue.application.sqlite_runtime import (
 )
 from mystack.glue.domain import AlreadyExistsError, EntityNotFoundError, InvalidInputError
 
-from test_support.glue_error_harness import InMemoryIcebergMetadataStore
+from tests.support.glue_error_harness import InMemoryIcebergMetadataStore
 
 
 class ManualClock:

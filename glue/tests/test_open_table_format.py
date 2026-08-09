@@ -15,7 +15,7 @@ import pytest
 from botocore.exceptions import ClientError
 from mystack.glue.domain import IcebergOpenTableFormatPlanner, InvalidInputError
 
-from test_support.glue_error_harness import GlueCatalogHarness
+from tests.support.glue_error_harness import GlueCatalogHarness
 
 
 def _schema(*, schema_id: int = 0, include_note: bool = False) -> dict:

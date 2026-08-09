@@ -81,7 +81,7 @@ payload를 기록하지 않고 catalog CAS와 persistence 경계를 보여줍니
 Iceberg나 Spark upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 
 1. SQL, 결과 schema, procedure 변화: `glue/tests/workloads/iceberg_snapshot_refs.py`
-2. Iceberg metadata format 표현 변화: `test_support/iceberg_metadata.py`
+2. Iceberg metadata format 표현 변화: `tests/support/iceberg_metadata.py`
 3. Modeled Glue request member 변화: `glue/adapters/inbound/aws_table.py`
 4. CAS 또는 archive 손실: `glue/application/table.py`,
    `glue/adapters/outbound/sqlite_catalog/repository.py`

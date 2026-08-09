@@ -12,8 +12,8 @@ import pytest
 from botocore.exceptions import ClientError
 from mystack.emr.adapters.inbound.aws_operations import IMPLEMENTED_EMR_OPERATIONS
 
-from test_support.compatibility import compatibility_evidence
-from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+from tests.support.compatibility import compatibility_evidence
+from tests.support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
 
 _CLUSTER_STEP_CONTROL_OPERATIONS = tuple(sorted(IMPLEMENTED_EMR_OPERATIONS - {"CancelSteps"}))
 
