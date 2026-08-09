@@ -65,7 +65,7 @@ Glue [`UpdateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTa
 ## 검증 근거
 
 `glue/tests/test_iceberg_snapshot_ref_catalog.py`가 빠른 AWS JSON 1.1 pointer 계약입니다.
-`glue/scripts/e2e/iceberg_snapshot_refs.py`는 `tests/e2e/test_glue_spark_catalog.py`가 public Proxy를
+`glue/tests/workloads/iceberg_snapshot_refs.py`는 `tests/e2e/test_glue_spark_catalog.py`가 public Proxy를
 통해 호출하는 CI 전용 실제 Iceberg scenario입니다. Host test는 boto3로 최종 Glue pointer를 읽고
 metadata JSON을 내려받아 `main`만 남았는지와 만료 snapshot 부재를 확인하며 orphan object가 S3
 `404`/`NoSuchKey`인지 증명합니다. 모든 wait와 Spark process는 compatibility case에 설정한
@@ -80,7 +80,7 @@ payload를 기록하지 않고 catalog CAS와 persistence 경계를 보여줍니
 
 Iceberg나 Spark upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 
-1. SQL, 결과 schema, procedure 변화: `glue/scripts/e2e/iceberg_snapshot_refs.py`
+1. SQL, 결과 schema, procedure 변화: `glue/tests/workloads/iceberg_snapshot_refs.py`
 2. Iceberg metadata format 표현 변화: `test_support/iceberg_metadata.py`
 3. Modeled Glue request member 변화: `glue/adapters/inbound/aws_table.py`
 4. CAS 또는 archive 손실: `glue/application/table.py`,

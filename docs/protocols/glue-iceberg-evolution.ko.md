@@ -93,7 +93,7 @@ field, 안전하게 넓어진 type, identifier field, 전체 sort order를 검�
 `glue.iceberg.commit.*`과 `glue.repository.*`는 table body나 S3 path를 기록하지 않고 version 판단과
 저장 경계를 보여줍니다. Spark 또는 Iceberg를 올린 뒤 이 profile이 깨지면 다음을 확인합니다.
 
-1. Spark DDL이나 runtime 동작 변화: `glue/scripts/e2e/iceberg_evolution.py`
+1. Spark DDL이나 runtime 동작 변화: `glue/tests/workloads/iceberg_evolution.py`
 2. Iceberg metadata spec 표현 변화: `test_support/iceberg_metadata.py`
 3. Glue wire member 변화: `glue/adapters/inbound/aws_table.py`
 4. Pointer/version 손실: `glue/application/table.py`,

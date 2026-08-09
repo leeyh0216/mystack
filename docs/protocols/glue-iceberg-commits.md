@@ -93,7 +93,7 @@ When an upgraded Spark/Iceberg client breaks this path:
    `glue/application/iceberg_commit.py`.
 4. Cross-process lost updates, writer contention, schema mapping, or commit/rollback belong in
    `glue/adapters/outbound/sqlite_catalog/` and `glue.sqlite` configuration.
-5. Real-client retry drift belongs in `glue/scripts/e2e/iceberg_contention_job.py` and the generated
+5. Real-client retry drift belongs in `glue/tests/workloads/iceberg_contention_job.py` and the generated
    compatibility case.
 
 <!-- section: evidence -->
