@@ -15,6 +15,25 @@ COPY ui ui
 COPY glue/ui glue/ui
 RUN npm run build --workspace @mystack/glue-ui
 
+# SQLite's official WAL-reset guidance requires a fixed version at or above 3.51.3 for the
+# multi-connection WAL use case. pysqlite3 builds against sqlite3.c/sqlite3.h when they are
+# present in its source root, so this stage embeds the SHA-verified official amalgamation rather
+# than replacing the AWS Glue image's global system library:
+# https://www.sqlite.org/wal.html#the_wal_reset_bug
+# https://github.com/coleifer/pysqlite3/blob/master/setup.py
+FROM ${GLUE_BASE} AS sqlite-driver-builder
+USER root
+WORKDIR /opt/mystack/sqlite-build
+COPY config/sqlite-runtime.json /opt/mystack/sqlite-build/sqlite-runtime.json
+COPY glue/scripts/build_sqlite_driver.py /opt/mystack/sqlite-build/build_sqlite_driver.py
+COPY glue/scripts/install_python_build_dependencies.py /opt/mystack/sqlite-build/install_python_build_dependencies.py
+RUN python3 /opt/mystack/sqlite-build/install_python_build_dependencies.py \
+    && python3 /opt/mystack/sqlite-build/build_sqlite_driver.py \
+      --config /opt/mystack/sqlite-build/sqlite-runtime.json \
+      --output /opt/mystack/sqlite-driver \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf /opt/mystack/sqlite-build
+
 # AWS Glue 5.0 image/reference:
 # https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html
 # PySpark interpreter selection:
@@ -66,6 +85,7 @@ COPY shared /opt/src/shared
 COPY glue /opt/src/glue
 COPY glue/bin/mystack-spark-submit /opt/mystack/bin/spark-submit
 COPY --from=ui-builder /workspace/glue/src/mystack/glue/static/ui /opt/src/glue/src/mystack/glue/static/ui
+COPY --from=sqlite-driver-builder /opt/mystack/sqlite-driver /opt/mystack/sqlite-driver
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
 COPY glue/scripts/e2e /opt/mystack/e2e
 RUN python3 -m venv /opt/mystack/venv \
@@ -73,7 +93,14 @@ RUN python3 -m venv /opt/mystack/venv \
       --require-hashes -r /opt/requirements.txt \
     && /opt/mystack/venv/bin/python -m pip install --no-cache-dir --no-deps \
       /opt/src/shared /opt/src/glue \
+    && driver_site="$(/opt/mystack/venv/bin/python -c 'import site; print(site.getsitepackages()[0])')" \
+    && cp -a /opt/mystack/sqlite-driver/pysqlite3 "$driver_site/pysqlite3" \
+    && mkdir -p /opt/mystack/sqlite-runtime/licenses \
+    && cp /opt/mystack/sqlite-driver/runtime-manifest.json /opt/mystack/sqlite-runtime/runtime-manifest.json \
+    && cp /opt/mystack/sqlite-driver/licenses/pysqlite3-LICENSE /opt/mystack/sqlite-runtime/licenses/pysqlite3-LICENSE \
+    && /opt/mystack/venv/bin/python -c "import json; import pysqlite3; from pathlib import Path; manifest = json.loads(Path('/opt/mystack/sqlite-runtime/runtime-manifest.json').read_text()); assert pysqlite3.sqlite_version == manifest['sqlite']['version'], pysqlite3.sqlite_version" \
     && rm -rf /opt/src /opt/requirements.txt \
+    && rm -rf /opt/mystack/sqlite-driver \
     && chmod 0755 /opt/mystack/bin/spark-submit \
     && mkdir -p /var/lib/mystack/glue \
     && chown -R hadoop:hadoop /var/lib/mystack /opt/mystack

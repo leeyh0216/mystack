@@ -41,6 +41,8 @@ def test_glue_emulator_serves_its_compiled_react_ui_and_runtime_config(tmp_path)
     loaded = load_configuration("config/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
+    document["glue"]["sqlite"]["journal_mode"] = "rollback"
+    document["glue"]["sqlite"]["driver"]["module"] = "sqlite3"
     configured = LoadedConfiguration(
         document=document,
         source=loaded.source,

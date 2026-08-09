@@ -32,6 +32,8 @@ from mystack.glue.adapters.outbound import (
     S3IcebergMetadataStore,
     SparkTableOptimizerExecutor,
     SparkTableOptimizerExecutorSettings,
+    SQLiteRuntimeVerification,
+    SQLiteRuntimeVerifier,
     SystemClock,
     SystemIdentifierGenerator,
 )
@@ -49,6 +51,11 @@ from mystack.glue.domain.repositories import CatalogRepository
 _LOGGER = logging.getLogger(__name__)
 
 
+def verify_sqlite_runtime(settings: GlueSettings) -> dict[str, object]:
+    """Run the configured SQLite preflight without starting the Glue HTTP service."""
+    return SQLiteRuntimeVerifier(settings.sqlite).verify().document()
+
+
 def create_app(
     settings: GlueSettings | None = None,
     *,
@@ -60,6 +67,7 @@ def create_app(
     identifier_generator: IdentifierGenerator | None = None,
     table_optimizer_executor: TableOptimizerExecutor | None = None,
     table_optimizer_runtime: TableOptimizerRuntime | None = None,
+    sqlite_runtime_verifier: SQLiteRuntimeVerifier | None = None,
     diagnostics_settings: DiagnosticsSettings | None = None,
     log_level: str | None = None,
 ) -> FastAPI:
@@ -81,6 +89,7 @@ def create_app(
     )
 
     configure_logging("glue", log_level)
+    sqlite_runtime_verifier = sqlite_runtime_verifier or SQLiteRuntimeVerifier(settings.sqlite)
     repository = repository or JsonCatalogRepository(
         settings.state_file,
         lock_file=settings.catalog_lock.lock_file,
@@ -149,10 +158,13 @@ def create_app(
         runtime_profile=settings.runtime.name,
         config_fingerprint=settings.config_fingerprint,
     )
+    sqlite_runtime_verification: SQLiteRuntimeVerification | None = None
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        nonlocal sqlite_runtime_verification
         try:
+            sqlite_runtime_verification = sqlite_runtime_verifier.verify()
             settings.data_root.mkdir(parents=True, exist_ok=True)
             settings.table_optimizers.work_root.mkdir(parents=True, exist_ok=True)
             await application.initialize()
@@ -171,6 +183,7 @@ def create_app(
                     settings.catalog_lock.acquire_timeout_seconds
                 ),
                 catalog_lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
+                sqlite_runtime=sqlite_runtime_verification.document(),
                 operation_count=len(dispatcher.operations),
                 operations=sorted(dispatcher.operations),
                 runtime_profile={
@@ -232,6 +245,11 @@ def create_app(
                 "implemented_operations": sorted(dispatcher.operations),
                 "runtime_profile": settings.runtime.name,
                 "table_optimizers_enabled": settings.table_optimizers.enabled,
+                "sqlite_runtime": (
+                    sqlite_runtime_verification.document()
+                    if sqlite_runtime_verification is not None
+                    else {"status": "not_started"}
+                ),
             }
         )
 

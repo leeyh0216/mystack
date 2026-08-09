@@ -39,6 +39,10 @@ def glue_server(tmp_path: Path, glue_test_timeout: float) -> Iterator[str]:
     loaded = load_configuration("config/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
+    # Unit/contract processes intentionally use the explicit rollback escape hatch. The source-
+    # built WAL driver is verified in the Glue image preflight for both OCI architectures.
+    document["glue"]["sqlite"]["journal_mode"] = "rollback"
+    document["glue"]["sqlite"]["driver"]["module"] = "sqlite3"
     document["glue"]["table_optimizers"]["scheduler"]["initial_delay_seconds"] = 0
     document["glue"]["table_optimizers"]["scheduler"]["poll_interval_seconds"] = 0.01
     configured = LoadedConfiguration(

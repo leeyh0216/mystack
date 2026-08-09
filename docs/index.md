@@ -40,6 +40,7 @@ run.
 - [Use Glue with boto3, AWS SDK for pandas, Spark Hive, and Iceberg](glue.md)
 - [Check client and library compatibility](compatibility/client-matrix.md)
 - [Check user-facing support boundaries](support-scope.md)
+- [Verify the Glue SQLite DB-API runtime and its current non-persistence boundary](protocols/glue-sqlite-runtime.md)
 
 <!-- section: emr -->
 ## Amazon EMR
