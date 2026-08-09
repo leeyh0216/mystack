@@ -95,7 +95,7 @@ If an upgraded client breaks this profile, inspect:
 2. `test_support/iceberg_metadata.py` for Iceberg snapshot-summary representation changes.
 3. `glue/adapters/inbound/aws_table.py` for Glue request-member changes.
 4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for CAS/version loss.
-5. `compatibility/cases.yaml` for pinned profile and scenario drift.
+5. Typed pytest compatibility annotations for pinned profile and scenario drift.
 
 <!-- section: limits -->
 ## Limits

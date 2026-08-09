@@ -23,7 +23,8 @@ from typing import Any, ClassVar
 import yaml
 
 ROOT = Path(__file__).parents[1]
-DEFAULT_MANIFEST = ROOT / "compatibility/cases.yaml"
+DEFAULT_MANIFEST = ROOT / "contracts/compatibility-scope-policy.yaml"
+DEFAULT_EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
 DEFAULT_OUTPUT = ROOT / "contracts/compatibility-matrix.generated.json"
 DEFAULT_ENGLISH = ROOT / "docs/compatibility/client-matrix.generated.md"
 DEFAULT_KOREAN = ROOT / "docs/compatibility/client-matrix.ko.generated.md"
@@ -727,7 +728,7 @@ class MatrixCompiler:
         )
         result = {
             "schema_version": 1,
-            "generated_from": "compatibility/cases.yaml",
+            "generated_from": "deprecated manifest compiler",
             "source_sha256": source_digest,
             "lanes": document["lanes"],
             "official_sources": document["official_sources"],
@@ -735,7 +736,7 @@ class MatrixCompiler:
             "github_matrices": matrices,
             "cases": compiled_cases,
             "fix_hints": [
-                "Client drift: add a new exact artifact and case to compatibility/cases.yaml.",
+                "Client drift: add a typed pytest compatibility annotation.",
                 (
                     "Protocol drift: update the owning adapter and modeled-error tests before "
                     "the model fingerprint."
@@ -791,7 +792,8 @@ class MatrixRenderer:
         if korean:
             title = "# 생성된 Client 호환성 Matrix"
             intro = (
-                "이 파일은 `compatibility/cases.yaml`에서 결정적으로 생성됩니다. "
+                "이 파일은 주석 pytest 증거와 "
+                "`contracts/compatibility-scope-policy.yaml`에서 생성됩니다. "
                 "직접 수정하지 마세요. 각 행은 CI가 독립 process에서 실행하는 명시적 "
                 "조합이며 지원하지 않는 전수 조합을 뜻하지 않습니다."
             )
@@ -811,7 +813,8 @@ class MatrixRenderer:
         else:
             title = "# Generated client compatibility matrix"
             intro = (
-                "This file is deterministically generated from `compatibility/cases.yaml`; "
+                "This file is deterministically generated from annotated pytest evidence and "
+                "`contracts/compatibility-scope-policy.yaml`; "
                 "do not edit it. Each row is one explicit combination run by CI in an "
                 "isolated process, not an unsupported cross-product."
             )
@@ -875,7 +878,8 @@ class AcceptanceRenderer:
             counterpart_label = "English"
             title = "# Catalog release 수용 범위 (생성됨)"
             intro = (
-                "이 파일은 `compatibility/cases.yaml`에서 결정적으로 생성됩니다. 직접 수정하지 "
+                "이 파일은 주석 pytest 증거와 "
+                "`contracts/compatibility-scope-policy.yaml`에서 생성됩니다. 직접 수정하지 "
                 "마세요. 아래 모든 case는 `required`이며 release 게시 전에 통과해야 합니다."
             )
             area_heading = "## Release-blocking 보장"
@@ -896,7 +900,8 @@ class AcceptanceRenderer:
             counterpart_label = "한국어"
             title = "# Catalog release acceptance (generated)"
             intro = (
-                "This file is deterministically generated from `compatibility/cases.yaml`; do not "
+                "This file is deterministically generated from annotated pytest evidence and "
+                "`contracts/compatibility-scope-policy.yaml`; do not "
                 "edit it directly. Every case below is `required` and must pass before publication."
             )
             area_heading = "## Release-blocking guarantees"
@@ -1059,15 +1064,116 @@ class GeneratedArtifacts:
             return None
 
 
-def compile_manifest(path: Path, *, root: Path = ROOT) -> dict[str, Any]:
-    document = ManifestLoader().load(path)
-    ManifestValidator(root=root).validate(document)
-    return MatrixCompiler().compile(document)
+def compile_manifest(
+    path: Path, *, root: Path = ROOT, evidence_path: Path = DEFAULT_EVIDENCE
+) -> dict[str, Any]:
+    """Combine resolved pytest evidence with the small, human-owned scope policy."""
+
+    policy = ManifestLoader().load(path)
+    allowed = {
+        "schema_version",
+        "official_sources",
+        "lanes",
+        "acceptance",
+        "not_planned_operation_families",
+    }
+    if set(policy) != allowed or policy.get("schema_version") != 1:
+        raise ManifestError("scope policy schema mismatch")
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    if not isinstance(evidence, dict) or evidence.get("schema_version") != 1:
+        raise ManifestError("annotated evidence schema mismatch")
+    cases, matrices = evidence.get("cases"), evidence.get("github_matrices")
+    if not isinstance(cases, list) or not cases or not isinstance(matrices, dict):
+        raise ManifestError("annotated evidence must contain non-empty cases and GitHub matrices")
+    case_ids = [case.get("id") for case in cases if isinstance(case, dict)]
+    if len(case_ids) != len(cases) or len(set(case_ids)) != len(case_ids):
+        raise ManifestError("annotated evidence contains missing or duplicate case id")
+    lanes = policy["lanes"]
+    if not isinstance(lanes, dict) or set(lanes) != {"required", "preview", "nightly"}:
+        raise ManifestError("scope policy must define required, preview, and nightly lanes")
+    for case in cases:
+        lane, scenario = case.get("lane"), case.get("scenario")
+        if lane not in lanes or case.get("release_blocking") is not lanes[lane].get(
+            "release_blocking"
+        ):
+            raise ManifestError(f"annotated case lane/release policy drift case={case.get('id')}")
+        if (
+            not isinstance(scenario, dict)
+            or not scenario.get("scenario_ids")
+            or not case.get("test_nodes")
+        ):
+            raise ManifestError(
+                f"annotated case lacks resolved scenario or test nodes case={case.get('id')}"
+            )
+    acceptance, sources = policy["acceptance"], policy["official_sources"]
+    if not isinstance(acceptance, dict) or not isinstance(acceptance.get("areas"), dict):
+        raise ManifestError("scope policy acceptance areas must be a mapping")
+    required_cases = {case["id"] for case in cases if case["release_blocking"]}
+    required_scenarios = {
+        scenario_id
+        for case in cases
+        if case["release_blocking"]
+        for scenario_id in case["scenario"]["scenario_ids"]
+    }
+    covered_cases: set[str] = set()
+    covered_scenarios: set[str] = set()
+    for area_id, area in acceptance["areas"].items():
+        if not isinstance(area, dict):
+            raise ManifestError(f"acceptance area must be a mapping area={area_id}")
+        covered_cases.update(area.get("case_ids", []))
+        covered_scenarios.update(area.get("scenario_ids", []))
+        for source in area.get("official_sources", []):
+            if source not in sources:
+                raise ManifestError(f"unknown acceptance source area={area_id} source={source}")
+        for evidence_file in area.get("evidence_paths", []):
+            if not isinstance(evidence_file, str) or not (root / evidence_file).is_file():
+                raise ManifestError(f"missing or unsafe acceptance evidence area={area_id}")
+    if covered_cases != required_cases or covered_scenarios != required_scenarios:
+        raise ManifestError("scenario acceptance coverage drift")
+    for exclusion_id, exclusion in acceptance.get("exclusions", {}).items():
+        for source in exclusion.get("official_sources", []):
+            if source not in sources:
+                raise ManifestError(
+                    f"unknown exclusion source exclusion={exclusion_id} source={source}"
+                )
+    digest = MatrixCompiler._digest(
+        {"policy": policy, "annotated_evidence_sha256": evidence.get("source_sha256")}
+    )
+    compiled_acceptance = dict(acceptance)
+    compiled_acceptance["evidence_sha256"] = MatrixCompiler._digest(
+        {
+            "acceptance": acceptance,
+            "required_cases": [
+                {"id": case["id"], "evidence_sha256": case["evidence_sha256"]}
+                for case in cases
+                if case["release_blocking"]
+            ],
+        }
+    )
+    return {
+        "schema_version": 1,
+        "generated_from": {
+            "annotated_evidence": evidence_path.resolve().relative_to(root.resolve()).as_posix(),
+            "scope_policy": path.resolve().relative_to(root.resolve()).as_posix(),
+        },
+        "source_sha256": digest,
+        "lanes": lanes,
+        "official_sources": sources,
+        "acceptance": compiled_acceptance,
+        "github_matrices": matrices,
+        "cases": sorted(cases, key=lambda value: value["id"]),
+        "fix_hints": [
+            "Case drift: add or update a typed pytest compatibility annotation.",
+            "Scope drift: update only the explicit compatibility-scope policy.",
+            "Operation drift: update implementation inventory or NOT_PLANNED policy.",
+        ],
+    }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--evidence", type=Path, default=DEFAULT_EVIDENCE)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--english", type=Path, default=DEFAULT_ENGLISH)
     parser.add_argument("--korean", type=Path, default=DEFAULT_KOREAN)
@@ -1094,7 +1200,7 @@ def main() -> None:
         LOGGER.info("event=compatibility.github_matrix.read.after key=%s", args.github_matrix)
         return
     try:
-        compiled = compile_manifest(args.manifest)
+        compiled = compile_manifest(args.manifest, evidence_path=args.evidence)
         artifacts = GeneratedArtifacts(
             args.output,
             args.english,

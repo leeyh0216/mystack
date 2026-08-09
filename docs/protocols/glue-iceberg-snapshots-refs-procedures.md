@@ -84,7 +84,7 @@ When an Iceberg or Spark upgrade breaks this profile, inspect:
 2. `test_support/iceberg_metadata.py` for Iceberg metadata-format representation changes.
 3. `glue/adapters/inbound/aws_table.py` for modeled Glue request-member changes.
 4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for CAS or archive loss.
-5. `compatibility/cases.yaml` for pinned runtime and capability evidence.
+5. Typed pytest compatibility annotations for pinned runtime and capability evidence.
 
 <!-- section: limits -->
 ## Limits

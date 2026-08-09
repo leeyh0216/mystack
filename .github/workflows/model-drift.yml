@@ -34,7 +34,7 @@ jobs:
         run: >-
           uv run --no-project --with botocore
           python scripts/api_coverage.py
-          --check contracts/api-coverage.json
+          --check contracts/api-coverage.generated.json
           --english docs/compatibility/api-coverage.generated.md
           --korean docs/compatibility/api-coverage.ko.generated.md
           --report api-coverage-drift-report.json

@@ -1,8 +1,7 @@
 """Compile typed pytest compatibility annotations into deterministic CI evidence.
 
 The compiler invokes pytest in ``--collect-only`` mode, so generation resolves real node IDs and
-markers without executing test bodies, fixtures, Docker Compose, or external clients.  During the
-migration, the retained ``compatibility/cases.yaml`` compiler remains the parity authority.
+markers without executing test bodies, fixtures, Docker Compose, or external clients.
 
 References:
 - https://docs.pytest.org/en/stable/how-to/usage.html

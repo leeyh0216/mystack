@@ -73,7 +73,7 @@ Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`,
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
 생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md)는 이 API/오류 계약과
-`compatibility/cases.yaml`의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
+주석 compatibility test의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
 결합한 release-blocking 기준입니다.
 Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
 재시작 후 새 ID로 다시 생성합니다. 자세한 내용은 [시작 클러스터
