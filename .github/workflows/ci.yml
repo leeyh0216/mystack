@@ -285,7 +285,7 @@ jobs:
           MYSTACK_EMR_PRESTART_SOURCE="$PWD/examples/emr-prestart" \
             docker compose -f compose.ghcr.yaml -f compose.emr-prestart.yaml config --quiet
       - name: Validate file-driven GHCR release contract
-        run: uv run python scripts/registry_release.py check-config
+        run: uv run python scripts/release/registry_release.py check-config
       - name: Verify pinned AWS service-model manifest
         run: >-
           uv run python scripts/quality/model_manifest.py
