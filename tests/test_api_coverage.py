@@ -9,7 +9,7 @@ from __future__ import annotations
 import copy
 
 from scripts.compatibility.api_coverage import compare, create_baseline, render_matrix
-from scripts.model_manifest import create_manifest
+from scripts.quality.model_manifest import create_manifest
 
 
 def test_reports_added_removed_and_changed_operations() -> None:

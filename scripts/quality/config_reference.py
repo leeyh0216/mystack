@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 SCHEMA = ROOT / "shared/src/mystack/aws_protocol/mystack.schema.json"
 CONFIG = ROOT / "config/runtime/mystack.yaml"
 OUT = ROOT / "docs/configuration-reference.generated.md"
@@ -105,7 +105,9 @@ def main() -> None:
     text = render()
     if args.check:
         if not OUT.is_file() or OUT.read_text() != text:
-            raise SystemExit("configuration reference drift; run scripts/config_reference.py")
+            raise SystemExit(
+                "configuration reference drift; run scripts/quality/config_reference.py"
+            )
     else:
         OUT.write_text(text)
 

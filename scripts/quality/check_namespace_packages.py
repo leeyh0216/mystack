@@ -131,7 +131,7 @@ def verify(workspace_root: Path, dist_dir: Path, timeout_seconds: float) -> None
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace-root", type=Path, default=Path(__file__).parents[1])
+    parser.add_argument("--workspace-root", type=Path, default=Path(__file__).parents[2])
     parser.add_argument("--dist-dir", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=float, required=True)
     arguments = parser.parse_args()

@@ -6,7 +6,7 @@ https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-f
 
 from __future__ import annotations
 
-from scripts.check_docs import ROOT, rendered_toc, validate_toc, with_rendered_toc
+from scripts.quality.check_docs import ROOT, rendered_toc, validate_toc, with_rendered_toc
 
 
 def test_renders_a_compact_h2_contents_index_with_code_and_link_labels() -> None:

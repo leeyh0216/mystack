@@ -4,8 +4,8 @@ The source data is the official botocore service model repository:
 https://github.com/boto/botocore/tree/develop/botocore/data
 
 Usage:
-    python scripts/model_manifest.py --write contracts/service-model-manifest.json
-    python scripts/model_manifest.py --check contracts/service-model-manifest.json
+    python scripts/quality/model_manifest.py --write contracts/service-model-manifest.json
+    python scripts/quality/model_manifest.py --check contracts/service-model-manifest.json
 """
 
 from __future__ import annotations

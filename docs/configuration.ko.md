@@ -257,7 +257,7 @@ dotted path와 함께 실패합니다. Schema는 공식
 
 - `uv.lock`: 개발 dependency lock
 - `requirements/{proxy,emr,glue}.txt`: `make requirements`가 생성하는 hash lock
-- CI의 `scripts/export_requirements.py --check`: lockfile/export drift 차단
+- CI의 `scripts/development/export_requirements.py --check`: lockfile/export drift 차단
 - 기본 container base: immutable multi-architecture digest; 의도적 변경은 Compose 변수 사용
 - Spark archive: version argument와 공개 SHA-512 검증
 - Runtime profile과 실제 Spark/Hive/Iceberg E2E: image/config 버전 불일치 탐지

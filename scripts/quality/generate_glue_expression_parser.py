@@ -17,7 +17,7 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 _LOCK = _ROOT / "tools/antlr/glue-partition-expression.lock.json"
 _GRAMMAR = _ROOT / "glue/grammar/GluePartitionExpression.g4"
 _DESTINATION = _ROOT / "glue/src/mystack/glue/application/partition_expression/generated"
@@ -92,7 +92,9 @@ def _check(generated: dict[str, bytes]) -> None:
         changed = sorted(set(committed) | set(generated))
         raise RuntimeError(
             "Generated Glue expression parser is stale; run "
-            f"'uv run python {Path(__file__).name} --write'. Compared: {changed}"
+            "'uv run python "
+            "scripts/quality/generate_glue_expression_parser.py --write'. "
+            f"Compared: {changed}"
         )
     _event("antlr.check.after", status="clean", files=sorted(generated))
 

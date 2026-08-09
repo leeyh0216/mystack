@@ -527,7 +527,7 @@ def scan_repository(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=Path(__file__).parents[1])
+    parser.add_argument("--root", type=Path, default=Path(__file__).parents[2])
     arguments = parser.parse_args()
     root = arguments.root.resolve()
     print(

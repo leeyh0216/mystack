@@ -10,7 +10,7 @@ help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 bootstrap: ## Validate tools, install locked dependencies, and run fast contracts.
-	@./scripts/bootstrap.sh --config "$(CONFIG)"
+	@./scripts/development/bootstrap.sh --config "$(CONFIG)"
 
 sync: ## Recreate the Python workspace from uv.lock.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv sync --locked --all-packages
@@ -23,7 +23,7 @@ pre-commit: ## Install and run repository-local commit quality gates.
 	@uv run pre-commit run --all-files
 
 requirements: ## Regenerate hash-locked container requirements from uv.lock.
-	@uv run python scripts/export_requirements.py
+	@uv run python scripts/development/export_requirements.py
 
 lint: ## Run source and import-quality checks.
 	@uv run ruff check .
@@ -33,19 +33,19 @@ format: ## Format source and apply safe lint fixes.
 	@uv run ruff format .
 
 docs: ## Validate bilingual identity, section order, links, sources, and Korean style.
-	@uv run python scripts/check_docs.py
+	@uv run python scripts/quality/check_docs.py
 
 configuration-reference-generate: ## Render the complete schema-backed configuration reference.
-	@uv run python scripts/config_reference.py
+	@uv run python scripts/quality/config_reference.py
 
 configuration-reference-check: ## Reject configuration schema/reference drift.
-	@uv run python scripts/config_reference.py --check
+	@uv run python scripts/quality/config_reference.py --check
 
 antlr-generate: ## Regenerate the pinned Glue partition-expression parser from its G4 grammar.
-	@uv run python scripts/generate_glue_expression_parser.py --write
+	@uv run python scripts/quality/generate_glue_expression_parser.py --write
 
 antlr-check: ## Reject ANTLR version, grammar, or committed generated-parser drift.
-	@uv run python scripts/generate_glue_expression_parser.py --check
+	@uv run python scripts/quality/generate_glue_expression_parser.py --check
 
 glue-errors-generate: ## Regenerate bilingual evidence from the Glue error-condition catalog.
 	@uv run python scripts/compatibility/glue_error_contracts.py --write
@@ -54,25 +54,25 @@ glue-errors-check: ## Reject Glue error coverage, precedence, model, or evidence
 	@uv run python scripts/compatibility/glue_error_contracts.py --check
 
 architecture-check: ## Enforce dependency directions, composition roots, and import cycles.
-	@uv run python scripts/architecture_contract.py --root .
-	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \
+	@uv run python scripts/quality/architecture_contract.py --root .
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.unit_timeout_seconds); \
 	uv run pytest tests/architecture/test_dependencies.py \
 	  --timeout "$$timeout" --timeout-method thread -vv
 
 devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycle setup.
-	@uv run python scripts/check_devcontainer.py
-	@bash -n scripts/devcontainer-setup.sh
+	@uv run python scripts/quality/check_devcontainer.py
+	@bash -n scripts/development/devcontainer-setup.sh
 
 devcontainer-verify-images: ## Compare Dev Container image tags with locked registry digests.
-	@uv run python scripts/check_devcontainer.py --verify-images
+	@uv run python scripts/quality/check_devcontainer.py --verify-images
 
 ghcr-compose-check: ## Prove image-only Compose and concise published-image user guidance.
-	@uv run python scripts/check_ghcr_compose.py
+	@uv run python scripts/quality/check_ghcr_compose.py
 	@MYSTACK_IMAGE_TAG="$${MYSTACK_IMAGE_TAG:-v0.0.0}" \
 	  docker compose -f compose.ghcr.yaml config --quiet
 
 model-check: ## Compare installed botocore with the committed protocol manifest.
-	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+	@uv run python scripts/quality/model_manifest.py --check contracts/service-model-manifest.json
 
 coverage-generate: compatibility-evidence-generate ## Render API classification from generated evidence.
 	@uv run python scripts/compatibility/api_coverage.py \
@@ -138,23 +138,23 @@ version-bump: ## Update all managed version files; PART=patch|minor|major, VERSI
 
 package-check: ## Build and co-install all wheels under the implicit Mystack namespace.
 	@uv build --all-packages
-	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.package_smoke_timeout_seconds); \
-	uv run python scripts/check_namespace_packages.py --dist-dir dist --timeout-seconds "$$timeout"
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.package_smoke_timeout_seconds); \
+	uv run python scripts/quality/check_namespace_packages.py --dist-dir dist --timeout-seconds "$$timeout"
 
 test: ## Run unit, architecture, and protocol tests with configured timeout.
-	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.unit_timeout_seconds); \
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.unit_timeout_seconds); \
 	uv run pytest -m "not e2e" --timeout "$$timeout" --timeout-method thread
 
 contract: ## Run boto3 and wire protocol contracts with configured timeout.
-	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.contract_timeout_seconds); \
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.contract_timeout_seconds); \
 	uv run pytest -m contract --timeout "$$timeout" --timeout-method thread -vv
 
 up: ## Build and start the Docker stack with the selected YAML config.
-	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.compose_wait_timeout_seconds); \
+	@wait_timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.compose_wait_timeout_seconds); \
 	MYSTACK_CONFIG_SOURCE="$(CONFIG)" docker compose up --build --detach --wait --wait-timeout "$$wait_timeout"
 
 e2e: ## Run black-box boto3, AWS SDK for pandas, Spark, Hive, and Iceberg E2E tests.
-	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/config_value.py tests.e2e_timeout_seconds); \
+	@timeout=$$(MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/development/config_value.py tests.e2e_timeout_seconds); \
 	uv run pytest tests/e2e -m e2e --timeout "$$timeout" --timeout-method thread -vv
 
 logs: ## Follow structured logs for all containers or SERVICE=name.

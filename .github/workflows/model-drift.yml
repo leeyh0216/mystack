@@ -25,7 +25,7 @@ jobs:
         continue-on-error: true
         run: >-
           uv run --no-project --with botocore
-          python scripts/model_manifest.py
+          python scripts/quality/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
       - name: Detect unclassified operations and coverage drift

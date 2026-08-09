@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.check_ghcr_compose import (
+from scripts.quality.check_ghcr_compose import (
     ImageComposeContractError,
     ImageComposePolicy,
     PublishedImageDocumentationPolicy,
