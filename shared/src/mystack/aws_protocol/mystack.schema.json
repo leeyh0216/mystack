@@ -107,6 +107,7 @@
         "live_log_chunk_bytes",
         "log_retention_seconds",
         "log_publication",
+        "spark_ui",
         "startup_clusters_file",
         "command_runner_jars",
         "api_page_size",
@@ -134,6 +135,15 @@
             "initial_backoff_seconds": {"type": "number", "minimum": 0},
             "max_backoff_seconds": {"type": "number", "minimum": 0},
             "attempt_timeout_seconds": {"$ref": "#/$defs/positive_number"}
+          }
+        },
+        "spark_ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["port_min", "port_max"],
+          "properties": {
+            "port_min": {"type": "integer", "minimum": 1024, "maximum": 65535},
+            "port_max": {"type": "integer", "minimum": 1024, "maximum": 65535}
           }
         },
         "startup_clusters_file": {

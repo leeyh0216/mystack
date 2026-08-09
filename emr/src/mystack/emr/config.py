@@ -50,6 +50,12 @@ class LogDeliverySettings:
 
 
 @dataclass(frozen=True, slots=True)
+class SparkUiSettings:
+    port_min: int
+    port_max: int
+
+
+@dataclass(frozen=True, slots=True)
 class EmrSettings:
     listen_host: str
     listen_port: int
@@ -61,6 +67,7 @@ class EmrSettings:
     shutdown_timeout_seconds: float
     output_tail_bytes: int
     log_delivery: LogDeliverySettings
+    spark_ui: SparkUiSettings
     startup_clusters_file: Path | None
     command_runner_jars: frozenset[str]
     account_id: str
@@ -78,6 +85,7 @@ class EmrSettings:
         all_runtime_documents = require_mapping(loaded.document, "runtime_profiles")
         release_documents = require_mapping(emr, "release_profiles")
         log_publication = require_mapping(emr, "log_publication")
+        spark_ui = require_mapping(emr, "spark_ui")
 
         releases: dict[str, ReleaseProfile] = {}
         runtimes: dict[str, SparkRuntimeSettings] = {}
@@ -102,6 +110,11 @@ class EmrSettings:
                 raise ConfigurationError(
                     "emr.default_release_label must name an emr.release_profiles entry"
                 )
+            spark_ui_settings = SparkUiSettings(
+                port_min=int(spark_ui["port_min"]), port_max=int(spark_ui["port_max"])
+            )
+            if spark_ui_settings.port_min > spark_ui_settings.port_max:
+                raise ConfigurationError("emr.spark_ui.port_min must not exceed port_max")
             return cls(
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
@@ -124,6 +137,7 @@ class EmrSettings:
                         log_publication["attempt_timeout_seconds"]
                     ),
                 ),
+                spark_ui=spark_ui_settings,
                 startup_clusters_file=_optional_path(
                     emr["startup_clusters_file"],
                     configuration_source=Path(loaded.source),

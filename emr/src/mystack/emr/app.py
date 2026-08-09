@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from importlib.metadata import version as distribution_version
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from mystack.aws_protocol import (
@@ -231,6 +232,48 @@ def create_app(
             raise HTTPException(status_code=404, detail=str(error)) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
+
+    @app.get("/_mystack/ui/emr/spark")
+    async def management_spark_ui(cluster_id: str, step_id: str) -> JSONResponse:
+        try:
+            return JSONResponse(await management.spark_ui(cluster_id, step_id))
+        except EmrDomainError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+
+    @app.get("/_mystack/ui/emr/spark/{cluster_id}/{step_id}/{relative_path:path}")
+    async def spark_ui_gateway(
+        cluster_id: str, step_id: str, relative_path: str, request: Request
+    ) -> Response:
+        if any(part in {".", ".."} for part in relative_path.split("/")):
+            raise HTTPException(status_code=404, detail="Unknown Spark UI path")
+        try:
+            port = await management.spark_ui_port(cluster_id, step_id)
+        except EmrDomainError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
+        target = f"http://127.0.0.1:{port}/{relative_path}"
+        if request.url.query:
+            target = f"{target}?{request.url.query}"
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(target, follow_redirects=False)
+        except httpx.HTTPError as error:
+            raise HTTPException(
+                status_code=502, detail="Running Spark UI is unavailable"
+            ) from error
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type=response.headers.get("content-type"),
+            headers={
+                key: value
+                for key, value in response.headers.items()
+                if key.lower() in {"location", "cache-control"}
+            },
+        )
 
     @app.get("/_mystack/management/logs/chunk")
     @app.get("/_mystack/ui/emr/logs/chunk")

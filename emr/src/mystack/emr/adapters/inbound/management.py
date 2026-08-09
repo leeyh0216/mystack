@@ -26,6 +26,7 @@ from mystack.emr.domain.errors import EmrDomainError
 _LOGGER = logging.getLogger(__name__)
 _PUBLICATION_FILE = "log-publication.json"
 _RESOLVED_COMMAND_FILE = "resolved-command.json"
+_SPARK_UI_FILE = "spark-ui.json"
 _SAFE_RESOURCE_ID = re.compile(r"[A-Za-z0-9_-]+")
 _ACTIVE_STEP_STATES = frozenset({"PENDING", "CANCEL_PENDING", "RUNNING"})
 
@@ -200,6 +201,35 @@ class EmrManagementAdapter:
             "log_publication": publication,
             "resolved_command": resolved_command,
         }
+
+    async def spark_ui(self, cluster_id: str, step_id: str) -> dict[str, Any]:
+        """Return only a stable service-relative route for a running local Spark driver."""
+        await self.spark_ui_port(cluster_id, step_id)
+        return {
+            "schema_version": 1,
+            "cluster_id": cluster_id,
+            "step_id": step_id,
+            "status": "running",
+            "url": f"/_mystack/ui/emr/spark/{cluster_id}/{step_id}/",
+        }
+
+    async def spark_ui_port(self, cluster_id: str, step_id: str) -> int:
+        _validate_resource_ids(cluster_id, step_id)
+        work_dir, _, state, recovered = await self._identity(cluster_id, step_id)
+        if recovered or state != "RUNNING":
+            raise ValueError("Spark UI is available only while the Step is running")
+        try:
+            document = json.loads((work_dir / _SPARK_UI_FILE).read_text(encoding="utf-8"))
+            if not isinstance(document, dict):
+                raise ValueError
+            if document != {"schema_version": 1, "host": "127.0.0.1", "port": document.get("port")}:
+                raise ValueError
+            port = document["port"]
+            if not isinstance(port, int) or not 1 <= port <= 65535:
+                raise ValueError
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError("Spark UI is not registered for this running Step") from error
+        return port
 
     async def log_chunk(
         self,
