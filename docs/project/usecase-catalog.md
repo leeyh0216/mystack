@@ -254,7 +254,7 @@
   platform verification, timeout, or vulnerability policy.
 - Observability: registry before/after/failure events and uploaded evidence.
 - Evidence: `.github/workflows/release.yml`, `.github/workflows/container-publish.yml`,
-  `scripts/release_policy.py`, `scripts/github_release.py`, `scripts/registry_release.py`
+  `scripts/release/release_policy.py`, `scripts/release/github_release.py`, `scripts/release/registry_release.py`
 - Confidence: High for deterministic policy and transaction tests; remote publication remains
   subject to GitHub runner and package visibility state.
 

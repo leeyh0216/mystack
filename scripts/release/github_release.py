@@ -20,8 +20,8 @@ from dataclasses import dataclass
 from typing import Protocol
 from urllib.parse import quote
 
-from scripts.release_policy import BindingAction, PolicyError, decide_binding
-from scripts.version import StableVersion, VersionError
+from scripts.release.release_policy import BindingAction, PolicyError, decide_binding
+from scripts.release.version import StableVersion, VersionError
 
 LOGGER = logging.getLogger("mystack.github_release")
 

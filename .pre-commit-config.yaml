@@ -98,13 +98,13 @@ repos:
         always_run: true
       - id: version-authority
         name: Stable version authority and derived-file drift
-        entry: uv run python scripts/version.py check
+        entry: uv run python scripts/release/version.py check
         language: system
         pass_filenames: false
         always_run: true
       - id: github-rulesets
         name: File-driven main and develop repository rulesets
-        entry: uv run python scripts/github_rulesets.py check
+        entry: uv run python scripts/release/github_rulesets.py check
         language: system
         pass_filenames: false
         always_run: true

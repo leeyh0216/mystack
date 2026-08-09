@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass
 from enum import StrEnum
 
-from scripts.version import ResolvedVersion, StableVersion, VersionError
+from scripts.release.version import ResolvedVersion, StableVersion, VersionError
 
 LOGGER = logging.getLogger("mystack.release_policy")
 _FULL_GIT_SHA = re.compile(r"^[0-9a-fA-F]{40}$")

@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.registry_release import (
+from scripts.release.registry_release import (
     ReleaseContractError,
     ReleaseGate,
     VulnerabilityExceptionPolicy,
@@ -397,7 +397,7 @@ def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
     assert '"push": "true"' in publish
     assert "authorize-publication" in publish
     assert publish.index("authorize-publication") < publish.index("docker/login-action")
-    assert "-m scripts.release_policy binding" in publish
+    assert "-m scripts.release.release_policy binding" in publish
     assert "steps.identity.outputs.exists != 'true'" in publish
 
 
