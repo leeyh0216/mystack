@@ -10,8 +10,16 @@ from __future__ import annotations
 import pytest
 from botocore.exceptions import ClientError
 
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-data-catalog",),
+    capabilities=("hive-partition-ddl", "partition-repair"),
+)
 def test_hive_partition_ddl_operation_sequence_is_deterministic(glue_client) -> None:
     database = "hive_ddl"
     table = "events"

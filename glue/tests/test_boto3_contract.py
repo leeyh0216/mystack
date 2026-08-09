@@ -9,16 +9,30 @@ import time
 
 import httpx
 import pytest
+from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
 
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
 from test_support.glue_catalog import exercise_all_glue_catalog_operations
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-data-catalog", "modeled-service-errors"),
+    operations={"glue": tuple(sorted(IMPLEMENTED_GLUE_OPERATIONS))},
+    capabilities=("catalog-operation-boundary", "modeled-errors"),
+)
 def test_all_implemented_glue_operations_through_service_boundary(glue_client) -> None:
     exercise_all_glue_catalog_operations(glue_client, "contract")
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-data-catalog",),
+    capabilities=("management-read-model",),
+)
 def test_management_read_model_lists_catalog_tree(
     glue_client,
     glue_server: str,
@@ -51,6 +65,11 @@ def test_management_read_model_lists_catalog_tree(
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-data-catalog",),
+    capabilities=("typed-partition-expression", "pagination", "segments"),
+)
 def test_get_partitions_combines_typed_expression_paging_and_segments(glue_client) -> None:
     """Exercise the public GetPartitions shape documented by AWS Glue.
 

@@ -19,8 +19,25 @@ from typing import Any
 import httpx
 import pytest
 
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import EMR_LOCAL_SPARK
+
 
 @pytest.mark.e2e
+@compatibility_evidence(
+    EMR_LOCAL_SPARK,
+    scenario_ids=("bootstrap-s3-spark-step-lifecycle",),
+    operations={
+        "emr": (
+            "AddJobFlowSteps",
+            "DescribeCluster",
+            "DescribeStep",
+            "RunJobFlow",
+            "TerminateJobFlows",
+        )
+    },
+    capabilities=("bootstrap-action", "s3-artifact-download", "local-spark-step", "step-lifecycle"),
+)
 def test_boto3_runs_bootstrap_and_real_spark_through_public_proxy(
     aws_clients: dict[str, Any],
     e2e_settings: Any,

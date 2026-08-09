@@ -36,21 +36,26 @@ Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container
 <!-- section: manifest -->
 ## Client 또는 runtime version 추가
 
-1. `compatibility/cases.yaml`에 정확한 artifact URL과 content digest를 추가합니다.
-2. runtime profile, runner adapter, compatibility profile, scenario set을 추가하거나 재사용합니다.
-3. 명시적 case 한 개를 추가하고 새 required case/scenario를 한·영 acceptance 영역 하나에
-   배정합니다. 검토하지 않은 조합을 만드는 version 축은 추가하지 않습니다.
-4. `make compatibility-generate`를 실행하고 JSON, 정확한 version 표, 생성된 release-acceptance
-   표를 검토한 뒤
-   `make compatibility-case CASE=<id>`를 실행합니다.
-5. `make compatibility-check`를 실행합니다. CI는 workflow source 수정 없이 생성된 `include`
-   entry에서 새 job을 만듭니다.
+1. `test_support/compatibility_profiles.py`에서 `CompatibilityProfile`을 만들거나 재사용합니다.
+   정확한 client version, runtime, lane, GitHub Actions 바깥 job 시간 상한, 공식 URL을 기록합니다.
+2. 실제 client 동작을 검증하는 가장 작은 `contract` 또는 `e2e` 시험에
+   `@compatibility_evidence(...)`를 붙입니다. scenario, operation, capability, support 값은
+   계획한 기능이 아니라 실행하는 test body를 설명해야 합니다.
+3. `make compatibility-evidence-generate`를 실행하고 생성한 JSON과 한·영 표를 검토합니다.
+   Generator는 [pytest collection](https://docs.pytest.org/en/stable/how-to/usage.html)을 사용하므로
+   test body를 실행하지 않고 정확한 node ID를 결정합니다.
+4. `make compatibility-evidence-check`와 `make compatibility-case CASE=<id>`를 실행합니다.
+   GitHub Actions는 workflow source를 고치지 않아도 생성한 `include` entry에서 독립 job을 만듭니다.
+5. 이행 기간에는 `make compatibility-check`도 실행합니다. `compatibility/cases.yaml`과
+   `contracts/api-coverage.json`은 parity 기준으로 남깁니다. 이 변경에서 두 파일을 제거하거나
+   독립된 Glue 오류 조건 정책을 바꾸지 않습니다.
 
-Compiler는 알 수 없는 field, 중복 ID, 변경 가능한 source, 잘못된 digest, 알 수 없는 adapter,
-runtime/config 불일치, 오래된 model fingerprint, 없는 test node, 안전하지 않은 evidence path,
-문서화하지 않은 required case/scenario를 시험 전에 거부합니다. Case는 정확한 version,
-scenario/operation ID, model fingerprint와 결정적 evidence hash를 기록하므로 log에서 깨진 경계를
-찾을 수 있습니다.
+Annotation compiler는 잘못된 marker 구조, 없거나 맞지 않는 실행 marker, 중복 profile, lock/runtime
+차이, 알 수 없는 modeled operation, 빠진 API 근거, 변경된 기존 case 선택을 실행 전에 거부합니다.
+Case는 정확한 version, scenario/operation ID, model fingerprint, 결정적 evidence hash를 기록하므로
+log에서 깨진 경계를 찾을 수 있습니다.
+`tests.compatibility_collection_timeout_seconds`가 그 collection subprocess를 제한하며 profile의
+duration은 pytest timeout이 아닙니다.
 
 <!-- section: checklist -->
 ## 호환성 변경 체크리스트

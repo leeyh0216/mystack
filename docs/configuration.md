@@ -222,6 +222,11 @@ Browser interaction deadlines and whether missing Chromium is fatal are configur
 `tests.e2e.browser_action_timeout_seconds` and the environment variable named by
 `tests.e2e.browser_required_environment_variable`.
 The isolated wheel co-installation deadline is `tests.package_smoke_timeout_seconds`.
+`tests.compatibility_collection_timeout_seconds` bounds only the pytest
+`--collect-only` subprocess that discovers typed compatibility annotations. It
+does not execute test bodies. `CompatibilityProfile.expected_duration_minutes`
+is separately compiled into the outer GitHub Actions job ceiling, while a
+selected contract or E2E test uses its ordinary YAML test timeout.
 `tests.e2e.glue_iceberg_contention_script` names the image-owned Spark job used by the CI-only
 two-container optimistic-commit scenario; it is a file setting so custom Glue images can relocate
 the harness without changing test code.

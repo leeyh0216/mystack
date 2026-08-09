@@ -59,6 +59,24 @@ def test_schema_rejects_non_positive_timeout(monkeypatch) -> None:
         load_configuration("config/mystack.yaml")
 
 
+def test_compatibility_collection_timeout_is_file_driven(monkeypatch) -> None:
+    monkeypatch.setenv("MYSTACK__TESTS__COMPATIBILITY_COLLECTION_TIMEOUT_SECONDS", "17.5")
+
+    loaded = load_configuration("config/mystack.yaml")
+
+    assert loaded.document["tests"]["compatibility_collection_timeout_seconds"] == 17.5
+
+
+def test_schema_rejects_non_positive_compatibility_collection_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("MYSTACK__TESTS__COMPATIBILITY_COLLECTION_TIMEOUT_SECONDS", "0")
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"tests\.compatibility_collection_timeout_seconds",
+    ):
+        load_configuration("config/mystack.yaml")
+
+
 def test_console_refresh_interval_is_typed_and_bounded(monkeypatch) -> None:
     monkeypatch.setenv(
         "MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS",

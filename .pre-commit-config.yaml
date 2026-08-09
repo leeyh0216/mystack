@@ -66,6 +66,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: annotated-compatibility-evidence
+        name: Test-declared compatibility evidence drift
+        entry: make compatibility-evidence-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: glue-error-contracts
         name: Deterministic Glue error contract drift
         entry: make glue-errors-check

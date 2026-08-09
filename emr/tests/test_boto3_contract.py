@@ -10,9 +10,21 @@ import time
 import httpx
 import pytest
 from botocore.exceptions import ClientError
+from mystack.emr.adapters.inbound.aws_operations import IMPLEMENTED_EMR_OPERATIONS
+
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+
+_CLUSTER_STEP_CONTROL_OPERATIONS = tuple(sorted(IMPLEMENTED_EMR_OPERATIONS - {"CancelSteps"}))
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("emr-control-plane",),
+    operations={"emr": _CLUSTER_STEP_CONTROL_OPERATIONS},
+    capabilities=("cluster-lifecycle", "step-lifecycle", "tag-control"),
+)
 def test_boto3_cluster_step_and_control_operations(
     emr_client,
     emr_server,
@@ -106,6 +118,12 @@ def test_boto3_cluster_step_and_control_operations(
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("emr-control-plane",),
+    operations={"emr": ("CancelSteps",)},
+    capabilities=("step-cancellation",),
+)
 def test_boto3_cancel_steps(emr_client, emr_server, test_timeout: float) -> None:
     _, runtime = emr_server
     runtime.block_steps = True
@@ -140,6 +158,12 @@ def test_boto3_cancel_steps(emr_client, emr_server, test_timeout: float) -> None
 
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("modeled-service-errors",),
+    operations={"emr": ("DescribeCluster",)},
+    capabilities=("modeled-errors",),
+)
 def test_boto3_receives_documented_invalid_request(emr_client) -> None:
     with pytest.raises(ClientError) as captured:
         emr_client.describe_cluster(ClusterId="j-DOESNOTEXIST")

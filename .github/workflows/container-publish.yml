@@ -137,12 +137,12 @@ jobs:
           npm run frontend:typecheck
           npm run frontend:test
           npm run frontend:build
-          make test package-check compatibility-check
+          make test package-check compatibility-check compatibility-evidence-check
       - name: Run required contract cases as isolated processes
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_contract.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
               uv run python scripts/run_compatibility_case.py "$case_id"
             done
       - name: Build and start Mystack for required Docker cases
@@ -151,7 +151,7 @@ jobs:
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_e2e.include[].case_id' \
-            contracts/compatibility-matrix.generated.json | while IFS= read -r case_id; do
+            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
               uv run python scripts/run_compatibility_case.py "$case_id"
             done
       - name: Collect component logs
@@ -164,12 +164,15 @@ jobs:
           name: required-validation-evidence
           path: |
             contracts/compatibility-matrix.generated.json
+            contracts/compatibility-evidence.generated.json
             contracts/api-coverage.json
             contracts/glue-error-conditions.yaml
             docs/compatibility/release-acceptance.generated.md
             docs/compatibility/release-acceptance.ko.generated.md
             docs/compatibility/api-coverage.generated.md
             docs/compatibility/api-coverage.ko.generated.md
+            docs/compatibility/annotated-evidence.generated.md
+            docs/compatibility/annotated-evidence.ko.generated.md
             docs/compatibility/glue-errors.generated.md
             docs/compatibility/glue-errors.ko.generated.md
           if-no-files-found: ignore
