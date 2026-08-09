@@ -17,23 +17,7 @@ services:
     command:
       - --master
       - local[2]
-      - /opt/mystack/e2e/glue_catalog_job.py
-      - --catalog-endpoint
-      - http://proxy:8080
-      - --object-store-endpoint
-      - http://localstack:4566
-      - --region
-      - us-east-1
-      - --catalog-id
-      - "000000000000"
-      - --bucket
-      - mystack-spark-client-lab
-      - --database
-      - client_lab
-      - --catalog-name
-      - mystack
-      - --sdk-timeout-seconds
-      - "30"
+      - /workspace/verify.py
     depends_on:
       proxy:
         condition: service_healthy
