@@ -7,18 +7,23 @@ References:
 
 from __future__ import annotations
 
-import hashlib
 import logging
 from dataclasses import dataclass
 
 from mystack.aws_protocol.observability import log_event
 from mystack.glue.application.catalog_identity import name, partition, table
-from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
+from mystack.glue.application.catalog_ports import (
+    CatalogQueryPort,
+    CatalogReadPort,
+    CatalogWritePort,
+)
+from mystack.glue.application.catalog_query_models import PartitionPageQuery
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.partition_expression import (
     PartitionExpressionCompiler,
     PartitionKey,
 )
+from mystack.glue.application.partition_segments import stable_partition_segment
 from mystack.glue.application.ports import Clock
 from mystack.glue.domain import (
     AlreadyExistsError,
@@ -73,7 +78,7 @@ class PartitionSegment:
         return cls(number, total)
 
     def includes(self, values: tuple[str, ...]) -> bool:
-        return _stable_segment(values, self.total) == self.number
+        return stable_partition_segment(values, self.total) == self.number
 
 
 class PartitionCommands:
@@ -206,11 +211,13 @@ class PartitionCommands:
 class PartitionQueries:
     def __init__(
         self,
-        catalog: CatalogReadPort,
+        read_catalog: CatalogReadPort,
+        query_catalog: CatalogQueryPort,
         paginator: Paginator,
         expression_compiler: PartitionExpressionCompiler,
     ) -> None:
-        self._catalog = catalog
+        self._read_catalog = read_catalog
+        self._query_catalog = query_catalog
         self._paginator = paginator
         self._expression_compiler = expression_compiler
 
@@ -223,13 +230,13 @@ class PartitionQueries:
     ) -> CatalogPartition:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        parent = await table(self._catalog, catalog_id, normalized_database, normalized_table)
+        parent = await table(self._read_catalog, catalog_id, normalized_database, normalized_table)
         normalized_values = PartitionValues.from_items(
             values,
             expected_count=parent.partition_key_count(),
         ).items
         return await partition(
-            self._catalog,
+            self._read_catalog,
             catalog_id,
             normalized_database,
             normalized_table,
@@ -249,10 +256,10 @@ class PartitionQueries:
     ) -> tuple[list[CatalogPartition], str | None]:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        page_request = self._paginator.prepare(next_token, max_results)
+        page_request = self._paginator.prepare_keyset(next_token, max_results)
         selected_segment = PartitionSegment.from_request(segment)
         parsed_expression = self._expression_compiler.parse(expression)
-        parent = await table(self._catalog, catalog_id, normalized_database, normalized_table)
+        parent = await table(self._read_catalog, catalog_id, normalized_database, normalized_table)
         partition_keys = tuple(
             PartitionKey(
                 name=str(value.get("Name", "")),
@@ -261,61 +268,97 @@ class PartitionQueries:
             for value in parent.definition.get("PartitionKeys", ())
         )
         predicate = self._expression_compiler.bind(parsed_expression, partition_keys)
-        values = list(
-            await self._catalog.list_partitions(
+        page_request = page_request.bind(
+            self._paginator.context(
+                "partitions",
                 catalog_id,
                 normalized_database,
                 normalized_table,
+                predicate.fingerprint,
+                segment,
             )
         )
-        candidate_count = len(values)
         log_event(
             _LOGGER,
             logging.INFO,
-            "glue.partition_expression.evaluate.before",
+            "glue.partition_query.plan.before",
             expression_fingerprint=predicate.fingerprint,
-            candidate_count=candidate_count,
-            segment_number=selected_segment.number if selected_segment is not None else None,
-            total_segments=selected_segment.total if selected_segment is not None else None,
+            ast_type=(
+                None if predicate.expression is None else type(predicate.expression).__name__
+            ),
+            query_strategy="sqlite-keyset-pushdown",
+            cursor_present=page_request.cursor is not None,
+            page_size=page_request.size,
+            segment_number=None if selected_segment is None else selected_segment.number,
+            total_segments=None if selected_segment is None else selected_segment.total,
             fix_hint=(
-                "If a client upgrade changes matched_count, inspect the parse event and update "
-                "the isolated grammar, parser, evaluator, or configured type policy."
+                "Inspect application/partition_expression for grammar or type semantics, then "
+                "sqlite_catalog/query_compiler.py and schema.py for SQLite pushdown behavior."
             ),
         )
-        try:
-            values = [value for value in values if predicate.matches(value.values)]
-        except Exception:
+        first = await self._query_catalog.first_partition(
+            catalog_id,
+            normalized_database,
+            normalized_table,
+        )
+        if first is None and page_request.cursor is None:
+            return [], None
+        if first is not None:
+            # Preserve the historical row-by-row evaluator precedence before SQLite compiles
+            # typed literals. In particular, an empty table never forces literal conversion.
+            predicate.matches(first.values)
+        page = await self._query_catalog.page_partitions(
+            PartitionPageQuery(
+                catalog_id,
+                normalized_database,
+                normalized_table,
+                page_request.size,
+                page_request.cursor,
+                predicate,
+                None if selected_segment is None else selected_segment.number,
+                None if selected_segment is None else selected_segment.total,
+            )
+        )
+        if page.invalid_cursor:
+            raise InvalidInputError("Pagination token does not match this request")
+        if page.invalid_partition_key_type is not None:
             log_event(
                 _LOGGER,
                 logging.WARNING,
-                "glue.partition_expression.evaluate.failed",
+                "glue.partition_query.preflight.failed",
                 expression_fingerprint=predicate.fingerprint,
-                candidate_count=candidate_count,
-                exc_info=True,
+                issue_kind="invalid_typed_partition_value",
+                partition_key_type=page.invalid_partition_key_type,
+                fix_hint=(
+                    "Inspect the table partition-key type and the persisted value; the SQLite "
+                    "projection intentionally preserves Glue evaluator error behavior."
+                ),
             )
-            raise
+            raise InvalidInputError(
+                f"Partition value is not valid for key type {page.invalid_partition_key_type!r}"
+            )
+        if page.invalid_partition_value_count:
+            log_event(
+                _LOGGER,
+                logging.WARNING,
+                "glue.partition_query.preflight.failed",
+                expression_fingerprint=predicate.fingerprint,
+                issue_kind="partition_value_count_mismatch",
+                fix_hint=(
+                    "Inspect UpdateTable partition-key changes and partition value cardinality; "
+                    "the query adapter does not infer or pad values."
+                ),
+            )
+            raise InvalidInputError("Partition value count does not match partition key count")
         log_event(
             _LOGGER,
             logging.INFO,
-            "glue.partition_expression.evaluate.after",
+            "glue.partition_query.after",
             expression_fingerprint=predicate.fingerprint,
-            candidate_count=candidate_count,
-            matched_count=len(values),
+            query_strategy=page.query_strategy,
+            returned_count=page.fetched_count,
+            has_next=page.next_cursor is not None,
+            segment_number=None if selected_segment is None else selected_segment.number,
+            total_segments=None if selected_segment is None else selected_segment.total,
         )
-        if selected_segment is not None:
-            values = [value for value in values if selected_segment.includes(value.values)]
-            log_event(
-                _LOGGER,
-                logging.INFO,
-                "glue.partition_expression.segment.after",
-                expression_fingerprint=predicate.fingerprint,
-                matched_count=len(values),
-                segment_number=selected_segment.number,
-                total_segments=selected_segment.total,
-            )
-        return page_request.apply(values)
-
-
-def _stable_segment(values: tuple[str, ...], total_segments: int) -> int:
-    digest = hashlib.sha256("\0".join(values).encode()).digest()
-    return int.from_bytes(digest[:8], "big") % total_segments
+        return list(page.values), self._paginator.complete_keyset(page_request, page.next_cursor)

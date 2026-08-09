@@ -31,9 +31,11 @@ Glue client -> proxy -> Glue AWS JSON adapter -> application command/query
 <!-- section: persistence -->
 ## Persistence and Iceberg boundary
 
-The current production catalog is JSON-backed with atomic candidate publication and a bounded
-cross-process lock. The source-built SQLite runtime is a verified capability gate only; normalized
-SQLite persistence is not yet active. Hive and Iceberg clients use the public Glue endpoint while
+The production catalog is SQLite-only. Application command/query ports keep DB-API and SQL inside
+the outbound adapter; normalized rows retain catalog entities, typed partition projections, and
+stable segment assignments. `GetPartitions` compiles supported bound AST expressions to
+parameterized SQLite predicates and uses `(order_key, partition_id)` keyset continuations, so a
+page does not materialize the catalog. Hive and Iceberg clients use the public Glue endpoint while
 their table metadata and data files remain client/S3 owned.
 
 ```text
