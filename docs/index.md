@@ -38,6 +38,7 @@ run.
 ## Glue Data Catalog
 
 - [Use Glue with boto3, AWS SDK for pandas, Spark Hive, and Iceberg](glue.md)
+- [Choose a client and follow its Glue/EMR request path](client-workflows.md)
 - [Check client and library compatibility](compatibility/client-matrix.md)
 - [Check user-facing support boundaries](support-scope.md)
 - [Operate the Glue SQLite catalog, verified runtime, and durability policy](protocols/glue-sqlite-runtime.md)
