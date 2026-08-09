@@ -14,7 +14,7 @@ import time
 
 import boto3
 from botocore.exceptions import ClientError
-from spark_catalog_session import GlueSparkCatalogSettings
+from mystack.glue.runtime.spark_catalog import GlueSparkCatalogSettings
 
 
 def main() -> None:
