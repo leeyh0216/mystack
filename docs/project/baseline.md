@@ -88,7 +88,7 @@ contracts.
 - Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
   resource/log views, route/thread/task diagnostics, and structured boundary logs without
   authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.
-- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
+- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11 CI,
   nightly/manual Docker E2E, model/API drift gates, immutable develop snapshots and main releases,
   multi-platform GHCR image publication, SBOM/provenance, OCI index validation, and Trivy policy.
 - Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate

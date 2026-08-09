@@ -21,7 +21,7 @@
 
 | Workflow | Trigger | 계약 |
 | --- | --- | --- |
-| `ci.yml` | `main`/`develop`/`feature/*` push, PR, manual | Version 준비 상태, Python 3.11/3.12 계약, required case matrix, source-free GHCR Compose 검증, frozen Dev Container build를 실행하고 `Required CI`로 결과 집계 |
+| `ci.yml` | `main`/`develop`/`feature/*` push, PR, manual | Version 준비 상태, Python 3.11 계약, required case matrix, source-free GHCR Compose 검증, frozen Dev Container build를 실행하고 `Required CI`로 결과 집계 |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | 명시적 required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case별 독립 Docker job과 Chromium console 접근성 E2E |
 | `release.yml` → reusable `container-publish.yml` | `develop`/`main` 직접 push의 `CI` 성공 `workflow_run` | Snapshot 또는 정식 정책 판정, required 검증, local scan, 같은 SHA의 변경 불가 게시, 익명 검증, 정식 GitHub Release |
