@@ -36,6 +36,15 @@ class GlueRuntimeProfile:
 
 
 @dataclass(frozen=True, slots=True)
+class GlueCatalogLockSettings:
+    """Bounded inter-process lock settings for the durable catalog file."""
+
+    lock_file: Path
+    acquire_timeout_seconds: float
+    poll_interval_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
 class GlueObjectStoreSettings:
     endpoint_url: str
     region: str
@@ -83,6 +92,8 @@ class GlueSettings:
     listen_host: str
     listen_port: int
     data_root: Path
+    state_file: Path
+    catalog_lock: GlueCatalogLockSettings
     sqlite: SQLiteRuntimeSettings
     object_store: GlueObjectStoreSettings
     table_optimizers: GlueTableOptimizerSettings
@@ -100,6 +111,7 @@ class GlueSettings:
         profiles = require_mapping(loaded.document, "runtime_profiles")
         localstack = require_mapping(loaded.document, "localstack")
         expression = require_mapping(glue, "partition_expressions")
+        catalog_lock = require_mapping(glue, "catalog_lock")
         sqlite = require_mapping(glue, "sqlite")
         sqlite_driver = require_mapping(sqlite, "driver")
         sqlite_checkpoint = require_mapping(sqlite, "checkpoint")
@@ -111,6 +123,18 @@ class GlueSettings:
             runtime_name = str(glue["runtime_profile"])
             runtime = require_mapping(profiles, runtime_name)
             data_root = Path(str(glue["data_root"]))
+            configured_state_file = Path(str(glue["state_file"]))
+            state_file = (
+                configured_state_file
+                if configured_state_file.is_absolute()
+                else data_root / configured_state_file
+            )
+            configured_lock_file = Path(str(catalog_lock["file"]))
+            lock_file = (
+                configured_lock_file
+                if configured_lock_file.is_absolute()
+                else data_root / configured_lock_file
+            )
             configured_database_file = Path(str(sqlite["database_file"]))
             database_file = (
                 configured_database_file
@@ -123,16 +147,35 @@ class GlueSettings:
                 if configured_manifest_file.is_absolute()
                 else Path(loaded.source).parent / configured_manifest_file
             )
+            lock_timeout_seconds = float(catalog_lock["acquire_timeout_seconds"])
+            lock_poll_interval_seconds = float(catalog_lock["poll_interval_seconds"])
             configured_optimizer_root = Path(str(table_optimizers["work_root"]))
             optimizer_root = (
                 configured_optimizer_root
                 if configured_optimizer_root.is_absolute()
                 else data_root / configured_optimizer_root
             )
+            if lock_file.resolve(strict=False) == state_file.resolve(strict=False):
+                raise ConfigurationError("glue.catalog_lock.file must differ from glue.state_file")
+            if database_file.resolve(strict=False) == state_file.resolve(strict=False):
+                raise ConfigurationError(
+                    "glue.sqlite.database_file must differ from glue.state_file"
+                )
+            if lock_poll_interval_seconds > lock_timeout_seconds:
+                raise ConfigurationError(
+                    "glue.catalog_lock.poll_interval_seconds must be no greater than "
+                    "glue.catalog_lock.acquire_timeout_seconds"
+                )
             return cls(
                 listen_host=str(listen["host"]),
                 listen_port=int(listen["port"]),
                 data_root=data_root,
+                state_file=state_file,
+                catalog_lock=GlueCatalogLockSettings(
+                    lock_file=lock_file,
+                    acquire_timeout_seconds=lock_timeout_seconds,
+                    poll_interval_seconds=lock_poll_interval_seconds,
+                ),
                 sqlite=SQLiteRuntimeSettings(
                     database_file=database_file,
                     driver=SQLiteDriverSettings(
@@ -200,7 +243,6 @@ class GlueSettings:
                         supported_key_types=tuple(
                             str(value) for value in expression["supported_key_types"]
                         ),
-                        fallback_max_candidates=int(expression["fallback_max_candidates"]),
                     ),
                 ),
                 fault_injection=GlueFaultInjectionPolicy(

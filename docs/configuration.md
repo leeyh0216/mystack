@@ -122,6 +122,12 @@ backup procedure, logging, and repair boundary are in the
 [Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md); Iceberg pointer commits use the
 [SQLite transaction contract](protocols/glue-iceberg-commits.md).
 
+`glue.sqlite` currently verifies the reviewed private SQLite DB-API runtime before Glue starts; it
+does not replace the JSON catalog or migrate `glue.state_file`. Its `database_file` parent is the
+writable directory for a temporary capability probe, not durable catalog state. The full runtime
+policy, the explicit `rollback` escape hatch, and the future-persistence boundary are in the
+[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md).
+
 Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
 path-style setting through an injected S3 port. The application never assumes a Compose service
 name, and the configured S3 bucket must already exist. Create/update ordering, candidate cleanup,

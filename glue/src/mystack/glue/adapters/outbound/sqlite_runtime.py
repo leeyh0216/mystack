@@ -1,4 +1,4 @@
-"""Verified private SQLite DB-API runtime for the Glue catalog adapter.
+"""Verified private SQLite DB-API runtime for the future Glue catalog adapter.
 
 The implementation keeps SQLite behind an outbound adapter. WAL is enabled only after the driver
 version, source-build manifest, PRAGMAs, and writable sibling-file directory have been verified.

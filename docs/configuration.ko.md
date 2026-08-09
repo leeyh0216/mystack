@@ -118,6 +118,12 @@ JSON catalog fallback이나 migration은 없습니다. Durability, 같은 host W
 수정 경계는 [Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
 [SQLite transaction 계약](protocols/glue-iceberg-commits.ko.md)에 있습니다.
 
+`glue.sqlite`는 현재 Glue 시작 전에 검토한 private SQLite DB-API runtime만 검증합니다.
+JSON catalog을 바꾸거나 `glue.state_file`을 migration하지 않습니다. `database_file`의 parent는
+일시 capability probe를 위한 write 가능한 directory이며 durable catalog state가 아닙니다. 전체
+runtime policy, 명시적인 `rollback` escape hatch, 이후 persistence 경계는
+[Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에서 설명합니다.
+
 Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
 credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며
 설정한 S3 bucket은 미리 존재해야 합니다. Create/update 순서, candidate cleanup, 제외 범위는

@@ -54,7 +54,7 @@ class SQLiteDriverSettings:
 
 @dataclass(frozen=True, slots=True)
 class SQLiteCheckpointSettings:
-    """Explicit WAL checkpoint policy for the SQLite catalog adapter."""
+    """Explicit WAL checkpoint policy for the later SQLite catalog adapter."""
 
     mode: str
     auto_checkpoint_pages: int
