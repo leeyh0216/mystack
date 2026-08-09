@@ -56,6 +56,7 @@ class PartitionCatalogPage(CatalogPage[_Item]):
 
     invalid_partition_key_type: str | None = None
     invalid_partition_value_count: bool = False
+    fallback_candidate_limit_exceeded: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,3 +85,4 @@ class PartitionPageQuery:
     predicate: CompiledPartitionExpression
     segment_number: int | None
     total_segments: int | None
+    fallback_max_candidates: int

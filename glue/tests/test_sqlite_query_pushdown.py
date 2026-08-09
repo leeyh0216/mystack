@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,8 @@ from mystack.glue.application.partition_expression import (
     PartitionExpressionPolicy,
     PartitionKey,
 )
+from mystack.glue.application.partition_expression.evaluator import PartitionRow
+from mystack.glue.application.partition_expression.service import CompiledPartitionExpression
 from mystack.glue.application.sqlite_runtime import (
     SQLiteCheckpointSettings,
     SQLiteDriverSettings,
@@ -68,6 +71,38 @@ class RecordingConnectionFactory:
 
     def clear(self) -> None:
         self.statements.clear()
+
+
+@dataclass(frozen=True)
+class _FutureExpression:
+    """A synthetic evaluator-supported node whose SQLite projection does not exist yet."""
+
+    matching_region: str
+
+
+class _FutureEvaluator:
+    def matches(self, expression: _FutureExpression, row: PartitionRow) -> bool:
+        return row.values["region"] == expression.matching_region
+
+
+class _FutureExpressionCompiler:
+    def __init__(self, *, candidate_limit: int) -> None:
+        self.fallback_max_candidates = candidate_limit
+
+    def parse(self, source: str | None) -> object:
+        return object()
+
+    def bind(
+        self,
+        parsed: object,
+        keys: tuple[PartitionKey, ...],
+    ) -> CompiledPartitionExpression:
+        return CompiledPartitionExpression(
+            _FutureExpression("include"),  # type: ignore[arg-type]
+            keys,
+            _FutureEvaluator(),  # type: ignore[arg-type]
+            "future-node",
+        )
 
 
 def _settings(database_file: Path) -> SQLiteRuntimeSettings:
@@ -285,6 +320,54 @@ async def test_partition_pushdown_matches_evaluator_and_reads_only_a_keyset_page
     assert "ORDER BY p.order_key, p.partition_id LIMIT 2" in statements
     assert " OFFSET " not in statements.upper()
     assert "COUNT(" not in statements.upper()
+
+
+async def test_future_expression_fallback_seek_streams_and_enforces_candidate_limit(
+    tmp_path: Path,
+) -> None:
+    application, connections = _application(tmp_path / "catalog.sqlite3")
+    await _create_partition_table(application)
+    for index, region in enumerate(("skip-1", "include", "skip-2", "include"), start=1):
+        await application.create_partition(
+            "account",
+            "analytics",
+            "events",
+            {"Values": ["2026", region, f"2026-08-{index:02d}"]},
+        )
+
+    application._partition_queries._expression_compiler = _FutureExpressionCompiler(  # type: ignore[attr-defined]
+        candidate_limit=3
+    )
+    connections.clear()
+    with pytest.raises(InvalidInputError, match="configured candidate limit"):
+        await application.get_partitions(
+            "account",
+            "analytics",
+            "events",
+            expression="future-node",
+            segment=None,
+            next_token=None,
+            max_results=2,
+        )
+    statements = "\n".join(connections.statements)
+    assert "ORDER BY p.order_key, p.partition_id" in statements
+    assert " OFFSET " not in statements.upper()
+    assert "include" not in statements
+
+    application._partition_queries._expression_compiler = _FutureExpressionCompiler(  # type: ignore[attr-defined]
+        candidate_limit=4
+    )
+    values, token = await application.get_partitions(
+        "account",
+        "analytics",
+        "events",
+        expression="future-node",
+        segment=None,
+        next_token=None,
+        max_results=1,
+    )
+    assert [value.values[1] for value in values] == ["include"]
+    assert token is not None
 
 
 async def test_supported_partition_expression_forms_match_the_evaluator(tmp_path: Path) -> None:
