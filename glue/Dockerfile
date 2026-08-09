@@ -87,7 +87,7 @@ COPY glue/bin/mystack-spark-submit /opt/mystack/bin/spark-submit
 COPY --from=ui-builder /workspace/glue/src/mystack/glue/static/ui /opt/src/glue/src/mystack/glue/static/ui
 COPY --from=sqlite-driver-builder /opt/mystack/sqlite-driver /opt/mystack/sqlite-driver
 COPY ${MYSTACK_CONFIG_SOURCE} /etc/mystack/mystack.yaml
-COPY glue/scripts/e2e /opt/mystack/e2e
+COPY glue/tests/workloads /opt/mystack/e2e
 RUN python3 -m venv /opt/mystack/venv \
     && /opt/mystack/venv/bin/python -m pip install --no-cache-dir \
       --require-hashes -r /opt/requirements.txt \

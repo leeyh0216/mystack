@@ -90,7 +90,7 @@ Spark/Iceberg client 변경으로 이 경로가 깨지면 다음 순서로 확�
 3. Iceberg 식별과 안전한 commit event는 `glue/application/iceberg_commit.py`
 4. Process 간 lost update, writer 경합, schema mapping, commit/rollback은
    `glue/adapters/outbound/sqlite_catalog/`과 `glue.sqlite` 설정
-5. 실제 client retry 변화는 `glue/scripts/e2e/iceberg_contention_job.py`와 생성된 compatibility case
+5. 실제 client retry 변화는 `glue/tests/workloads/iceberg_contention_job.py`와 생성된 compatibility case
 
 <!-- section: evidence -->
 ## 검증과 제외 범위

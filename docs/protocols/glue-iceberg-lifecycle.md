@@ -91,7 +91,7 @@ atomicity than Iceberg provides.
 ## Verification evidence
 
 `glue/tests/test_iceberg_lifecycle_catalog.py` fixes the modeled errors, pointer copy, atomic delete,
-and compensation sequence without Spark. `glue/scripts/e2e/iceberg_lifecycle.py` runs the real
+and compensation sequence without Spark. `glue/tests/workloads/iceberg_lifecycle.py` runs the real
 Iceberg SQL in the Glue image. `tests/e2e/test_glue_spark_catalog.py` verifies the resulting Glue
 definitions with boto3 and object presence through the public Proxy and S3 endpoint. The Spark
 process and test use the configured E2E timeout.
@@ -106,7 +106,7 @@ table documents or object contents.
 
 When an upgrade breaks this profile, inspect:
 
-1. `glue/scripts/e2e/iceberg_lifecycle.py` for Spark SQL or result changes.
+1. `glue/tests/workloads/iceberg_lifecycle.py` for Spark SQL or result changes.
 2. Iceberg `GlueCatalog.renameTable` and `dropTable` for changed call ordering.
 3. `glue/adapters/inbound/aws_table.py` for modeled request-member drift.
 4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for

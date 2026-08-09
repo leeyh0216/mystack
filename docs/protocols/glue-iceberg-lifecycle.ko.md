@@ -89,7 +89,7 @@ orphan-file cleanup으로 복구해야 합니다. Mystack은 Iceberg보다 강�
 ## 검증 근거
 
 `glue/tests/test_iceberg_lifecycle_catalog.py`가 Spark 없이 modeled error, pointer copy, 원자적 delete,
-보상 순서를 고정합니다. `glue/scripts/e2e/iceberg_lifecycle.py`는 Glue image에서 실제 Iceberg SQL을
+보상 순서를 고정합니다. `glue/tests/workloads/iceberg_lifecycle.py`는 Glue image에서 실제 Iceberg SQL을
 실행합니다. `tests/e2e/test_glue_spark_catalog.py`는 public Proxy와 S3 endpoint를 통해 결과 Glue
 definition을 boto3로 확인하고 object 존재 여부를 검증합니다. Spark process와 test 모두 설정한
 E2E timeout을 사용합니다.
@@ -104,7 +104,7 @@ resource fingerprint, side-effect phase, rollback, 수정 hint를 식별합니�
 
 Upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 
-1. Spark SQL 또는 결과 변화: `glue/scripts/e2e/iceberg_lifecycle.py`
+1. Spark SQL 또는 결과 변화: `glue/tests/workloads/iceberg_lifecycle.py`
 2. 호출 순서 변화: Iceberg `GlueCatalog.renameTable`, `dropTable`
 3. Modeled request member 변화: `glue/adapters/inbound/aws_table.py`
 4. 원자성 회귀: `glue/application/table.py`,

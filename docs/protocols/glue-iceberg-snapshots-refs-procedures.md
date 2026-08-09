@@ -65,7 +65,7 @@ and [`GetTableVersions`](https://docs.aws.amazon.com/glue/latest/webapi/API_GetT
 ## Verification evidence
 
 `glue/tests/test_iceberg_snapshot_ref_catalog.py` is the fast AWS JSON 1.1 pointer contract.
-`glue/scripts/e2e/iceberg_snapshot_refs.py` is the CI-only real Iceberg scenario, invoked by
+`glue/tests/workloads/iceberg_snapshot_refs.py` is the CI-only real Iceberg scenario, invoked by
 `tests/e2e/test_glue_spark_catalog.py` through the public Proxy. The host test reads the final Glue
 pointer with boto3, downloads the metadata JSON, checks that only `main` remains, proves the expired
 snapshot is absent, and confirms the orphan object returns S3 `404`/`NoSuchKey`. All waits and the
@@ -80,7 +80,7 @@ catalog CAS and persistence boundary without logging SQL, table locations, or pa
 
 When an Iceberg or Spark upgrade breaks this profile, inspect:
 
-1. `glue/scripts/e2e/iceberg_snapshot_refs.py` for SQL, result-schema, or procedure changes.
+1. `glue/tests/workloads/iceberg_snapshot_refs.py` for SQL, result-schema, or procedure changes.
 2. `test_support/iceberg_metadata.py` for Iceberg metadata-format representation changes.
 3. `glue/adapters/inbound/aws_table.py` for modeled Glue request-member changes.
 4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for CAS
