@@ -98,6 +98,10 @@ EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract
 - AWS SDK for pandas: 3.17.0
 
 The Glue runtime versions follow [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html) and the [official Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html). EMR semantics follow the [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html).
+The published Glue image keeps the Spark/Iceberg catalog path but removes out-of-scope Job, Delta,
+Hudi, Flink, streaming, and Redshift assets from that broad development base. It is a trusted local
+emulator, not a security boundary; use operator-controlled Glue datasets. Exact expiring scan
+decisions and upstream advisories are documented in [container release operations](container-release.md).
 
 Glue type fields are deliberately preserved rather than narrowed because AWS documents that
 the [Data Catalog does not validate type strings](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).

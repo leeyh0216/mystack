@@ -21,7 +21,7 @@ RUN npm run build --workspace @mystack/glue-ui
 # https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables
 FROM ${GLUE_BASE} AS final
 
-ARG MYSTACK_VERSION=0.1.1
+ARG MYSTACK_VERSION=0.1.2
 ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
 ARG GLUE_VERSION=5.0
 ARG SPARK_VERSION=3.5.4
@@ -41,6 +41,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYSPARK_PYTHON=/opt/mystack/venv/bin/python \
     PYSPARK_DRIVER_PYTHON=/opt/mystack/venv/bin/python \
     PATH=/opt/mystack/bin:/opt/mystack/venv/bin:${PATH}
+
+# This image implements only the Glue Data Catalog runtime documented by Mystack. AWS documents
+# the base as a broad Glue job development image; crawler/job, Delta, Hudi, Flink, streaming,
+# Redshift, and the root Maven cache are outside this image's supported catalog surface:
+# https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html
+# https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html
+RUN rm -rf \
+      /root/.m2 \
+      /usr/lib/hudi \
+      /usr/local/lib/python3.11/site-packages/pyspark/jars \
+      /usr/share/aws/delta \
+      /usr/share/aws/glue-pds \
+      /usr/share/aws/glue-streaming \
+      /usr/share/aws/redshift \
+    && rm -f \
+      /usr/lib/spark/connector/lib/spark-streaming-kinesis-asl-assembly_2.12-3.5.4-amzn-0.jar \
+      /usr/share/aws/iceberg/lib/iceberg-flink-runtime-1.20-1.7.1-amzn-1.jar \
+      /usr/share/aws/iceberg/lib/iceberg-hive-runtime-1.7.1-amzn-1.jar
 
 WORKDIR /opt/mystack
 COPY requirements/glue.txt /opt/requirements.txt

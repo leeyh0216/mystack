@@ -3,6 +3,7 @@
 Official contracts:
 https://github.com/opencontainers/image-spec/blob/main/image-index.md
 https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/
+https://trivy.dev/docs/latest/guide/configuration/filtering/
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import sys
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -42,7 +44,21 @@ CONFIG_FIELDS = frozenset(
     }
 )
 COMPONENT_FIELDS = frozenset({"name", "package", "dockerfile"})
-SCAN_FIELDS = frozenset({"trivy_version", "timeout", "ignore_unfixed", "fail_severities"})
+SCAN_FIELDS = frozenset(
+    {"trivy_version", "timeout", "ignore_unfixed", "fail_severities", "exceptions"}
+)
+VULNERABILITY_EXCEPTION_FIELDS = frozenset(
+    {
+        "id",
+        "components",
+        "package",
+        "installed_version",
+        "path",
+        "expires_on",
+        "reason",
+        "references",
+    }
+)
 TAG_FIELDS = frozenset(
     {"stable_pattern", "snapshot_pattern", "snapshot_retention_days", "publish_latest"}
 )
@@ -78,6 +94,12 @@ def load_config(path: Path) -> dict[str, Any]:
     for index, component in enumerate(components):
         _require_exact_fields(component, COMPONENT_FIELDS, f"components[{index}]")
     _require_exact_fields(config.get("scan"), SCAN_FIELDS, "scan")
+    for index, exception in enumerate(config["scan"]["exceptions"]):
+        _require_exact_fields(
+            exception,
+            VULNERABILITY_EXCEPTION_FIELDS,
+            f"scan.exceptions[{index}]",
+        )
     _require_exact_fields(config.get("tags"), TAG_FIELDS, "tags")
     emit(
         "registry.config.read.after",
@@ -180,8 +202,136 @@ def summarize_trivy(report: dict[str, Any]) -> Counter[str]:
     return counts
 
 
+@dataclass(frozen=True)
+class VulnerabilityCoordinate:
+    """Stable Trivy fields used to prevent an exception from suppressing a new finding."""
+
+    vulnerability_id: str
+    package: str
+    installed_version: str
+    path: str
+    severity: str
+
+    @classmethod
+    def from_trivy(cls, value: dict[str, Any]) -> VulnerabilityCoordinate:
+        return cls(
+            vulnerability_id=str(value.get("VulnerabilityID", "")),
+            package=str(value.get("PkgName", "")),
+            installed_version=str(value.get("InstalledVersion", "")),
+            path=str(value.get("PkgPath", "")),
+            severity=str(value.get("Severity", "UNKNOWN")).upper(),
+        )
+
+
+@dataclass(frozen=True)
+class VulnerabilityException:
+    """One bounded, expiring risk decision from the file-driven release policy."""
+
+    vulnerability_id: str
+    components: tuple[str, ...]
+    package: str
+    installed_version: str
+    path: str
+    expires_on: date
+    reason: str
+    references: tuple[str, ...]
+
+    @classmethod
+    def from_config(cls, value: dict[str, Any]) -> VulnerabilityException:
+        return cls(
+            vulnerability_id=value["id"],
+            components=tuple(value["components"]),
+            package=value["package"],
+            installed_version=value["installed_version"],
+            path=value["path"],
+            expires_on=date.fromisoformat(value["expires_on"]),
+            reason=value["reason"],
+            references=tuple(value["references"]),
+        )
+
+    def matches(self, *, component: str, coordinate: VulnerabilityCoordinate) -> bool:
+        return (
+            component in self.components
+            and coordinate.vulnerability_id == self.vulnerability_id
+            and coordinate.package == self.package
+            and coordinate.installed_version == self.installed_version
+            and coordinate.path == self.path
+        )
+
+    def evidence(self, coordinate: VulnerabilityCoordinate) -> dict[str, Any]:
+        return {
+            "id": self.vulnerability_id,
+            "package": self.package,
+            "installed_version": self.installed_version,
+            "path": self.path,
+            "severity": coordinate.severity,
+            "expires_on": self.expires_on.isoformat(),
+            "reason": self.reason,
+            "references": list(self.references),
+        }
+
+
+class VulnerabilityExceptionPolicy:
+    """Match exact, reviewable exceptions while leaving every unknown finding active."""
+
+    def __init__(
+        self,
+        *,
+        component: str,
+        exceptions: Sequence[VulnerabilityException],
+        evaluation_date: date | None = None,
+    ) -> None:
+        self._component = component
+        self._exceptions = tuple(exceptions)
+        self._evaluation_date = evaluation_date or date.today()
+
+    @classmethod
+    def from_config(
+        cls,
+        config: dict[str, Any],
+        *,
+        component: str,
+        evaluation_date: date | None = None,
+    ) -> VulnerabilityExceptionPolicy:
+        return cls(
+            component=component,
+            exceptions=[
+                VulnerabilityException.from_config(value) for value in config["scan"]["exceptions"]
+            ],
+            evaluation_date=evaluation_date,
+        )
+
+    def exception_for(self, coordinate: VulnerabilityCoordinate) -> VulnerabilityException | None:
+        for exception in self._exceptions:
+            if not exception.matches(component=self._component, coordinate=coordinate):
+                continue
+            if self._evaluation_date > exception.expires_on:
+                emit(
+                    "registry.scan.exception.expired",
+                    component=self._component,
+                    vulnerability_id=coordinate.vulnerability_id,
+                    package=coordinate.package,
+                    path=coordinate.path,
+                    expires_on=exception.expires_on.isoformat(),
+                    fix_hint="remove-or-renew-reviewed-exception",
+                )
+                return None
+            emit(
+                "registry.scan.exception.matched",
+                component=self._component,
+                vulnerability_id=coordinate.vulnerability_id,
+                package=coordinate.package,
+                path=coordinate.path,
+                expires_on=exception.expires_on.isoformat(),
+            )
+            return exception
+        return None
+
+
 def evaluate_scans(
-    scans: Sequence[tuple[str, dict[str, Any]]], fail_severities: Sequence[str]
+    scans: Sequence[tuple[str, dict[str, Any]]],
+    fail_severities: Sequence[str],
+    exception_policy: VulnerabilityExceptionPolicy | None = None,
 ) -> dict[str, Any]:
     emit(
         "registry.scan.evaluate.before",
@@ -191,9 +341,30 @@ def evaluate_scans(
     results: list[dict[str, Any]] = []
     violations: list[str] = []
     for platform, report in scans:
-        counts = summarize_trivy(report)
+        raw_counts: Counter[str] = Counter()
+        counts: Counter[str] = Counter()
+        suppressed: list[dict[str, Any]] = []
+        for result in report.get("Results") or []:
+            for vulnerability in result.get("Vulnerabilities") or []:
+                coordinate = VulnerabilityCoordinate.from_trivy(vulnerability)
+                raw_counts[coordinate.severity] += 1
+                exception = exception_policy.exception_for(coordinate) if exception_policy else None
+                if exception is None:
+                    counts[coordinate.severity] += 1
+                else:
+                    suppressed.append(exception.evidence(coordinate))
         normalized_counts = dict(sorted(counts.items()))
-        results.append({"platform": platform, "severity_counts": normalized_counts})
+        results.append(
+            {
+                "platform": platform,
+                "severity_counts": normalized_counts,
+                "raw_severity_counts": dict(sorted(raw_counts.items())),
+                "suppressed": sorted(
+                    suppressed,
+                    key=lambda item: (item["id"], item["package"], item["path"]),
+                ),
+            }
+        )
         for severity in fail_severities:
             count = counts[severity]
             if count:
@@ -203,7 +374,11 @@ def evaluate_scans(
         raise ReleaseContractError(
             "Trivy vulnerability policy rejected published image: " + ", ".join(violations)
         )
-    emit("registry.scan.evaluate.after", results=results)
+    emit(
+        "registry.scan.evaluate.after",
+        results=results,
+        suppressed=sum(len(result["suppressed"]) for result in results),
+    )
     return {"passed": True, "fail_severities": list(fail_severities), "platforms": results}
 
 
@@ -296,7 +471,11 @@ class ReleaseGate:
         )
         selected = component_config(self._config, component)
         self._validate_identity(platform, image_id, source_sha, version)
-        scan = evaluate_scans([(platform, scan_report)], self._config["scan"]["fail_severities"])
+        scan = evaluate_scans(
+            [(platform, scan_report)],
+            self._config["scan"]["fail_severities"],
+            VulnerabilityExceptionPolicy.from_config(self._config, component=component),
+        )
         report = PreflightEvidence(
             component=component,
             package=selected["package"],
@@ -562,6 +741,58 @@ def check_config(config: dict[str, Any], root: Path) -> dict[str, Any]:
         not re.fullmatch(r"linux/(amd64|arm64)", platform) for platform in config["platforms"]
     ):
         errors.append("platforms must be explicit supported Linux architecture strings")
+    component_names = {component["name"] for component in config["components"]}
+    exception_identities: set[tuple[str, str, str, str, str]] = set()
+    for index, exception in enumerate(config["scan"]["exceptions"]):
+        prefix = f"scan.exceptions[{index}]"
+        components = exception["components"]
+        if (
+            not isinstance(components, list)
+            or not components
+            or any(component not in component_names for component in components)
+            or len(components) != len(set(components))
+        ):
+            errors.append(f"{prefix}.components must be unique configured component names")
+            continue
+        if not re.fullmatch(r"CVE-[0-9]{4}-[0-9]{4,}", exception["id"]):
+            errors.append(f"{prefix}.id must be a CVE identifier")
+        if not all(
+            isinstance(exception[field], str) and exception[field]
+            for field in ("package", "installed_version", "path", "reason")
+        ):
+            errors.append(f"{prefix} coordinate and reason fields must be non-empty strings")
+        exception_path = Path(exception["path"])
+        if exception_path.is_absolute() or ".." in exception_path.parts:
+            errors.append(f"{prefix}.path must be a safe image-relative path")
+        references = exception["references"]
+        if (
+            not isinstance(references, list)
+            or not references
+            or len(references) != len(set(references))
+            or any(
+                not isinstance(reference, str) or not reference.startswith("https://")
+                for reference in references
+            )
+        ):
+            errors.append(f"{prefix}.references must be unique HTTPS sources")
+        try:
+            expires_on = date.fromisoformat(exception["expires_on"])
+        except (TypeError, ValueError):
+            errors.append(f"{prefix}.expires_on must be an ISO date")
+        else:
+            if date.today() > expires_on:
+                errors.append(f"{prefix} expired on {expires_on.isoformat()}")
+        for component in components:
+            identity = (
+                component,
+                exception["id"],
+                exception["package"],
+                exception["installed_version"],
+                exception["path"],
+            )
+            if identity in exception_identities:
+                errors.append(f"duplicate vulnerability exception: {identity}")
+            exception_identities.add(identity)
     for timeout_name in ("workflow_timeout_minutes", "preflight_timeout_minutes"):
         timeout = config.get(timeout_name)
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:

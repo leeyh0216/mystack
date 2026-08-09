@@ -80,6 +80,27 @@ public container package의 익명 접근을 설명합니다. Visibility 실패�
 platform image를 검사합니다. 검증, build, timeout, 근거 누락, 설정된 취약점 중 하나라도 실패하면
 authorization을 만들지 않습니다. 진단용 raw `preflight-*` artifact는 남습니다.
 
+취약점 판정 기준은 기본적으로 설정 severity를 모두 거부합니다. 알려진 upstream runtime finding은
+`config/registry-release.json`의 정확한 항목으로만 허용할 수 있습니다. Component, CVE, package,
+설치 version, image 상대 JAR path가 모두 일치하고 검토 날짜가 `expires_on`을 넘지 않아야 합니다.
+Preflight 근거에는 raw count, 활성 count, 제한된 예외, 사유, 만료일, 출처가 남습니다. 만료되거나
+조금이라도 다른 finding은 활성 상태가 되어 release를 차단합니다. 이는 Trivy 공식 [finding suppression
+모델](https://trivy.dev/docs/latest/guide/configuration/filtering/)과 같은 위험 승인 개념이지만,
+authorization artifact를 명시적이고 결정적으로 유지하기 위해 Mystack이 file 기반 coordinate를 직접
+평가합니다.
+
+현재 예외는 고정 Spark 3.5.4/EMR 7.8과 AWS Glue 5 profile에 포함된 dependency만 다룹니다. Glue
+image에서는 scan 전에 Job 전용 Maven cache, Delta, Hudi, Flink, streaming, Redshift, 중복 PySpark JAR
+surface를 제거합니다. 두 local emulator 모두 Derby LDAP authentication과 ZooKeeper quorum service를
+시작하지 않습니다. Avro와 Parquet 결정은 해당 library가 안전하다는 의미가 아닙니다. Mystack에는
+인증이나 multi-tenant 경계가 없고 EMR Step 제출자는 이미 임의의 operator-owned code를 실행할 수
+있으며, 검증 가능한 수정 runtime을 고정할 때까지 Glue 입력은 신뢰할 수 있는 local dataset이어야
+합니다. [Avro advisory](https://nvd.nist.gov/vuln/detail/CVE-2024-47561), [Parquet
+advisory](https://nvd.nist.gov/vuln/detail/CVE-2025-30065), [Derby
+advisory](https://nvd.nist.gov/vuln/detail/CVE-2022-46337), [ZooKeeper security
+page](https://zookeeper.apache.org/security/)를 정책에 연결했습니다. Maintainer는 runtime을 patch하거나
+새 만료일을 명시적으로 검토해야 하며 scan 통과를 위해 coordinate 범위를 넓혀서는 안 됩니다.
+
 Rollback은 tag를 덮어쓰지 않고 consumer를 이전에 검증한 `image@sha256:...`로 바꿉니다. Snapshot
 metadata에는 30일 보존 목표를 기록하지만 삭제는 아직 자동화하지 않습니다.
 
@@ -94,7 +115,9 @@ metadata에는 30일 보존 목표를 기록하지만 삭제는 아직 자동화
 | Push 중 package permission 거부 | Workflow와 package 연결 불일치 | Workflow permission과 package access |
 | 익명 검증 거부 | Package가 아직 private | 1회성 visibility 변경 후 같은 SHA 재실행 |
 | `registry.index.verify.failed` | Runtime platform 누락 | Dockerfile base manifest 또는 설정 platform |
-| `registry.scan.evaluate.failed` | 설정된 fixed 취약점 존재 | Runtime/base를 고치고 새 버전 사용 |
+| `registry.scan.exception.matched` | 정확히 검토한 finding의 한시 허용 | Coordinate, 사유, 출처, 만료일 검토 |
+| `registry.scan.exception.expired` | Risk decision 검토 기한 도달 | Runtime patch 또는 검토 후 새 버전으로 갱신 |
+| `registry.scan.evaluate.failed` | 승인하지 않은 설정 severity finding 존재 | Runtime/base를 고치고 새 버전 사용 |
 | Image 게시 후 GitHub Release 없음 | 마지막 transaction step 실패 | 같은 SHA를 재실행해 일치하는 tag/image 이어서 처리 |
 
 Log는 side effect 경계에 구조화된 `.before`, `.after`, `.failed` event를 사용합니다. Token, 전체

@@ -29,6 +29,214 @@
     "ignore_unfixed": true,
     "fail_severities": [
       "CRITICAL"
+    ],
+    "exceptions": [
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "emr"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.11.2",
+        "path": "opt/spark/jars/avro-1.11.2.jar",
+        "expires_on": "2026-11-09",
+        "reason": "Spark 3.5.4 is retained for the documented EMR 7.8.0 runtime profile. A caller permitted to submit a Mystack Step already executes arbitrary operator-owned code in this single-tenant local emulator; this is a time-bounded risk acceptance, not a claim that Avro is unaffected.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://spark.apache.org/releases/spark-release-3-5-4.html",
+          "https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html"
+        ]
+      },
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "emr"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.7.7",
+        "path": "opt/spark/jars/hadoop-client-runtime-3.3.4.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The Spark 3.5.4 Hadoop distribution shades this Avro code in hadoop-client-runtime. A caller permitted to submit a Mystack Step already executes arbitrary operator-owned code in this single-tenant local emulator; reassess when the fixed EMR-compatible runtime profile changes.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://spark.apache.org/releases/spark-release-3-5-4.html",
+          "https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html"
+        ]
+      },
+      {
+        "id": "CVE-2022-46337",
+        "components": [
+          "emr"
+        ],
+        "package": "org.apache.derby:derby",
+        "installed_version": "10.14.2.0",
+        "path": "opt/spark/jars/derby-10.14.2.0.jar",
+        "expires_on": "2026-11-09",
+        "reason": "Mystack uses Derby only as an embedded local Spark/Hive store and neither configures nor exposes Derby LDAP authentication, which is the affected code path. Reassess when the EMR-compatible Spark runtime changes.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2022-46337",
+          "https://issues.apache.org/jira/browse/DERBY-7178",
+          "https://spark.apache.org/releases/spark-release-3-5-4.html"
+        ]
+      },
+      {
+        "id": "CVE-2023-44981",
+        "components": [
+          "emr"
+        ],
+        "package": "org.apache.zookeeper:zookeeper",
+        "installed_version": "3.6.3",
+        "path": "opt/spark/jars/zookeeper-3.6.3.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The EMR emulator starts no ZooKeeper ensemble or quorum peer and cannot enable the affected SASL quorum authorization path. The JAR remains part of the exact Spark 3.5.4 distribution and must be reassessed with the runtime profile.",
+        "references": [
+          "https://zookeeper.apache.org/security/",
+          "https://nvd.nist.gov/vuln/detail/CVE-2023-44981",
+          "https://spark.apache.org/releases/spark-release-3-5-4.html"
+        ]
+      },
+      {
+        "id": "CVE-2022-46337",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.derby:derby",
+        "installed_version": "10.14.2.0",
+        "path": "usr/lib/spark/jars/derby-10.14.2.0.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The Glue catalog runtime uses only local embedded Derby state and neither configures nor exposes Derby LDAP authentication, which is the affected code path. Reassess with the pinned AWS Glue base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2022-46337",
+          "https://issues.apache.org/jira/browse/DERBY-7178",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.9.2",
+        "path": "usr/lib/hadoop-hdfs/lib/avro-1.9.2.jar",
+        "expires_on": "2026-11-09",
+        "reason": "This is an AWS Glue 5 Hadoop runtime artifact retained for Spark compatibility. Mystack is a trusted single-tenant local emulator with no authentication boundary; use only operator-controlled schemas and reassess with the pinned Glue base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://avro.apache.org/project/security/",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.9.2",
+        "path": "usr/lib/hadoop/lib/avro-1.9.2.jar",
+        "expires_on": "2026-11-09",
+        "reason": "This is an AWS Glue 5 Hadoop runtime artifact retained for Spark compatibility. Mystack is a trusted single-tenant local emulator with no authentication boundary; use only operator-controlled schemas and reassess with the pinned Glue base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://avro.apache.org/project/security/",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.11.2-cve-2024-47561-amzn-1",
+        "path": "usr/lib/spark/jars/avro-1.11.2-cve-2024-47561-amzn-1.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The AWS Glue 5 image identifies this vendor artifact with the CVE-specific amzn patch suffix, which generic Maven version comparison does not understand. Keep the exact coordinate bounded to the pinned base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html",
+          "https://docs.aws.amazon.com/glue/latest/dg/migrating-version-50.html"
+        ]
+      },
+      {
+        "id": "CVE-2024-47561",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.avro:avro",
+        "installed_version": "1.9.2",
+        "path": "usr/lib/spark/jars/hadoop-client-runtime-3.4.1-amzn-0.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The Glue 5 Spark distribution shades this Avro dependency in its AWS Hadoop client runtime. Mystack has no untrusted multi-tenant execution boundary; use operator-controlled schemas and reassess with the pinned base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2024-47561",
+          "https://avro.apache.org/project/security/",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2025-14813",
+        "components": [
+          "glue"
+        ],
+        "package": "org.bouncycastle:bcprov-jdk18on",
+        "installed_version": "1.78.1",
+        "path": "usr/lib/hadoop/lib/bcprov-jdk18on-1.78.1.jar",
+        "expires_on": "2026-11-09",
+        "reason": "The affected G3413CTRBlockCipher algorithm is not selected by Mystack's Glue catalog, Spark, Iceberg, or local S3A profile. The provider remains an AWS Glue Hadoop dependency and must be reassessed with the base digest.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2025-14813",
+          "https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902025%E2%80%9014813",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2025-30065",
+        "components": [
+          "glue"
+        ],
+        "package": "org.apache.parquet:parquet-avro",
+        "installed_version": "1.13.1-amzn-6",
+        "path": "usr/share/aws/iceberg/lib/iceberg-spark-runtime-3.5_2.12-1.7.1-amzn-1.jar",
+        "expires_on": "2026-11-09",
+        "reason": "Glue 5 requires the AWS Iceberg 1.7.1 Spark runtime and generic scanning cannot classify its amzn build. This is a time-bounded risk acceptance: Mystack is for trusted local datasets only until the pinned Glue runtime provides a verifiable replacement.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2025-30065",
+          "https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2026-27820",
+        "components": [
+          "glue"
+        ],
+        "package": "zlib",
+        "installed_version": "3.2.2",
+        "path": "usr/share/gems/ruby4.0/specifications/default/zlib-3.2.2.gemspec",
+        "expires_on": "2026-11-09",
+        "reason": "Ruby is an indirect AWS Glue image package and is not invoked by the Mystack server or supported Spark/Iceberg path. Removing it would also remove vendor Hadoop/Spark packages, so this exact package coordinate is time-bounded.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2026-27820",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      },
+      {
+        "id": "CVE-2026-27820",
+        "components": [
+          "glue"
+        ],
+        "package": "zlib",
+        "installed_version": "3.0.0",
+        "path": "usr/share/ruby3.2-gems/specifications/default/zlib-3.0.0.gemspec",
+        "expires_on": "2026-11-09",
+        "reason": "Ruby is an indirect AWS Glue image package and is not invoked by the Mystack server or supported Spark/Iceberg path. Removing it would also remove vendor Hadoop/Spark packages, so this exact package coordinate is time-bounded.",
+        "references": [
+          "https://nvd.nist.gov/vuln/detail/CVE-2026-27820",
+          "https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html"
+        ]
+      }
     ]
   },
   "workflow_timeout_minutes": 120,

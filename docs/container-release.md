@@ -79,6 +79,28 @@ GHCR has no ECR-style scan-on-push contract used by this project. Mystack scans 
 images before authentication. A validation, build, timeout, missing-evidence, or configured
 vulnerability failure prevents authorization. Raw `preflight-*` artifacts remain for diagnosis.
 
+The scan gate rejects every configured severity by default. A known upstream runtime finding may
+be accepted only through the exact entries in `config/registry-release.json`: component, CVE,
+package, installed version, and image-relative JAR path must all match, and the review date must not
+be past `expires_on`. The preflight evidence keeps raw counts, active counts, the bounded exception,
+reason, expiry, and sources; an expired or slightly different finding becomes active and blocks the
+release. This is the same risk-decision concept as Trivy's official [finding suppression
+model](https://trivy.dev/docs/latest/guide/configuration/filtering/), but Mystack evaluates the
+file-driven coordinates itself so the authorization artifact remains explicit and deterministic.
+
+The current exceptions cover dependencies bundled by the fixed Spark 3.5.4/EMR 7.8 and AWS Glue 5
+profiles. The Glue image removes job-only Maven cache, Delta, Hudi, Flink, streaming, Redshift, and
+duplicate PySpark JAR surfaces before scanning. Derby LDAP authentication and ZooKeeper quorum
+services are not started by either local emulator. The Avro and Parquet decisions do not claim that
+the affected libraries are safe: Mystack has no authentication or multi-tenant boundary, an EMR
+Step submitter already runs arbitrary operator-owned code, and Glue inputs must be trusted local
+datasets until a verifiably fixed compatible runtime is pinned. The [Avro
+advisory](https://nvd.nist.gov/vuln/detail/CVE-2024-47561), [Parquet
+advisory](https://nvd.nist.gov/vuln/detail/CVE-2025-30065), [Derby
+advisory](https://nvd.nist.gov/vuln/detail/CVE-2022-46337), and [ZooKeeper security
+page](https://zookeeper.apache.org/security/) are attached to the policy. Maintainers must patch the
+runtime or explicitly review a new expiry; never broaden a coordinate to make a scan green.
+
 Rollback changes the consumer to an earlier verified `image@sha256:...`; it never overwrites a tag.
 Snapshot metadata records a 30-day retention target, but deletion is not yet automated.
 
@@ -93,7 +115,9 @@ Snapshot metadata records a 30-day retention target, but deletion is not yet aut
 | package permission denied during push | Workflow/package association differs | Workflow permission and package access |
 | anonymous verification denied | Package is still private | Complete the one-time visibility change and rerun the same SHA |
 | `registry.index.verify.failed` | Runtime platform is missing | Dockerfile base manifest or configured platforms |
-| `registry.scan.evaluate.failed` | Configured fixed vulnerability exists | Patch runtime/base and use a new version |
+| `registry.scan.exception.matched` | Exact reviewed finding is time-bounded | Review coordinate, rationale, sources, and expiry |
+| `registry.scan.exception.expired` | A risk decision reached its deadline | Patch runtime or renew through review and a new version |
+| `registry.scan.evaluate.failed` | Unapproved configured-severity finding exists | Patch runtime/base and use a new version |
 | GitHub Release absent after images | Final transaction step failed | Rerun the same SHA; matching tag/images resume |
 
 Logs use structured `.before`, `.after`, and `.failed` events around side effects. Tokens, complete

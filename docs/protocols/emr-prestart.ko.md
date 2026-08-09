@@ -17,7 +17,7 @@
 계약](https://docs.docker.com/engine/storage/bind-mounts/)에 따라 read-only로 mount합니다.
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.1  # 실제 게시 tag로 교체
+export MYSTACK_IMAGE_TAG=v0.1.2  # 실제 게시 tag로 교체
 mkdir -p mystack-runtime/emr-prestart.d && cd mystack-runtime
 for path in compose.ghcr.yaml compose.emr-prestart.yaml; do
   gh api -H "Accept: application/vnd.github.raw+json" \

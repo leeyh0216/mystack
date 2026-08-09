@@ -41,7 +41,7 @@ GHCR package는 registry token이나 registry 로그인이 필요하지 않습�
 참고하세요.
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.1  # 실제 게시 tag로 교체
+export MYSTACK_IMAGE_TAG=v0.1.2  # 실제 게시 tag로 교체
 mkdir mystack-runtime && cd mystack-runtime
 curl --fail --location --output compose.ghcr.yaml \
   "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"

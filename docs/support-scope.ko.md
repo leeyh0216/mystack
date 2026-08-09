@@ -100,5 +100,9 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 - AWS SDK for pandas: 3.17.0
 
 Glue 버전은 [AWS Glue versions](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html)와 [공식 Glue 5 local image](https://docs.aws.amazon.com/glue/latest/dg/develop-local-docker-image.html), EMR 의미론은 [EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)를 기준으로 합니다.
+게시하는 Glue image는 Spark/Iceberg catalog 경로를 유지하지만 넓은 개발용 base에서 범위 밖인 Job,
+Delta, Hudi, Flink, streaming, Redshift asset을 제거합니다. 이 image는 신뢰된 local emulator이며 보안
+경계가 아니므로 운영자가 관리하는 Glue dataset만 사용해야 합니다. 만료되는 정확한 scan 판정과
+upstream advisory는 [container release 운영](container-release.ko.md)에 정리했습니다.
 
 AWS 문서상 [Data Catalog는 type 문자열을 검증하지 않으므로](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html), Glue type field를 임의로 제한하지 않고 그대로 보존합니다.

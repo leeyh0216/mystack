@@ -7,6 +7,7 @@ https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ import yaml
 from scripts.registry_release import (
     ReleaseContractError,
     ReleaseGate,
+    VulnerabilityExceptionPolicy,
     check_config,
     evaluate_scans,
     load_config,
@@ -114,6 +116,79 @@ def test_scan_policy_returns_auditable_counts() -> None:
 
     assert result["passed"] is True
     assert result["platforms"][0]["severity_counts"] == {"LOW": 1}
+    assert result["platforms"][0]["raw_severity_counts"] == {"LOW": 1}
+    assert result["platforms"][0]["suppressed"] == []
+
+
+def test_scan_exception_requires_an_exact_coordinate_and_records_raw_counts() -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    policy = VulnerabilityExceptionPolicy.from_config(
+        config,
+        component="emr",
+        evaluation_date=date(2026, 8, 9),
+    )
+    report = {
+        "Results": [
+            {
+                "Vulnerabilities": [
+                    {
+                        "VulnerabilityID": "CVE-2022-46337",
+                        "PkgName": "org.apache.derby:derby",
+                        "InstalledVersion": "10.14.2.0",
+                        "PkgPath": "opt/spark/jars/derby-10.14.2.0.jar",
+                        "Severity": "CRITICAL",
+                    }
+                ]
+            }
+        ]
+    }
+
+    result = evaluate_scans([("linux/amd64", report)], ["CRITICAL"], policy)
+
+    platform = result["platforms"][0]
+    assert platform["raw_severity_counts"] == {"CRITICAL": 1}
+    assert platform["severity_counts"] == {}
+    assert platform["suppressed"][0]["id"] == "CVE-2022-46337"
+    assert platform["suppressed"][0]["expires_on"] == "2026-11-09"
+
+
+@pytest.mark.parametrize(
+    ("component", "path", "evaluation_date"),
+    [
+        ("proxy", "opt/spark/jars/derby-10.14.2.0.jar", date(2026, 8, 9)),
+        ("emr", "opt/spark/jars/another-derby.jar", date(2026, 8, 9)),
+        ("emr", "opt/spark/jars/derby-10.14.2.0.jar", date(2026, 11, 10)),
+    ],
+)
+def test_scan_exception_cannot_cross_component_path_or_expiration(
+    component: str,
+    path: str,
+    evaluation_date: date,
+) -> None:
+    config = load_config(ROOT / "config/registry-release.json")
+    policy = VulnerabilityExceptionPolicy.from_config(
+        config,
+        component=component,
+        evaluation_date=evaluation_date,
+    )
+    report = {
+        "Results": [
+            {
+                "Vulnerabilities": [
+                    {
+                        "VulnerabilityID": "CVE-2022-46337",
+                        "PkgName": "org.apache.derby:derby",
+                        "InstalledVersion": "10.14.2.0",
+                        "PkgPath": path,
+                        "Severity": "CRITICAL",
+                    }
+                ]
+            }
+        ]
+    }
+
+    with pytest.raises(ReleaseContractError, match="CRITICAL=1"):
+        evaluate_scans([("linux/amd64", report)], ["CRITICAL"], policy)
 
 
 def test_committed_release_config_references_real_builds_and_official_sources() -> None:
@@ -131,6 +206,8 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
     assert config["preflight_timeout_minutes"] == 60
     assert config["tags"]["snapshot_retention_days"] == 30
     assert config["tags"]["publish_latest"] is False
+    assert len(config["scan"]["exceptions"]) == 13
+    assert all(exception["references"] for exception in config["scan"]["exceptions"])
 
 
 def test_publication_plan_compiles_every_component_platform_without_shell_logic() -> None:
