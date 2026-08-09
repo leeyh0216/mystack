@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from mystack.glue.adapters.outbound.sqlite_catalog.query_functions import register_query_functions
 from mystack.glue.adapters.outbound.sqlite_runtime import (
     ImportingSQLiteDriverLoader,
     SQLiteDriverLoader,
@@ -48,7 +47,6 @@ class SqliteCatalogConnectionFactory:
         )
         try:
             connection.isolation_level = None
-            register_query_functions(connection)
             connection.execute("PRAGMA foreign_keys = ON")
             connection.execute(f"PRAGMA busy_timeout = {self._settings.busy_timeout_milliseconds}")
             connection.execute(f"PRAGMA synchronous = {self._settings.synchronous.upper()}")

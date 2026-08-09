@@ -94,7 +94,8 @@ If an upgraded client breaks this profile, inspect:
 1. `glue/scripts/e2e/iceberg_row_level.py` for Spark SQL or Iceberg write-mode changes.
 2. `test_support/iceberg_metadata.py` for Iceberg snapshot-summary representation changes.
 3. `glue/adapters/inbound/aws_table.py` for Glue request-member changes.
-4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for CAS/version loss.
+4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
+   CAS/version loss.
 5. Typed pytest compatibility annotations for pinned profile and scenario drift.
 
 <!-- section: limits -->

@@ -13,13 +13,6 @@ from __future__ import annotations
 from contextlib import AbstractAsyncContextManager
 from typing import Protocol
 
-from mystack.glue.application.catalog_query_models import (
-    CatalogPage,
-    DatabasePageQuery,
-    PartitionCatalogPage,
-    PartitionPageQuery,
-    TablePageQuery,
-)
 from mystack.glue.domain import (
     CatalogDatabase,
     CatalogPartition,
@@ -31,13 +24,15 @@ CatalogResourceKey = tuple[object, ...]
 
 
 class CatalogReadPort(Protocol):
-    """Point lookups and optimizer reads required by commands and application policy."""
+    """Read only the entities a use case explicitly requests."""
 
     async def find_database(
         self,
         catalog_id: str,
         database_name: str,
     ) -> CatalogDatabase | None: ...
+
+    async def list_databases(self, catalog_id: str) -> tuple[CatalogDatabase, ...]: ...
 
     async def find_table(
         self,
@@ -46,6 +41,12 @@ class CatalogReadPort(Protocol):
         table_name: str,
     ) -> CatalogTable | None: ...
 
+    async def list_tables(
+        self,
+        catalog_id: str,
+        database_name: str,
+    ) -> tuple[CatalogTable, ...]: ...
+
     async def find_partition(
         self,
         catalog_id: str,
@@ -53,6 +54,13 @@ class CatalogReadPort(Protocol):
         table_name: str,
         values: tuple[str, ...],
     ) -> CatalogPartition | None: ...
+
+    async def list_partitions(
+        self,
+        catalog_id: str,
+        database_name: str,
+        table_name: str,
+    ) -> tuple[CatalogPartition, ...]: ...
 
     async def find_optimizer(
         self,
@@ -82,44 +90,6 @@ class CatalogReadPort(Protocol):
         now: float,
         maximum: int,
     ) -> tuple[TableOptimizer, ...]: ...
-
-
-class CatalogQueryPort(Protocol):
-    """Bounded Catalog pages and explicit management-only totals.
-
-    A page is separate from lookup/command capability so application code cannot accidentally
-    recover a full Catalog collection and paginate it in memory.
-    """
-
-    async def page_databases(
-        self,
-        query: DatabasePageQuery,
-    ) -> CatalogPage[CatalogDatabase]: ...
-
-    async def page_tables(self, query: TablePageQuery) -> CatalogPage[CatalogTable]: ...
-
-    async def page_partitions(
-        self,
-        query: PartitionPageQuery,
-    ) -> PartitionCatalogPage[CatalogPartition]: ...
-
-    async def first_partition(
-        self,
-        catalog_id: str,
-        database_name: str,
-        table_name: str,
-    ) -> CatalogPartition | None: ...
-
-    async def count_databases(self, catalog_id: str) -> int: ...
-
-    async def count_tables(self, catalog_id: str, database_name: str) -> int: ...
-
-    async def count_partitions(
-        self,
-        catalog_id: str,
-        database_name: str,
-        table_name: str,
-    ) -> int: ...
 
 
 class CatalogTransaction(CatalogReadPort, Protocol):
@@ -183,5 +153,5 @@ class CatalogWritePort(Protocol):
     ) -> AbstractAsyncContextManager[CatalogTransaction]: ...
 
 
-class CatalogStore(CatalogReadPort, CatalogQueryPort, CatalogWritePort, Protocol):
+class CatalogStore(CatalogReadPort, CatalogWritePort, Protocol):
     """Composition-root convenience type for an adapter that implements both ports."""

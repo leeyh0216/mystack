@@ -125,7 +125,6 @@ class GlueCatalogHarness:
         application = CatalogApplication(
             catalog,
             catalog,
-            catalog,
             IncrementingClock(),
             CatalogPolicy(
                 default_catalog_id="000000000000",

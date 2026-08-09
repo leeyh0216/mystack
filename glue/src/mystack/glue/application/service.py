@@ -12,11 +12,7 @@ from mystack.glue.application.batch import (
     PartitionBatchGetResult,
     PartitionBatchHandler,
 )
-from mystack.glue.application.catalog_ports import (
-    CatalogQueryPort,
-    CatalogReadPort,
-    CatalogWritePort,
-)
+from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.initialization import CatalogInitializer
@@ -65,7 +61,6 @@ class CatalogApplication:
     def __init__(
         self,
         read_catalog: CatalogReadPort,
-        query_catalog: CatalogQueryPort,
         write_catalog: CatalogWritePort,
         clock: Clock,
         policy: CatalogPolicy,
@@ -76,11 +71,10 @@ class CatalogApplication:
     ) -> None:
         paginator = Paginator(policy.api_page_size)
         self._write_catalog = write_catalog
-        self._query_catalog = query_catalog
         self._database_commands = DatabaseCommands(write_catalog, clock)
-        self._database_queries = DatabaseQueries(read_catalog, query_catalog, paginator)
+        self._database_queries = DatabaseQueries(read_catalog, paginator)
         self._table_commands = TableCommands(write_catalog, clock, IcebergCommitObserver())
-        self._table_queries = TableQueries(read_catalog, query_catalog, paginator)
+        self._table_queries = TableQueries(read_catalog, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
         self._open_table_format = OpenTableFormatCommands(
             databases=self._database_queries,
@@ -94,7 +88,6 @@ class CatalogApplication:
         self._partition_commands = PartitionCommands(write_catalog, clock)
         self._partition_queries = PartitionQueries(
             read_catalog,
-            query_catalog,
             paginator,
             PartitionExpressionCompiler(policy.partition_expressions),
         )
@@ -145,15 +138,6 @@ class CatalogApplication:
             next_token=next_token,
             max_results=max_results,
         )
-
-    async def count_databases(self, catalog_id: str) -> int:
-        return await self._query_catalog.count_databases(catalog_id)
-
-    async def count_tables(self, catalog_id: str, database: str) -> int:
-        return await self._query_catalog.count_tables(catalog_id, database)
-
-    async def count_partitions(self, catalog_id: str, database: str, table: str) -> int:
-        return await self._query_catalog.count_partitions(catalog_id, database, table)
 
     async def update_database(
         self,

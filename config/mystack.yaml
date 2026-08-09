@@ -83,10 +83,8 @@ glue:
     host: 0.0.0.0
     port: 8080
   data_root: /var/lib/mystack/glue
-  state_file: catalog-state.json
-  # This verified runtime policy is a DB-API capability probe, not catalog storage.
-  # The current catalog remains state_file/JsonCatalogRepository; database_file only selects the
-  # writable directory for temporary probe files until a separate persistence migration lands.
+  # The normalized SQLite database is the only durable Glue Data Catalog store. Its parent
+  # directory must be mounted writable; WAL mode also creates sibling -wal and -shm files.
   # The preflight prevents a silent use of the AWS Glue base image's older system SQLite.
   # WAL safety and sibling files: https://www.sqlite.org/wal.html
   sqlite:
@@ -105,10 +103,6 @@ glue:
       auto_checkpoint_pages: 1000
   # Glue 4.0+ Iceberg clients use optimistic locking with Glue Table VersionId.
   # Source: https://iceberg.apache.org/docs/1.7.1/aws/#optimistic-locking
-  catalog_lock:
-    file: catalog-state.lock
-    acquire_timeout_seconds: 30
-    poll_interval_seconds: 0.05
   catalog_id: "000000000000"
   api_page_size: 100
   create_default_database: true

@@ -65,7 +65,7 @@ def _settings(
     )
 
 
-def test_default_runtime_policy_is_file_driven_and_prepares_sqlite_migration() -> None:
+def test_default_runtime_policy_is_file_driven_for_the_sqlite_catalog() -> None:
     settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
     pins = _pinned_runtime()
     sqlite_pins = pins["sqlite"]
@@ -114,6 +114,11 @@ def test_health_exposes_the_runtime_verified_before_catalog_initialization(tmp_p
     assert runtime["journal_mode"] == "rollback"
     assert runtime["manifest_verified"] is False
     assert runtime["foreign_keys_enabled"] is True
+    database_file = tmp_path / "catalog.sqlite3"
+    assert database_file.is_file()
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute("SELECT schema_version FROM catalog_metadata").fetchone() == (1,)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 @dataclass
