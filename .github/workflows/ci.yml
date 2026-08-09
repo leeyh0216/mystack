@@ -233,7 +233,7 @@ jobs:
       - name: Verify reusable UI build provenance
         if: steps.reusable_ui.outcome == 'success'
         run: >-
-          uv run python scripts/reusable_build_artifact.py verify
+          python3 scripts/reusable_build_artifact.py verify
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "$GITHUB_SHA" --platform "$RUNNER_OS-$RUNNER_ARCH"
           --input package-lock.json --input package.json --input .node-version
