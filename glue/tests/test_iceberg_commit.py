@@ -49,6 +49,7 @@ def _settings(
     database_file: Path,
     *,
     busy_timeout_milliseconds: int = 250,
+    retry_limit: int = 3,
 ) -> SQLiteRuntimeSettings:
     return SQLiteRuntimeSettings(
         database_file=database_file,
@@ -64,7 +65,7 @@ def _settings(
         # The interprocess CAS contract expects the losing writer to retry a transient SQLite
         # lock and observe the durable VersionId mismatch, not surface a scheduler-dependent
         # busy error before the winner commits.
-        retry_limit=3,
+        retry_limit=retry_limit,
         checkpoint=SQLiteCheckpointSettings(mode="passive", auto_checkpoint_pages=1000),
     )
 
@@ -73,9 +74,14 @@ def _application(
     database_file: Path,
     *,
     busy_timeout_milliseconds: int = 250,
+    retry_limit: int = 3,
 ) -> CatalogApplication:
     catalog = SqliteCatalogRepository(
-        _settings(database_file, busy_timeout_milliseconds=busy_timeout_milliseconds)
+        _settings(
+            database_file,
+            busy_timeout_milliseconds=busy_timeout_milliseconds,
+            retry_limit=retry_limit,
+        )
     )
     return CatalogApplication(
         catalog,
@@ -250,7 +256,11 @@ async def test_archive_policy_and_stale_failure_preserve_committed_metadata(
 async def test_sqlite_writer_busy_wait_is_bounded(tmp_path: Path) -> None:
     database_file = tmp_path / "catalog.sqlite3"
     await _seed(database_file)
-    blocked_application = _application(database_file, busy_timeout_milliseconds=20)
+    blocked_application = _application(
+        database_file,
+        busy_timeout_milliseconds=20,
+        retry_limit=0,
+    )
     lock = sqlite3.connect(database_file, timeout=0.01, isolation_level=None)
     lock.execute("BEGIN IMMEDIATE")
     try:
