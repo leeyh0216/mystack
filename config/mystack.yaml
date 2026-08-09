@@ -65,6 +65,9 @@ emr:
     initial_backoff_seconds: 0.5
     max_backoff_seconds: 10
     attempt_timeout_seconds: 60
+  spark_ui:
+    port_min: 4040
+    port_max: 4059
   # Optional separate file; relative paths resolve beside this main configuration file.
   # Shape source: https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html
   startup_clusters_file: null
