@@ -308,6 +308,7 @@ jobs:
           fetch-depth: 0
       - name: Recheck stable uniqueness and create or resume the annotated tag
         env:
+          GH_TOKEN: ${{ github.token }}
           SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |

@@ -21,7 +21,7 @@ RUN npm run build --workspace @mystack/glue-ui
 # https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables
 FROM ${GLUE_BASE} AS final
 
-ARG MYSTACK_VERSION=0.1.2
+ARG MYSTACK_VERSION=0.1.3
 ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
 ARG GLUE_VERSION=5.0
 ARG SPARK_VERSION=3.5.4

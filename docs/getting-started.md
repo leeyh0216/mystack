@@ -30,7 +30,7 @@ and images are available anonymously. Pick a
 tag that exists for all three `mystack-*` packages; `latest` is intentionally unavailable.
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.2  # replace with a published tag
+export MYSTACK_IMAGE_TAG=v0.1.3  # replace with a published tag
 mkdir mystack-runtime && cd mystack-runtime
 curl --fail --location --output compose.ghcr.yaml \
   "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"
