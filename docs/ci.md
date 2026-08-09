@@ -10,6 +10,7 @@
 
 - [Workflows](#workflows)
 - [Test reports contributors can use](#test-reports-contributors-can-use)
+- [Frontend test isolation](#frontend-test-isolation)
 - [Branch protection expectations](#branch-protection-expectations)
 - [Dependency updates](#dependency-updates)
 - [GHCR publication](#ghcr-publication)
@@ -71,6 +72,16 @@ and hook deadlines.
 
 CI runs for pull requests and for pushes to `main` or `develop`; this avoids running two frontend
 producer lanes for the same feature-branch revision.
+
+<!-- section: frontend-test-isolation -->
+## Frontend test isolation
+
+The root Vitest configuration loads `ui/tests/setup.ts` before every test file. The shared setup
+calls React Testing Library `cleanup` from a Vitest `afterEach` hook, so rendered React trees
+unmount before jsdom is torn down. Keep this in the test harness; do not add test-only `window`
+guards to EMR or Glue production components. This follows the official
+[Vitest setup-file guidance](https://vitest.dev/config/setupfiles) and [React Testing Library
+cleanup guidance](https://testing-library.com/docs/react-testing-library/setup/).
 
 <!-- section: branch-protection -->
 ## Branch protection expectations
