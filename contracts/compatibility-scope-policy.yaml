@@ -80,7 +80,7 @@ acceptance:
       claim_ko: 주석으로 선언한 모든 Glue Catalog operation이 service boundary를 통과하고 공개 Proxy 경로를 검증하며, 문서화한 로컬 오류 catalog의 전체성과 순서를 유지합니다.
       case_ids: [boto3-botocore-1.43.66-contract, boto3-botocore-1.43.66-public-proxy]
       scenario_ids: [glue-data-catalog, modeled-service-errors, glue-operations-through-public-proxy]
-      evidence_paths: [contracts/api-coverage.generated.json, contracts/glue-error-conditions.yaml, docs/compatibility/api-coverage.generated.md, docs/compatibility/glue-errors.generated.md]
+      evidence_paths: [contracts/compatibility-scope-policy.yaml, contracts/glue-error-conditions.yaml, docs/compatibility/api-coverage.md, docs/compatibility/api-coverage.md]
       official_sources: [botocore-models]
     aws-sdk-pandas:
       title_en: AWS SDK for pandas Glue/S3 round trip

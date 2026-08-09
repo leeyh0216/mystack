@@ -427,7 +427,7 @@ def test_ci_and_release_jobs_select_test_declared_generated_evidence() -> None:
     )
     for path in workflow_paths:
         workflow = path.read_text(encoding="utf-8")
-        assert "contracts/compatibility-evidence.generated.json" in workflow
+        assert "ci-artifacts/compatibility/compatibility-evidence.json" in workflow
         assert "compatibility-evidence-check" in workflow
 
 

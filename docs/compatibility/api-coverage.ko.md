@@ -60,7 +60,7 @@
 [Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)와
 [Glue exception](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html)을 기준으로 합니다.
 
-전체 생성형 표는 [api-coverage.ko.generated.md](api-coverage.ko.generated.md)입니다. 고정한
+전체 생성형 표는 [api-coverage.ko.generated.md](README.md)입니다. 고정한
 botocore 1.43.66 model의 공식 operation을 모두 분류합니다. EMR은 `COMPATIBLE` 13개,
 `PROTOCOL_ONLY` 52개이며, Glue는 `COMPATIBLE` 28개, `PROTOCOL_ONLY` 243개,
 `NOT_PLANNED` 28개입니다. `PROTOCOL_ONLY`는 호출 가능한 지원이 아니라 upstream 요청/응답

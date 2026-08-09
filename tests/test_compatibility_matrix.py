@@ -23,14 +23,14 @@ from scripts.compatibility.run_compatibility_case import (
 )
 
 ROOT = Path(__file__).parents[1]
-EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
+EVIDENCE = ROOT / "ci-artifacts/compatibility/compatibility-evidence.json"
 
 
 def test_committed_generated_matrix_is_current_and_lossless() -> None:
     compiled = compile_manifest(DEFAULT_MANIFEST)
     assert compiled == json.loads(DEFAULT_OUTPUT.read_text(encoding="utf-8"))
     assert compiled["generated_from"] == {
-        "annotated_evidence": "contracts/compatibility-evidence.generated.json",
+        "annotated_evidence": "ci-artifacts/compatibility/compatibility-evidence.json",
         "scope_policy": "contracts/compatibility-scope-policy.yaml",
     }
     assert {case["id"] for case in compiled["cases"]} == {
@@ -62,7 +62,7 @@ def test_release_preflight_preserves_generated_api_coverage_evidence() -> None:
     workflow = (ROOT / ".github/workflows/container-publish.yml").read_text(encoding="utf-8")
 
     assert "required-validation-evidence" in workflow
-    assert "contracts/api-coverage.generated.json" in workflow
+    assert "ci-artifacts/compatibility/api-coverage.json" in workflow
     assert "contracts/api-coverage.json" not in workflow
 
 

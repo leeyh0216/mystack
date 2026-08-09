@@ -177,9 +177,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = workflow_dispatch ]; then
-            matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[]])}' contracts/compatibility-evidence.generated.json)
+            matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[]])}' ci-artifacts/compatibility/compatibility-evidence.json)
           else
-            matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-evidence.generated.json)
+            matrix=$(jq -c '.github_matrices.required_contract' ci-artifacts/compatibility/compatibility-evidence.json)
           fi
           test "$(jq '.include | length' <<<"$matrix")" -gt 0
           echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
@@ -300,9 +300,9 @@ jobs:
       - name: Verify complete API classification and generated bilingual matrix
         run: >-
           uv run python scripts/compatibility/api_coverage.py
-          --check contracts/api-coverage.generated.json
-          --english docs/compatibility/api-coverage.generated.md
-          --korean docs/compatibility/api-coverage.ko.generated.md
+          --check ci-artifacts/compatibility/api-coverage.json
+          --english ci-artifacts/compatibility/api-coverage.md
+          --korean ci-artifacts/compatibility/api-coverage.ko.md
           --report api-coverage-drift-report.json
       - name: Verify contributor pre-commit gates
         env:

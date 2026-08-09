@@ -32,12 +32,12 @@ for that library's entire API.
 <!-- section: verified -->
 ## Verified clients
 
-The [test-declared exact-version evidence](annotated-evidence.generated.md) is the authoritative
+The [test-declared exact-version evidence](README.md) is the authoritative
 list used by GitHub Actions. Maintainers add or reuse a typed profile and decorate the smallest
 real `contract` or `e2e` test with its tested scenarios and operations. The collection compiler
 rejects invalid markers, lock/runtime mismatches, unknown modeled operations, missing supported-API
 evidence, and case-selection drift before a test body starts. The retained
-[generated annotation evidence](annotated-evidence.generated.md) and
+[generated annotation evidence](README.md) and
 `contracts/compatibility-scope-policy.yaml` define
 parity baselines during the migration.
 

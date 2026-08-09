@@ -19,6 +19,8 @@ from typing import Any
 
 import yaml
 
+from scripts.compatibility.artifacts import EVIDENCE_JSON
+
 ROOT = Path(__file__).parents[2]
 LOGGER = logging.getLogger("mystack.compatibility.runner")
 APPROVED_RUNNERS = {
@@ -192,9 +194,7 @@ class IsolatedCaseRunner:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case_id", nargs="?")
-    parser.add_argument(
-        "--matrix", type=Path, default=ROOT / "contracts/compatibility-evidence.generated.json"
-    )
+    parser.add_argument("--matrix", type=Path, default=EVIDENCE_JSON)
     parser.add_argument(
         "--config",
         type=Path,

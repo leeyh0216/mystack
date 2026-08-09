@@ -65,7 +65,7 @@ location, location 포함 관계는 table 조회 뒤 mutation 전에 결합합�
 `EntityNotFoundException`, 중복 create는
 `AlreadyExistsException`, type/config/location이 잘못되면 `InvalidInputException`입니다.
 `BatchGetTableOptimizer`는 최대 20개 entry를 받고 항목별 `ErrorDetail` 실패를 반환합니다. 실행
-가능한 전체 순서는 생성된 [오류 matrix](../../compatibility/glue-errors.ko.generated.md)에 있습니다.
+가능한 전체 순서는 생성된 [오류 matrix](../../compatibility/api-coverage.md)에 있습니다.
 인증·인가·IAM·Lake Formation·cross-account·cross-Region 분기는 의도적으로 없습니다.
 
 <!-- section: execution -->

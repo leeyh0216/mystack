@@ -16,9 +16,9 @@
 <!-- section: overview -->
 ## Overview
 
-Use the generated [client compatibility matrix](compatibility/client-matrix.generated.md) for a
+Use the generated [client compatibility matrix](compatibility/client-matrix.md) for a
 compact client-facing feature/version/verification answer. The exhaustive maintainer inventory is
-the separate [API coverage reference](compatibility/api-coverage.generated.md).
+the separate [API coverage reference](compatibility/api-coverage.md).
 
 This document distinguishes implemented behavior from long-term targets. “Target” never means that the current build is already compatible.
 
@@ -65,7 +65,7 @@ Spark Hive partition add/drop/rename/location and repair mappings are documented
 Supported table-level column/property/SerDe/location changes and client-owned unsupported variants
 are documented in the [Hive table ALTER protocol](protocols/glue/glue-hive-table-alter.md).
 All implemented operations participate in the generated [Glue error
-matrix](compatibility/glue-errors.generated.md); precedence, safe logging, and file-driven failure
+matrix](compatibility/api-coverage.md); precedence, safe logging, and file-driven failure
 injection are defined by the [error decision protocol](protocols/glue/glue-error-decisions.md).
 Database/table/version validation, conflict, version, archive, rename, cascade, and rollback behavior
 is fixed by the [resource error contract](protocols/glue/glue-database-table-errors.md).
@@ -75,7 +75,7 @@ fixed by the [partition/batch error contract](protocols/glue/glue-partition-batc
 Every currently implemented control-plane operation (EMR 13, Glue 28) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations
 are supported; the exact upstream classification is generated from the pinned botocore model.
-The generated [release acceptance](compatibility/release-acceptance.generated.md) is the
+The generated [release acceptance](compatibility/client-matrix.md) is the
 release-blocking view that joins these API/error contracts with the exact Hive, Iceberg, AWS SDK
 for pandas, and EMR PySpark/S3 scenarios from annotated compatibility tests.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are

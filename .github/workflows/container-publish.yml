@@ -171,7 +171,7 @@ jobs:
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_contract.include[].case_id' \
-            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
+            ci-artifacts/compatibility/compatibility-evidence.json | while IFS= read -r case_id; do
               uv run python scripts/compatibility/run_compatibility_case.py "$case_id"
             done
       - name: Build and start Mystack for required Docker cases
@@ -180,7 +180,7 @@ jobs:
         run: |
           set -euo pipefail
           jq -r '.github_matrices.required_e2e.include[].case_id' \
-            contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
+            ci-artifacts/compatibility/compatibility-evidence.json | while IFS= read -r case_id; do
               uv run python scripts/compatibility/run_compatibility_case.py "$case_id"
             done
       - name: Collect component logs
@@ -192,18 +192,18 @@ jobs:
         with:
           name: required-validation-evidence
           path: |
-            contracts/compatibility-matrix.generated.json
-            contracts/compatibility-evidence.generated.json
-            contracts/api-coverage.generated.json
+            ci-artifacts/compatibility/compatibility-matrix.json
+            ci-artifacts/compatibility/compatibility-evidence.json
+            ci-artifacts/compatibility/api-coverage.json
             contracts/glue-error-conditions.yaml
-            docs/compatibility/release-acceptance.generated.md
-            docs/compatibility/release-acceptance.ko.generated.md
-            docs/compatibility/api-coverage.generated.md
-            docs/compatibility/api-coverage.ko.generated.md
-            docs/compatibility/annotated-evidence.generated.md
-            docs/compatibility/annotated-evidence.ko.generated.md
-            docs/compatibility/glue-errors.generated.md
-            docs/compatibility/glue-errors.ko.generated.md
+            ci-artifacts/compatibility/release-acceptance.md
+            ci-artifacts/compatibility/release-acceptance.ko.md
+            ci-artifacts/compatibility/api-coverage.md
+            ci-artifacts/compatibility/api-coverage.ko.md
+            ci-artifacts/compatibility/annotated-evidence.md
+            ci-artifacts/compatibility/annotated-evidence.ko.md
+            ci-artifacts/compatibility/glue-errors.md
+            ci-artifacts/compatibility/glue-errors.ko.md
           if-no-files-found: ignore
           retention-days: 14
       - name: Preserve failure diagnostics

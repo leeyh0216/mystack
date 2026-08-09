@@ -30,7 +30,7 @@
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 Actions reads only the `include` entries compiled from pytest annotations into
-`contracts/compatibility-evidence.generated.json`; it never constructs an implicit client/runtime
+`contracts/compatibility-scope-policy.yaml`; it never constructs an implicit client/runtime
 cross-product. Typed pytest annotations and their generated matrix remain required evidence
 during the migration. The approach follows GitHub's [shared matrix
 pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
@@ -130,7 +130,7 @@ report while preserving the component and case context needed to repair a failur
 retain boundary and side-effect events but never secrets.
 
 The release workflow separately retains its reviewed acceptance evidence for 14 days: generated
-[test-declared compatibility evidence](compatibility/annotated-evidence.generated.md), [release
-acceptance](compatibility/release-acceptance.generated.md), retained parity matrix, API
+[test-declared compatibility evidence](compatibility/client-matrix.md), [release
+acceptance](compatibility/client-matrix.md), retained parity matrix, API
 classification, and deterministic Glue error catalog. Local image preflight scan evidence is
 release authorization evidence, not a user-facing test-result artifact.

@@ -76,15 +76,15 @@ model-check: ## Compare installed botocore with the committed protocol manifest.
 
 coverage-generate: compatibility-evidence-generate ## Render API classification from generated evidence.
 	@uv run python scripts/compatibility/api_coverage.py \
-	  --write contracts/api-coverage.generated.json \
-	  --english docs/compatibility/api-coverage.generated.md \
-	  --korean docs/compatibility/api-coverage.ko.generated.md
+	  --write ci-artifacts/compatibility/api-coverage.json \
+	  --english ci-artifacts/compatibility/api-coverage.md \
+	  --korean ci-artifacts/compatibility/api-coverage.ko.md
 
 coverage-check: compatibility-evidence-check ## Verify generated API classification and bilingual matrices.
 	@uv run python scripts/compatibility/api_coverage.py \
-	  --check contracts/api-coverage.generated.json \
-	  --english docs/compatibility/api-coverage.generated.md \
-	  --korean docs/compatibility/api-coverage.ko.generated.md
+	  --check ci-artifacts/compatibility/api-coverage.json \
+	  --english ci-artifacts/compatibility/api-coverage.md \
+	  --korean ci-artifacts/compatibility/api-coverage.ko.md
 
 compatibility-generate: compatibility-evidence-generate coverage-generate ## Compile annotated cases into CI and bilingual evidence.
 	@uv run python scripts/compatibility/compatibility_matrix.py --write

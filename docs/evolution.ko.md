@@ -47,7 +47,7 @@ Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container
 4. `make compatibility-evidence-check`와 `make compatibility-case CASE=<id>`를 실행합니다.
    GitHub Actions는 workflow source를 고치지 않아도 생성한 `include` entry에서 독립 job을 만듭니다.
 5. `make compatibility-check`는 typed pytest annotation과 생성된
-   `contracts/api-coverage.generated.json`을 검증합니다.
+   `contracts/compatibility-scope-policy.yaml`을 검증합니다.
    독립된 Glue 오류 조건 정책을 바꾸지 않습니다.
 
 Annotation compiler는 잘못된 marker 구조, 없거나 맞지 않는 실행 marker, 중복 profile, lock/runtime

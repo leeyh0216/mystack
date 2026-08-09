@@ -17,8 +17,8 @@
 ## 개요
 
 사용자용 기능·버전·검증 수준의 간단한 답변은 생성된
-[client compatibility matrix](compatibility/client-matrix.generated.md)를 사용합니다. 전체 유지보수자
-인벤토리는 별도의 [API coverage reference](compatibility/api-coverage.generated.md)에 있습니다.
+[client compatibility matrix](compatibility/client-matrix.md)를 사용합니다. 전체 유지보수자
+인벤토리는 별도의 [API coverage reference](compatibility/api-coverage.md)에 있습니다.
 
 이 문서는 현재 구현과 장기 목표를 구분합니다. “목표”는 현재 빌드가 이미 호환된다는 뜻이 아닙니다.
 
@@ -66,7 +66,7 @@ protocol](protocols/glue/glue-hive-partition-ddl.ko.md)에 정리했습니다.
 지원하는 table-level column/property/SerDe/location 변경과 client가 거부하는 variant는 [Hive
 table ALTER protocol](protocols/glue/glue-hive-table-alter.ko.md)에 정리했습니다.
 구현한 모든 operation은 생성한 [Glue 오류
-matrix](compatibility/glue-errors.ko.generated.md)에 포함됩니다. 우선순위, 안전한 logging, file 기반
+matrix](compatibility/api-coverage.md)에 포함됩니다. 우선순위, 안전한 logging, file 기반
 failure injection은 [오류 결정 protocol](protocols/glue/glue-error-decisions.ko.md)에 정의했습니다.
 Database/table/version의 validation, conflict, version, archive, rename, cascade, rollback은
 [resource 오류 계약](protocols/glue/glue-database-table-errors.ko.md)에 고정했습니다.
@@ -76,7 +76,7 @@ Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`,
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 28개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
 정확한 upstream 분류는 고정된 botocore model에서 생성합니다.
-생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md)는 이 API/오류 계약과
+생성된 [release 수용 범위](compatibility/client-matrix.md)는 이 API/오류 계약과
 주석 compatibility test의 정확한 Hive, Iceberg, AWS SDK for pandas, EMR PySpark/S3 scenario를
 결합한 release-blocking 기준입니다.
 Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process

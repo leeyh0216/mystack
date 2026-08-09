@@ -86,7 +86,7 @@ repos:
         always_run: true
       - id: api-coverage
         name: Complete API classification and generated matrix drift
-        entry: uv run python scripts/compatibility/api_coverage.py --check contracts/api-coverage.generated.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md
+        entry: uv run python scripts/compatibility/api_coverage.py --check ci-artifacts/compatibility/api-coverage.json --english ci-artifacts/compatibility/api-coverage.md --korean ci-artifacts/compatibility/api-coverage.ko.md
         language: system
         pass_filenames: false
         always_run: true

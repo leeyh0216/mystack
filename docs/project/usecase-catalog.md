@@ -372,7 +372,7 @@
   or generated-file drift.
 - Observability: structured collection/compile/parity events with case count and source digest.
 - Evidence: `scripts/compatibility/compatibility_evidence.py`, `tests/support/compatibility_plugin.py`,
-  `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
+  `contracts/compatibility-scope-policy.yaml`, `tests/test_compatibility_evidence.py`.
 - Confidence: High
 
 <!-- section: candidate-documentation -->

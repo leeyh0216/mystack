@@ -25,6 +25,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 try:
+    from scripts.compatibility.artifacts import EVIDENCE_JSON
     from scripts.compatibility.operation_inventory import extract_implemented_operation_inventory
     from scripts.quality.model_manifest import SERVICES, create_manifest
 except ModuleNotFoundError as error:  # pragma: no cover - import failures are configuration errors.
@@ -35,7 +36,7 @@ ALLOWED_STATUSES = frozenset({"COMPATIBLE", "PARTIAL", "PROTOCOL_ONLY", "NOT_PLA
 # botocore-only upstream-drift workflow can still compare classifications against registrations.
 IMPLEMENTED = extract_implemented_operation_inventory()
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
+DEFAULT_EVIDENCE = EVIDENCE_JSON
 DEFAULT_POLICY = ROOT / "contracts/compatibility-scope-policy.yaml"
 
 
@@ -111,7 +112,7 @@ def compare(baseline: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any
         "services": {},
         "fix_hints": [
             "Unclassified additions: review the official API, then add an explicit entry to "
-            "contracts/api-coverage.generated.json.",
+            "ci-artifacts/compatibility/api-coverage.json.",
             "Changed operations: update the owning inbound adapter, modeled-error contracts, "
             "and public Proxy E2E before refreshing its fingerprint.",
             "Removed operations: document the compatibility decision before deleting the "
