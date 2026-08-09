@@ -17,7 +17,7 @@ services:
       args:
         PYTHON_BASE: ${PYTHON_BASE:-public.ecr.aws/docker/library/python:3.11-slim-bookworm@sha256:d29f48a31a8b408ed19272ca1e7b10ebae13b240a27e862d3d4217c528e2e0c3}
         MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
-        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.5}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.4}
     ports:
       - "${MYSTACK_PORT:-4566}:8080"
     depends_on:
@@ -44,7 +44,7 @@ services:
         SPARK_ARCHIVE_BASE_URL: ${SPARK_ARCHIVE_BASE_URL:-https://archive.apache.org/dist/spark}
         AWS_CLI_VERSION: ${AWS_CLI_VERSION:-2.27.41}
         MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
-        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.5}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.4}
     volumes:
       - emr-data:/var/lib/mystack/emr
       - ivy-cache:/home/hadoop/.ivy2
@@ -67,7 +67,7 @@ services:
         SPARK_VERSION: ${GLUE_SPARK_VERSION:-3.5.4}
         ICEBERG_VERSION: ${ICEBERG_VERSION:-1.7.1}
         MYSTACK_CONFIG_SOURCE: ${MYSTACK_CONFIG_SOURCE:-config/mystack.yaml}
-        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.5}
+        MYSTACK_VERSION: ${MYSTACK_VERSION:-0.1.4}
     volumes:
       - glue-data:/var/lib/mystack/glue
     environment:

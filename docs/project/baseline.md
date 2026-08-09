@@ -67,12 +67,11 @@ contracts.
   cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
   closes artifacts, and releases driver locks.
 - Glue: 28 operations covering database, table/version, partition/batch, and table optimizers with
-  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. Serialized
-  candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
-  schema 1, and keep rename/cascade/version checks atomic. A bounded POSIX lock and latest-state
-  reload extend the same transaction across emulator processes; documented domain errors translate
-  at the inbound adapter. Its source-built SQLite DB-API runtime is capability-gated before catalog
-  initialization, but catalog persistence remains JSON-backed until the SQLite-port migration.
+  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. The
+  source-built SQLite DB-API runtime is capability-gated before catalog initialization. A normalized
+  SQLite catalog uses bounded writer retries, WAL, transactional schema initialization, and atomic
+  database/table rename, cascade, and VersionId checks; documented domain errors translate at the
+  inbound adapter.
 - Glue responsibilities: immutable lossless domain snapshots own name/revision/archive/partition
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
   policy; a separate Open Table Format planner/orchestrator owns Iceberg v2 input validation,
@@ -167,10 +166,8 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Migrate the JSON-backed Glue catalog to normalized SQLite ports, then move filtering/pagination
-   and the management explorer to bounded SQLite reads (#77, #74, #78; parent #73).
-2. Document the service runtime architecture and generate configuration/support references against
-   the stabilized SQLite configuration (#81, #79).
-3. Replace the retained compatibility YAML/API parity baselines with the final generated inventory
-   workflow (#87).
-4. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).
+1. Continue expanding implemented Glue and EMR operations only with their documented semantic,
+   pagination, conflict, and state-transition contracts.
+2. Keep the generated API inventory and client workflow labs synchronized with each supported client
+   and pinned dependency version.
+3. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).
