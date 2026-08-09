@@ -10,7 +10,7 @@
 
 - [Overview](#overview)
 - [Policy](#policy)
-- [Implemented operations](#implemented-operations)
+- [Current implemented operations](#current-implemented-operations)
 - [Deterministic local error contracts](#deterministic-local-error-contracts)
 <!-- toc:end -->
 
@@ -18,6 +18,8 @@
 ## Overview
 
 Compatibility is measured against the pinned botocore service models, not a handwritten operation list.
+The service-level API indexes are the [Amazon EMR API operations](https://docs.aws.amazon.com/emr/latest/APIReference/API_Operations.html)
+and [AWS Glue Web API operations](https://docs.aws.amazon.com/glue/latest/webapi/API_Operations.html).
 
 | Status | Meaning |
 | --- | --- |
@@ -38,10 +40,10 @@ Compatibility is measured against the pinned botocore service models, not a hand
 Initial vertical slices prioritize the APIs needed to execute workloads:
 
 - EMR: `RunJobFlow`, `DescribeCluster`, `ListClusters`, `AddJobFlowSteps`, `DescribeStep`, `ListSteps`, `CancelSteps`, `TerminateJobFlows`, bootstrap actions and tags.
-- Glue catalog: databases, tables, table versions, partitions, batch partition APIs and user-defined functions.
+- Glue catalog: databases, tables, table versions, partitions, batch partition APIs, and table optimizers.
 
 <!-- section: operations -->
-## Implemented operations
+## Current implemented operations
 
 The following operations currently have boto3 black-box contracts through a real TCP server.
 “Implemented” is not a claim that every optional semantic branch is complete.
@@ -49,7 +51,9 @@ The following operations currently have boto3 black-box contracts through a real
 | Service | Operations |
 | --- | --- |
 | EMR | `RunJobFlow`, `DescribeCluster`, `ListClusters`, `AddJobFlowSteps`, `DescribeStep`, `ListSteps`, `CancelSteps`, `TerminateJobFlows`, `ListBootstrapActions`, `AddTags`, `RemoveTags`, `SetTerminationProtection`, `SetVisibleToAllUsers` |
-| Glue | `CreateDatabase`, `GetDatabase`, `GetDatabases`, `UpdateDatabase`, `DeleteDatabase`, `CreateTable`, `GetTable`, `GetTables`, `UpdateTable`, `DeleteTable`, `GetTableVersion`, `GetTableVersions`, `CreatePartition`, `BatchCreatePartition`, `GetPartition`, `GetPartitions`, `BatchGetPartition`, `UpdatePartition`, `BatchUpdatePartition`, `DeletePartition`, `BatchDeletePartition`, `GetCatalogImportStatus` |
+| Glue database and table | `CreateDatabase`, `GetDatabase`, `GetDatabases`, `UpdateDatabase`, `DeleteDatabase`, `CreateTable`, `GetTable`, `GetTables`, `UpdateTable`, `DeleteTable`, `GetTableVersion`, `GetTableVersions`, `GetCatalogImportStatus` |
+| Glue partitions | `CreatePartition`, `BatchCreatePartition`, `GetPartition`, `GetPartitions`, `BatchGetPartition`, `UpdatePartition`, `BatchUpdatePartition`, `DeletePartition`, `BatchDeletePartition` |
+| Glue table optimizers | `CreateTableOptimizer`, `GetTableOptimizer`, `BatchGetTableOptimizer`, `UpdateTableOptimizer`, `DeleteTableOptimizer`, `ListTableOptimizerRuns` |
 
 Documented Glue conflicts are part of the contracts: duplicate single-partition creation
 returns HTTP 400 `AlreadyExistsException`, while batch operations return per-item
@@ -57,10 +61,14 @@ returns HTTP 400 `AlreadyExistsException`, while batch operations return per-ite
 and [Glue exceptions](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html).
 
 The complete machine-generated table is [api-coverage.generated.md](api-coverage.generated.md).
-It contains all 65 EMR and 299 Glue operations in botocore 1.43.66. The committed JSON baseline
-stores a status and operation-shape fingerprint for each entry. A new upstream operation is never
-assigned a default during `--check`; it is reported as unclassified and fails CI. Shape changes and
-removals are reported separately with adapter, test, and documentation fix hints.
+It classifies every official operation in the pinned botocore 1.43.66 model: EMR has 13
+`COMPATIBLE` and 52 `PROTOCOL_ONLY` operations; Glue has 28 `COMPATIBLE`, 243
+`PROTOCOL_ONLY`, and 28 `NOT_PLANNED` operations. `PROTOCOL_ONLY` is not callable support;
+it means only that the upstream request/response model is tracked. The Glue `NOT_PLANNED` entries
+are Jobs, JobRuns, and Crawlers. The committed JSON baseline stores a status and operation-shape
+fingerprint for each entry. A new upstream operation is never assigned a default during `--check`;
+it is reported as unclassified and fails CI. Shape changes and removals are reported separately
+with adapter, test, and documentation fix hints.
 
 <!-- section: local-errors -->
 ## Deterministic local error contracts
@@ -72,4 +80,4 @@ errors use parameterized fixtures; documented service/internal failures use conf
 injection. IAM, Lake Formation, authentication and authorization errors are not classified as
 compatibility targets.
 
-Official operation and shape inventory: [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data). Glue behavior: [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html).
+Official operation and shape inventory: [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data). Glue behavior: [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html). EMR behavior: [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html).

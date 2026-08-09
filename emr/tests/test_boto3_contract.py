@@ -160,6 +160,64 @@ def test_boto3_cancel_steps(emr_client, emr_server, test_timeout: float) -> None
 @pytest.mark.contract
 @compatibility_evidence(
     BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("emr-control-plane", "modeled-service-errors"),
+    operations={"emr": ("ListClusters", "ListSteps")},
+    capabilities=("list-filters", "pagination-marker-validation", "modeled-errors"),
+)
+def test_boto3_list_filters_and_rejects_an_invalid_marker(
+    emr_client,
+    test_timeout: float,
+) -> None:
+    """Exercise documented EMR list filters and opaque Marker error handling.
+
+    References:
+    - https://docs.aws.amazon.com/emr/latest/APIReference/API_ListClusters.html
+    - https://docs.aws.amazon.com/emr/latest/APIReference/API_ListSteps.html
+    """
+    created = emr_client.run_job_flow(
+        Name="filter-cluster",
+        Instances={
+            "MasterInstanceType": "m5.xlarge",
+            "SlaveInstanceType": "m5.xlarge",
+            "InstanceCount": 1,
+            "KeepJobFlowAliveWhenNoSteps": True,
+        },
+    )
+    cluster_id = created["JobFlowId"]
+    wait_for_cluster_state(emr_client, cluster_id, {"WAITING"}, test_timeout)
+
+    waiting = emr_client.list_clusters(ClusterStates=["WAITING"])["Clusters"]
+    assert [cluster["Id"] for cluster in waiting] == [cluster_id]
+    assert emr_client.list_clusters(ClusterStates=["TERMINATED"])["Clusters"] == []
+
+    step_id = emr_client.add_job_flow_steps(
+        JobFlowId=cluster_id,
+        Steps=[
+            {
+                "Name": "filtered-step",
+                "ActionOnFailure": "CONTINUE",
+                "HadoopJarStep": {"Jar": "command-runner.jar", "Args": ["echo", "ok"]},
+            }
+        ],
+    )["StepIds"][0]
+    wait_for_step_state(emr_client, cluster_id, step_id, {"COMPLETED"}, test_timeout)
+    assert [
+        step["Id"]
+        for step in emr_client.list_steps(
+            ClusterId=cluster_id, StepStates=["COMPLETED"], StepIds=[step_id]
+        )["Steps"]
+    ] == [step_id]
+    assert emr_client.list_steps(ClusterId=cluster_id, StepStates=["CANCELLED"])["Steps"] == []
+
+    with pytest.raises(ClientError) as captured:
+        emr_client.list_clusters(Marker="not-a-mystack-marker")
+    assert captured.value.response["Error"]["Code"] == "InvalidRequestException"
+    assert captured.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
+
+
+@pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
     scenario_ids=("modeled-service-errors",),
     operations={"emr": ("DescribeCluster",)},
     capabilities=("modeled-errors",),

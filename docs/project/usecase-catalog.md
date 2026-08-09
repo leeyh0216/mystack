@@ -120,14 +120,14 @@
 - Input: CatalogId, name, DatabaseInput, pagination token/page size; official shape and normalized non-empty
   name rules.
 - Output: modeled database documents/list/next token or empty response.
-- Stored/changed data: JSON-backed database record; optional default database on initialization.
+- Stored/changed data: normalized SQLite database record; optional default database on initialization.
 - Responsibility: `CatalogDatabase` owns normalized name and defensive document snapshots;
   `DatabaseCommands`, `DatabaseQueries`, and `CatalogInitializer` own separate flows.
-- Side effects: persist/fsync/atomic replacement followed by visible candidate publication.
+- Side effects: bounded SQLite transaction commit and durable catalog publication.
 - Preconditions/rules: case-normalized keys, uniqueness, child constraints, serialized candidate
   transaction, and bounded pagination.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput and invalid pagination token.
-- Observability: transaction/persist before, after, rollback and migration events; direct/public boto3
+- Observability: SQLite transaction/schema before, after, rollback and retry events; direct/public boto3
   tests plus injected failure/cancellation/restart tests.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
@@ -150,7 +150,7 @@
   identifier evolution, COW/MOR row-level commits, refs, snapshot/maintenance procedure commits,
   and rename/drop/purge survive this lossless pointer path and Iceberg-owned lifecycle sequence.
 - Preconditions/rules: database exists, unique normalized name, optimistic version/archive behavior;
-  JSON-backed processes sharing a state file also share one configured bounded POSIX lock.
+  one normalized SQLite catalog applies configured busy timeouts and bounded writer retries.
 - Failures: AlreadyExists, EntityNotFound, InvalidInput, and a domain version mismatch translated to
   modeled `ConcurrentModificationException`; invalid Open Table Format documents use the same
   deterministic `InvalidInputException` boundary.

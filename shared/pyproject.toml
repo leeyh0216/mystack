@@ -1,6 +1,6 @@
 [project]
 name = "mystack-aws-protocol"
-version = "0.1.3"
+version = "0.1.4"
 description = "AWS JSON protocol primitives for Mystack"
 requires-python = ">=3.11,<3.12"
 dependencies = [

@@ -14,7 +14,7 @@ This file is deterministically generated from annotated pytest evidence and `con
 
 Release acceptance is limited to the exact clients, runtimes, operations, and scenarios collected from annotated tests; it is not a claim of complete AWS Glue or EMR compatibility.
 
-Acceptance evidence: `9634e877ae9bb79ea2ce9670f2929cc190bdc8c7a48e69fa6cda10bc2fcf928d`
+Acceptance evidence: `bd12bb3486d925cc2e98517bdfc3f4626ac22e0ae290836405bf4510544d9218`
 
 ## Release-blocking guarantees
 

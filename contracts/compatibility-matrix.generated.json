@@ -137,7 +137,7 @@
         "title_ko": "Spark Hive catalog \ub3d9\uc791"
       }
     },
-    "evidence_sha256": "9634e877ae9bb79ea2ce9670f2929cc190bdc8c7a48e69fa6cda10bc2fcf928d",
+    "evidence_sha256": "bd12bb3486d925cc2e98517bdfc3f4626ac22e0ae290836405bf4510544d9218",
     "exclusions": {
       "additional-catalog-clients": {
         "official_sources": [
@@ -271,9 +271,11 @@
         "cluster-lifecycle",
         "hive-partition-ddl",
         "hive-table-alter",
+        "list-filters",
         "management-read-model",
         "modeled-errors",
         "pagination",
+        "pagination-marker-validation",
         "partition-repair",
         "segments",
         "step-cancellation",
@@ -292,9 +294,11 @@
             "cluster-lifecycle",
             "hive-partition-ddl",
             "hive-table-alter",
+            "list-filters",
             "management-read-model",
             "modeled-errors",
             "pagination",
+            "pagination-marker-validation",
             "partition-repair",
             "segments",
             "step-cancellation",
@@ -321,7 +325,7 @@
           }
         }
       },
-      "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
+      "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -398,6 +402,7 @@
         "test_nodes": [
           "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
           "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+          "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
@@ -411,6 +416,7 @@
       "test_nodes": [
         "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
         "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+        "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
         "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
         "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
         "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
@@ -738,7 +744,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
+          "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -869,5 +875,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "cd886fbd77f39f1523899895c47110e728171dfe344886383913e101ad63a9be"
+  "source_sha256": "8934b4ef2030a3abd6ac663f600e3038216e0ca7d1ecf6a1428b6fab4fe4ab19"
 }
