@@ -96,8 +96,7 @@ field, 안전하게 넓어진 type, identifier field, 전체 sort order를 검�
 1. Spark DDL이나 runtime 동작 변화: `glue/scripts/e2e/iceberg_evolution.py`
 2. Iceberg metadata spec 표현 변화: `test_support/iceberg_metadata.py`
 3. Glue wire member 변화: `glue/adapters/inbound/aws_table.py`
-4. Pointer/version 손실: `glue/application/table.py`,
-   `glue/adapters/outbound/sqlite_catalog/repository.py`
+4. Pointer/version 손실: `glue/application/table.py`, `glue/adapters/outbound/repository.py`
 5. 고정 runtime, scenario, 검증 선언: typed pytest compatibility annotation
 
 <!-- section: limits -->

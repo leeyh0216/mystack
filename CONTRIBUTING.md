@@ -101,7 +101,8 @@ Compatibility evidence has three owners:
 - The EMR/Glue inbound operation inventories own implementation status.
 - The annotated `contract` or `e2e` test owns the exact client, runtime,
   scenario, operation, capability, and support claim that it actually proves.
-- `compatibility/cases.yaml` and `contracts/api-coverage.json` remain retained
+- Typed pytest compatibility annotations, `contracts/compatibility-scope-policy.yaml`, and
+  `contracts/api-coverage.generated.json` are the generated compatibility sources
   parity baselines during this migration; the Glue error-condition catalog and
   its precedence policy remain independent required contracts.
 

@@ -37,7 +37,7 @@
 `e2e` test에 검증한 scenario와 operation을 선언합니다. Collection compiler는 잘못된 marker,
 lock/runtime 불일치, 알 수 없는 modeled operation, 빠진 지원 API 근거, case 선택 차이를 test body
 실행 전에 거부합니다. 이행 기간에는 [기존 정확한 version 근거](client-matrix.ko.generated.md)와
-`compatibility/cases.yaml`을 parity 기준으로 유지합니다.
+주석으로 수집한 증거와 `contracts/compatibility-scope-policy.yaml`을 기준으로 생성합니다.
 
 | Client | 고정 버전 | 상태 | 검증 경로 |
 | --- | --- | --- | --- |

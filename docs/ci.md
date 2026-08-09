@@ -30,7 +30,7 @@
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 Actions reads only the `include` entries compiled from pytest annotations into
 `contracts/compatibility-evidence.generated.json`; it never constructs an implicit client/runtime
-cross-product. `compatibility/cases.yaml` and its generated matrix remain required parity baselines
+cross-product. Typed pytest annotations and their generated matrix remain required evidence
 during the migration. The approach follows GitHub's [shared matrix
 pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
 Each compiled profile's `expected_duration_minutes` is the explicit outer job
