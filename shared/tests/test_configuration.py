@@ -10,7 +10,7 @@ from mystack.aws_protocol import ConfigurationError, load_configuration
 
 
 def test_nested_environment_override_is_typed(monkeypatch) -> None:
-    config_path = Path(__file__).parents[2] / "config" / "mystack.yaml"
+    config_path = Path(__file__).parents[2] / "config/runtime/mystack.yaml"
     monkeypatch.setenv("MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS", "42.5")
     monkeypatch.setenv("MYSTACK__MANAGEMENT__DIAGNOSTICS__ENABLED", "false")
 
