@@ -208,6 +208,7 @@ tests:
   unit_timeout_seconds: 60
   contract_timeout_seconds: 120
   package_smoke_timeout_seconds: 120
+  compatibility_collection_timeout_seconds: 30
   e2e_timeout_seconds: 1200
   compose_wait_timeout_seconds: 300
   e2e:

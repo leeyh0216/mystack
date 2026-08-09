@@ -28,10 +28,14 @@
 | `prepare-version-pr.yml` | manual | Version file 변경 branch와 `develop` 대상 PR 생성, package/tag/release 변경 없음 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
-Actions는 `contracts/compatibility-matrix.generated.json`에 생성된 `include` entry만 읽으며
-client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이 구성은 GitHub의 [공유 matrix
+Actions는 pytest annotation에서 생성한 `contracts/compatibility-evidence.generated.json`의 `include`
+entry만 읽으며 client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이행 기간에는
+`compatibility/cases.yaml`과 생성 matrix를 필수 parity 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
 방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
 따릅니다.
+생성한 profile의 `expected_duration_minutes`는 명시적인 바깥 job 시간 상한입니다. Local에서
+collection만 수행하는 generator에는 별도의 `tests.compatibility_collection_timeout_seconds` 제한이
+있고 test body를 실행하지 않습니다.
 PR과 push는 `required`, manual 실행은 `preview`, 정기·manual E2E는 `nightly`를 추가합니다. 선택
 lane을 비워도 항상 비어 있지 않은 required lane과 합치므로 유효합니다.
 Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의
@@ -108,6 +112,7 @@ Compose/service/Spark log, optimizer-run file, model/API drift JSON은 실패한
 component와 case 맥락을 남길 수 있습니다. 진단 log는 경계와 side effect event를 담되 secret을
 포함하면 안 됩니다.
 
-Release workflow는 검토한 수용 근거(생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
-compiled matrix, API 분류, 결정적 Glue 오류 catalog)를 별도로 14일 보존합니다. Local image preflight
-scan 근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.
+Release workflow는 검토한 수용 근거를 별도로 14일 보존합니다. 생성한 [테스트 선언 호환성
+근거](compatibility/annotated-evidence.ko.generated.md), [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
+유지하는 parity matrix, API 분류, 결정적 Glue 오류 catalog가 대상입니다. Local image preflight scan
+근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.

@@ -1,7 +1,8 @@
 """Compile typed pytest compatibility annotations into deterministic CI evidence.
 
 The compiler invokes pytest in ``--collect-only`` mode, so generation resolves real node IDs and
-markers without executing test bodies, fixtures, Docker Compose, or external clients.
+markers without executing test bodies, fixtures, Docker Compose, or external clients.  During the
+migration, the retained ``compatibility/cases.yaml`` compiler remains the parity authority.
 
 References:
 - https://docs.pytest.org/en/stable/how-to/usage.html
@@ -43,6 +44,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "contracts/compatibility-evidence.generated.json"
 DEFAULT_ENGLISH = ROOT / "docs/compatibility/annotated-evidence.generated.md"
 DEFAULT_KOREAN = ROOT / "docs/compatibility/annotated-evidence.ko.generated.md"
+DEFAULT_LEGACY_MATRIX = ROOT / "contracts/compatibility-matrix.generated.json"
+DEFAULT_API_COVERAGE = ROOT / "contracts/api-coverage.json"
 DEFAULT_SERVICE_MODEL = ROOT / "contracts/service-model-manifest.json"
 DEFAULT_CONFIG = ROOT / "config/mystack.yaml"
 DEFAULT_LOCK = ROOT / "uv.lock"
@@ -254,10 +257,12 @@ class EvidenceCompiler:
         config_path: Path = DEFAULT_CONFIG,
         lock_path: Path = DEFAULT_LOCK,
         service_model_path: Path = DEFAULT_SERVICE_MODEL,
+        api_coverage_path: Path = DEFAULT_API_COVERAGE,
     ) -> None:
         self._config = _load_yaml(config_path)
         self._lock = tomllib.loads(lock_path.read_text(encoding="utf-8"))
         self._service_model = _load_json(service_model_path)
+        self._api_coverage = _load_json(api_coverage_path)
 
     def compile(self, collected: dict[str, Any]) -> dict[str, Any]:
         """Validate primitive collection data and turn it into the runner's stable contract."""
@@ -541,6 +546,68 @@ class EvidenceCompiler:
                     "annotated operation is not code-owned "
                     f"service={service} unexpected={unexpected}"
                 )
+        baseline_services = _mapping(self._api_coverage["services"], "api_coverage.services")
+        for service, value in baseline_services.items():
+            operations = _mapping(value, f"api_coverage.services.{service}")["operations"]
+            operation_metadata = _mapping(operations, f"api_coverage.services.{service}.operations")
+            required = {
+                name
+                for name, metadata in operation_metadata.items()
+                if _mapping(metadata, f"api_coverage.services.{service}.operations.{name}")[
+                    "status"
+                ]
+                in {"COMPATIBLE", "PARTIAL"}
+            }
+            missing = sorted(required - evidence[service])
+            if missing:
+                raise EvidenceCompilationError(
+                    "implemented operation lacks annotated evidence "
+                    f"service={service} missing={missing}"
+                )
+
+
+def assert_legacy_parity(
+    compiled: dict[str, Any], legacy_path: Path = DEFAULT_LEGACY_MATRIX
+) -> None:
+    """Fail closed until the annotation compiler fully matches retained case selection semantics."""
+
+    legacy = _load_json(legacy_path)
+    actual_cases = {case["id"]: case for case in compiled["cases"]}
+    legacy_cases = {case["id"]: case for case in legacy.get("cases", [])}
+    if set(actual_cases) != set(legacy_cases):
+        raise EvidenceCompilationError(
+            "annotation/legacy case set mismatch "
+            f"missing={sorted(set(legacy_cases) - set(actual_cases))} "
+            f"extra={sorted(set(actual_cases) - set(legacy_cases))}"
+        )
+    fields = ("title_en", "title_ko", "lane", "expected_duration_minutes", "runtime_profile_id")
+    for case_id in sorted(actual_cases):
+        actual = actual_cases[case_id]
+        expected = legacy_cases[case_id]
+        mismatched = [field for field in fields if actual[field] != expected[field]]
+        expected_runner = _mapping(expected["runner"], f"legacy.{case_id}.runner")["kind"]
+        if actual["runner"]["kind"] != expected_runner:
+            mismatched.append("runner.kind")
+        expected_scenario = _mapping(expected["scenario"], f"legacy.{case_id}.scenario")
+        if actual["scenario"]["kind"] != expected_scenario["kind"]:
+            mismatched.append("scenario.kind")
+        if not _same_selected_nodes(
+            actual["scenario"]["test_nodes"], expected_scenario["test_nodes"]
+        ):
+            mismatched.append("scenario.test_nodes")
+        if actual["scenario"]["scenario_ids"] != expected_scenario["scenario_ids"]:
+            mismatched.append("scenario.scenario_ids")
+        expected_versions = _legacy_versions(expected, case_id)
+        actual_versions = next(iter(actual["compatibility_profiles"].values()))["versions"]
+        if actual_versions != expected_versions:
+            mismatched.append("versions")
+        if mismatched:
+            raise EvidenceCompilationError(
+                f"annotation/legacy parity mismatch case_id={case_id!r} fields={mismatched}"
+            )
+    LOGGER.info(
+        "event=compatibility.annotation_parity.after cases=%d drift=false", len(actual_cases)
+    )
 
 
 class GeneratedArtifacts:
@@ -658,6 +725,40 @@ def _render(compiled: dict[str, Any], *, korean: bool) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _legacy_versions(case: dict[str, Any], case_id: str) -> dict[str, str]:
+    versions: dict[str, str] = {}
+    for profile in _mapping(case["compatibility_profiles"], f"legacy.{case_id}.profiles").values():
+        for name, value in _mapping(profile, f"legacy.{case_id}.profile")["versions"].items():
+            previous = versions.setdefault(name, str(value))
+            if previous != str(value):
+                raise EvidenceCompilationError(
+                    f"legacy case has conflicting version case_id={case_id!r} package={name!r}"
+                )
+    return dict(sorted(versions.items()))
+
+
+def _same_selected_nodes(actual: list[str], legacy: list[str]) -> bool:
+    """Accept a legacy file selector only when every annotation resolves inside that file."""
+
+    if actual == legacy:
+        return True
+    for legacy_node in legacy:
+        if "::" in legacy_node:
+            if legacy_node not in actual:
+                return False
+            continue
+        prefix = f"{legacy_node}::"
+        if not any(node.startswith(prefix) for node in actual):
+            return False
+    return all(
+        any(
+            legacy_node == node or ("::" not in legacy_node and node.startswith(f"{legacy_node}::"))
+            for legacy_node in legacy
+        )
+        for node in actual
+    )
+
+
 def _digest(value: object) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -732,10 +833,12 @@ def parse_args() -> argparse.Namespace:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--write", action="store_true")
     mode.add_argument("--check", action="store_true")
+    mode.add_argument("--parity", action="store_true")
     parser.add_argument("--collection", type=Path, help="use a pre-collected JSON document")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--english", type=Path, default=DEFAULT_ENGLISH)
     parser.add_argument("--korean", type=Path, default=DEFAULT_KOREAN)
+    parser.add_argument("--legacy-matrix", type=Path, default=DEFAULT_LEGACY_MATRIX)
     parser.add_argument(
         "--config",
         type=Path,
@@ -755,6 +858,9 @@ def main() -> int:
             else collect_annotations(config_path=args.config)
         )
         compiled = EvidenceCompiler(config_path=args.config).compile(collected)
+        assert_legacy_parity(compiled, args.legacy_matrix)
+        if args.parity:
+            return 0
         artifacts = GeneratedArtifacts(args.output, args.english, args.korean)
         expected = artifacts.expected(compiled)
         if args.write:

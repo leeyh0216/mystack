@@ -37,8 +37,7 @@ list used by GitHub Actions. Maintainers add or reuse a typed profile and decora
 real `contract` or `e2e` test with its tested scenarios and operations. The collection compiler
 rejects invalid markers, lock/runtime mismatches, unknown modeled operations, missing supported-API
 evidence, and case-selection drift before a test body starts. The retained
-[generated annotation evidence](annotated-evidence.generated.md) and
-`contracts/compatibility-scope-policy.yaml` define
+[legacy exact-version evidence](client-matrix.generated.md) and `compatibility/cases.yaml` remain
 parity baselines during the migration.
 
 | Client | Pinned version | Status | Verified path |

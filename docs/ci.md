@@ -28,10 +28,14 @@
 | `prepare-version-pr.yml` | manual | Version-file update branch and PR to `develop`; no package, tag, or release mutation |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
-Actions reads only the `include` entries compiled into
-`contracts/compatibility-matrix.generated.json`; it never constructs an implicit client/runtime
-cross-product. The approach follows GitHub's [shared matrix
+Actions reads only the `include` entries compiled from pytest annotations into
+`contracts/compatibility-evidence.generated.json`; it never constructs an implicit client/runtime
+cross-product. `compatibility/cases.yaml` and its generated matrix remain required parity baselines
+during the migration. The approach follows GitHub's [shared matrix
 pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
+Each compiled profile's `expected_duration_minutes` is the explicit outer job
+ceiling. The local, collection-only generator has a separate
+`tests.compatibility_collection_timeout_seconds` deadline and does not run test bodies.
 Pull requests and pushes select `required`; manual runs add `preview`, and scheduled/manual E2E runs
 add `nightly`. An empty optional lane is valid because the event selection always merges it with the
 non-empty required lane.
@@ -108,7 +112,8 @@ failed job and retained for 7 days. This keeps a successful run focused on its s
 report while preserving the component and case context needed to repair a failure. Diagnostics must
 retain boundary and side-effect events but never secrets.
 
-The release workflow separately retains its reviewed acceptance evidence (the generated [release
-acceptance](compatibility/release-acceptance.generated.md), compiled matrix, API classification, and
-deterministic Glue error catalog) for 14 days. Local image preflight scan evidence is release
-authorization evidence, not a user-facing test-result artifact.
+The release workflow separately retains its reviewed acceptance evidence for 14 days: generated
+[test-declared compatibility evidence](compatibility/annotated-evidence.generated.md), [release
+acceptance](compatibility/release-acceptance.generated.md), retained parity matrix, API
+classification, and deterministic Glue error catalog. Local image preflight scan evidence is
+release authorization evidence, not a user-facing test-result artifact.
