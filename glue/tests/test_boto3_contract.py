@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Black-box boto3 contracts for every implemented Glue Data Catalog operation.
 
 API reference: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.html
@@ -33,7 +34,7 @@ def test_all_implemented_glue_operations_through_service_boundary(glue_client) -
     scenario_ids=("glue-data-catalog",),
     capabilities=("management-read-model",),
 )
-def test_management_read_model_lists_catalog_tree(
+def test_management_read_model_pages_only_the_requested_catalog_branch(
     glue_client,
     glue_server: str,
     glue_test_timeout: float,
@@ -53,15 +54,23 @@ def test_management_read_model_lists_catalog_tree(
         PartitionInput={"Values": ["2026-08-08"]},
     )
 
-    response = httpx.get(f"{glue_server}/_mystack/management/resources", timeout=glue_test_timeout)
-    document = response.json()
-
-    assert response.status_code == 200
-    assert document["compatibility"]["implemented_operation_count"] == 28
-    database = next(
-        value for value in document["resources"]["databases"] if value["id"] == "console"
+    databases = httpx.get(
+        f"{glue_server}/_mystack/ui/glue/catalog/databases?limit=1", timeout=glue_test_timeout
     )
-    assert database["tables"][0]["partitions"][0]["values"] == ["2026-08-08"]
+    tables = httpx.get(
+        f"{glue_server}/_mystack/ui/glue/catalog/databases/console/tables?limit=1",
+        timeout=glue_test_timeout,
+    )
+    partitions = httpx.get(
+        f"{glue_server}/_mystack/ui/glue/catalog/databases/console/tables/events/partitions?limit=1",
+        timeout=glue_test_timeout,
+    )
+
+    assert databases.status_code == tables.status_code == partitions.status_code == 200
+    assert databases.json()["items"][0]["id"] == "console"
+    assert tables.json()["items"][0]["id"] == "console/events"
+    assert partitions.json()["items"][0]["values"] == ["2026-08-08"]
+    assert partitions.json()["total_count"] == 1
 
 
 @pytest.mark.contract

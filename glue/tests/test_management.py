@@ -4,7 +4,6 @@ Reference: https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog.html
 """
 
 import copy
-import logging
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -16,7 +15,7 @@ from mystack.glue.app import create_app
 
 
 @pytest.mark.asyncio
-async def test_resource_query_failure_is_logged_with_fix_hint(caplog) -> None:
+async def test_database_page_failure_propagates() -> None:
     application = SimpleNamespace(
         get_databases=AsyncMock(side_effect=RuntimeError("repository unavailable"))
     )
@@ -30,11 +29,8 @@ async def test_resource_query_failure_is_logged_with_fix_hint(caplog) -> None:
         config_fingerprint="test-fingerprint",
     )
 
-    with caplog.at_level(logging.ERROR), pytest.raises(RuntimeError):
-        await adapter.resources()
-
-    record = next(record for record in caplog.records if record.msg.endswith("resources.failed"))
-    assert record.mystack_fields["fix_hint"]
+    with pytest.raises(RuntimeError):
+        await adapter.databases(cursor=None, limit=10)
 
 
 def test_glue_emulator_serves_its_compiled_react_ui_and_runtime_config(tmp_path) -> None:

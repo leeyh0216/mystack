@@ -141,7 +141,7 @@
           }
         }
       },
-      "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
+      "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -221,7 +221,7 @@
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+          "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
           "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
           "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
         ]
@@ -234,7 +234,7 @@
         "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
         "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
         "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-        "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+        "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
         "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
         "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
       ],
@@ -550,7 +550,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
+          "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -586,5 +586,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "54192ed48e73ea6a93786a05f88127be327ce7f073ccebffcb5d3cd867d7ef03"
+  "source_sha256": "2861f61db9c28a8798930a3d3cb363cbce20b549cbd7e6372f982512596193f9"
 }

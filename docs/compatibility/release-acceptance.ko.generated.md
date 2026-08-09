@@ -14,7 +14,7 @@
 
 Release 수용 범위는 주석 테스트에서 수집한 정확한 client, runtime, operation, scenario로 제한하며 AWS Glue 또는 EMR 전체 호환성을 의미하지 않습니다.
 
-수용 근거: `f9e2c10ae1c958e3cec0f57f7259affe1f248b536043c4d2b9ab842638f63e34`
+수용 근거: `9634e877ae9bb79ea2ce9670f2929cc190bdc8c7a48e69fa6cda10bc2fcf928d`
 
 ## Release-blocking 보장
 

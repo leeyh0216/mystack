@@ -76,6 +76,7 @@ class CatalogApplication:
     ) -> None:
         paginator = Paginator(policy.api_page_size)
         self._write_catalog = write_catalog
+        self._query_catalog = query_catalog
         self._database_commands = DatabaseCommands(write_catalog, clock)
         self._database_queries = DatabaseQueries(read_catalog, query_catalog, paginator)
         self._table_commands = TableCommands(write_catalog, clock, IcebergCommitObserver())
@@ -144,6 +145,15 @@ class CatalogApplication:
             next_token=next_token,
             max_results=max_results,
         )
+
+    async def count_databases(self, catalog_id: str) -> int:
+        return await self._query_catalog.count_databases(catalog_id)
+
+    async def count_tables(self, catalog_id: str, database: str) -> int:
+        return await self._query_catalog.count_tables(catalog_id, database)
+
+    async def count_partitions(self, catalog_id: str, database: str, table: str) -> int:
+        return await self._query_catalog.count_partitions(catalog_id, database, table)
 
     async def update_database(
         self,
