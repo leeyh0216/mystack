@@ -147,14 +147,15 @@ contract](https://pre-commit.com/#install).
 Compatibility scenarios are declared next to real `contract` or `e2e` tests with typed pytest
 annotations. `make compatibility-evidence-generate` runs collection only, produces the CI matrix
 and bilingual evidence, and never executes those test bodies. `make compatibility-evidence-check`
-rejects marker, lock/runtime, modeled-operation, API-evidence, or retained-legacy-selection drift.
+rejects marker, lock/runtime, modeled-operation, or API-evidence drift.
 `CompatibilityProfile.expected_duration_minutes` is the generated GitHub Actions job ceiling, not
 the local collection deadline or a pytest timeout.
-The retained YAML compiler still runs during the migration, so use `make compatibility-check` too.
-The ordinary Python CI job downloads both frontend build artifacts before running the full contract
-modules, while the browser E2E job owns rendered UI behavior. This keeps SDK matrix failures
-attributable to protocol code without reducing UI coverage. The artifact lifecycle follows the official [GitHub Actions artifact
-contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
+Use `make compatibility-check` to verify the generated matrix and explicit scope policy too.
+CI creates one SHA-bound frontend bundle with a manifest containing source, lock/config, platform,
+producer-run, and file digests. Python CI, Docker E2E, and release preflight verify that manifest
+before reuse; an unavailable artifact triggers a local rebuild while a stale or corrupt artifact is
+rejected. Browser E2E remains independently executable. The lifecycle follows the official [GitHub
+Actions artifact contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
 
 `VERSION` is the sole stable version authority and the pre-commit hook rejects derived-file drift.
 Use the [version and branch guide](versioning.md) before opening a release PR. The version command

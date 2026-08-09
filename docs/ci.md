@@ -61,10 +61,13 @@ the report says `incomplete` instead of pretending that no tests failed.
 
 This follows the same separation used by [Spark CI](https://github.com/apache/spark/blob/master/.github/workflows/build_and_test.yml): publish structured results and a summary on every run, while verbose logs are failure-only. [Trino's result-processing action](https://github.com/trinodb/trino/blob/master/.github/actions/process-test-results/action.yml) similarly keeps test reports available and attaches annotations to the existing job rather than creating an unrelated gate.
 
-The normal `*-test-report` artifact is retained for 14 days. The `service-ui-builds` artifact remains
-a one-day internal handoff between frontend and Python jobs; it is not a test result or a Docker
-image artifact. All existing test deadlines remain explicit: pytest receives the selected YAML
-timeout, and Vitest receives its configured test and hook deadlines.
+The normal `*-test-report` artifact is retained for 14 days. `service-ui-builds-<SHA>` is a two-day
+internal build artifact, not a test result or Docker image. An exact-key cache avoids rebuilding the
+same compatible producer lane; it has no prefix restore keys. Its manifest binds source SHA, platform,
+lock/config inputs, producer run, and every bundled file digest; Python CI, Docker E2E, and release
+preflight verify it before reuse and rebuild only when it is unavailable. All existing test deadlines
+remain explicit: pytest receives the selected YAML timeout, and Vitest receives its configured test
+and hook deadlines.
 
 <!-- section: branch-protection -->
 ## Branch protection expectations
