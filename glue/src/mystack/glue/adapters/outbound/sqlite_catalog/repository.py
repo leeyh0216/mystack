@@ -1092,6 +1092,9 @@ class _SqliteCatalogTransaction:
         return True
 
     async def delete_partition(self, value: CatalogPartition) -> bool:
+        parent = _table(self._connection, value.catalog_id, value.database_name, value.table_name)
+        if parent is None:
+            return False
         cursor = self._connection.execute(
             "DELETE FROM catalog_partitions WHERE partition_id = ("
             "SELECT p.partition_id FROM catalog_partitions AS p "
@@ -1105,6 +1108,8 @@ class _SqliteCatalogTransaction:
                 partition_values_key(value.values),
             ),
         )
+        if cursor.rowcount == 1:
+            _refresh_table_partition_projection_health(self._connection, parent[0], parent[1])
         self.mutated = self.mutated or cursor.rowcount == 1
         return cursor.rowcount == 1
 
@@ -1276,35 +1281,19 @@ def _partition_projection_issue(
     if predicate.expression is None:
         return None
     candidates: list[tuple[bytes, int, int, str | None, bool]] = []
-    expected_key_count = len(predicate.keys)
-    if expected_key_count == 0:
-        arity_sql = (
-            "EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
-            "WHERE pv.partition_id = p.partition_id)"
-        )
-        arity_parameters: tuple[object, ...] = (table_id,)
-    else:
-        arity_sql = (
-            "(EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
-            "WHERE pv.partition_id = p.partition_id AND pv.ordinal >= ?) OR "
-            "NOT EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
-            "WHERE pv.partition_id = p.partition_id AND pv.ordinal = ?))"
-        )
-        arity_parameters = (table_id, expected_key_count, expected_key_count - 1)
     arity_row = connection.execute(
-        "SELECT p.order_key, p.partition_id FROM catalog_partitions AS p "
-        "WHERE p.table_id = ? AND " + arity_sql + " "
-        "ORDER BY p.order_key, p.partition_id LIMIT 1",
-        arity_parameters,
+        "SELECT first_order_key, first_partition_id "
+        "FROM catalog_partition_projection_health "
+        "WHERE table_id = ? AND issue_kind = 'arity' AND ordinal = -1",
+        (table_id,),
     ).fetchone()
     if arity_row is not None:
         candidates.append((bytes(arity_row[0]), int(arity_row[1]), -1, None, True))
     for field_position, requirement in enumerate(requirements):
         row = connection.execute(
-            "SELECT p.order_key, p.partition_id FROM catalog_partition_value_projections AS pv "
-            "JOIN catalog_partitions AS p ON p.partition_id = pv.partition_id "
-            "WHERE pv.table_id = ? AND pv.ordinal = ? AND pv.conversion_valid = 0 "
-            "ORDER BY p.order_key, p.partition_id LIMIT 1",
+            "SELECT first_order_key, first_partition_id "
+            "FROM catalog_partition_projection_health "
+            "WHERE table_id = ? AND issue_kind = 'conversion' AND ordinal = ?",
             (table_id, requirement.ordinal),
         ).fetchone()
         if row is not None:
@@ -1452,6 +1441,8 @@ def _replace_partition_query_facts(
     table_id: int,
     table_value: CatalogTable,
     values: tuple[str, ...],
+    *,
+    refresh_health: bool = True,
 ) -> None:
     """Refresh typed value and segment projections in the same partition transaction."""
 
@@ -1495,6 +1486,66 @@ def _replace_partition_query_facts(
         "partition_id, table_id, total_segments, segment_number) VALUES (?, ?, ?, ?)",
         partition_segment_rows(partition_id, table_id, values),
     )
+    if refresh_health:
+        _refresh_table_partition_projection_health(connection, table_id, table_value)
+
+
+def _refresh_table_partition_projection_health(
+    connection: Any,
+    table_id: int,
+    table_value: CatalogTable,
+) -> None:
+    """Persist the first neutral validation fact for each table/key issue.
+
+    This write-side maintenance deliberately orders only indexed SQLite rows.  Reads then use a
+    single primary-key lookup per referenced key rather than searching the partition set.
+    """
+
+    connection.execute(
+        "DELETE FROM catalog_partition_projection_health WHERE table_id = ?", (table_id,)
+    )
+    expected_key_count = len(partition_key_rows(table_value))
+    if expected_key_count == 0:
+        arity_sql = (
+            "EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id)"
+        )
+        parameters: tuple[object, ...] = (table_id,)
+    else:
+        arity_sql = (
+            "(EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id AND pv.ordinal >= ?) OR "
+            "NOT EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id AND pv.ordinal = ?))"
+        )
+        parameters = (table_id, expected_key_count, expected_key_count - 1)
+    arity = connection.execute(
+        "SELECT p.order_key, p.partition_id FROM catalog_partitions AS p WHERE p.table_id = ? "
+        "AND " + arity_sql + " ORDER BY p.order_key, p.partition_id LIMIT 1",
+        parameters,
+    ).fetchone()
+    if arity is not None:
+        connection.execute(
+            "INSERT INTO catalog_partition_projection_health "
+            "(table_id, issue_kind, ordinal, first_order_key, first_partition_id) "
+            "VALUES (?, 'arity', -1, ?, ?)",
+            (table_id, bytes(arity[0]), int(arity[1])),
+        )
+    for ordinal, _, _, _ in partition_key_rows(table_value):
+        invalid = connection.execute(
+            "SELECT p.order_key, p.partition_id FROM catalog_partition_value_projections AS pv "
+            "JOIN catalog_partitions AS p ON p.partition_id = pv.partition_id "
+            "WHERE pv.table_id = ? AND pv.ordinal = ? AND pv.conversion_valid = 0 "
+            "ORDER BY p.order_key, p.partition_id LIMIT 1",
+            (table_id, ordinal),
+        ).fetchone()
+        if invalid is not None:
+            connection.execute(
+                "INSERT INTO catalog_partition_projection_health "
+                "(table_id, issue_kind, ordinal, first_order_key, first_partition_id) "
+                "VALUES (?, 'conversion', ?, ?, ?)",
+                (table_id, ordinal, bytes(invalid[0]), int(invalid[1])),
+            )
 
 
 def _refresh_table_partition_query_facts(
@@ -1524,7 +1575,9 @@ def _refresh_table_partition_query_facts(
             table_id,
             table_value,
             tuple(decoded),
+            refresh_health=False,
         )
+    _refresh_table_partition_projection_health(connection, table_id, table_value)
 
 
 def _replace_optimizer_runs(
