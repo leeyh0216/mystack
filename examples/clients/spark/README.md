@@ -44,7 +44,7 @@ remain available after the client exits.
 The final Spark output includes one result with a row count for each table:
 
 ```text
-{'hive_database': 'client_lab_hive', 'hive_count': 1, 'iceberg_database': 'client_lab_iceberg', 'iceberg_count': 1}
+{'hive_database': 'client_lab_hive', 'hive_count': 1, 'iceberg_database': 'client_lab_iceberg', 'iceberg_count': 1, 'catalog_discovery': 'namespace-and-table-visible'}
 ```
 
 Use these commands to inspect the result and service health:
