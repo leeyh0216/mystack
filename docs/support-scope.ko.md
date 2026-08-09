@@ -33,12 +33,12 @@
 
 EMR과 Glue는 각각 `/_mystack/ui/`에서 자기 UI를 직접 제공합니다. Proxy의 공개 경로는
 `/_mystack/ui/emr/`, `/_mystack/ui/glue/`이며 호환 경로 `/_mystack/console`은 EMR로 redirect합니다.
-Glue metadata mutation은 직렬화한
-candidate-state transaction을 사용합니다. Persistence 실패 시 visible state와 durable state를
-모두 유지하고 database/table rename 또는 delete는 하위 table, partition, optimizer와 run history를
-한 commit에 포함합니다. Versioned JSON document는 `glue.state_file`에 저장하며 schema 1과 2는
-다음 mutation에서 schema 3으로 migration합니다. Iceberg table에서는 process 간 file lock, 최신 state reload,
-원자적 `VersionId`/`metadata_location` compare-and-swap도 적용합니다. Data, manifest, metadata,
+Glue metadata mutation은 짧고 정규화한 SQLite transaction을 사용합니다. Persistence가 실패하면
+mutation 전체를 rollback하며 database/table rename 또는 delete는 하위 table, partition, optimizer와
+run history를 원자적으로 포함합니다. `glue.sqlite.database_file`이 유일한 영속 catalog store이고,
+검증한 기본값은 WAL이며 `rollback`은 명시적인 개발용 escape hatch입니다. JSON catalog fallback이나
+migration은 없습니다. Iceberg table도 같은 transaction에서 원자적
+`VersionId`/`metadata_location` compare-and-swap을 적용합니다. Data, manifest, metadata,
 snapshot과 retry는 계속 Iceberg가 소유합니다. 자세한 내용은 [Iceberg commit
 protocol](protocols/glue-iceberg-commits.ko.md)을 참고하세요.
 고정된 partition, schema, sort, identifier 동작은 별도 [Iceberg evolution

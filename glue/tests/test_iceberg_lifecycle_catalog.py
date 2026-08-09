@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from test_support.glue_error_harness import GlueCatalogHarness, ToggleFailureStore
+from test_support.glue_error_harness import GlueCatalogHarness, ToggleCommitFailpoint
 
 
 def _table_input(name: str, metadata_name: str) -> dict[str, Any]:
@@ -102,15 +102,15 @@ def test_iceberg_rename_choreography_preserves_pointer_and_modeled_errors() -> N
 
 
 def test_iceberg_rename_compensation_keeps_source_when_source_delete_fails() -> None:
-    store = ToggleFailureStore()
-    catalog = GlueCatalogHarness(store)
+    failpoint = ToggleCommitFailpoint()
+    catalog = GlueCatalogHarness(failpoint)
     try:
         _create_database(catalog, "source")
         _create_database(catalog, "target")
         original = _table_input("events", "00000-created")
         _create_table(catalog, "source", original)
         _create_table(catalog, "target", _table_input("renamed", "00000-created"))
-        store.fail_on_attempt = store.save_attempts + 1
+        failpoint.fail_on_attempt = failpoint.save_attempts + 1
 
         failed_delete = catalog.call(
             "DeleteTable",

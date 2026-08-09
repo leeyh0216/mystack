@@ -28,16 +28,17 @@ from mystack.aws_protocol import (
 from mystack.aws_protocol.observability import configure_logging, log_event
 from mystack.glue.adapters.inbound import GlueAwsAdapter, GlueManagementAdapter
 from mystack.glue.adapters.outbound import (
-    JsonCatalogRepository,
     S3IcebergMetadataStore,
     SparkTableOptimizerExecutor,
     SparkTableOptimizerExecutorSettings,
+    SqliteCatalogRepository,
     SQLiteRuntimeVerification,
     SQLiteRuntimeVerifier,
     SystemClock,
     SystemIdentifierGenerator,
 )
 from mystack.glue.application import CatalogApplication
+from mystack.glue.application.catalog_ports import CatalogStore
 from mystack.glue.application.ports import (
     Clock,
     IcebergMetadataStore,
@@ -46,7 +47,6 @@ from mystack.glue.application.ports import (
 )
 from mystack.glue.application.table_optimizer_runtime import TableOptimizerRuntime
 from mystack.glue.config import GlueSettings
-from mystack.glue.domain.repositories import CatalogRepository
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def create_app(
     *,
     configuration: LoadedConfiguration | None = None,
     application: CatalogApplication | None = None,
-    repository: CatalogRepository | None = None,
+    catalog: CatalogStore | None = None,
     clock: Clock | None = None,
     iceberg_metadata_store: IcebergMetadataStore | None = None,
     identifier_generator: IdentifierGenerator | None = None,
@@ -90,12 +90,7 @@ def create_app(
 
     configure_logging("glue", log_level)
     sqlite_runtime_verifier = sqlite_runtime_verifier or SQLiteRuntimeVerifier(settings.sqlite)
-    repository = repository or JsonCatalogRepository(
-        settings.state_file,
-        lock_file=settings.catalog_lock.lock_file,
-        lock_timeout_seconds=settings.catalog_lock.acquire_timeout_seconds,
-        lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
-    )
+    catalog = catalog or SqliteCatalogRepository(settings.sqlite)
     clock = clock or SystemClock()
     owned_metadata_store: S3IcebergMetadataStore | None = None
     object_store_endpoint = urlparse(settings.object_store.endpoint_url)
@@ -104,7 +99,8 @@ def create_app(
             owned_metadata_store = S3IcebergMetadataStore(settings.object_store)
             iceberg_metadata_store = owned_metadata_store
         application = CatalogApplication(
-            repository=repository,
+            read_catalog=catalog,
+            write_catalog=catalog,
             clock=clock,
             policy=settings.policy,
             iceberg_metadata_store=iceberg_metadata_store,
@@ -177,12 +173,9 @@ def create_app(
                 config_source=settings.config_source,
                 config_fingerprint=settings.config_fingerprint,
                 data_root=str(settings.data_root),
-                state_file=str(settings.state_file),
-                catalog_lock_file=str(settings.catalog_lock.lock_file),
-                catalog_lock_acquire_timeout_seconds=(
-                    settings.catalog_lock.acquire_timeout_seconds
-                ),
-                catalog_lock_poll_interval_seconds=settings.catalog_lock.poll_interval_seconds,
+                catalog_database_file=str(settings.sqlite.database_file),
+                catalog_journal_mode=settings.sqlite.journal_mode,
+                catalog_busy_timeout_milliseconds=settings.sqlite.busy_timeout_milliseconds,
                 sqlite_runtime=sqlite_runtime_verification.document(),
                 operation_count=len(dispatcher.operations),
                 operations=sorted(dispatcher.operations),

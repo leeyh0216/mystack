@@ -5,16 +5,9 @@ https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures
 """
 
 from mystack.glue.adapters.outbound.iceberg_metadata import S3IcebergMetadataStore
-from mystack.glue.adapters.outbound.repository import (
-    CatalogStateStore,
-    CatalogStateSynchronizer,
-    FileCatalogStateSynchronizer,
-    InMemoryCatalogRepository,
-    JsonCatalogRepository,
-    JsonCatalogStateStore,
-    LocalCatalogStateSynchronizer,
-    TransactionalCatalogRepository,
-    VolatileCatalogStateStore,
+from mystack.glue.adapters.outbound.sqlite_catalog import (
+    CatalogTransactionHook,
+    SqliteCatalogRepository,
 )
 from mystack.glue.adapters.outbound.sqlite_runtime import (
     SQLiteRuntimeCapabilityError,
@@ -28,21 +21,14 @@ from mystack.glue.adapters.outbound.table_optimizer_executor import (
 )
 
 __all__ = [
-    "CatalogStateStore",
-    "CatalogStateSynchronizer",
-    "FileCatalogStateSynchronizer",
-    "InMemoryCatalogRepository",
-    "JsonCatalogRepository",
-    "JsonCatalogStateStore",
-    "LocalCatalogStateSynchronizer",
+    "CatalogTransactionHook",
     "S3IcebergMetadataStore",
     "SQLiteRuntimeCapabilityError",
     "SQLiteRuntimeVerification",
     "SQLiteRuntimeVerifier",
     "SparkTableOptimizerExecutor",
     "SparkTableOptimizerExecutorSettings",
+    "SqliteCatalogRepository",
     "SystemClock",
     "SystemIdentifierGenerator",
-    "TransactionalCatalogRepository",
-    "VolatileCatalogStateStore",
 ]

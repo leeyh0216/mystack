@@ -33,13 +33,12 @@ This document distinguishes implemented behavior from long-term targets. “Targ
 
 EMR and Glue serve their UIs directly at `/_mystack/ui/`; Proxy exposes them at
 `/_mystack/ui/emr/` and `/_mystack/ui/glue/`. The compatibility path `/_mystack/console` redirects
-to EMR. Glue metadata mutations use serialized
-candidate-state transactions: persistence failure leaves visible and durable state unchanged, and
-database/table rename or deletion includes child tables, partitions, optimizers, and run history in
-one commit. The versioned JSON document is stored at `glue.state_file`; schemas 1 and 2 migrate to
-schema 3 on the next mutation.
-For Iceberg tables, this transaction now includes inter-process file locking, latest-state reload,
-and an atomic `VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
+to EMR. Glue metadata mutations use short, normalized SQLite transactions: persistence failure rolls
+back the whole mutation, and database/table rename or deletion includes child tables, partitions,
+optimizers, and run history atomically. `glue.sqlite.database_file` is the sole durable catalog
+store; WAL is the verified default and `rollback` is an explicit development escape hatch. There is
+no JSON catalog fallback or migration. For Iceberg tables, the same transaction applies an atomic
+`VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
 metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
 The fixed partition, schema, sort, and identifier behavior is recorded separately in the
 [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md).

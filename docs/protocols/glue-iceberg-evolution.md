@@ -97,7 +97,8 @@ logging table bodies or S3 paths. If a Spark or Iceberg upgrade breaks this prof
 1. `glue/scripts/e2e/iceberg_evolution.py` for changed Spark DDL or runtime behavior.
 2. `test_support/iceberg_metadata.py` for a changed Iceberg metadata-spec representation.
 3. `glue/adapters/inbound/aws_table.py` for changed Glue wire members.
-4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for pointer/version loss.
+4. `glue/application/table.py` and `glue/adapters/outbound/sqlite_catalog/repository.py` for
+   pointer/version loss.
 5. Typed pytest compatibility annotations for the resolved runtime, scenario, and evidence declaration.
 
 <!-- section: limits -->

@@ -12,6 +12,7 @@ from mystack.glue.application.batch import (
     PartitionBatchGetResult,
     PartitionBatchHandler,
 )
+from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
 from mystack.glue.application.database import DatabaseCommands, DatabaseQueries
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.initialization import CatalogInitializer
@@ -44,7 +45,6 @@ from mystack.glue.domain import (
     TableOptimizer,
     TableOptimizerRun,
 )
-from mystack.glue.domain.repositories import CatalogRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +60,8 @@ class CatalogApplication:
 
     def __init__(
         self,
-        repository: CatalogRepository,
+        read_catalog: CatalogReadPort,
+        write_catalog: CatalogWritePort,
         clock: Clock,
         policy: CatalogPolicy,
         *,
@@ -69,10 +70,11 @@ class CatalogApplication:
         table_optimizer_policy: TableOptimizerPolicy | None = None,
     ) -> None:
         paginator = Paginator(policy.api_page_size)
-        self._database_commands = DatabaseCommands(repository, clock)
-        self._database_queries = DatabaseQueries(repository, paginator)
-        self._table_commands = TableCommands(repository, clock, IcebergCommitObserver())
-        self._table_queries = TableQueries(repository, paginator)
+        self._write_catalog = write_catalog
+        self._database_commands = DatabaseCommands(write_catalog, clock)
+        self._database_queries = DatabaseQueries(read_catalog, paginator)
+        self._table_commands = TableCommands(write_catalog, clock, IcebergCommitObserver())
+        self._table_queries = TableQueries(read_catalog, paginator)
         self._table_versions = TableVersionQueries(self._table_queries, paginator)
         self._open_table_format = OpenTableFormatCommands(
             databases=self._database_queries,
@@ -83,16 +85,16 @@ class CatalogApplication:
             clock=clock,
             planner=IcebergOpenTableFormatPlanner(),
         )
-        self._partition_commands = PartitionCommands(repository, clock)
+        self._partition_commands = PartitionCommands(write_catalog, clock)
         self._partition_queries = PartitionQueries(
-            repository,
+            read_catalog,
             paginator,
             PartitionExpressionCompiler(policy.partition_expressions),
         )
         self._partition_batches = PartitionBatchHandler(
             self._partition_commands,
             self._partition_queries,
-            PartitionTargetResolver(repository),
+            PartitionTargetResolver(read_catalog),
         )
         optimizer_policy = table_optimizer_policy or TableOptimizerPolicy(
             initial_delay_seconds=30.0,
@@ -101,12 +103,12 @@ class CatalogApplication:
             compaction_failure_limit=4,
         )
         self._table_optimizer_commands = TableOptimizerCommands(
-            repository,
+            write_catalog,
             clock,
             identifier_generator,
             optimizer_policy,
         )
-        self._table_optimizer_queries = TableOptimizerQueries(repository, paginator)
+        self._table_optimizer_queries = TableOptimizerQueries(read_catalog, paginator)
         self._initializer = CatalogInitializer(
             self._database_commands,
             self._database_queries,
@@ -115,6 +117,7 @@ class CatalogApplication:
         )
 
     async def initialize(self) -> None:
+        await self._write_catalog.initialize()
         await self._initializer.initialize()
 
     async def create_database(self, catalog_id: str, definition: dict) -> CatalogDatabase:

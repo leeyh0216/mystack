@@ -164,21 +164,10 @@
     "glue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["listen", "data_root", "state_file", "catalog_lock", "sqlite", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "table_optimizers", "runtime_profile"],
+      "required": ["listen", "data_root", "sqlite", "catalog_id", "api_page_size", "create_default_database", "partition_expressions", "fault_injection", "table_optimizers", "runtime_profile"],
       "properties": {
         "listen": {"$ref": "#/$defs/listen"},
         "data_root": {"$ref": "#/$defs/non_empty_string"},
-        "state_file": {"$ref": "#/$defs/non_empty_string"},
-        "catalog_lock": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["file", "acquire_timeout_seconds", "poll_interval_seconds"],
-          "properties": {
-            "file": {"$ref": "#/$defs/non_empty_string"},
-            "acquire_timeout_seconds": {"$ref": "#/$defs/positive_number"},
-            "poll_interval_seconds": {"$ref": "#/$defs/positive_number"}
-          }
-        },
         "sqlite": {
           "type": "object",
           "additionalProperties": false,

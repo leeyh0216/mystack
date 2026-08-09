@@ -130,7 +130,7 @@
 - Observability: transaction/persist before, after, rollback and migration events; direct/public boto3
   tests plus injected failure/cancellation/restart tests.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
-  `glue/src/mystack/glue/adapters/outbound/repository.py`
+  `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
 - Confidence: High
 
 <!-- section: uc-006 -->

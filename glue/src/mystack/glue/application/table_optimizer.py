@@ -14,13 +14,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from mystack.aws_protocol.observability import log_event
+from mystack.glue.application.catalog_identity import name, table
+from mystack.glue.application.catalog_identity import optimizer as require_optimizer
+from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock, IdentifierGenerator
-from mystack.glue.application.state import name, table
 from mystack.glue.application.table_optimizer_contracts import TableOptimizerWork
 from mystack.glue.domain import (
     AlreadyExistsError,
-    EntityNotFoundError,
     InvalidInputError,
     TableOptimizer,
     TableOptimizerConfigurationDraft,
@@ -29,7 +30,6 @@ from mystack.glue.domain import (
     TableOptimizerType,
 )
 from mystack.glue.domain.errors import GlueDomainError
-from mystack.glue.domain.repositories import CatalogRepository
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,12 +70,12 @@ class BatchTableOptimizerResult:
 class TableOptimizerCommands:
     def __init__(
         self,
-        repository: CatalogRepository,
+        catalog: CatalogWritePort,
         clock: Clock,
         identifiers: IdentifierGenerator,
         policy: TableOptimizerPolicy,
     ) -> None:
-        self._repository = repository
+        self._catalog = catalog
         self._clock = clock
         self._identifiers = identifiers
         self._policy = policy
@@ -99,21 +99,31 @@ class TableOptimizerCommands:
             configuration,
         )
         _log_boundary("create", "before", key, side_effect=True)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="create-table-optimizer",
             resource_key=key,
-        ) as state:
-            catalog_table = table(state, catalog_id, normalized_database, normalized_table)
+        ) as transaction:
+            catalog_table = await table(
+                transaction, catalog_id, normalized_database, normalized_table
+            )
             table_location = _optimizer_table_location(catalog_table.definition, parsed_type)
             normalized_configuration = configuration_draft.bind(
                 table_location=table_location,
             )
-            if key in state.optimizers:
+            if (
+                await transaction.find_optimizer(
+                    catalog_id,
+                    normalized_database,
+                    normalized_table,
+                    parsed_type.value,
+                )
+                is not None
+            ):
                 raise AlreadyExistsError(
                     f"Table optimizer {parsed_type.value!r} already exists for "
                     f"{normalized_database}.{normalized_table}"
                 )
-            state.optimizers[key] = TableOptimizer.create(
+            value = TableOptimizer.create(
                 catalog_id=catalog_id,
                 database_name=normalized_database,
                 table_name=normalized_table,
@@ -122,6 +132,11 @@ class TableOptimizerCommands:
                 now=self._clock.now(),
                 initial_delay_seconds=self._policy.initial_delay_seconds,
             )
+            if not await transaction.insert_optimizer(value):
+                raise AlreadyExistsError(
+                    f"Table optimizer {parsed_type.value!r} already exists for "
+                    f"{normalized_database}.{normalized_table}"
+                )
         _log_boundary("create", "after", key, side_effect=True)
 
     async def update(
@@ -143,26 +158,36 @@ class TableOptimizerCommands:
             configuration,
         )
         _log_boundary("update", "before", key, side_effect=True)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="update-table-optimizer",
             resource_key=key,
-        ) as state:
-            catalog_table = table(state, catalog_id, normalized_database, normalized_table)
+        ) as transaction:
+            catalog_table = await table(
+                transaction, catalog_id, normalized_database, normalized_table
+            )
             table_location = _optimizer_table_location(catalog_table.definition, parsed_type)
             normalized_configuration = configuration_draft.bind(
                 table_location=table_location,
             )
-            current = _optimizer(state.optimizers, key)
+            current = await require_optimizer(
+                transaction,
+                catalog_id,
+                normalized_database,
+                normalized_table,
+                parsed_type.value,
+            )
             if current.active_run is not None:
                 current = current.cancel_active_run(
                     now=self._clock.now(),
                     reason="Table optimizer configuration changed during execution",
                 )
-            state.optimizers[key] = current.revise(
+            revised = current.revise(
                 normalized_configuration,
                 now=self._clock.now(),
                 initial_delay_seconds=self._policy.initial_delay_seconds,
             )
+            if not await transaction.replace_optimizer(current, revised):
+                raise RuntimeError("SQLite catalog optimizer changed during update")
         _log_boundary("update", "after", key, side_effect=True)
 
     async def delete(
@@ -179,74 +204,72 @@ class TableOptimizerCommands:
         )
         key = (catalog_id, normalized_database, normalized_table, parsed_type.value)
         _log_boundary("delete", "before", key, side_effect=True)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation="delete-table-optimizer",
             resource_key=key,
-        ) as state:
-            table(state, catalog_id, normalized_database, normalized_table)
-            _optimizer(state.optimizers, key)
-            state.optimizers.pop(key)
+        ) as transaction:
+            await table(transaction, catalog_id, normalized_database, normalized_table)
+            current = await require_optimizer(
+                transaction,
+                catalog_id,
+                normalized_database,
+                normalized_table,
+                parsed_type.value,
+            )
+            if not await transaction.delete_optimizer(current):
+                raise RuntimeError("SQLite catalog optimizer changed during delete")
         _log_boundary("delete", "after", key, side_effect=True)
 
     async def recover_interrupted(self, reason: str) -> int:
-        snapshot = await self._repository.snapshot()
-        keys = sorted(key for key, value in snapshot.optimizers.items() if value.active_run)
         recovered = 0
-        for key in keys:
-            async with self._repository.transaction(
-                operation="recover-table-optimizer-run",
-                resource_key=key,
-            ) as state:
-                current = state.optimizers.get(key)
-                if current is None or current.active_run is None:
+        async with self._catalog.transaction(
+            operation="recover-table-optimizer-runs",
+            resource_key=("all-active-optimizers",),
+        ) as transaction:
+            for current in await transaction.list_active_optimizers():
+                active = current.active_run
+                if active is None:
                     continue
-                state.optimizers[key] = current.fail_run(
-                    current.active_run.run_id,
+                revised = current.fail_run(
+                    active.run_id,
                     now=self._clock.now(),
                     error=reason,
                     compaction_interval_seconds=self._policy.compaction_interval_seconds,
                     compaction_failure_limit=self._policy.compaction_failure_limit,
                 )
+                if not await transaction.replace_optimizer(current, revised):
+                    continue
                 recovered += 1
-                _log_boundary("recover", "after", key, side_effect=True)
+                _log_boundary("recover", "after", current.key, side_effect=True)
         return recovered
 
     async def claim_due(self, maximum: int) -> list[TableOptimizerWork]:
         if maximum <= 0:
             return []
         now = self._clock.now()
-        snapshot = await self._repository.snapshot()
-        keys = sorted(
-            key
-            for key, value in snapshot.optimizers.items()
-            if value.configuration.enabled
-            and value.active_run is None
-            and value.next_run_time is not None
-            and value.next_run_time <= now
-        )[:maximum]
         work: list[TableOptimizerWork] = []
-        for key in keys:
-            run_id = self._identifiers.new()
-            async with self._repository.transaction(
-                operation="claim-table-optimizer-run",
-                resource_key=key,
-            ) as state:
-                current = state.optimizers.get(key)
+        async with self._catalog.transaction(
+            operation="claim-due-table-optimizer-runs",
+            resource_key=("due-optimizers", maximum),
+        ) as transaction:
+            for current in await transaction.list_due_optimizers(now, maximum):
+                key = current.key
                 if (
-                    current is None
-                    or not current.configuration.enabled
+                    not current.configuration.enabled
                     or current.active_run is not None
                     or current.next_run_time is None
                     or current.next_run_time > now
                 ):
                     continue
-                catalog_table = table(state, *key[:3])
+                catalog_table = await table(transaction, *key[:3])
                 location = _optimizer_table_location(
                     catalog_table.definition,
                     current.optimizer_type,
                 )
+                run_id = self._identifiers.new()
                 claimed = current.claim(run_id, now, history_limit=self._policy.history_limit)
-                state.optimizers[key] = claimed
+                if not await transaction.replace_optimizer(current, claimed):
+                    continue
                 work.append(
                     TableOptimizerWork(
                         key=key,
@@ -276,11 +299,11 @@ class TableOptimizerCommands:
         detail: object,
     ) -> bool:
         _log_boundary(transition, "before", work.key, run_id=work.run_id, side_effect=True)
-        async with self._repository.transaction(
+        async with self._catalog.transaction(
             operation=f"{transition}-table-optimizer-run",
             resource_key=work.key,
-        ) as state:
-            current = state.optimizers.get(work.key)
+        ) as transaction:
+            current = await transaction.find_optimizer(*work.key)
             if (
                 current is None
                 or current.revision != work.configuration_revision
@@ -312,14 +335,22 @@ class TableOptimizerCommands:
                     compaction_interval_seconds=self._policy.compaction_interval_seconds,
                     compaction_failure_limit=self._policy.compaction_failure_limit,
                 )
-            state.optimizers[work.key] = revised
+            if not await transaction.replace_optimizer(current, revised):
+                _log_boundary(
+                    transition,
+                    "stale",
+                    work.key,
+                    run_id=work.run_id,
+                    side_effect=False,
+                )
+                return False
         _log_boundary(transition, "after", work.key, run_id=work.run_id, side_effect=True)
         return True
 
 
 class TableOptimizerQueries:
-    def __init__(self, repository: CatalogRepository, paginator: Paginator) -> None:
-        self._repository = repository
+    def __init__(self, catalog: CatalogReadPort, paginator: Paginator) -> None:
+        self._catalog = catalog
         self._paginator = paginator
 
     async def get(
@@ -336,9 +367,14 @@ class TableOptimizerQueries:
         )
         key = (catalog_id, normalized_database, normalized_table, parsed_type.value)
         _log_boundary("get", "before", key, side_effect=False)
-        state = await self._repository.snapshot()
-        table(state, catalog_id, normalized_database, normalized_table)
-        value = _optimizer(state.optimizers, key)
+        await table(self._catalog, catalog_id, normalized_database, normalized_table)
+        value = await require_optimizer(
+            self._catalog,
+            catalog_id,
+            normalized_database,
+            normalized_table,
+            parsed_type.value,
+        )
         _log_boundary("get", "after", key, side_effect=False)
         return value
 
@@ -380,8 +416,7 @@ class TableOptimizerQueries:
         return page.apply(list(reversed(value.runs)))
 
     async def is_current(self, work: TableOptimizerWork) -> bool:
-        state = await self._repository.snapshot()
-        current = state.optimizers.get(work.key)
+        current = await self._catalog.find_optimizer(*work.key)
         return bool(
             current is not None
             and current.revision == work.configuration_revision
@@ -396,18 +431,6 @@ def _identity(
     optimizer_type: object,
 ) -> tuple[str, str, TableOptimizerType]:
     return name(database_name), name(table_name), TableOptimizerType.parse(optimizer_type)
-
-
-def _optimizer(
-    optimizers: dict[TableOptimizerKey, TableOptimizer],
-    key: TableOptimizerKey,
-) -> TableOptimizer:
-    value = optimizers.get(key)
-    if value is None:
-        raise EntityNotFoundError(
-            f"Table optimizer {key[3]!r} does not exist for {key[1]}.{key[2]}"
-        )
-    return value
 
 
 def _optimizer_table_location(

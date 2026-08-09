@@ -43,6 +43,12 @@ PROXY = PackageBoundary(
     "mystack.proxy",
     "proxy",
 )
+GLUE = PackageBoundary(
+    "glue",
+    Path("glue/src/mystack/glue"),
+    "mystack.glue",
+    "layered",
+)
 
 
 def _write_sources(root: Path, sources: dict[str, str]) -> None:
@@ -172,6 +178,43 @@ def test_inbound_adapter_may_depend_on_application_protocols_and_policies(tmp_pa
             },
             "service-import-cycle",
             id="relative-import-cycle",
+        ),
+        pytest.param(
+            (GLUE,),
+            {"glue/src/mystack/glue/application/catalog.py": "import sqlite3\n"},
+            "inner-sqlite-driver-dependency",
+            id="application-to-sqlite-driver",
+        ),
+        pytest.param(
+            (GLUE,),
+            {
+                "glue/src/mystack/glue/application/catalog.py": (
+                    "def query(connection):\n    return connection.execute('SELECT 1')\n"
+                )
+            },
+            "inner-sql-execution",
+            id="application-to-literal-sql",
+        ),
+        pytest.param(
+            (GLUE,),
+            {
+                "glue/src/mystack/glue/adapters/outbound/sqlite_catalog/store.py": (
+                    "from mystack.glue.domain.errors import EntityNotFoundError\n"
+                )
+            },
+            "sqlite-adapter-domain-error-dependency",
+            id="sqlite-adapter-to-domain-error",
+        ),
+        pytest.param(
+            (GLUE,),
+            {
+                "glue/src/mystack/glue/adapters/outbound/sqlite_catalog/store.py": (
+                    "class EntityNotFoundError(Exception): pass\n"
+                    "def load():\n    raise EntityNotFoundError()\n"
+                )
+            },
+            "sqlite-adapter-domain-error-raise",
+            id="sqlite-adapter-raises-domain-error",
         ),
     ),
 )

@@ -38,11 +38,16 @@ WAL이 기본값입니다. SQLite는 concurrent connection이 WAL database를 wr
 3.51.2 이하 version에 corruption race가 있음을 문서화합니다. Mystack은 3.51.3 이상을 요구하고
 unsafe runtime이면 Glue가 catalog를 초기화하기 전에 시작을 거부합니다.
 
-이 계약은 DB-API runtime과 filesystem capability만 검증합니다. Catalog persistence를 선택하거나
-migration하지 않습니다. 실행 중인 Glue application은 계속 `glue.state_file`의
-`JsonCatalogRepository`를 조립합니다. `glue.sqlite.database_file`은 생성 후 삭제하는 임시 runtime
-probe의 directory만 선택합니다. 이후 SQLite catalog persistence adapter는 별도 변경으로 state
-migration과 recovery 계약을 정의해야 합니다.
+검증한 DB-API runtime은 Mystack의 유일한 영속 Glue catalog을 구동합니다. 검증이 성공하면 Glue
+application은 `glue.sqlite.database_file`에 정규화된 SQLite schema를 초기화합니다. Model에 없는
+field를 보존해야 하는 Glue request document는 canonical JSON `TEXT`로 유지하되 database, table,
+archive version, partition, optimizer, optimizer run 식별자는 foreign key를 갖는 관계형 row로
+저장합니다. 따라서 database/table rename은 parent row만 바꾸고 delete cascade는 원자적으로
+처리됩니다.
+
+JSON catalog fallback이나 migration 경로는 없습니다. 이전에 `glue.state_file`을 사용했다면 설정한
+SQLite catalog file로 새로 시작해야 합니다. Mystack은 legacy JSON state document를 조용히 import,
+사용 또는 overwrite하지 않습니다.
 
 <!-- section: configuration -->
 ## 설정
@@ -69,15 +74,13 @@ glue:
       auto_checkpoint_pages: 1000
 ```
 
-`journal_mode`에는 `wal` 또는 `rollback`을 지정합니다. `rollback`은 SQLite의 명시적 `DELETE`
-journal mode로 변환하며 자동 fallback으로 선택하지 않습니다. `synchronous`에는 `off`, `normal`,
-`full`, `extra`를 지정합니다. `checkpoint.mode`에는 `passive`, `full`, `restart`, `truncate`를
-지정합니다. 이후 SQLite catalog adapter는 이 policy로 controlled checkpoint를 수행합니다.
-`retry_limit`은 같은 adapter의 상한이 있는 `SQLITE_BUSY` retry에 사용합니다.
-
-현재 runtime 전용 단계에서 `database_file`은 catalog database가 아닙니다. Verifier가 그 parent에
-격리된 `.mystack-sqlite-probe-*` database와 WAL sibling을 만들고 삭제하므로 write 가능해야 합니다.
-영속 Glue catalog state는 계속 `glue.state_file`과 설정한 lock file에 둡니다.
+`database_file`은 영속 catalog database입니다. 그 **parent directory**를 write 가능하게 mount해야
+합니다. WAL은 `catalog.sqlite3` 옆에 영속 `catalog.sqlite3-wal`, `catalog.sqlite3-shm` sibling을
+만듭니다. `journal_mode`에는 `wal` 또는 `rollback`을 지정하며, `rollback`은 SQLite의 명시적
+`DELETE` journal mode로 변환되고 자동으로 선택되지 않습니다. `synchronous`에는 `off`, `normal`,
+`full`, `extra`를 지정합니다. `busy_timeout_milliseconds`는 DB-API wait 상한이고 `retry_limit`은
+writer 경합 시 application의 상한 있는 retry 횟수입니다. `checkpoint.mode`에는 `passive`, `full`,
+`restart`, `truncate`를 지정하며 `auto_checkpoint_pages`는 SQLite 자동 WAL checkpoint threshold입니다.
 
 <!-- section: verification -->
 ## 시작 검증
@@ -100,12 +103,18 @@ command를 실행합니다.
 <!-- section: operations -->
 ## 저장소 운영
 
-Runtime verifier에는 database 하나가 아닌 write 가능한 directory 전체를 mount합니다. Verifier는
-임시 probe와 `-wal`, `-shm` sibling을 만들고 삭제합니다. 이 동작은 `catalog.sqlite3`을 영속
-catalog storage로 만들지 않습니다. 이후 SQLite catalog adapter가 WAL을 사용할 때는
-`catalog.sqlite3` 하나가 아니라 database directory 전체를 mount하거나 유지해야 합니다. 하나의 WAL
-database에 접근하는 모든 Glue process는 같은 host에서 같은 mounted directory를 사용해야 합니다.
-Network filesystem은 지원하는 WAL deployment가 아닙니다.
+`catalog.sqlite3` 하나가 아니라 write 가능한 directory 전체를 mount합니다. 시작 verifier는 schema
+초기화 전에 같은 directory에 격리된 probe와 `-wal`, `-shm` sibling을 만들고 지웁니다. 그 뒤 catalog은
+database와 `-wal`, `-shm` sibling을 같은 directory에 유지합니다. 하나의 WAL database에 접근하는 모든
+Glue process는 같은 host에서 같은 mounted directory를 사용해야 합니다. Network filesystem은 지원하는
+WAL deployment가 아닙니다.
+
+Catalog mutation은 짧은 `BEGIN IMMEDIATE` transaction을 시작하고 application 소유 domain 판단,
+정규화 row의 조건부 update, 진단용 catalog revision 증가, commit 순서로 실행합니다. SQLite는 writer
+하나를 허용하며 reader는 별도 short-lived connection을 사용합니다. Writer가 busy이면
+`busy_timeout_milliseconds`만큼 기다린 뒤 `retry_limit` 횟수까지만 재시도하며, 그 뒤에는 partial
+change 없이 요청이 실패합니다. Adapter는 진행 중인 commit을 task cancellation으로부터 보호한 뒤
+commit/rollback 결과를 보고합니다.
 
 Filesystem level backup을 만들 때는 database를 사용하는 모든 Glue process를 멈춘 뒤 directory
 전체를 복사합니다. Online backup에는 SQLite backup API를 사용합니다. Maintenance checkpoint가
@@ -130,9 +139,11 @@ recovery 경로가 아닙니다.
 ## 관측과 수정 위치
 
 `glue.sqlite.runtime.verify.before`, `.after`, `.failed` event는 선택한 driver module, journal mode,
-SQLite version, timeout, checkpoint policy, repair hint를 기록합니다. Source URL, credential,
-database content, request payload는 기록하지 않습니다. Health endpoint
-`/_mystack/health`는 `sqlite_runtime`에 검증한 runtime document를 제공합니다.
+SQLite version, timeout, checkpoint policy, repair hint를 기록합니다.
+`glue.sqlite_catalog.schema.*`, `glue.sqlite_catalog.transaction.*`은 schema 시작, 상한 있는 busy
+retry, commit/rollback, duration, resource fingerprint도 기록합니다. Source URL, credential,
+database content, request payload는 기록하지 않습니다. Health endpoint `/_mystack/health`는
+`sqlite_runtime`에 검증한 runtime document를 제공합니다.
 
 새 base image 또는 Python runtime으로 이 경계가 깨지면 다음 순서로 확인합니다.
 
@@ -141,7 +152,8 @@ database content, request payload는 기록하지 않습니다. Health endpoint
 3. Active Python ABI header 선택: `glue/scripts/install_python_build_dependencies.py`
 4. Private virtualenv 설치 경계: `glue/Dockerfile`
 5. 시작 capability 검사: `glue/src/mystack/glue/adapters/outbound/sqlite_runtime.py`
-6. Mounted policy parsing: `config/mystack.yaml`, `glue/src/mystack/glue/config.py`
+6. Schema, mapping, connection, transaction: `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/`
+7. Mounted policy parsing: `config/mystack.yaml`, `glue/src/mystack/glue/config.py`
 
 <!-- section: sources -->
 ## 공식 참고 자료
