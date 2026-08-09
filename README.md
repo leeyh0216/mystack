@@ -41,6 +41,7 @@ Open the [documentation hub](docs/index.md) for the next task.
 | I want to… | Start here |
 | --- | --- |
 | Start Docker Compose and connect an AWS client | [Getting started](docs/getting-started.md) |
+| Run a complete local AWS SDK for pandas or Spark client lab | [Client labs](docs/client-workflows.md#run-the-matching-lab) |
 | Use the Glue Data Catalog with boto3, AWS SDK for pandas, Spark Hive, or Iceberg | [Glue guide](docs/glue.md) |
 | Follow client-specific Glue and EMR workflows | [Client workflows](docs/client-workflows.md) |
 | Create an EMR cluster, run a bootstrap action, or submit a Spark Step | [EMR guide](docs/emr.md) |
