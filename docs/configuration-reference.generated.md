@@ -48,8 +48,6 @@ All values load once at process startup; restart the affected service after a ch
 | `emr.log_publication.initial_backoff_seconds` | type='number'; minimum=0 | `0.5` | `emr` | Runtime configuration; restart required |
 | `emr.log_publication.max_backoff_seconds` | type='number'; minimum=0 | `10` | `emr` | Runtime configuration; restart required |
 | `emr.log_publication.attempt_timeout_seconds` | type='number'; exclusiveMinimum=0 | `60` | `emr` | Runtime configuration; restart required |
-| `emr.spark_ui.port_min` | type='integer'; minimum=1024; maximum=65535 | `4040` | `emr` | Runtime configuration; restart required |
-| `emr.spark_ui.port_max` | type='integer'; minimum=1024; maximum=65535 | `4059` | `emr` | Runtime configuration; restart required |
 | `emr.startup_clusters_file` | type=['string', 'null']; minLength=1 | `null` | `emr` | Runtime configuration; restart required |
 | `emr.command_runner_jars` | type='array'; minItems=1 | `["command-runner.jar"]` | `emr` | Runtime configuration; restart required |
 | `emr.api_page_size` | type='integer'; minimum=1 | `50` | `emr` | Runtime configuration; restart required |
@@ -77,7 +75,6 @@ All values load once at process startup; restart the affected service after a ch
 | `glue.create_default_database` | type='boolean' | `true` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.max_length` | type='integer'; minimum=1 | `2048` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.max_tokens` | type='integer'; minimum=1 | `512` | `glue` | Runtime configuration; restart required |
-| `glue.partition_expressions.fallback_max_candidates` | type='integer'; minimum=1 | `1000` | `glue` | Runtime configuration; restart required |
 | `glue.partition_expressions.supported_key_types` | type='array'; minItems=1 | `["string", "date", "timestamp", "int", "bigint", "long", "tinyint", "smallint", "decimal"]` | `glue` | Runtime configuration; restart required |
 | `glue.fault_injection.enabled` | type='boolean' | `false` | `glue` | Runtime configuration; restart required |
 | `glue.fault_injection.rules` | type='array' | `[]` | `glue` | Runtime configuration; restart required |
