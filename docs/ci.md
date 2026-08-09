@@ -69,6 +69,9 @@ preflight verify it before reuse and rebuild only when it is unavailable. All ex
 remain explicit: pytest receives the selected YAML timeout, and Vitest receives its configured test
 and hook deadlines.
 
+CI runs for pull requests and for pushes to `main` or `develop`; this avoids running two frontend
+producer lanes for the same feature-branch revision.
+
 <!-- section: branch-protection -->
 ## Branch protection expectations
 

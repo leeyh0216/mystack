@@ -67,6 +67,9 @@ bundle file digest를 묶고 Python CI, Docker E2E, release preflight가 재사�
 검증합니다. artifact가 없으면 local build로 전환합니다. 기존 test deadline도 유지합니다. pytest는 선택된 YAML
 timeout을 받고 Vitest는 설정된 test와 hook deadline을 받습니다.
 
+CI는 pull request와 `main` 또는 `develop` push에서 실행합니다. 같은 feature branch revision에 frontend
+producer lane이 두 번 생기는 것을 막습니다.
+
 <!-- section: branch-protection -->
 ## Branch protection 기대값
 
