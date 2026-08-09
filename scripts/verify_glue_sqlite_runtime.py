@@ -1,7 +1,8 @@
 """Run and retain one bounded Glue-image SQLite runtime capability report.
 
-The release preflight invokes this script once per configured OCI platform after building its local
-image. It never pulls a registry image or mutates a registry.
+The local release preflight invokes this reusable verifier once per configured OCI platform after
+building a local image. Post-push anonymous verification invokes the same verifier against an exact
+published platform digest, which Docker may pull. The verifier never mutates a registry.
 
 References:
 - https://docs.docker.com/reference/cli/docker/container/run/
@@ -12,14 +13,40 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
+_DIAGNOSTIC_TAIL_LIMIT = 4_096
+_URI_CREDENTIAL_PATTERN = re.compile(r"(?P<prefix>[a-z][a-z0-9+.-]*://)[^\s/@]+@", re.IGNORECASE)
+_QUERY_VALUE_PATTERN = re.compile(r"(?P<prefix>[?&][^=\s&#]+)=([^\s&#]*)")
+_AUTHORIZATION_VALUE_PATTERN = re.compile(
+    r"(?P<prefix>\bauthorization\s*:\s*(?:bearer|basic)\s+)[^\s,;]+",
+    re.IGNORECASE,
+)
+_SENSITIVE_ASSIGNMENT_PATTERN = re.compile(
+    r"(?P<prefix>\b(?:aws[_-])?(?:access[_-]?key(?:[_-]?id)?|authorization|"
+    r"credential(?:s)?|password|secret(?:[_-][a-z]+)*|(?:session|security)[_-]?token|token)"
+    r"\s*(?:=|:)\s*)"
+    r"(?:\"[^\"]*\"|'[^']*'|[^\s,;]+)",
+    re.IGNORECASE,
+)
+_AWS_ACCESS_KEY_PATTERN = re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b")
+
 
 class SQLiteRuntimePreflightError(RuntimeError):
     """The built Glue image did not report the expected verified WAL runtime."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        diagnostic: dict[str, object] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.diagnostic = diagnostic
 
 
 def emit(event: str, **fields: object) -> None:
@@ -37,6 +64,79 @@ def load_expected_version(path: Path) -> str:
     if not isinstance(version, str) or not version:
         raise SQLiteRuntimePreflightError("SQLite runtime preflight expected version is invalid.")
     return version
+
+
+def redacted_tail(value: str | bytes | None, *, limit: int = _DIAGNOSTIC_TAIL_LIMIT) -> str:
+    """Keep a bounded diagnostic tail while removing common credential-bearing forms."""
+    if limit <= 0:
+        raise ValueError("diagnostic tail limit must be positive")
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    redacted = _URI_CREDENTIAL_PATTERN.sub(r"\g<prefix>[REDACTED]@", value)
+    redacted = _QUERY_VALUE_PATTERN.sub(r"\g<prefix>=[REDACTED]", redacted)
+    redacted = _AUTHORIZATION_VALUE_PATTERN.sub(r"\g<prefix>[REDACTED]", redacted)
+    redacted = _SENSITIVE_ASSIGNMENT_PATTERN.sub(r"\g<prefix>[REDACTED]", redacted)
+    redacted = _AWS_ACCESS_KEY_PATTERN.sub("[REDACTED_AWS_ACCESS_KEY]", redacted)
+    if len(redacted) <= limit:
+        return redacted
+    return f"[truncated to final {limit} characters]\n{redacted[-limit:]}"
+
+
+def failure_report(
+    *,
+    image: str,
+    platform: str,
+    timeout_seconds: float,
+    kind: str,
+    returncode: int | None = None,
+    stdout: str | bytes | None = None,
+    stderr: str | bytes | None = None,
+) -> dict[str, object]:
+    """Create an artifact-safe failure document without retaining unbounded container output."""
+    return {
+        "schema_version": 1,
+        "status": "failed",
+        "image": image,
+        "platform": platform,
+        "timeout_seconds": timeout_seconds,
+        "failure": {
+            "kind": kind,
+            "returncode": returncode,
+            "stdout_tail": redacted_tail(stdout),
+            "stderr_tail": redacted_tail(stderr),
+        },
+    }
+
+
+def _raise_failure(
+    message: str,
+    *,
+    image: str,
+    platform: str,
+    timeout_seconds: float,
+    kind: str,
+    returncode: int | None = None,
+    stdout: str | bytes | None = None,
+    stderr: str | bytes | None = None,
+) -> None:
+    diagnostic = failure_report(
+        image=image,
+        platform=platform,
+        timeout_seconds=timeout_seconds,
+        kind=kind,
+        returncode=returncode,
+        stdout=stdout,
+        stderr=stderr,
+    )
+    emit(
+        "glue.sqlite.preflight.failed",
+        image=image,
+        platform=platform,
+        failure=diagnostic["failure"],
+    )
+    raise SQLiteRuntimePreflightError(message, diagnostic=diagnostic)
 
 
 def verify(
@@ -76,16 +176,49 @@ def verify(
             text=True,
             timeout=timeout_seconds,
         )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        raise SQLiteRuntimePreflightError(
-            "Glue image SQLite runtime command did not complete within its configured timeout."
-        ) from error
-    if completed.returncode != 0:
-        raise SQLiteRuntimePreflightError(
-            "Glue image SQLite runtime command failed; inspect the container preflight logs."
+    except subprocess.TimeoutExpired as error:
+        _raise_failure(
+            "Glue image SQLite runtime command did not complete within its configured timeout.",
+            image=image,
+            platform=platform,
+            timeout_seconds=timeout_seconds,
+            kind="timeout",
+            stdout=error.stdout,
+            stderr=error.stderr,
         )
-    runtime = _runtime_document(completed.stdout)
-    _validate_runtime(runtime, expected_version, platform)
+    except OSError as error:
+        _raise_failure(
+            "Glue image SQLite runtime command could not be started; inspect the preflight report.",
+            image=image,
+            platform=platform,
+            timeout_seconds=timeout_seconds,
+            kind=type(error).__name__,
+        )
+    if completed.returncode != 0:
+        _raise_failure(
+            "Glue image SQLite runtime command failed; inspect the retained preflight report.",
+            image=image,
+            platform=platform,
+            timeout_seconds=timeout_seconds,
+            kind="nonzero_exit",
+            returncode=completed.returncode,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+        )
+    try:
+        runtime = _runtime_document(completed.stdout)
+        _validate_runtime(runtime, expected_version, platform)
+    except SQLiteRuntimePreflightError as error:
+        _raise_failure(
+            str(error),
+            image=image,
+            platform=platform,
+            timeout_seconds=timeout_seconds,
+            kind="invalid_runtime_report",
+            returncode=completed.returncode,
+            stdout=completed.stdout,
+            stderr=completed.stderr,
+        )
     report = {
         "schema_version": 1,
         "image": image,
@@ -177,15 +310,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    expected_version = load_expected_version(args.source_config)
-    report = verify(
-        image=args.image,
-        platform=args.platform,
-        timeout_seconds=args.timeout_seconds,
-        expected_version=expected_version,
-    )
+    try:
+        expected_version = load_expected_version(args.source_config)
+        report = verify(
+            image=args.image,
+            platform=args.platform,
+            timeout_seconds=args.timeout_seconds,
+            expected_version=expected_version,
+        )
+    except SQLiteRuntimePreflightError as error:
+        report = error.diagnostic or failure_report(
+            image=args.image,
+            platform=args.platform,
+            timeout_seconds=args.timeout_seconds,
+            kind="configuration",
+        )
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(
+            json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        emit(
+            "glue.sqlite.preflight.report_written",
+            status="failed",
+            report=str(args.report),
+        )
+        return 2
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    emit("glue.sqlite.preflight.report_written", status="verified", report=str(args.report))
     return 0
 
 

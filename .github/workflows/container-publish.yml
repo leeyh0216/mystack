@@ -500,16 +500,18 @@ jobs:
     needs: [prepare, publish]
     if: ${{ success() }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: ${{ fromJSON(needs.prepare.outputs.preflight_timeout_minutes) }}
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.source_sha }}
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-      - name: Prove every exact tag is anonymously readable and bound to this SHA
+      - name: Prove every exact tag is anonymously readable, source-bound, and runtime-verified
         env:
+          PREFLIGHT_TIMEOUT_MINUTES: ${{ needs.prepare.outputs.preflight_timeout_minutes }}
           REGISTRY: ${{ needs.prepare.outputs.registry }}
           SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
@@ -537,6 +539,24 @@ jobs:
               fi
               python3 -m scripts.release_policy binding \
                 --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
+              if [ "$name" = glue ]; then
+                platform_digest=$(jq -er --arg platform "$platform" '
+                  [.manifests[]
+                  | select(.platform.os + "/" + .platform.architecture == $platform)
+                  | .digest]
+                  | if length == 1 then .[0] else error("expected one published platform digest") end' \
+                  "release-evidence/$name-index.json")
+                platform_slug=${platform//\//-}
+                directory="release-evidence/$name-$platform_slug"
+                mkdir -p "$directory"
+                echo "event=registry.anonymous.sqlite_runtime.before image=$image digest=$platform_digest platform=$platform"
+                python3 scripts/verify_glue_sqlite_runtime.py \
+                  --image "$image@$platform_digest" \
+                  --platform "$platform" \
+                  --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \
+                  --report "$directory/sqlite-runtime.json"
+                echo "event=registry.anonymous.sqlite_runtime.after image=$image digest=$platform_digest platform=$platform"
+              fi
             done
             python3 scripts/registry_release.py verify-index \
               --component "$name" --image "$image" --tag "$VERSION" --digest "$digest" \
@@ -559,12 +579,14 @@ jobs:
             '{schema_version: 1, channel: $channel, version: $version, source_sha: $source_sha,
               snapshot_retention_days: (if $channel == "snapshot" then $snapshot_retention_days else null end),
               deletion_automated: false}' >release-evidence/retention.json
-      - name: Upload anonymous index and retention evidence
+      - name: Upload anonymous index, SQLite runtime, and retention evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: published-release-evidence-${{ needs.prepare.outputs.version }}
           path: release-evidence/
-          if-no-files-found: error
+          if-no-files-found: warn
+          retention-days: 14
 
   finalize-stable-release:
     name: Create or resume the GitHub Release after image verification

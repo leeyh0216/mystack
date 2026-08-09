@@ -396,6 +396,33 @@ def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
     assert "steps.identity.outputs.exists != 'true'" in publish
 
 
+def test_publication_reprobes_each_published_glue_platform_digest_before_release() -> None:
+    jobs = _workflow(".github/workflows/container-publish.yml")["jobs"]
+    verification_steps = jobs["verify-publication"]["steps"]
+    publication_verification = json.dumps(verification_steps, sort_keys=True)
+    runtime_probe = next(
+        step
+        for step in verification_steps
+        if step.get("name")
+        == "Prove every exact tag is anonymously readable, source-bound, and runtime-verified"
+    )
+    evidence_upload = next(
+        step
+        for step in verification_steps
+        if step.get("name") == "Upload anonymous index, SQLite runtime, and retention evidence"
+    )
+
+    assert "docker/setup-qemu-action" in publication_verification
+    assert "verify_glue_sqlite_runtime.py" in publication_verification
+    assert "platform_digest=$(jq -er" in runtime_probe["run"]
+    assert '--image "$image@$platform_digest"' in runtime_probe["run"]
+    assert "PREFLIGHT_TIMEOUT_MINUTES" in runtime_probe["run"]
+    assert "sqlite-runtime.json" in runtime_probe["run"]
+    assert evidence_upload["if"] == "always()"
+    assert evidence_upload["with"]["retention-days"] == "14"
+    assert jobs["finalize-stable-release"]["needs"] == ["prepare", "verify-publication"]
+
+
 def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     workflow = _workflow(".github/workflows/release.yml")
     assert set(workflow["on"]) == {"workflow_run"}

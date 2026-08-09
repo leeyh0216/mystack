@@ -5,6 +5,18 @@
 
 # Glue SQLite runtime contract
 
+<!-- toc:start -->
+## Contents
+
+- [Index](#index)
+- [Runtime boundary](#runtime-boundary)
+- [Configuration](#configuration)
+- [Startup verification](#startup-verification)
+- [Storage operations](#storage-operations)
+- [Observability and repair](#observability-and-repair)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 <!-- section: index -->
 ## Index
 
@@ -26,6 +38,12 @@ digests.
 WAL is the default. SQLite documents a corruption race in versions through 3.51.2 when concurrent
 connections write or checkpoint a WAL database; Mystack requires 3.51.3 or later and rejects an
 unsafe runtime before Glue initializes its catalog.
+
+This contract verifies only the DB-API runtime and its filesystem capability. It does **not** migrate
+or select catalog persistence: the running Glue application still composes `JsonCatalogRepository`
+with `glue.state_file`. `glue.sqlite.database_file` selects the directory used by a temporary,
+deleted runtime probe. A future SQLite catalog persistence adapter is a separate change and must
+define its own state migration and recovery contract.
 
 <!-- section: configuration -->
 ## Configuration
@@ -57,6 +75,11 @@ or `extra`. `checkpoint.mode` accepts `passive`, `full`, `restart`, or `truncate
 catalog adapter will use this policy for its controlled checkpoints. `retry_limit` is reserved for
 the same adapter's bounded `SQLITE_BUSY` retry loop.
 
+During the current runtime-only phase, `database_file` is not a catalog database. Its parent must
+be writable because the verifier creates and deletes an isolated `.mystack-sqlite-probe-*` database
+and its WAL siblings there. Durable Glue catalog state remains `glue.state_file` and its configured
+lock file.
+
 <!-- section: verification -->
 ## Startup verification
 
@@ -79,9 +102,11 @@ mode, and verified PRAGMAs. The Glue image release preflight runs it for both `l
 <!-- section: operations -->
 ## Storage operations
 
-For WAL, mount or retain the whole database directory, not only `catalog.sqlite3`. SQLite uses
-`catalog.sqlite3-wal` and `catalog.sqlite3-shm` beside the database. All Glue processes that access
-one WAL database must run on the same host and use the same mounted directory; network filesystems
+For the runtime verifier, mount a writable whole directory, not a single database path. It creates
+and removes a temporary probe alongside its `-wal` and `-shm` siblings. This does not make
+`catalog.sqlite3` durable catalog storage. If a later SQLite catalog adapter uses WAL, it must mount
+or retain the whole database directory rather than only `catalog.sqlite3`; all processes accessing
+one WAL database must run on the same host and use the same mounted directory. Network filesystems
 are not a supported WAL deployment.
 
 For a filesystem-level backup, stop every Glue process using the database, then copy the complete
@@ -115,9 +140,10 @@ When a new base image or Python runtime breaks this boundary, inspect in this or
 
 1. `config/sqlite-runtime.json` for source version, URL shape, and checksums.
 2. `glue/scripts/build_sqlite_driver.py` for verification, extraction, and extension compilation.
-3. `glue/Dockerfile` for the private virtualenv installation boundary.
-4. `glue/src/mystack/glue/adapters/outbound/sqlite_runtime.py` for startup capability checks.
-5. `config/mystack.yaml` and `glue/src/mystack/glue/config.py` for mounted policy parsing.
+3. `glue/scripts/install_python_build_dependencies.py` for active-Python ABI header selection.
+4. `glue/Dockerfile` for the private virtualenv installation boundary.
+5. `glue/src/mystack/glue/adapters/outbound/sqlite_runtime.py` for startup capability checks.
+6. `config/mystack.yaml` and `glue/src/mystack/glue/config.py` for mounted policy parsing.
 
 <!-- section: sources -->
 ## Official sources

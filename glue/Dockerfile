@@ -26,8 +26,8 @@ USER root
 WORKDIR /opt/mystack/sqlite-build
 COPY config/sqlite-runtime.json /opt/mystack/sqlite-build/sqlite-runtime.json
 COPY glue/scripts/build_sqlite_driver.py /opt/mystack/sqlite-build/build_sqlite_driver.py
-RUN dnf install --assumeyes --setopt=install_weak_deps=False gcc make python3-devel python3-setuptools \
-    && python3 -c "import sysconfig; from pathlib import Path; header = Path(sysconfig.get_config_var('INCLUDEPY')) / 'Python.h'; assert header.is_file(), header" \
+COPY glue/scripts/install_python_build_dependencies.py /opt/mystack/sqlite-build/install_python_build_dependencies.py
+RUN python3 /opt/mystack/sqlite-build/install_python_build_dependencies.py \
     && python3 /opt/mystack/sqlite-build/build_sqlite_driver.py \
       --config /opt/mystack/sqlite-build/sqlite-runtime.json \
       --output /opt/mystack/sqlite-driver \

@@ -84,7 +84,9 @@ glue:
     port: 8080
   data_root: /var/lib/mystack/glue
   state_file: catalog-state.json
-  # This verified runtime policy is preflighted before catalog initialization.
+  # This verified runtime policy is a DB-API capability probe, not catalog storage.
+  # The current catalog remains state_file/JsonCatalogRepository; database_file only selects the
+  # writable directory for temporary probe files until a separate persistence migration lands.
   # The preflight prevents a silent use of the AWS Glue base image's older system SQLite.
   # WAL safety and sibling files: https://www.sqlite.org/wal.html
   sqlite:
