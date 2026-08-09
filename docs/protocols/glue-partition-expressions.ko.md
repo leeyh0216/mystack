@@ -78,9 +78,11 @@ NextToken shape -> Segment -> ANTLR parse -> table lookup -> schema bind
 SQLite는 안정적인 binary order key와 total별 persisted segment assignment를 저장합니다. Opaque
 continuation token에는 version, request-context fingerprint, surrogate row ID만 있고 이름이나 partition
 value는 없습니다. 다른 catalog/table/expression/segment의 token은 거부됩니다. 일반
-`GetPartitions`는 total-count query를 실행하지 않습니다. 현재 ANTLR grammar는 모두 SQL/UDF로
-compile합니다. 이후 grammar node를 추가할 때는 명시적으로 상한이 있는 evaluator fallback과 differential
-test를 먼저 추가한 뒤 지원 범위에 포함해야 합니다.
+`GetPartitions`는 total-count query를 실행하지 않습니다. 참조 key 검증은 index된 중립 health fact를
+읽으므로 invalid value가 없다는 이유만으로 모든 partition을 탐색하지 않습니다. 결과 materialization은
+요청 page와 lookahead로 제한됩니다. 현재 ANTLR grammar는 모두 SQL/UDF로 compile합니다. 이후 grammar
+node를 추가할 때는 구성 가능한 limit을 가진 명시적 상한이 있는 evaluator fallback과 differential test를 먼저
+추가한 뒤 지원 범위에 포함해야 합니다.
 
 Mount한 Mystack YAML의 `glue.partition_expressions.max_length`, `max_tokens`,
 `supported_key_types`로 resource limit과 호환 profile을 제어합니다. 기본 길이는 공식 API model과
