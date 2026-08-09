@@ -59,7 +59,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   copied Java truststores, verify lexical order and exported values in PID 1, a boto3-created
   bootstrap action, and a real Spark Step. Separate raw-container contracts require fail-fast
   exit-code preservation, no later script, final UID 10001, and signal-safe PID 1 shutdown. See the
-  [pre-start contract](protocols/emr-prestart.md).
+  [pre-start contract](protocols/emr/emr-prestart.md).
 - Wait with a configured deadline and preserve logs on all failures.
 - Verify S3A output and step state for real Python and Java JAR Spark 3.5.x applications, including
   primary/dependency artifact materialization and cancellation while the subprocess is running. JAR
@@ -75,7 +75,7 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   GlueCatalog, evolve it through `UpdateOpenTableFormatInput`, append again, and inspect the S3
   metadata in the same Spark process. See the official Glue
   [`CreateIcebergTableInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateIcebergTableInput.html)
-  and the [local protocol](protocols/glue-open-table-format.md).
+  and the [local protocol](protocols/glue/glue-open-table-format.md).
 - Inject Glue state-store failure, cancellation, same-process and spawned-process concurrent
   writers, stale table versions, bounded file-lock contention, restart, rename/cascade, and schema-1
   migration. These contracts prove Data Catalog metadata atomicity and Iceberg catalog-pointer CAS;
@@ -109,12 +109,12 @@ Every pytest invocation uses `pytest-timeout` with the thread method so a hang p
   cleanup, rename across namespaces, catalog-only drop, tracked-file purge, and two
   barrier-synchronized Spark writers in separate Glue-image containers. The client must
   refresh/retry the stale `VersionId` commit and retain both appends. See the
-  [Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.md),
-  [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md),
-  [Open Table Format input protocol](protocols/glue-open-table-format.md),
-  [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md),
-  [Iceberg evolution protocol](protocols/glue-iceberg-evolution.md),
-  [Iceberg commit protocol](protocols/glue-iceberg-commits.md), and
+  [Iceberg snapshot/reference/procedure protocol](protocols/glue/glue-iceberg-snapshots-refs-procedures.md),
+  [Iceberg lifecycle protocol](protocols/glue/glue-iceberg-lifecycle.md),
+  [Open Table Format input protocol](protocols/glue/glue-open-table-format.md),
+  [Iceberg row-level DML protocol](protocols/glue/glue-iceberg-row-level-dml.md),
+  [Iceberg evolution protocol](protocols/glue/glue-iceberg-evolution.md),
+  [Iceberg commit protocol](protocols/glue/glue-iceberg-commits.md), and
   [AWS Glue Iceberg contract](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html).
 
 <!-- section: reproducibility -->
@@ -138,7 +138,7 @@ documents do not define which of several invalid conditions wins, a reviewed int
 order defines the first failure. Parameterized local contracts make every catalog-state error
 reproducible; configured fault injection covers documented internal and timeout failures that have
 no natural state trigger. Authentication and authorization errors are outside the project scope.
-The focused [partition/batch error contract](protocols/glue-partition-batch-errors.md) covers modeled
+The focused [partition/batch error contract](protocols/glue/glue-partition-batch-errors.md) covers modeled
 maximum constraints, validation order, stable partial success, `UnprocessedKeys`, and persistence
 rollback without starting Docker.
 

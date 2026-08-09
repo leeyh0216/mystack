@@ -81,7 +81,7 @@ aggregate, SQL, DB-API connection은 노출하지 않습니다.
 Managed table optimizer는 전용 domain aggregate, command/query handler, executor port와 lifecycle
 소유 scheduler를 추가합니다. Scheduler는 application facade를 통해서만 work를 claim하고
 transition하며 outbound adapter는 Spark process/file, Spark entrypoint는 Iceberg procedure를
-소유합니다. [Optimizer protocol](protocols/glue-table-optimizers.ko.md)과 AWS [table optimizer
+소유합니다. [Optimizer protocol](protocols/glue/glue-table-optimizers.ko.md)과 AWS [table optimizer
 API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-table-optimizers.html)를 참고하세요.
 
 EMR Application은 cluster command, Step command, read-only query, opaque pagination, queue
@@ -218,7 +218,7 @@ process-local입니다. Inbound startup-file adapter는
 side effect 전에 versioned `RunJobFlow` plan 전체를 검증하고
 `CreateCluster` command로 mapping한 뒤 queue driver 시작 후 기존 Application port를 호출합니다.
 Repository를 알거나 직접 변경하지 않습니다. Container 재시작 시 새 process-local ID가 생깁니다.
-자세한 계약은 [시작 클러스터 protocol](protocols/emr-startup-clusters.ko.md)에 있습니다.
+자세한 계약은 [시작 클러스터 protocol](protocols/emr/emr-startup-clusters.ko.md)에 있습니다.
 Lifecycle이 소유한 outbound log publisher가 terminal local Spark process stream을 문서화된
 EMR Step S3 배치에 투영합니다.
 Application/container ID는 synthetic임을 명시하고 게시 실패는 aggregate 밖에 기록해
@@ -230,7 +230,7 @@ Proxy가 아닌 EMR container 경계 안에서만 실행합니다. File은 뒤 S
 Application 밖의 별도 신뢰 배포 경계입니다. 운영자 file을 검사해 root로 source한 뒤 고정 standard
 library adapter가 group/GID/UID를 바꾸고 PID 1을 `hadoop`으로 exec합니다. Hook 객체나 plugin
 interface는 service 의존성 graph에 들어가지 않습니다. [Pre-start
-계약](protocols/emr-prestart.ko.md)을 참고하세요. Python의
+계약](protocols/emr/emr-prestart.ko.md)을 참고하세요. Python의
 [os.replace](https://docs.python.org/3/library/os.html#os.replace)와
 [os.fsync](https://docs.python.org/3/library/os.html#os.fsync)를 사용합니다.
 

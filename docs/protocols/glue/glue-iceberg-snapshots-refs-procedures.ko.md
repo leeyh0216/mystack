@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-iceberg-snapshots-refs-procedures -->
+<!-- doc-id: protocols/glue/glue-iceberg-snapshots-refs-procedures -->
 <!-- lang: ko -->
 
 [한국어](glue-iceberg-snapshots-refs-procedures.ko.md) | [English](glue-iceberg-snapshots-refs-procedures.md)

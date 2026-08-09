@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/emr-startup-clusters -->
+<!-- doc-id: protocols/emr/emr-startup-clusters -->
 <!-- lang: ko -->
 
 [한국어](emr-startup-clusters.ko.md) | [English](emr-startup-clusters.md)
@@ -44,7 +44,7 @@ clusters:
 `BootstrapActions`, `Steps`, `LogUri`, `ServiceRole`, `VisibleToAllUsers`,
 `StepConcurrencyLevel`, `Tags`입니다. 상위 botocore model에 member가 있어도 Mystack이
 emulation하지 않으면 거부할 수 있습니다. 유효해 보이는 file에서 사용자의 의도를 조용히
-누락하지 않기 위함입니다. 초기 bootstrap action과 Step에도 일반 [지원 범위](../support-scope.ko.md)가
+누락하지 않기 위함입니다. 초기 bootstrap action과 Step에도 일반 [지원 범위](../../support-scope.ko.md)가
 적용됩니다.
 
 <!-- section: validation -->

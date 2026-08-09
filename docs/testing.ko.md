@@ -60,7 +60,7 @@
   설치합니다. Lexical order와 export한 값이 PID 1, boto3로 만든 bootstrap action, 실제 Spark Step에
   전달되는지 검증합니다. 별도 raw-container contract는 즉시 실패 exit code 보존, 뒤 script 미실행,
   최종 UID 10001과 signal-safe PID 1 종료를 요구합니다. [Pre-start
-  계약](protocols/emr-prestart.ko.md)을 참고하세요.
+  계약](protocols/emr/emr-prestart.ko.md)을 참고하세요.
 - 설정된 deadline으로 기다리며 모든 실패 로그를 보존합니다.
 - 실제 Python 및 Java JAR Spark 3.5.x application의 S3A output과 Step 상태, 주/dependency
   artifact materialize, 실행 중 subprocess 취소를 검증합니다. JAR 제출은 Spark 공식
@@ -75,7 +75,7 @@
   `UpdateOpenTableFormatInput`으로 evolve하고 다시 append합니다. 같은 Spark process에서 S3
   metadata도 확인합니다. Glue 공식
   [`CreateIcebergTableInput`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateIcebergTableInput.html)과
-  [내부 protocol](protocols/glue-open-table-format.ko.md)을 기준으로 합니다.
+  [내부 protocol](protocols/glue/glue-open-table-format.ko.md)을 기준으로 합니다.
 - Glue state store의 실패·cancellation·같은 process 및 spawn process concurrent writer·stale table
   version·상한이 있는 file-lock contention·restart·rename/cascade·schema-1 migration을 주입합니다. 이
   계약은 Data Catalog metadata 원자성과 Iceberg catalog-pointer CAS를 검증하지만 Mystack이 Iceberg
@@ -107,12 +107,12 @@
   rename, catalog-only drop, 추적 file purge와 서로 다른 Glue-image container의 barrier 동기화
   Spark writer 두 개를 검증합니다. Client가 stale `VersionId` commit을 refresh/retry하고 append
   둘을 모두 보존해야 합니다. [Iceberg snapshot/reference/procedure
-  protocol](protocols/glue-iceberg-snapshots-refs-procedures.ko.md), [Iceberg row-level DML
-  protocol](protocols/glue-iceberg-row-level-dml.ko.md), [Iceberg lifecycle
-  protocol](protocols/glue-iceberg-lifecycle.ko.md), [Open Table Format 입력
-  protocol](protocols/glue-open-table-format.ko.md), [Iceberg evolution
-  protocol](protocols/glue-iceberg-evolution.ko.md), [Iceberg commit
-  protocol](protocols/glue-iceberg-commits.ko.md), [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
+  protocol](protocols/glue/glue-iceberg-snapshots-refs-procedures.ko.md), [Iceberg row-level DML
+  protocol](protocols/glue/glue-iceberg-row-level-dml.ko.md), [Iceberg lifecycle
+  protocol](protocols/glue/glue-iceberg-lifecycle.ko.md), [Open Table Format 입력
+  protocol](protocols/glue/glue-open-table-format.ko.md), [Iceberg evolution
+  protocol](protocols/glue/glue-iceberg-evolution.ko.md), [Iceberg commit
+  protocol](protocols/glue/glue-iceberg-commits.ko.md), [AWS Glue Iceberg 계약](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)을
   참고하세요.
 
 <!-- section: reproducibility -->
@@ -136,7 +136,7 @@ botocore model이 operation, 데이터 구조, 제약, 선언된 오류를 정�
 Parameterized local contract가 Catalog 상태 오류를 모두 재현하고, 자연스러운 상태 조건이 없는
 문서화된 internal/timeout 실패는 설정 기반 fault injection으로 재현합니다. 인증·인가 오류는
 프로젝트 범위 밖입니다.
-[Partition/batch 오류 계약](protocols/glue-partition-batch-errors.ko.md)은 Docker를 시작하지 않고
+[Partition/batch 오류 계약](protocols/glue/glue-partition-batch-errors.ko.md)은 Docker를 시작하지 않고
 model 최댓값, 검증 순서, 안정적인 부분 성공, `UnprocessedKeys`, persistence rollback을 검증합니다.
 
 AWS의 [Hexagonal architecture 모범 사례](https://docs.aws.amazon.com/prescriptive-guidance/latest/hexagonal-architectures/best-practices.html)는 독립 core test와 E2E 자동화를 권장합니다.

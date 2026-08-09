@@ -70,7 +70,7 @@ AWS GetPartitions
 
 There is no total-count query or full Catalog materialization in this AWS request path. Management
 read models request explicit counts through a separate query port. See the
-[partition-expression protocol](protocols/glue-partition-expressions.md) for the operator and
+[partition-expression protocol](protocols/glue/glue-partition-expressions.md) for the operator and
 error-order contract.
 
 <!-- section: constraints -->
@@ -87,5 +87,5 @@ an untrusted network.
 - [Glue GetPartitions API](https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html)
 - [Glue Data Catalog Hive integration](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [Iceberg with Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)
-- [SQLite runtime boundary](protocols/glue-sqlite-runtime.md)
+- [SQLite runtime boundary](protocols/glue/glue-sqlite-runtime.md)
 - [SQLite query planner](https://www.sqlite.org/queryplanner.html)

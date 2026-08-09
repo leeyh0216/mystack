@@ -42,23 +42,23 @@
 <!-- section: protocol -->
 ## Protocol과 호환성
 
-- AWS JSON 1.1 request, response, error와 Iceberg 책임 경계: [Protocol 분석](protocols/aws-json-1.1.ko.md)
+- AWS JSON 1.1 request, response, error와 Iceberg 책임 경계: [Protocol 분석](protocols/aws-json/aws-json-1.1.ko.md)
 - Partition 검증, update, batch 순서와 부분 성공: [Glue partition/batch 오류
-  계약](protocols/glue-partition-batch-errors.ko.md)
+  계약](protocols/glue/glue-partition-batch-errors.ko.md)
 - Iceberg `VersionId` pointer CAS, process lock, retry 검증과 수정 위치: [Iceberg GlueCatalog
-  commit 계약](protocols/glue-iceberg-commits.ko.md)
+  commit 계약](protocols/glue/glue-iceberg-commits.ko.md)
 - Iceberg partition/schema/sort/identifier 보장과 client 변경 수정 위치: [Iceberg evolution
-  계약](protocols/glue-iceberg-evolution.ko.md)
+  계약](protocols/glue/glue-iceberg-evolution.ko.md)
 - Iceberg COW/MOR row-level write, 실패한 commit 근거와 수정 위치: [Iceberg row-level DML
-  계약](protocols/glue-iceberg-row-level-dml.ko.md)
+  계약](protocols/glue/glue-iceberg-row-level-dml.ko.md)
 - Iceberg time travel, ref, metadata/maintenance procedure, S3 영향과 수정 위치: [Iceberg
-  snapshot/reference/procedure 계약](protocols/glue-iceberg-snapshots-refs-procedures.ko.md)
+  snapshot/reference/procedure 계약](protocols/glue/glue-iceberg-snapshots-refs-procedures.ko.md)
 - Iceberg rename/drop/purge 순서, 보상 작업, system 간 실패 한계: [Iceberg lifecycle
-  계약](protocols/glue-iceberg-lifecycle.ko.md)
+  계약](protocols/glue/glue-iceberg-lifecycle.ko.md)
 - AWS Open Table Format 요청 구조, service 소유 Iceberg metadata, S3 보상과 수정 위치:
-  [Open Table Format 입력 계약](protocols/glue-open-table-format.ko.md)
+  [Open Table Format 입력 계약](protocols/glue/glue-open-table-format.ko.md)
 - Glue managed optimizer API, lifecycle, scheduler, Spark 실행과 수정 위치: [table optimizer
-  계약](protocols/glue-table-optimizers.ko.md)
+  계약](protocols/glue/glue-table-optimizers.ko.md)
 - 고정 botocore model과 구현 상태: [API coverage](compatibility/api-coverage.ko.md)
 - 외부 client별 E2E claim: [Client 호환성 표](compatibility/client-matrix.ko.md)
 - AWS, boto, Spark 변경 대응 위치와 자동 검사: [변경 대응 정책](evolution.ko.md)

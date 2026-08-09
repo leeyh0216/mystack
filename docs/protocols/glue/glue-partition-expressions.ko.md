@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-partition-expressions -->
+<!-- doc-id: protocols/glue/glue-partition-expressions -->
 <!-- lang: ko -->
 
 [한국어](glue-partition-expressions.ko.md) | [English](glue-partition-expressions.md)

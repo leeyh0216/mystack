@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-table-optimizers -->
+<!-- doc-id: protocols/glue/glue-table-optimizers -->
 <!-- lang: en -->
 
 [한국어](glue-table-optimizers.ko.md) | [English](glue-table-optimizers.md)
@@ -66,7 +66,7 @@ file format, default location, and location containment are bound after table lo
 mutation. Missing tables/optimizers return `EntityNotFoundException`,
 duplicate creates return `AlreadyExistsException`, and invalid type/configuration/location values
 return `InvalidInputException`. `BatchGetTableOptimizer` accepts at most 20 entries and returns
-per-entry `ErrorDetail` failures. The generated [error matrix](../compatibility/glue-errors.generated.md)
+per-entry `ErrorDetail` failures. The generated [error matrix](../../compatibility/glue-errors.generated.md)
 is the executable decision-order inventory. Authentication, authorization, IAM, Lake Formation,
 cross-account, and cross-Region branches are deliberately absent.
 
@@ -107,7 +107,7 @@ counts come from the Iceberg result where available.
 ## Configuration and repair locations
 
 All scheduler and process values live under `glue.table_optimizers` in the mounted YAML. See the
-[configuration guide](../configuration.md) for the complete block. The dependency direction is:
+[configuration guide](../../configuration.md) for the complete block. The dependency direction is:
 
 ```text
 AWS JSON adapter -> optimizer use cases -> optimizer domain

@@ -98,7 +98,7 @@ acceptance:
       claim_ko: 주석으로 선언한 Glue 5 Spark Hive client로 complex type, type 기반 partition pruning, partition DDL과 repair, 지원하는 ALTER TABLE metadata 변형을 검증합니다.
       case_ids: [glue-5.0-spark-3.5.4-hive-iceberg-1.7.1]
       scenario_ids: [hive-complex-types, hive-partition-pruning, hive-partition-ddl-repair, hive-table-alter]
-      evidence_paths: [tests/e2e/test_glue_spark_catalog.py, docs/protocols/glue-partition-expressions.md, docs/protocols/glue-hive-partition-ddl.md, docs/protocols/glue-hive-table-alter.md]
+      evidence_paths: [tests/e2e/test_glue_spark_catalog.py, docs/protocols/glue/glue-partition-expressions.md, docs/protocols/glue/glue-hive-partition-ddl.md, docs/protocols/glue/glue-hive-table-alter.md]
       official_sources: [glue-5.0, glue-hive]
     iceberg:
       title_en: Iceberg Java GlueCatalog lifecycle
@@ -107,7 +107,7 @@ acceptance:
       claim_ko: 주석으로 선언한 Glue 5 profile에서 Open Table Format input, create/read/write/evolution, row-level DML, snapshot과 ref, maintenance procedure, managed optimizer, rename/drop/purge, concurrent commit retry를 검증합니다.
       case_ids: [glue-5.0-spark-3.5.4-hive-iceberg-1.7.1]
       scenario_ids: [iceberg-open-table-format-input, iceberg-create-append-read-evolve, iceberg-partition-schema-sort-evolution, iceberg-row-level-dml, iceberg-snapshots-refs-procedures, iceberg-managed-table-optimizers, iceberg-rename-drop-purge, iceberg-multi-container-contention]
-      evidence_paths: [tests/e2e/test_glue_spark_catalog.py, docs/protocols/glue-open-table-format.md, docs/protocols/glue-iceberg-evolution.md, docs/protocols/glue-iceberg-row-level-dml.md, docs/protocols/glue-iceberg-snapshots-refs-procedures.md, docs/protocols/glue-table-optimizers.md, docs/protocols/glue-iceberg-lifecycle.md, docs/protocols/glue-iceberg-commits.md]
+      evidence_paths: [tests/e2e/test_glue_spark_catalog.py, docs/protocols/glue/glue-open-table-format.md, docs/protocols/glue/glue-iceberg-evolution.md, docs/protocols/glue/glue-iceberg-row-level-dml.md, docs/protocols/glue/glue-iceberg-snapshots-refs-procedures.md, docs/protocols/glue/glue-table-optimizers.md, docs/protocols/glue/glue-iceberg-lifecycle.md, docs/protocols/glue/glue-iceberg-commits.md]
       official_sources: [glue-5.0, glue-iceberg, glue-open-table-format, glue-table-optimizers, iceberg-evolution, iceberg-spark-writes, iceberg-configuration, iceberg-spark-queries, iceberg-spark-ddl, iceberg-spark-procedures, iceberg-branching, iceberg-glue-catalog-source]
     emr-pyspark-s3:
       title_en: EMR PySpark and LocalStack S3 regression
@@ -116,7 +116,7 @@ acceptance:
       claim_ko: boto3로 emulated EMR cluster를 생성하고 제어하며 bootstrap action, S3 artifact download, local PySpark 실행, 취소, lifecycle, log 게시가 계속 동작함을 검증합니다.
       case_ids: [boto3-botocore-1.43.66-contract, emr-7.8.0-spark-3.5.4]
       scenario_ids: [emr-control-plane, bootstrap-s3-spark-step-lifecycle]
-      evidence_paths: [emr/tests/test_boto3_contract.py, tests/e2e/test_emr_spark.py, docs/protocols/emr-log-layout.md, docs/testing.md]
+      evidence_paths: [emr/tests/test_boto3_contract.py, tests/e2e/test_emr_spark.py, docs/protocols/emr/emr-log-layout.md, docs/testing.md]
       official_sources: [botocore-models, emr-7.8.0]
   exclusions:
     glue-compute:

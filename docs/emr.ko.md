@@ -145,17 +145,17 @@ Step을 추가하며, 제출한 인자 벡터와 해석된 인자 벡터를 보�
 
 `LogUri`를 설정하면 terminal Step은 압축된 controller, syslog, stdout, stderr, synthetic local-driver
 application stream을 지정한 S3 prefix 아래에 게시합니다. Path, 재시도, 실행 중에 볼 수 있는 정보는
-[LogUri 배치와 복구 계약](protocols/emr-log-layout.ko.md)에서 확인합니다.
+[LogUri 배치와 복구 계약](protocols/emr/emr-log-layout.ko.md)에서 확인합니다.
 
 <!-- section: prepare -->
 ## Image 준비 또는 시작 시 cluster provision
 
 Emulator가 시작되기 전에 enterprise certificate, proxy environment variable, 다른 image-wide prerequisite를
-준비하려면 검토된 [EMR pre-start 안내](protocols/emr-prestart.ko.md)를 사용합니다. 이것은
+준비하려면 검토된 [EMR pre-start 안내](protocols/emr/emr-prestart.ko.md)를 사용합니다. 이것은
 `BootstrapActions`와 별개인 image initialization 용도입니다.
 
 Container가 healthy 상태가 되는 즉시 cluster를 사용할 수 있게 하려면 versioned
-[startup cluster 파일](protocols/emr-startup-clusters.ko.md)을 제공합니다. 항목은 지원하는
+[startup cluster 파일](protocols/emr/emr-startup-clusters.ko.md)을 제공합니다. 항목은 지원하는
 `RunJobFlow` member를 사용하며 boto3로 만든 cluster와 같은 lifecycle을 거칩니다.
 
 <!-- section: sources -->

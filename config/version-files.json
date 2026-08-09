@@ -74,14 +74,14 @@
       "expected_matches": 1
     },
     {
-      "path": "docs/protocols/emr-prestart.md",
+      "path": "docs/protocols/emr/emr-prestart.md",
       "kind": "regex",
       "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
       "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
       "expected_matches": 1
     },
     {
-      "path": "docs/protocols/emr-prestart.ko.md",
+      "path": "docs/protocols/emr/emr-prestart.ko.md",
       "kind": "regex",
       "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
       "replacement": "export MYSTACK_IMAGE_TAG=v{version}",

@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-open-table-format -->
+<!-- doc-id: protocols/glue/glue-open-table-format -->
 <!-- lang: en -->
 
 [한국어](glue-open-table-format.ko.md) | [English](glue-open-table-format.md)

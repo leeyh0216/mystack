@@ -41,15 +41,15 @@ run.
 - [Choose a client and follow its Glue/EMR request path](client-workflows.md)
 - [Check client and library compatibility](compatibility/client-matrix.md)
 - [Check user-facing support boundaries](support-scope.md)
-- [Operate the Glue SQLite catalog, verified runtime, and durability policy](protocols/glue-sqlite-runtime.md)
+- [Operate the Glue SQLite catalog, verified runtime, and durability policy](protocols/glue/glue-sqlite-runtime.md)
 
 <!-- section: emr -->
 ## Amazon EMR
 
 - [Create clusters and submit Spark or PySpark Steps](emr.md)
-- [Find Step logs and LogUri objects](protocols/emr-log-layout.md)
-- [Configure trusted image pre-start actions](protocols/emr-prestart.md)
-- [Provision clusters when the container starts](protocols/emr-startup-clusters.md)
+- [Find Step logs and LogUri objects](protocols/emr/emr-log-layout.md)
+- [Configure trusted image pre-start actions](protocols/emr/emr-prestart.md)
+- [Provision clusters when the container starts](protocols/emr/emr-startup-clusters.md)
 
 <!-- section: operations -->
 ## Configuration and operations

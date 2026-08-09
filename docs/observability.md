@@ -38,7 +38,7 @@ is therefore visible first in `proxy.routing.fallback`; a modeled AWS rejection 
 EMR LogUri publication emits `emr.step_logs.publish.*` around the complete archive and
 `emr.step_log_object.put.*` around every S3 object. Failures contain the cluster/Step, safe bucket
 and key evidence, partial object count, and a `fix_hint`, while the local publication record remains
-available through the management endpoint. See the [log layout contract](protocols/emr-log-layout.md).
+available through the management endpoint. See the [log layout contract](protocols/emr/emr-log-layout.md).
 Durability adds `emr.step_journal.*` and `emr.step_journal.publication_recovery.*`; retry attempts
 emit `emr.step_logs.publish.retry` with bounded-delay evidence. Live output emits
 `emr.management.log_chunk.*` and `emr.ui.log_stream.*`, including offsets and a repair hint on
@@ -49,13 +49,13 @@ Preconfigured clusters emit `emr.startup_clusters.load.*` before/after whole-fil
 `emr.startup_clusters.provision.*` around the plan, and `emr.startup_cluster.create.*` for each
 application-port call. Source, fingerprint, safe counts, definition index, cluster ID, and repair
 location make a future botocore mapping drift diagnosable. See the [startup cluster
-contract](protocols/emr-startup-clusters.md).
+contract](protocols/emr/emr-startup-clusters.md).
 
 Trusted image initialization emits `emr.prestart.scan.*`, per-file
 `emr.prestart.script.before`/`after`/`failed`, and
 `emr.entrypoint.privilege_drop.before`/`failed`. It logs only a script basename, safe ownership and
 mode, SHA-256 prefix, duration or exit code, and a `fix_hint`; values and script contents remain
-private. See the [EMR pre-start contract](protocols/emr-prestart.md).
+private. See the [EMR pre-start contract](protocols/emr/emr-prestart.md).
 
 <!-- section: fields -->
 ## Common fields

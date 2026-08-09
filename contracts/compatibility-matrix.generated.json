@@ -30,7 +30,7 @@
         "evidence_paths": [
           "emr/tests/test_boto3_contract.py",
           "tests/e2e/test_emr_spark.py",
-          "docs/protocols/emr-log-layout.md",
+          "docs/protocols/emr/emr-log-layout.md",
           "docs/testing.md"
         ],
         "official_sources": [
@@ -76,13 +76,13 @@
         "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c Glue 5 profile\uc5d0\uc11c Open Table Format input, create/read/write/evolution, row-level DML, snapshot\uacfc ref, maintenance procedure, managed optimizer, rename/drop/purge, concurrent commit retry\ub97c \uac80\uc99d\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
           "tests/e2e/test_glue_spark_catalog.py",
-          "docs/protocols/glue-open-table-format.md",
-          "docs/protocols/glue-iceberg-evolution.md",
-          "docs/protocols/glue-iceberg-row-level-dml.md",
-          "docs/protocols/glue-iceberg-snapshots-refs-procedures.md",
-          "docs/protocols/glue-table-optimizers.md",
-          "docs/protocols/glue-iceberg-lifecycle.md",
-          "docs/protocols/glue-iceberg-commits.md"
+          "docs/protocols/glue/glue-open-table-format.md",
+          "docs/protocols/glue/glue-iceberg-evolution.md",
+          "docs/protocols/glue/glue-iceberg-row-level-dml.md",
+          "docs/protocols/glue/glue-iceberg-snapshots-refs-procedures.md",
+          "docs/protocols/glue/glue-table-optimizers.md",
+          "docs/protocols/glue/glue-iceberg-lifecycle.md",
+          "docs/protocols/glue/glue-iceberg-commits.md"
         ],
         "official_sources": [
           "glue-5.0",
@@ -119,9 +119,9 @@
         "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c Glue 5 Spark Hive client\ub85c complex type, type \uae30\ubc18 partition pruning, partition DDL\uacfc repair, \uc9c0\uc6d0\ud558\ub294 ALTER TABLE metadata \ubcc0\ud615\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
           "tests/e2e/test_glue_spark_catalog.py",
-          "docs/protocols/glue-partition-expressions.md",
-          "docs/protocols/glue-hive-partition-ddl.md",
-          "docs/protocols/glue-hive-table-alter.md"
+          "docs/protocols/glue/glue-partition-expressions.md",
+          "docs/protocols/glue/glue-hive-partition-ddl.md",
+          "docs/protocols/glue/glue-hive-table-alter.md"
         ],
         "official_sources": [
           "glue-5.0",
@@ -137,7 +137,7 @@
         "title_ko": "Spark Hive catalog \ub3d9\uc791"
       }
     },
-    "evidence_sha256": "bd12bb3486d925cc2e98517bdfc3f4626ac22e0ae290836405bf4510544d9218",
+    "evidence_sha256": "c24177856be75d93ebcf31d11fb49f019162ec6a960a6257b1c880f96bdf46b0",
     "exclusions": {
       "additional-catalog-clients": {
         "official_sources": [
@@ -875,5 +875,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "8934b4ef2030a3abd6ac663f600e3038216e0ca7d1ecf6a1428b6fab4fe4ab19"
+  "source_sha256": "f08129c196601f5d4469b90735c20aab33fec2494801f28e909036f2dd1a7ffe"
 }

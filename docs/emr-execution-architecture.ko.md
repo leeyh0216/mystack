@@ -81,4 +81,4 @@ network에서만 쓰도록 인증 없이 설계됐습니다.
 - [EMR RunJobFlow API](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html)
 - [EMR Spark Step](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)
 - [Spark application submission](https://spark.apache.org/docs/3.5.4/submitting-applications.html)
-- [EMR LogUri 계약](protocols/emr-log-layout.ko.md)
+- [EMR LogUri 계약](protocols/emr/emr-log-layout.ko.md)

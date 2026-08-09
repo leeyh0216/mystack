@@ -92,7 +92,7 @@ file이나 environment를 읽지 않고 typed policy/value object만 받습니�
 `glue.partition_expressions`는 제한이 있는 `GetPartitions.Expression` compiler를 설정합니다.
 `max_length` 기본값은 공식 API의 2,048자 제한이고, `max_tokens`는 parser 작업량을 제한하며,
 `supported_key_types`는 type 호환 profile을 정의합니다. 자세한 내용은 [partition expression
-protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+protocol](protocols/glue/glue-partition-expressions.ko.md)을 참고하세요.
 
 `glue.sqlite`는 유일한 영속 Glue catalog store를 설정합니다. `database_file`은 absolute가 아니면
 `glue.data_root` 아래에서 해석합니다. Database file 하나만 mount하지 말고 parent directory 전체를
@@ -115,13 +115,13 @@ private DB-API는 schema나 catalog file을 만들기 전에 검증합니다. WA
 | `checkpoint.auto_checkpoint_pages` | SQLite 자동 WAL checkpoint page threshold |
 
 JSON catalog fallback이나 migration은 없습니다. Durability, 같은 host WAL 제한, backup 절차, logging,
-수정 경계는 [Glue SQLite runtime 계약](protocols/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
-[SQLite transaction 계약](protocols/glue-iceberg-commits.ko.md)에 있습니다.
+수정 경계는 [Glue SQLite runtime 계약](protocols/glue/glue-sqlite-runtime.ko.md)에, Iceberg pointer commit은
+[SQLite transaction 계약](protocols/glue/glue-iceberg-commits.ko.md)에 있습니다.
 
 Glue Open Table Format metadata는 주입한 S3 port를 통해 공통 `localstack.endpoint_url`, region,
 credential, path-style 설정을 사용합니다. Application은 Compose service name을 가정하지 않으며
 설정한 S3 bucket은 미리 존재해야 합니다. Create/update 순서, candidate cleanup, 제외 범위는
-[Open Table Format 입력 protocol](protocols/glue-open-table-format.ko.md)에 있습니다. Endpoint와
+[Open Table Format 입력 protocol](protocols/glue/glue-open-table-format.ko.md)에 있습니다. Endpoint와
 credential은 AWS 공식 [SDK endpoint
 설정](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)을 따릅니다.
 
@@ -154,7 +154,7 @@ glue:
 
 S3 endpoint, region, local credential은 `localstack` 설정을 사용하고 catalog location은 계속
 `s3://` URI로 적습니다. API, lifecycle, log와 수정 경계는 [managed optimizer
-protocol](protocols/glue-table-optimizers.ko.md)을 참고하세요. 세 managed type의 공식 근거는
+protocol](protocols/glue/glue-table-optimizers.ko.md)을 참고하세요. 세 managed type의 공식 근거는
 AWS [table optimizer 안내](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html)입니다.
 
 `glue.fault_injection`은 기본적으로 꺼져 있습니다. 활성화하면 rule 하나가 구현된 operation
@@ -176,7 +176,7 @@ glue:
 
 인증·인가 오류는 설정할 수 없습니다. 실패 시나리오가 끝나면 rule을 제거하거나 비활성화하고
 Glue container를 재시작하세요. 우선순위와 log는 [Glue 오류 결정
-protocol](protocols/glue-error-decisions.ko.md)을 참고하세요.
+protocol](protocols/glue/glue-error-decisions.ko.md)을 참고하세요.
 
 `management.console.refresh_interval_seconds`는 선택한 EMR 또는 Glue workspace의 선택 상태를
 유지하는 polling 주기이며 최소 0.5초입니다. 각 emulator가 service 소유 UI 설정 endpoint에서
@@ -207,7 +207,7 @@ Spark는 [제출 option](https://spark.apache.org/docs/3.5.4/submitting-applicat
 S3 log 게시에는 별도로 hard-code한 bucket이나 prefix가 없습니다. 각 cluster가 표준
 `RunJobFlow.LogUri`를 제공하며 publisher는 `localstack.endpoint_url`, region, credential,
 path-style 설정을 재사용합니다. 따라서 image 배포도 설정 가능하며 같은 boto3 S3 route로
-LocalStack에 접근합니다. 정확한 내용은 [log protocol](protocols/emr-log-layout.ko.md)을 참고하세요.
+LocalStack에 접근합니다. 정확한 내용은 [log protocol](protocols/emr/emr-log-layout.ko.md)을 참고하세요.
 `emr.live_log_chunk_bytes`는 filesystem read 한 번의 크기를 제한합니다.
 `emr.log_publication`은 retry 횟수, exponential backoff 범위, attempt timeout을 설정합니다.
 결정적인 S3 key를 사용하므로 재시도는 idempotent합니다. `emr.log_retention_seconds`는 terminal이며
@@ -220,13 +220,13 @@ path는 선택한 main configuration 옆을 기준으로 해석합니다. File�
 사용하며 side effect 전에 전체를 검증합니다. 선택적인 `compose.emr-startup-clusters.yaml`
 overlay는 명시적인 read-only [bind mount](https://docs.docker.com/engine/storage/bind-mounts/)를
 구성합니다. Allowlist와 재시작 동작은 [시작 클러스터
-protocol](protocols/emr-startup-clusters.ko.md)을 참고하세요.
+protocol](protocols/emr/emr-startup-clusters.ko.md)을 참고하세요.
 
 신뢰된 EMR image 초기화는 이 YAML 해석 경계보다 의도적으로 먼저 실행합니다.
 `MYSTACK_EMR_PRESTART_ENABLED`, `MYSTACK_EMR_PRESTART_DIR`과 Compose host 전용
 `MYSTACK_EMR_PRESTART_SOURCE`가 명시적 read-only script mount를 제어합니다. 이 값은 Domain이나
 Application module에 노출하지 않습니다. File 검증, root에서 `hadoop`으로의 전환, runtime path와
-환경 전달은 [EMR pre-start 계약](protocols/emr-prestart.ko.md)을 참고하세요.
+환경 전달은 [EMR pre-start 계약](protocols/emr/emr-prestart.ko.md)을 참고하세요.
 
 E2E harness는 `tests.emr_service`에서 EMR route를 찾고
 `tests.emr_jar_fixture_container_path`에서 미리 빌드한 Java 시험 JAR를 복사합니다. 두 값 모두

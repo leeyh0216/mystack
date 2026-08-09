@@ -89,7 +89,7 @@ scoped typed write transaction, never a mutable catalog aggregate, SQL, or a DB-
 Managed table optimizers add a focused domain aggregate, command/query handlers, an executor port,
 and a lifecycle-owned scheduler. The scheduler can claim and transition work only through the
 application facade; the outbound adapter owns Spark process/files, and the Spark-side entry point
-owns Iceberg procedures. See the [optimizer protocol](protocols/glue-table-optimizers.md) and AWS's
+owns Iceberg procedures. See the [optimizer protocol](protocols/glue/glue-table-optimizers.md) and AWS's
 [table optimizer API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-table-optimizers.html).
 
 EMR Application separates cluster commands, Step commands, read-only queries, opaque pagination,
@@ -230,7 +230,7 @@ change.
 - The EMR startup-file adapter validates a complete versioned `RunJobFlow` plan before side effects,
   maps it to `CreateCluster` commands, and calls the existing Application port after the queue driver
   starts. It never knows or mutates the repository. Container restart intentionally creates new
-  process-local IDs. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
+  process-local IDs. See the [startup cluster protocol](protocols/emr/emr-startup-clusters.md).
 - Work directories and logs are stored on named Docker volumes.
 - A lifecycle-owned outbound log publisher projects terminal local Spark process streams into the
   documented EMR Step S3 layout. Its application/container identifiers are explicitly synthetic;
@@ -244,7 +244,7 @@ change.
 - The optional EMR pre-start entrypoint is a separate trusted deployment boundary outside Domain
   and Application. It validates and sources operator files as root, then a fixed stdlib adapter
   changes groups/GID/UID and execs PID 1 as `hadoop`. No hook object or plugin interface enters the
-  service dependency graph. See the [pre-start contract](protocols/emr-prestart.md).
+  service dependency graph. See the [pre-start contract](protocols/emr/emr-prestart.md).
 
 Glue's JSON persistence adapter uses Python's atomic
 [`os.replace`](https://docs.python.org/3/library/os.html#os.replace) and durable

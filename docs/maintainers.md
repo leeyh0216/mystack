@@ -43,23 +43,23 @@ Mystack from an application, start with the [user guide](index.md).
 ## Protocol and compatibility
 
 - AWS JSON 1.1 requests, responses, errors, and the Iceberg responsibility boundary:
-  [protocol analysis](protocols/aws-json-1.1.md)
+  [protocol analysis](protocols/aws-json/aws-json-1.1.md)
 - Deterministic partition validation, update, batch ordering, and partial success:
-  [Glue partition/batch error contract](protocols/glue-partition-batch-errors.md)
+  [Glue partition/batch error contract](protocols/glue/glue-partition-batch-errors.md)
 - Iceberg `VersionId` pointer CAS, process locking, retry evidence, and repair locations:
-  [Iceberg GlueCatalog commit contract](protocols/glue-iceberg-commits.md)
+  [Iceberg GlueCatalog commit contract](protocols/glue/glue-iceberg-commits.md)
 - Iceberg partition/schema/sort/identifier guarantees and client-drift repair locations:
-  [Iceberg evolution contract](protocols/glue-iceberg-evolution.md)
+  [Iceberg evolution contract](protocols/glue/glue-iceberg-evolution.md)
 - Iceberg COW/MOR row-level writes, failed-commit evidence, and repair locations:
-  [Iceberg row-level DML contract](protocols/glue-iceberg-row-level-dml.md)
+  [Iceberg row-level DML contract](protocols/glue/glue-iceberg-row-level-dml.md)
 - Iceberg time travel, refs, metadata/maintenance procedures, S3 effects, and repair locations:
-  [Iceberg snapshot/reference/procedure contract](protocols/glue-iceberg-snapshots-refs-procedures.md)
+  [Iceberg snapshot/reference/procedure contract](protocols/glue/glue-iceberg-snapshots-refs-procedures.md)
 - Iceberg rename/drop/purge ordering, compensation, and cross-system failure limits:
-  [Iceberg lifecycle contract](protocols/glue-iceberg-lifecycle.md)
+  [Iceberg lifecycle contract](protocols/glue/glue-iceberg-lifecycle.md)
 - AWS Open Table Format request shapes, service-owned Iceberg metadata, S3 compensation, and repair
-  locations: [Open Table Format input contract](protocols/glue-open-table-format.md)
+  locations: [Open Table Format input contract](protocols/glue/glue-open-table-format.md)
 - Glue managed optimizer APIs, lifecycle, scheduler, Spark execution, and repair locations:
-  [table optimizer contract](protocols/glue-table-optimizers.md)
+  [table optimizer contract](protocols/glue/glue-table-optimizers.md)
 - Pinned botocore models and implementation status: [API coverage](compatibility/api-coverage.md)
 - E2E claims by external client: [client compatibility matrix](compatibility/client-matrix.md)
 - AWS, boto, and Spark evolution plus automated repair locations: [evolution policy](evolution.md)

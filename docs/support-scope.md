@@ -43,34 +43,34 @@ optimizers, and run history atomically. `glue.sqlite.database_file` is the sole 
 store; WAL is the verified default and `rollback` is an explicit development escape hatch. There is
 no JSON catalog fallback or migration. For Iceberg tables, the same transaction applies an atomic
 `VersionId`/`metadata_location` compare-and-swap. Iceberg still owns data, manifest,
-metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue-iceberg-commits.md).
+metadata, snapshot, and retry logic; see the [Iceberg commit protocol](protocols/glue/glue-iceberg-commits.md).
 The fixed partition, schema, sort, and identifier behavior is recorded separately in the
-[Iceberg evolution protocol](protocols/glue-iceberg-evolution.md).
+[Iceberg evolution protocol](protocols/glue/glue-iceberg-evolution.md).
 The fixed `INSERT`/`UPDATE`/`DELETE`/`MERGE` behavior and COW/MOR evidence are in the
-[Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.md).
+[Iceberg row-level DML protocol](protocols/glue/glue-iceberg-row-level-dml.md).
 Time travel, references, metadata tables, snapshot/maintenance procedures, and S3 cleanup are in
-the [Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.md).
+the [Iceberg snapshot/reference/procedure protocol](protocols/glue/glue-iceberg-snapshots-refs-procedures.md).
 Rename, catalog-only drop, tracked-file purge, compensation, and cross-Glue/S3 failure boundaries are
-in the [Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.md).
+in the [Iceberg lifecycle protocol](protocols/glue/glue-iceberg-lifecycle.md).
 Service-owned Iceberg v2 metadata materialization for `OpenTableFormatInput` and
 `UpdateOpenTableFormatInput`, including S3 compensation and catalog CAS, is defined in the
-[Open Table Format input protocol](protocols/glue-open-table-format.md).
+[Open Table Format input protocol](protocols/glue/glue-open-table-format.md).
 Managed optimizer APIs, defaults, scheduling, Spark procedure mapping, errors, logs, and exclusions
-are fixed by the [table optimizer protocol](protocols/glue-table-optimizers.md).
+are fixed by the [table optimizer protocol](protocols/glue/glue-table-optimizers.md).
 `GetPartitions` supports the documented comparison, logical, `IN`,
 `BETWEEN`, `LIKE`, and null predicates with typed keys, precedence, paging, and segments. See the
-[partition-expression protocol](protocols/glue-partition-expressions.md) for grammar and limits.
+[partition-expression protocol](protocols/glue/glue-partition-expressions.md) for grammar and limits.
 Spark Hive partition add/drop/rename/location and repair mappings are documented in the
-[Hive partition DDL protocol](protocols/glue-hive-partition-ddl.md).
+[Hive partition DDL protocol](protocols/glue/glue-hive-partition-ddl.md).
 Supported table-level column/property/SerDe/location changes and client-owned unsupported variants
-are documented in the [Hive table ALTER protocol](protocols/glue-hive-table-alter.md).
+are documented in the [Hive table ALTER protocol](protocols/glue/glue-hive-table-alter.md).
 All implemented operations participate in the generated [Glue error
 matrix](compatibility/glue-errors.generated.md); precedence, safe logging, and file-driven failure
-injection are defined by the [error decision protocol](protocols/glue-error-decisions.md).
+injection are defined by the [error decision protocol](protocols/glue/glue-error-decisions.md).
 Database/table/version validation, conflict, version, archive, rename, cascade, and rollback behavior
-is fixed by the [resource error contract](protocols/glue-database-table-errors.md).
+is fixed by the [resource error contract](protocols/glue/glue-database-table-errors.md).
 Partition value, list, update, batch order, item error, `UnprocessedKeys`, and rollback behavior is
-fixed by the [partition/batch error contract](protocols/glue-partition-batch-errors.md).
+fixed by the [partition/batch error contract](protocols/glue/glue-partition-batch-errors.md).
 
 Every currently implemented control-plane operation (EMR 13, Glue 28) has public-Proxy boto3
 E2E coverage. This is implementation coverage, not a claim that all upstream EMR/Glue operations
@@ -79,9 +79,9 @@ The generated [release acceptance](compatibility/release-acceptance.generated.md
 release-blocking view that joins these API/error contracts with the exact Hive, Iceberg, AWS SDK
 for pandas, and EMR PySpark/S3 scenarios from annotated compatibility tests.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are
-recreated with new IDs after EMR process restart. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
+recreated with new IDs after EMR process restart. See the [startup cluster protocol](protocols/emr/emr-startup-clusters.md).
 Trusted pre-start scripts are an opt-in EMR container boundary, not an in-process plugin API or an
-EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract](protocols/emr-prestart.md).
+EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract](protocols/emr/emr-prestart.md).
 
 <!-- section: exclusions -->
 ## Explicit exclusions

@@ -163,9 +163,9 @@
   `glue/tests/test_iceberg_snapshot_ref_catalog.py`,
   `glue/tests/test_iceberg_lifecycle_catalog.py`,
   `glue/tests/test_open_table_format.py`,
-  `docs/protocols/glue-iceberg-snapshots-refs-procedures.md`,
-  `docs/protocols/glue-iceberg-lifecycle.md`,
-  `docs/protocols/glue-open-table-format.md`
+  `docs/protocols/glue/glue-iceberg-snapshots-refs-procedures.md`,
+  `docs/protocols/glue/glue-iceberg-lifecycle.md`,
+  `docs/protocols/glue/glue-open-table-format.md`
 - Confidence: High
 
 <!-- section: uc-007 -->
@@ -188,7 +188,7 @@
   contracts, and all 28 Glue operations through public Proxy E2E.
 - Evidence: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/inbound/aws.py`,
-  `docs/protocols/glue-partition-batch-errors.md`
+  `docs/protocols/glue/glue-partition-batch-errors.md`
 - Confidence: High
 
 <!-- section: uc-008 -->
@@ -322,7 +322,7 @@
   `ConcurrentModificationException`, or sanitized/configured system errors.
 - Observability: operation boundary, condition ID, mutation guarantee, transaction rollback, and
   persistence before/after/failure events without request values.
-- Evidence: `docs/protocols/glue-database-table-errors.md`,
+- Evidence: `docs/protocols/glue/glue-database-table-errors.md`,
   `glue/tests/test_database_table_error_semantics.py`,
   `contracts/glue-error-conditions.yaml`
 - Confidence: High
@@ -352,7 +352,7 @@
   `glue/src/mystack/glue/application/table_optimizer_runtime.py`,
   `glue/src/mystack/glue/adapters/outbound/table_optimizer_executor.py`,
   `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`, and
-  `docs/protocols/glue-table-optimizers.md`.
+  `docs/protocols/glue/glue-table-optimizers.md`.
 - Confidence: High for the documented Glue 5/Spark 3.5.4/Iceberg 1.7.1 path.
 
 <!-- section: uc-016 -->

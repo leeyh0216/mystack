@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-iceberg-row-level-dml -->
+<!-- doc-id: protocols/glue/glue-iceberg-row-level-dml -->
 <!-- lang: ko -->
 
 [한국어](glue-iceberg-row-level-dml.ko.md) | [English](glue-iceberg-row-level-dml.md)

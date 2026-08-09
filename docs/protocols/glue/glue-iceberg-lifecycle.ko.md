@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-iceberg-lifecycle -->
+<!-- doc-id: protocols/glue/glue-iceberg-lifecycle -->
 <!-- lang: ko -->
 
 [한국어](glue-iceberg-lifecycle.ko.md) | [English](glue-iceberg-lifecycle.md)

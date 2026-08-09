@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-sqlite-runtime -->
+<!-- doc-id: protocols/glue/glue-sqlite-runtime -->
 <!-- lang: ko -->
 
 [한국어](glue-sqlite-runtime.ko.md) | [English](glue-sqlite-runtime.md)

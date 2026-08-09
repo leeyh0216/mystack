@@ -38,7 +38,7 @@ operation과 request ID를 보존합니다. 변경된 boto/botocore request가 �
 EMR LogUri 게시는 전체 archive 전후에 `emr.step_logs.publish.*`, 각 S3 object 전후에
 `emr.step_log_object.put.*`를 기록합니다. 실패 event는 cluster/Step, 안전한 bucket/key 정보,
 부분 게시 object 수와 `fix_hint`를 포함하며 local publication record는 management endpoint에서
-확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr-log-layout.ko.md)에 있습니다.
+확인할 수 있습니다. 자세한 계약은 [log 배치](protocols/emr/emr-log-layout.ko.md)에 있습니다.
 Durability 경계는 `emr.step_journal.*`, `emr.step_journal.publication_recovery.*`를 기록하고 retry는
 상한이 있는 delay 정보가 포함된 `emr.step_logs.publish.retry`를 남깁니다. Live output 경계는
 `emr.management.log_chunk.*`, `emr.ui.log_stream.*`에 offset을 기록하고 component schema가
@@ -49,13 +49,13 @@ component, 상대 path, status, byte 수, 시간을 가진 `proxy.service_ui.for
 `emr.startup_clusters.provision.*`, application port 호출마다 `emr.startup_cluster.create.*`를
 기록합니다. Source, fingerprint, 안전한 개수, definition index, cluster ID, 수정 위치를 통해 향후
 botocore mapping 변경을 진단할 수 있습니다. 자세한 내용은 [시작 클러스터
-계약](protocols/emr-startup-clusters.ko.md)에 있습니다.
+계약](protocols/emr/emr-startup-clusters.ko.md)에 있습니다.
 
 신뢰된 image 초기화는 `emr.prestart.scan.*`, file별
 `emr.prestart.script.before`/`after`/`failed`,
 `emr.entrypoint.privilege_drop.before`/`failed`를 남깁니다. Script basename, 안전한 소유권과 mode,
 SHA-256 prefix, 실행 시간 또는 exit code, `fix_hint`만 기록하며 값과 script 내용은 보호합니다.
-[EMR pre-start 계약](protocols/emr-prestart.ko.md)을 참고하세요.
+[EMR pre-start 계약](protocols/emr/emr-prestart.ko.md)을 참고하세요.
 
 <!-- section: fields -->
 ## 공통 field

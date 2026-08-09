@@ -89,7 +89,7 @@ ID로 게시하며 재연결 시 `Last-Event-ID`를 적용합니다.
 `management.console.log_stream_timeout_seconds`는 연결 하나의 시간을 제한하고
 `log_buffer_bytes`는 browser가 보관하는 stdout/stderr 크기를 제한합니다. Emulator 재시작
 뒤에도 내구성 있는 복구 Step 표시와 S3 게시 상태를 확인할 수 있습니다. Synthetic
-local-driver object는 [EMR log 배치](protocols/emr-log-layout.ko.md)와 AWS
+local-driver object는 [EMR log 배치](protocols/emr/emr-log-layout.ko.md)와 AWS
 [EMR log 지침](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html)을
 기준으로 해석합니다.
 

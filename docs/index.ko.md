@@ -40,15 +40,15 @@ Mystack은 Amazon EMR, AWS Glue Data Catalog, Spark, LocalStack S3를 위한 로
 - [Client 선택과 Glue/EMR 요청 경로 따라가기](client-workflows.ko.md)
 - [Client와 library 호환성 확인](compatibility/client-matrix.ko.md)
 - [사용자 관점 지원 범위 확인](support-scope.ko.md)
-- [Glue SQLite catalog, 검증한 runtime, durability 정책 운영](protocols/glue-sqlite-runtime.ko.md)
+- [Glue SQLite catalog, 검증한 runtime, durability 정책 운영](protocols/glue/glue-sqlite-runtime.ko.md)
 
 <!-- section: emr -->
 ## Amazon EMR
 
 - [Cluster 생성과 Spark 또는 PySpark Step 제출](emr.ko.md)
-- [Step log와 LogUri object 찾기](protocols/emr-log-layout.ko.md)
-- [신뢰한 image pre-start action 설정](protocols/emr-prestart.ko.md)
-- [Container 시작 시 cluster 미리 구성](protocols/emr-startup-clusters.ko.md)
+- [Step log와 LogUri object 찾기](protocols/emr/emr-log-layout.ko.md)
+- [신뢰한 image pre-start action 설정](protocols/emr/emr-prestart.ko.md)
+- [Container 시작 시 cluster 미리 구성](protocols/emr/emr-startup-clusters.ko.md)
 
 <!-- section: operations -->
 ## 설정과 운영

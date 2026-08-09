@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-hive-table-alter -->
+<!-- doc-id: protocols/glue/glue-hive-table-alter -->
 <!-- lang: en -->
 
 [한국어](glue-hive-table-alter.ko.md) | [English](glue-hive-table-alter.md)

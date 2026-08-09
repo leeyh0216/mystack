@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-iceberg-commits -->
+<!-- doc-id: protocols/glue/glue-iceberg-commits -->
 <!-- lang: en -->
 
 [한국어](glue-iceberg-commits.ko.md) | [English](glue-iceberg-commits.md)
