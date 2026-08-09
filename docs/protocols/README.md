@@ -21,16 +21,8 @@ contributors; begin with the service guide and then follow the path relevant to 
 
 ### Glue Data Catalog
 
-1. [SQLite runtime](glue/glue-sqlite-runtime.md) — catalog durability and runtime constraints.
-2. [Database/table errors](glue/glue-database-table-errors.md) and [error decisions](glue/glue-error-decisions.md)
-   — modeled failures and precedence.
-3. [Partition expressions](glue/glue-partition-expressions.md) and [batch errors](glue/glue-partition-batch-errors.md)
-   — Hive-compatible partition behavior.
-4. [Open Table Format](glue/glue-open-table-format.md) — Iceberg metadata/CAS boundary.
-5. Iceberg extensions in order: [commits](glue/glue-iceberg-commits.md),
-   [evolution](glue/glue-iceberg-evolution.md), [row-level DML](glue/glue-iceberg-row-level-dml.md),
-   [snapshots, refs, and procedures](glue/glue-iceberg-snapshots-refs-procedures.md), and
-   [lifecycle](glue/glue-iceberg-lifecycle.md).
+Start with the [Glue protocol guide](glue/README.md), then choose one focused path:
+[Catalog](glue/catalog.md), [Hive](glue/hive.md), or [Iceberg](glue/iceberg.md).
 
 ### Amazon EMR
 

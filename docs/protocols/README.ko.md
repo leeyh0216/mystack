@@ -21,13 +21,8 @@
 
 ### Glue Data Catalog
 
-1. [SQLite runtime](glue/glue-sqlite-runtime.ko.md) — catalog 내구성과 runtime 제약
-2. [Database/table 오류](glue/glue-database-table-errors.ko.md), [오류 결정](glue/glue-error-decisions.ko.md)
-3. [Partition expression](glue/glue-partition-expressions.ko.md), [batch 오류](glue/glue-partition-batch-errors.ko.md)
-4. [Open Table Format](glue/glue-open-table-format.ko.md)
-5. Iceberg 확장: [commit](glue/glue-iceberg-commits.ko.md), [evolution](glue/glue-iceberg-evolution.ko.md),
-   [row-level DML](glue/glue-iceberg-row-level-dml.ko.md), [snapshot/ref/procedure](glue/glue-iceberg-snapshots-refs-procedures.ko.md),
-   [lifecycle](glue/glue-iceberg-lifecycle.ko.md)
+[Glue 프로토콜 안내](glue/README.ko.md)부터 읽고 필요한 경로를 선택합니다:
+[Catalog](glue/catalog.ko.md), [Hive](glue/hive.ko.md), [Iceberg](glue/iceberg.ko.md).
 
 ### Amazon EMR
 
