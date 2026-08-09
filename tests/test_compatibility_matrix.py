@@ -69,7 +69,7 @@ def test_release_preflight_preserves_generated_api_coverage_evidence() -> None:
 def test_isolated_runner_uses_generated_nodes_and_configured_timeout() -> None:
     case = CompiledCaseRepository(DEFAULT_OUTPUT).get("boto3-botocore-1.43.66-contract")
     runner = IsolatedCaseRunner(
-        root=ROOT, timeout_configuration=TimeoutConfiguration(ROOT / "config/mystack.yaml")
+        root=ROOT, timeout_configuration=TimeoutConfiguration(ROOT / "config/runtime/mystack.yaml")
     )
     command, timeout = runner.command(case)
     assert command[:3] == ["uv", "run", "pytest"]
@@ -81,7 +81,7 @@ def test_isolated_runner_rejects_unknown_generated_adapter() -> None:
     case = copy.deepcopy(CompiledCaseRepository(DEFAULT_OUTPUT).all()[0])
     case["runner"]["kind"] = "shell"
     runner = IsolatedCaseRunner(
-        root=ROOT, timeout_configuration=TimeoutConfiguration(ROOT / "config/mystack.yaml")
+        root=ROOT, timeout_configuration=TimeoutConfiguration(ROOT / "config/runtime/mystack.yaml")
     )
     with pytest.raises(CaseSelectionError, match="unknown generated runner"):
         runner.command(case)

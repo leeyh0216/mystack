@@ -181,7 +181,7 @@ def test_fault_policy_can_be_supplied_by_typed_docker_environment_override(monke
         "error_code: OperationTimeoutException, message: injected}]",
     )
 
-    settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = GlueSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
 
     assert settings.fault_injection == GlueFaultInjectionPolicy(
         enabled=True,

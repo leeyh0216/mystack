@@ -33,7 +33,7 @@ uv run python scripts/version.py set 1.4.0
 uv run python scripts/version.py check --base-ref origin/main
 ```
 
-`version-bump`와 `set`은 `config/version-files.json`에 선언한 모든 파일을 바꾸고 unified diff를
+`version-bump`와 `set`은 `config/release/version-files.json`에 선언한 모든 파일을 바꾸고 unified diff를
 출력하며 working tree가 변경된 상태이면 중단합니다. `--dry-run`은 파일을 쓰지 않습니다.
 `--allow-dirty`는 통제된 자동화에서만 사용합니다. 이 명령은 commit, push, tag, image 게시,
 release 생성을 수행하지 않습니다. Python snapshot 버전은 공식 [PEP 440 version
@@ -104,7 +104,7 @@ tag target 또는 image revision label이 원래 SHA와 같을 때만 이어서 
 덮어쓰기 전에 실패합니다. 정식 release는 마지막에 만들기 때문에 익명 검증에 실패한 image를
 정상 release로 알리지 않습니다.
 
-Snapshot 보존 기간은 `config/registry-release.json`과 실행별 `retention.json`에 30일로 기록합니다.
+Snapshot 보존 기간은 `config/release/registry-release.json`과 실행별 `retention.json`에 30일로 기록합니다.
 삭제 자동화는 아직 없으며 정식 image는 snapshot 정리 대상이 아닙니다.
 
 <!-- section: governance -->
@@ -121,7 +121,7 @@ ruleset](https://docs.github.com/en/repositories/configuring-branches-and-merges
 승인 인원은 repository owner가 선택하며 코드에 고정하지 않습니다. Concurrency는 branch별 게시를
 직렬화하고 version 및 immutable binding 검사가 오래된 PR과 재시도를 최종 방어합니다.
 
-검토 가능한 원천은 `config/github-rulesets.json`입니다. 승인 수는 설정에서 선택하며 현재
+검토 가능한 원천은 `config/governance/github-rulesets.json`입니다. 승인 수는 설정에서 선택하며 현재
 single-maintainer repository 기본값은 0입니다. 다음 명령으로 Mystack이 소유한 ruleset 두 개만
 검증하거나 수렴시킵니다.
 

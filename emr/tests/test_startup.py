@@ -137,7 +137,7 @@ clusters:
 
 
 def test_resolves_relative_startup_file_beside_main_configuration(tmp_path: Path) -> None:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["emr"]["startup_clusters_file"] = "clusters/startup.yaml"
     configured = LoadedConfiguration(
@@ -165,4 +165,4 @@ class _ClusterCommands:
 
 
 def _settings() -> EmrSettings:
-    return EmrSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    return EmrSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))

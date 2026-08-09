@@ -3,10 +3,10 @@
 services:
   proxy:
     volumes:
-      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro
+      - ${MYSTACK_CONFIG_FILE:-./config/runtime/mystack.yaml}:/etc/mystack/mystack.yaml:ro
   emr:
     volumes:
-      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro
+      - ${MYSTACK_CONFIG_FILE:-./config/runtime/mystack.yaml}:/etc/mystack/mystack.yaml:ro
   glue:
     volumes:
-      - ${MYSTACK_CONFIG_FILE:-./config/mystack.yaml}:/etc/mystack/mystack.yaml:ro
+      - ${MYSTACK_CONFIG_FILE:-./config/runtime/mystack.yaml}:/etc/mystack/mystack.yaml:ro

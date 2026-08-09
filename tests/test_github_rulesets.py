@@ -52,4 +52,4 @@ def test_dry_run_reports_create_and_update_without_mutation() -> None:
 
 
 def test_ruleset_config_path_is_repository_owned() -> None:
-    assert DEFAULT_CONFIG == Path(__file__).parents[1] / "config/github-rulesets.json"
+    assert DEFAULT_CONFIG == Path(__file__).parents[1] / "config/governance/github-rulesets.json"

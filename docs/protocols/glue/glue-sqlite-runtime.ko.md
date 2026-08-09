@@ -29,7 +29,7 @@
 <!-- section: boundary -->
 ## Runtime 경계
 
-Glue image는 `config/sqlite-runtime.json`에 고정한 SHA 검증 공식 SQLite amalgamation으로 target OCI
+Glue image는 `config/runtime/sqlite-runtime.json`에 고정한 SHA 검증 공식 SQLite amalgamation으로 target OCI
 architecture마다 `pysqlite3`를 별도 build합니다. 이 private DB-API module은
 `/opt/mystack/venv`에만 설치합니다. AWS Glue base image의 global SQLite library는 바꾸지 않습니다.
 생성한 runtime manifest에는 SQLite version, architecture, source digest를 기록합니다.
@@ -52,7 +52,7 @@ SQLite catalog file로 새로 시작해야 합니다. Mystack은 legacy JSON sta
 <!-- section: configuration -->
 ## 설정
 
-`glue.sqlite`는 `config/mystack.yaml`의 일부입니다. 상대 `database_file` path는
+`glue.sqlite`는 `config/runtime/mystack.yaml`의 일부입니다. 상대 `database_file` path는
 `glue.data_root` 아래에서 해석합니다. 상대 driver manifest path는 mount한 YAML file 옆에서
 해석합니다.
 
@@ -147,13 +147,13 @@ database content, request payload는 기록하지 않습니다. Health endpoint 
 
 새 base image 또는 Python runtime으로 이 경계가 깨지면 다음 순서로 확인합니다.
 
-1. Source version, URL 형태, checksum: `config/sqlite-runtime.json`
+1. Source version, URL 형태, checksum: `config/runtime/sqlite-runtime.json`
 2. 검증, extraction, extension compilation: `glue/scripts/build_sqlite_driver.py`
 3. Active Python ABI header 선택: `glue/scripts/install_python_build_dependencies.py`
 4. Private virtualenv 설치 경계: `glue/Dockerfile`
 5. 시작 capability 검사: `glue/src/mystack/glue/adapters/outbound/sqlite_runtime.py`
 6. Schema, mapping, connection, transaction: `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/`
-7. Mounted policy parsing: `config/mystack.yaml`, `glue/src/mystack/glue/config.py`
+7. Mounted policy parsing: `config/runtime/mystack.yaml`, `glue/src/mystack/glue/config.py`
 
 <!-- section: sources -->
 ## 공식 참고 자료

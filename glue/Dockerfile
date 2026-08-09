@@ -24,7 +24,7 @@ RUN npm run build --workspace @mystack/glue-ui
 FROM ${GLUE_BASE} AS sqlite-driver-builder
 USER root
 WORKDIR /opt/mystack/sqlite-build
-COPY config/sqlite-runtime.json /opt/mystack/sqlite-build/sqlite-runtime.json
+COPY config/runtime/sqlite-runtime.json /opt/mystack/sqlite-build/sqlite-runtime.json
 COPY glue/scripts/build_sqlite_driver.py /opt/mystack/sqlite-build/build_sqlite_driver.py
 COPY glue/scripts/install_python_build_dependencies.py /opt/mystack/sqlite-build/install_python_build_dependencies.py
 RUN python3 /opt/mystack/sqlite-build/install_python_build_dependencies.py \
@@ -41,7 +41,7 @@ RUN python3 /opt/mystack/sqlite-build/install_python_build_dependencies.py \
 FROM ${GLUE_BASE} AS final
 
 ARG MYSTACK_VERSION=0.1.5
-ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+ARG MYSTACK_CONFIG_SOURCE=config/runtime/mystack.yaml
 ARG GLUE_VERSION=5.0
 ARG SPARK_VERSION=3.5.4
 ARG ICEBERG_VERSION=1.7.1

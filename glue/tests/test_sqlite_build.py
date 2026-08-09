@@ -31,9 +31,11 @@ def _builder_module() -> ModuleType:
 
 def test_build_source_pins_are_complete_and_target_the_wal_fixed_runtime() -> None:
     builder = _builder_module()
-    source_pins = json.loads((ROOT / "config/sqlite-runtime.json").read_text(encoding="utf-8"))
+    source_pins = json.loads(
+        (ROOT / "config/runtime/sqlite-runtime.json").read_text(encoding="utf-8")
+    )
 
-    spec = builder.load_spec(ROOT / "config/sqlite-runtime.json")
+    spec = builder.load_spec(ROOT / "config/runtime/sqlite-runtime.json")
 
     assert spec.sqlite_version == source_pins["sqlite"]["version"]
     assert spec.minimum_wal_version == source_pins["sqlite"]["minimum_wal_version"]
@@ -47,7 +49,7 @@ def test_build_source_pins_are_complete_and_target_the_wal_fixed_runtime() -> No
 
 def test_build_rejects_source_urls_with_query_data(tmp_path: Path) -> None:
     builder = _builder_module()
-    document = json.loads((ROOT / "config/sqlite-runtime.json").read_text(encoding="utf-8"))
+    document = json.loads((ROOT / "config/runtime/sqlite-runtime.json").read_text(encoding="utf-8"))
     document["sqlite"]["amalgamation"]["url"] += "?credential=must-not-appear"
     config = tmp_path / "sqlite-runtime.json"
     config.write_text(json.dumps(document), encoding="utf-8")

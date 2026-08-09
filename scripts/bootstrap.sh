@@ -4,7 +4,7 @@
 # Reproducible frontend installation: https://docs.npmjs.com/cli/v11/commands/npm-ci
 set -euo pipefail
 
-config_path="config/mystack.yaml"
+config_path="config/runtime/mystack.yaml"
 while (($#)); do
   case "$1" in
     --config)

@@ -121,7 +121,7 @@ def test_scan_policy_returns_auditable_counts() -> None:
 
 
 def test_scan_exception_requires_an_exact_coordinate_and_records_raw_counts() -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     policy = VulnerabilityExceptionPolicy.from_config(
         config,
         component="emr",
@@ -165,7 +165,7 @@ def test_scan_exception_cannot_cross_component_path_or_expiration(
     path: str,
     evaluation_date: date,
 ) -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     policy = VulnerabilityExceptionPolicy.from_config(
         config,
         component=component,
@@ -192,7 +192,7 @@ def test_scan_exception_cannot_cross_component_path_or_expiration(
 
 
 def test_committed_release_config_references_real_builds_and_official_sources() -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
 
     report = check_config(config, ROOT)
 
@@ -211,7 +211,7 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
 
 
 def test_publication_plan_compiles_every_component_platform_without_shell_logic() -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
 
     plan = resolve_publication_plan(config)
 
@@ -228,7 +228,7 @@ def test_publication_plan_compiles_every_component_platform_without_shell_logic(
 
 
 def test_release_config_rejects_non_public_consumer_visibility() -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     config["consumer_visibility"] = "private"
 
     with pytest.raises(ReleaseContractError, match="consumer_visibility"):
@@ -265,7 +265,7 @@ def _write_complete_preflight(
 
 
 def test_aggregate_gate_requires_and_authorizes_every_local_build_scan(tmp_path: Path) -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     _write_complete_preflight(tmp_path, config)
     gate = ReleaseGate(config)
 
@@ -289,7 +289,7 @@ def test_aggregate_gate_requires_and_authorizes_every_local_build_scan(tmp_path:
 
 
 def test_aggregate_gate_rejects_missing_tampered_and_replayed_evidence(tmp_path: Path) -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     _write_complete_preflight(tmp_path, config)
     gate = ReleaseGate(config)
     missing = tmp_path / "preflight/glue/linux-arm64/preflight.json"
@@ -332,7 +332,7 @@ def test_aggregate_gate_rejects_missing_tampered_and_replayed_evidence(tmp_path:
 
 
 def test_preflight_policy_failure_cannot_create_evidence() -> None:
-    config = load_config(ROOT / "config/registry-release.json")
+    config = load_config(ROOT / "config/release/registry-release.json")
     gate = ReleaseGate(config)
     with pytest.raises(ReleaseContractError, match="CRITICAL=1"):
         gate.record(

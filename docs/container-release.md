@@ -32,7 +32,7 @@ secret is required.
 | Glue | `ghcr.io/leeyh0216/mystack-glue` |
 
 The owner is derived from and lowercased from `github.repository_owner`; the table shows this
-repository. `config/registry-release.json` owns component names, Dockerfiles, platforms, scan policy,
+repository. `config/release/registry-release.json` owns component names, Dockerfiles, platforms, scan policy,
 timeouts, exact tag patterns, and snapshot retention. `latest` is not published.
 
 <!-- section: contract -->
@@ -101,7 +101,7 @@ contains full container output, tokens, credentials, or query values. The eviden
 after the failed probe and is retained for 14 days.
 
 The scan gate rejects every configured severity by default. A known upstream runtime finding may
-be accepted only through the exact entries in `config/registry-release.json`: component, CVE,
+be accepted only through the exact entries in `config/release/registry-release.json`: component, CVE,
 package, installed version, and image-relative JAR path must all match, and the review date must not
 be past `expires_on`. The preflight evidence keeps raw counts, active counts, the bounded exception,
 reason, expiry, and sources; an expired or slightly different finding becomes active and blocks the

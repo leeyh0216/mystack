@@ -116,7 +116,8 @@ def component_config(config: dict[str, Any], name: str) -> dict[str, str]:
         if component["name"] == name:
             return component
     raise ReleaseContractError(
-        f"unknown component {name!r}; update config/registry-release.json and generated matrix"
+        f"unknown component {name!r}; update config/release/registry-release.json "
+        "and generated matrix"
     )
 
 
@@ -676,7 +677,7 @@ def _require_exact_fields(value: Any, expected: frozenset[str], path: str) -> No
 
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--config", type=Path, default=Path("config/registry-release.json"))
+    result.add_argument("--config", type=Path, default=Path("config/release/registry-release.json"))
     commands = result.add_subparsers(dest="command", required=True)
 
     config_command = commands.add_parser("check-config")
@@ -904,7 +905,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "registry.release.failed",
             error_type=type(error).__name__,
             message=str(error),
-            fix_hint="check docs/container-release.md and config/registry-release.json",
+            fix_hint="check docs/container-release.md and config/release/registry-release.json",
         )
         return 2
 

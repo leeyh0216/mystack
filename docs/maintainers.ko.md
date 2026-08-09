@@ -80,7 +80,7 @@ public-Proxy contract와 E2E를 같은 issue에서 갱신합니다.
 
 - Unit, architecture, 결정적 contract, Docker E2E: [Test 전략](testing.ko.md)
 - Pull request와 scheduled workflow: [CI 안내](ci.ko.md)
-- 모든 test 명령은 `config/mystack.yaml`의 timeout 또는 명시적 `--timeout`을 사용합니다.
+- 모든 test 명령은 `config/runtime/mystack.yaml`의 timeout 또는 명시적 `--timeout`을 사용합니다.
 - Protocol이나 client 호환성 수정은 최소 unit/contract와 실제 public-Proxy E2E 증거를 함께
   추가합니다.
 

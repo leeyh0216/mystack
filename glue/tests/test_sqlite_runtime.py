@@ -32,7 +32,7 @@ from mystack.glue.config import GlueSettings
 
 
 def _pinned_runtime() -> dict[str, object]:
-    return json.loads(Path("config/sqlite-runtime.json").read_text(encoding="utf-8"))
+    return json.loads(Path("config/runtime/sqlite-runtime.json").read_text(encoding="utf-8"))
 
 
 def _pinned_sqlite_version() -> str:
@@ -66,7 +66,7 @@ def _settings(
 
 
 def test_default_runtime_policy_is_file_driven_for_the_sqlite_catalog() -> None:
-    settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = GlueSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
     pins = _pinned_runtime()
     sqlite_pins = pins["sqlite"]
 
@@ -93,7 +93,7 @@ def test_explicit_rollback_driver_is_checked_without_creating_the_catalog_file(
 
 
 def test_health_exposes_the_runtime_verified_before_catalog_initialization(tmp_path: Path) -> None:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
     document["glue"]["sqlite"]["journal_mode"] = "rollback"
@@ -268,7 +268,7 @@ class GuardedCatalogApplication:
 
 
 def test_runtime_preflight_stops_catalog_initialization_before_side_effect(tmp_path: Path) -> None:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path / "uncreated-data-root")
     document["glue"]["table_optimizers"]["work_root"] = "must-not-exist-before-preflight"

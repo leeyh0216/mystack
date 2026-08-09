@@ -303,7 +303,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--image", required=True)
     parser.add_argument("--platform", required=True)
     parser.add_argument("--timeout-seconds", type=float, required=True)
-    parser.add_argument("--source-config", type=Path, default=Path("config/sqlite-runtime.json"))
+    parser.add_argument(
+        "--source-config", type=Path, default=Path("config/runtime/sqlite-runtime.json")
+    )
     parser.add_argument("--report", type=Path, required=True)
     return parser.parse_args(argv)
 

@@ -32,7 +32,7 @@ repository 범위 `GITHUB_TOKEN`을 사용합니다. AWS/GCP account, cloud role
 | Glue | `ghcr.io/leeyh0216/mystack-glue` |
 
 Owner는 `github.repository_owner`를 소문자로 바꿔 결정하며 표는 이 repository를 나타냅니다.
-`config/registry-release.json`이 component name, Dockerfile, platform, scan 정책, timeout, 정확한 tag
+`config/release/registry-release.json`이 component name, Dockerfile, platform, scan 정책, timeout, 정확한 tag
 pattern, snapshot 보존 기간을 관리합니다. `latest`는 게시하지 않습니다.
 
 <!-- section: contract -->
@@ -102,7 +102,7 @@ token, credential, query value는 넣지 않습니다. Probe가 실패해도 evi
 보존합니다.
 
 취약점 판정 기준은 기본적으로 설정 severity를 모두 거부합니다. 알려진 upstream runtime finding은
-`config/registry-release.json`의 정확한 항목으로만 허용할 수 있습니다. Component, CVE, package,
+`config/release/registry-release.json`의 정확한 항목으로만 허용할 수 있습니다. Component, CVE, package,
 설치 version, image 상대 JAR path가 모두 일치하고 검토 날짜가 `expires_on`을 넘지 않아야 합니다.
 Preflight 근거에는 raw count, 활성 count, 제한된 예외, 사유, 만료일, 출처가 남습니다. 만료되거나
 조금이라도 다른 finding은 활성 상태가 되어 release를 차단합니다. 이는 Trivy 공식 [finding suppression

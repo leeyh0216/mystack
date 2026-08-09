@@ -198,7 +198,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(os.environ.get("MYSTACK_CONFIG_FILE", ROOT / "config/mystack.yaml")),
+        default=Path(os.environ.get("MYSTACK_CONFIG_FILE", ROOT / "config/runtime/mystack.yaml")),
     )
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

@@ -70,7 +70,7 @@ def emr_server(
     tmp_path: Path,
     test_timeout: float,
 ) -> Iterator[tuple[str, ControllableRuntime]]:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["emr"]["work_root"] = str(tmp_path)
     configured = LoadedConfiguration(

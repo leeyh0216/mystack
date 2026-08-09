@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = ROOT / "config/version-files.json"
+DEFAULT_CONFIG = ROOT / "config/release/version-files.json"
 LOGGER = logging.getLogger("mystack.version")
 _SEMVER_CORE = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$")
 _COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{7,40}$")

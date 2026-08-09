@@ -24,7 +24,7 @@ ARG SPARK_ARCHIVE_BASE_URL=https://archive.apache.org/dist/spark
 ARG AWS_CLI_VERSION=2.27.41
 ARG TARGETARCH
 ARG MYSTACK_VERSION=0.1.5
-ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+ARG MYSTACK_CONFIG_SOURCE=config/runtime/mystack.yaml
 LABEL org.opencontainers.image.title="Mystack EMR Spark Emulator" \
       org.opencontainers.image.version="${MYSTACK_VERSION}" \
       org.opencontainers.image.source="https://github.com/leeyh0216/mystack" \
@@ -87,7 +87,7 @@ RUN mkdir -p /tmp/mystack-e2e/classes \
       -C /tmp/mystack-e2e/classes .
 
 FROM runtime-base AS final
-ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+ARG MYSTACK_CONFIG_SOURCE=config/runtime/mystack.yaml
 
 ENV JAVA_HOME=/usr/lib/jvm/jre-17 \
     SPARK_HOME=/opt/spark \

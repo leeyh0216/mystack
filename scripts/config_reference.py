@@ -13,7 +13,7 @@ import yaml
 
 ROOT = Path(__file__).parents[1]
 SCHEMA = ROOT / "shared/src/mystack/aws_protocol/mystack.schema.json"
-CONFIG = ROOT / "config/mystack.yaml"
+CONFIG = ROOT / "config/runtime/mystack.yaml"
 OUT = ROOT / "docs/configuration-reference.generated.md"
 
 
@@ -80,7 +80,7 @@ def render() -> str:
         "- [Complete leaf keys](#complete-leaf-keys)",
         "<!-- toc:end -->",
         "",
-        "Do not edit: generated from the runtime JSON Schema and `config/mystack.yaml`.",
+        "Do not edit: generated from the runtime JSON Schema and `config/runtime/mystack.yaml`.",
         "All values load once at process startup; restart the affected service after a change.",
         "",
         "## Complete leaf keys",

@@ -42,7 +42,7 @@ class LoadedConfiguration:
 
 
 def load_configuration(path: str | Path | None = None) -> LoadedConfiguration:
-    configured_path = path or os.getenv("MYSTACK_CONFIG_FILE") or "config/mystack.yaml"
+    configured_path = path or os.getenv("MYSTACK_CONFIG_FILE") or "config/runtime/mystack.yaml"
     source = Path(configured_path).expanduser().resolve()
     if not source.is_file():
         raise ConfigurationError(

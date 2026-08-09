@@ -109,7 +109,7 @@ URL, version, digest, timeout을 고정합니다. `make antlr-generate`로 생�
 typed projection, `LIKE`, segment union/disjointness, 오류 순서를 검증합니다. 실제 port의 boto3
 contract는 typed filtering과 `NextToken`, `Segment`를 함께 검증합니다. CI 전용 Glue 5 Spark
 시나리오는 S3에 partitioned Hive table을 만들고 partition을 insert한 뒤 Glue Hive metastore client를
-통한 pruning query를 검증합니다. 모든 test process는 `config/mystack.yaml`의 deadline을 사용합니다.
+통한 pruning query를 검증합니다. 모든 test process는 `config/runtime/mystack.yaml`의 deadline을 사용합니다.
 
 <!-- section: sources -->
 ## 공식 출처

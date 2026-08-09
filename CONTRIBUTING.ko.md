@@ -158,7 +158,7 @@ E2E YAML timeout을 사용합니다.
 | Marker/profile 구조 또는 execution marker | annotation을 붙인 test와 `tests/support/compatibility.py` |
 | Claim한 operation이 구현 inventory에 없음 | 소유한 `emr` 또는 `glue` `adapters/inbound/aws_*.py` registry와 test annotation |
 | Operation이 고정한 botocore model에 없음 | inbound handler, 고정 model 검토, test annotation |
-| Lock client/runtime 불일치 | `uv.lock`, `tests/support/compatibility_profiles.py`, `config/mystack.yaml` |
+| Lock client/runtime 불일치 | `uv.lock`, `tests/support/compatibility_profiles.py`, `config/runtime/mystack.yaml` |
 | Collection 제한 시간 초과 | `tests.compatibility_collection_timeout_seconds` 또는 annotation test collection 중 import한 항목 |
 | 생성 output 차이 | `make compatibility-evidence-generate` 실행; 생성 file을 직접 수정하지 않음 |
 

@@ -20,7 +20,7 @@ from scripts.verify_glue_sqlite_runtime import (
 )
 
 _PINNED_SQLITE_VERSION = load_expected_version(
-    Path(__file__).parents[1] / "config/sqlite-runtime.json"
+    Path(__file__).parents[1] / "config/runtime/sqlite-runtime.json"
 )
 
 
@@ -206,7 +206,7 @@ def test_cli_writes_a_failure_artifact_when_the_runtime_probe_fails(
                 "--timeout-seconds",
                 "45",
                 "--source-config",
-                "config/sqlite-runtime.json",
+                "config/runtime/sqlite-runtime.json",
                 "--report",
                 str(report_path),
             ]

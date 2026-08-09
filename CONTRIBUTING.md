@@ -167,7 +167,7 @@ test body uses its ordinary contract or E2E YAML timeout.
 | Marker/profile shape or execution marker | The annotated test and `tests/support/compatibility.py` |
 | Claimed operation is absent from the implementation inventory | The owning `emr` or `glue` `adapters/inbound/aws_*.py` registry, then its test annotation |
 | Operation is absent from the pinned botocore model | The inbound handler, pinned model review, and test annotation |
-| Locked client/runtime mismatch | `uv.lock`, `tests/support/compatibility_profiles.py`, and `config/mystack.yaml` |
+| Locked client/runtime mismatch | `uv.lock`, `tests/support/compatibility_profiles.py`, and `config/runtime/mystack.yaml` |
 | Collection deadline expires | `tests.compatibility_collection_timeout_seconds` or imports made while collecting the annotated test |
 | Generated output differs | Run `make compatibility-evidence-generate`; never edit generated files by hand |
 

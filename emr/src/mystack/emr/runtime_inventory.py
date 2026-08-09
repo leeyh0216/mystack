@@ -58,7 +58,7 @@ def inventory() -> dict[str, Any]:
             "spark_submit": str(spark_home / "bin/spark-submit"),
             "release": _read_first_line(spark_home / "RELEASE"),
             "ivy_cache": "/home/hadoop/.ivy2",
-            "master": "local[*] (configured in config/mystack.yaml)",
+            "master": "local[*] (configured in config/runtime/mystack.yaml)",
         },
         "process_tools": {
             "ps": _executable("ps"),
