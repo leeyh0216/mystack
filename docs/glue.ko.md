@@ -16,7 +16,7 @@
 - [공식 참고 자료](#공식-참고-자료)
 <!-- toc:end -->
 
-이 문서는 boto3, AWS SDK for pandas, Spark Hive, Apache Iceberg를 통해 Catalog metadata를 저장하는
+이 문서는 boto3, AWS SDK for pandas, Spark Hive, Apache Iceberg를 통해 Catalog 메타데이터를 저장하는
 애플리케이션을 위한 안내입니다.
 
 요청, persistence, Iceberg commit 경계는 선택적인 [Glue Catalog 아키텍처](glue-catalog-architecture.ko.md)를 참고하세요.
@@ -27,7 +27,7 @@
 Host에서는 `http://localhost:4566`을 사용합니다. Mystack Compose network의 Spark 또는 application
 container에서는 Catalog에 `http://proxy:8080`, S3에 `http://localstack:4566`을 사용합니다.
 
-AWS client를 사용하기 전에 로컬 개발용 credential을 설정합니다.
+AWS 클라이언트를 사용하기 전에 로컬 개발용 credential을 설정합니다.
 
 ```bash
 export AWS_ACCESS_KEY_ID=test
@@ -38,7 +38,7 @@ export AWS_DEFAULT_REGION=us-east-1
 <!-- section: boto3 -->
 ## boto3 사용
 
-Glue client를 생성할 때 로컬 endpoint를 전달합니다.
+Glue 클라이언트를 생성할 때 로컬 엔드포인트를 전달합니다.
 
 ```python
 import boto3
@@ -85,8 +85,8 @@ print(wr.s3.read_parquet(path="s3://mystack-example/events/", dataset=True))
 <!-- section: spark -->
 ## Spark Hive 또는 Iceberg 사용
 
-선택한 runtime에 필요한 Glue client와 Iceberg dependency를 포함해 Spark를 실행합니다. Mystack
-network의 Spark container에서는 아래 값으로 Catalog와 S3 endpoint를 설정합니다.
+선택한 실행 환경에 필요한 Glue 클라이언트와 Iceberg dependency를 포함해 Spark를 실행합니다. Mystack
+network의 Spark container에서는 아래 값으로 Catalog와 S3 엔드포인트를 설정합니다.
 
 ```text
 # Spark Hive
@@ -104,8 +104,8 @@ spark.sql.catalog.mystack.s3.path-style-access=true
 spark.sql.catalog.mystack.warehouse=s3://mystack-example/warehouse
 ```
 
-검증된 client/runtime 조합은 [Client 호환성 표](compatibility/client-matrix.ko.md)에서 선택하고,
-endpoint와 runtime 설정은 [설정 reference](configuration.ko.md)에서 변경합니다.
+검증된 클라이언트/실행 환경 조합은 [Client 호환성 표](compatibility/client-matrix.ko.md)에서 선택하고,
+엔드포인트와 실행 환경 설정은 [설정 reference](configuration.ko.md)에서 변경합니다.
 
 <!-- section: inspect -->
 ## Metadata 확인

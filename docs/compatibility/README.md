@@ -9,15 +9,15 @@
 ## Contents
 
 - [Read in this order](#read-in-this-order)
-- [Use the generated reports only when needed](#use-the-generated-reports-only-when-needed)
-- [What CI generates](#what-ci-generates)
+- [Use CI reports only when needed](#use-ci-reports-only-when-needed)
+- [What CI produces](#what-ci-produces)
 - [Official sources](#official-sources)
 <!-- toc:end -->
 
 <!-- section: overview -->
-This directory separates the short documents a person should read from the detailed evidence that
-CI produces. Start with the user-facing documents; use the generated reports only when changing a
-supported operation, test scenario, or release gate.
+This directory contains the short reference documents that maintainers read first. Detailed
+verification reports are CI/local build output, not repository documentation. Start with these
+pages when changing a supported API operation, test scenario, or release condition.
 
 <!-- section: reading-order -->
 ## Read in this order
@@ -30,37 +30,39 @@ supported operation, test scenario, or release gate.
 4. [Glue error decisions](../protocols/glue/glue-error-decisions.md) — why an operation returns a given
    modeled error and how its precedence is chosen.
 
-## Use the generated reports only when needed
+## Use CI reports only when needed
 
-You do not need to read the generated tables to run a client or understand the supported surface.
-Use them for a focused maintenance question:
+You do not need a CI report to run a client or understand the supported surface. For a maintenance
+question, start with the document below and inspect the job artifact only when the source and test
+do not answer it:
 
-| Question | Start here | Generated detail, if needed |
+| Question | Start here | CI detail, if needed |
 | --- | --- | --- |
-| Can my client path be used? | [Client and library compatibility](client-matrix.md) | Client matrix and annotation evidence |
-| Is a particular EMR or Glue operation implemented? | [API compatibility coverage](api-coverage.md) | Full API coverage table |
-| Why does a Glue request return this error? | [Glue error decisions](../protocols/glue/glue-error-decisions.md) | Glue error table |
+| Can my client path be used? | [Client and library compatibility](client-matrix.md) | Compatibility case report |
+| Is a particular EMR or Glue operation implemented? | [API compatibility coverage](api-coverage.md) | Full API classification |
+| Why does a Glue request return this error? | [Glue error decisions](../protocols/glue/glue-error-decisions.md) | Error decision report |
 | What must pass before publishing? | [Support scope](../support-scope.md) | Release acceptance report |
 
 <!-- section: generated-artifacts -->
-## What CI generates
+## What CI produces
 
-The files named `*.generated.*` are detailed audit outputs, not primary documentation:
+CI writes the following reproducible files under ignored `ci-artifacts/compatibility/`. They are
+attached to the workflow run when useful and are never hand-edited or committed:
 
-| Artifact | Why it exists | Consumer |
+| Report | Why it exists | Consumer |
 | --- | --- | --- |
 | Client matrix | Exact test/client/runtime combinations selected by CI | CI matrix and release review |
-| Annotation evidence | Links an annotated test to the operations and scenarios it proves | CI collection and maintainers |
+| Annotation report | Links an annotated test to the operations and scenarios it proves | CI collection and maintainers |
 | API coverage | Full pinned botocore inventory and classification | Model-drift gate |
 | Glue errors | Exhaustive modeled error and precedence table | Error-contract gate |
 | Release acceptance | Required compatibility cases for publication | Release gate |
 
-Source policies remain in `contracts/`; tests declare the evidence. Generation is deterministic and
-CI verifies it before running required compatibility cases. Developers normally run
-`make compatibility-check` to detect drift; they do not hand-edit generated files.
+Source policies remain in `contracts/`; tests declare what they verify. Generation is deterministic
+and CI runs it before selecting required compatibility cases. Developers normally run
+`make compatibility-check` to detect a source/artifact mismatch; they do not hand-edit reports.
 
-See [`contracts/README.md`](../../contracts/README.md) for the source-of-truth files, the
-producer of each generated baseline, and the command to run after a change.
+See [`contracts/README.md`](../../contracts/README.md) for the source-of-truth files and the
+command to run after a change.
 
 <!-- section: sources -->
 ## Official sources

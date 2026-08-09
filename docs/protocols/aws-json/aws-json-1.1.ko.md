@@ -9,13 +9,13 @@
 ## 목차
 
 - [기준 자료](#기준-자료)
-- [서비스 metadata](#서비스-metadata)
+- [서비스 메타데이터](#서비스-메타데이터)
 - [HTTP 요청 계약](#http-요청-계약)
 - [직렬화와 검증](#직렬화와-검증)
 - [응답과 오류](#응답과-오류)
 - [SigV4 동작](#sigv4-동작)
 - [EMR 실행 mapping](#emr-실행-mapping)
-- [Glue Catalog runtime mapping](#glue-catalog-runtime-mapping)
+- [Glue Catalog 실행 환경 mapping](#glue-catalog-실행-환경-mapping)
 <!-- toc:end -->
 
 <!-- section: sources -->
@@ -23,10 +23,10 @@
 
 구현 기준 우선순위는 다음과 같습니다.
 
-1. operation 의미, 제한, 상태, 오류를 정의한 AWS EMR/Glue API Reference
-2. protocol metadata, 작업과 데이터 구조, 필수 field, 열거형, 예외를 정의한 고정 버전의 공식 botocore 서비스 모델
-3. AWS Signature Version 4와 SDK endpoint 설정 문서
-4. AWS CLI/boto3 contract 관찰 결과
+1. API 작업 의미, 제한, 상태, 오류를 정의한 AWS EMR/Glue API Reference
+2. protocol 메타데이터, 작업과 데이터 구조, 필수 field, 열거형, 예외를 정의한 고정 버전의 공식 botocore 서비스 모델
+3. AWS Signature Version 4와 SDK 엔드포인트 설정 문서
+4. AWS CLI/boto3 계약 관찰 결과
 
 공식 자료:
 
@@ -37,7 +37,7 @@
 - [공식 botocore SDK 모델](https://github.com/boto/botocore/tree/develop/botocore/data)
 
 <!-- section: metadata -->
-## 서비스 metadata
+## 서비스 메타데이터
 
 | 속성 | Amazon EMR | AWS Glue |
 | --- | --- | --- |
@@ -45,13 +45,13 @@
 | Protocol | AWS JSON | AWS JSON |
 | JSON version | `1.1` | `1.1` |
 | Target prefix | `ElasticMapReduce` | `AWSGlue` |
-| SigV4 service | `elasticmapreduce` | `glue` |
+| SigV4 서비스 | `elasticmapreduce` | `glue` |
 | Endpoint prefix | `elasticmapreduce` | `glue` |
 
 <!-- section: request -->
 ## HTTP 요청 계약
 
-SDK는 JSON object body와 `POST /`를 사용하며 `X-Amz-Target`으로 operation을 선택합니다.
+SDK는 JSON object body와 `POST /`를 사용하며 `X-Amz-Target`으로 API 작업을 선택합니다.
 
 ```http
 POST / HTTP/1.1
@@ -62,11 +62,11 @@ Authorization: AWS4-HMAC-SHA256 Credential=test/20260808/ap-northeast-2/glue/aws
 {"DatabaseName":"analytics","TableName":"events","PartitionInput":{"Values":["2026-08-08"]}}
 ```
 
-Proxy는 target prefix, SigV4 credential scope, host pattern 순으로 route registry를 검색하고 일치하지 않으면 LocalStack으로 전달합니다. method, path, query, body byte, content type, authorization, tracing metadata를 보존하며 hop-by-hop header만 제거합니다.
+Proxy는 대상 prefix, SigV4 credential scope, host pattern 순으로 route registry를 검색하고 일치하지 않으면 LocalStack으로 전달합니다. method, path, query, body byte, content type, authorization, tracing 메타데이터를 보존하며 hop-by-hop header만 제거합니다.
 
 Response는 HTTPX가 decode한 content가 아니라 raw encoded stream을 buffer해 전달합니다.
 `Content-Encoding`과 AWS checksum header를 보존하고 HEAD가 아닌 응답의 `Content-Length`만
-제거해 outward server가 encoded wire 길이를 계산하게 하며 HEAD representation metadata는
+제거해 outward server가 encoded wire 길이를 계산하게 하며 HEAD representation 메타데이터는
 유지합니다. Boto/botocore가 S3 gzip object checksum을 검증하려면 이 동작이 필요합니다. 구현은
 [HTTPX raw streaming](https://www.python-httpx.org/async/#streaming-responses), [RFC 9110 hop-by-hop
 field](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1),
@@ -77,28 +77,28 @@ field](https://www.rfc-editor.org/rfc/rfc9110.html#section-7.6.1),
 
 - structure는 JSON object, list는 JSON array입니다.
 - blob은 Base64 string입니다.
-- wire member name과 timestamp format은 service model을 따릅니다.
+- wire member name과 timestamp format은 서비스 모델을 따릅니다.
 - 필수 member, primitive, enum, collection member, length/range/pattern을 use case 호출 전에 검증합니다.
 - 모델 지문과 작업별 데이터 구조 폐쇄 지문을 기록하여 botocore 변경을 탐지합니다.
 
-Modeled input 검증 뒤에는 명시적인 service operation family로 dispatch합니다. EMR과 Glue가
-각각 검토한 구현 operation 집합을 제공하고 shared registry가 family 소유권 중복, 누락 handler,
-분류되지 않은 예상 밖 handler를 거부합니다. Family 합집합은 공식 [botocore service
-model](https://github.com/boto/botocore/tree/develop/botocore/data) inventory의 전체 분류와
-contract test로 비교합니다. Family 분리는 두 번째 wire parser나 serializer를 만들지 않습니다.
+Modeled input 검증 뒤에는 명시적인 서비스 API 작업 family로 dispatch합니다. EMR과 Glue가
+각각 검토한 구현 API 작업 집합을 제공하고 shared registry가 family 소유권 중복, 누락 handler,
+분류되지 않은 예상 밖 handler를 거부합니다. Family 합집합은 공식 [botocore 서비스
+모델](https://github.com/boto/botocore/tree/develop/botocore/data) inventory의 전체 분류와
+계약 테스트로 비교합니다. Family 분리는 두 번째 wire parser나 serializer를 만들지 않습니다.
 
-Botocore client의 `ParamValidator`가 structure/type/length/range 검사를 담당하고, 누락된
+Botocore 클라이언트의 `ParamValidator`가 structure/type/length/range 검사를 담당하고, 누락된
 모델 열거형과 pattern 검사는 server codec이 같은 고정 데이터 구조를 순회하며 보완합니다. Pattern은
 implicit anchor가 없는 공식 [Smithy pattern
 의미론](https://smithy.io/2.0/spec/constraint-traits.html#pattern-trait)을 따릅니다. 시작 시
-dialect audit에서 해석할 수 없는 새 model pattern을 발견하면 실행을 중단하고
+dialect audit에서 해석할 수 없는 새 모델 pattern을 발견하면 실행을 중단하고
 `shared/model.py`를 수정 위치로 기록합니다. 검증 로그에는 데이터 구조 경로와 개수만 남기며 거부된
 값은 기록하지 않습니다.
 
 <!-- section: errors -->
 ## 응답과 오류
 
-성공 응답은 HTTP 200과 model output JSON을 반환합니다. 모든 응답은 `application/x-amz-json-1.1`과 `x-amzn-RequestId`를 포함합니다.
+성공 응답은 HTTP 200과 모델 output JSON을 반환합니다. 모든 응답은 `application/x-amz-json-1.1`과 `x-amzn-RequestId`를 포함합니다.
 
 오류 응답은 문서화된 HTTP status, `x-amzn-ErrorType`, request ID, `__type`과 modeled member를 가진 JSON body를 반환합니다. 예를 들어 `CreatePartition`은 부모 database/table이 없으면 `EntityNotFoundException`, 동일 partition value tuple이 있으면 HTTP 400 `AlreadyExistsException`을 반환하고 기존 partition을 변경하지 않습니다. 기준은 [CreatePartition API](https://docs.aws.amazon.com/glue/latest/webapi/API_CreatePartition.html)입니다.
 
@@ -106,9 +106,9 @@ dialect audit에서 해석할 수 없는 새 model pattern을 발견하면 실�
 ## SigV4 동작
 
 Mystack은 SDK가 서명한 요청을 받지만 key를 검증하거나 caller를 인가하지 않습니다. Credential
-scope의 service와 region은 routing metadata로만 읽을 수 있습니다. Proxy는 원래 본문과 서명
-header를 보존해 전달하지만 어떤 adapter도 여기에 인증·인가 의미를 부여하면 안 됩니다. Stack은
-신뢰하는 local network에서만 실행합니다.
+scope의 서비스와 region은 routing 메타데이터로만 읽을 수 있습니다. Proxy는 원래 본문과 서명
+header를 보존해 전달하지만 어떤 어댑터도 여기에 인증·인가 의미를 부여하면 안 됩니다. Stack은
+신뢰하는 로컬 network에서만 실행합니다.
 
 <!-- section: emr -->
 ## EMR 실행 mapping
@@ -122,21 +122,21 @@ header를 보존해 전달하지만 어떤 adapter도 여기에 인증·인가 �
 공식 기준: [bootstrap lifecycle](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html), [Spark Step](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)
 
 <!-- section: glue -->
-## Glue Catalog runtime mapping
+## Glue Catalog 실행 환경 mapping
 
-Glue Job/JobRun은 범위 밖입니다. Spark 상호운용성 profile은 Spark 3.5.4, Python 3.11, Java 17, Iceberg 1.7.1이며 AWS의 `public.ecr.aws/glue/aws-glue-libs:5` 이미지를 test/runtime 기반으로 사용합니다.
+Glue Job/JobRun은 범위 밖입니다. Spark 상호운용성 프로필은 Spark 3.5.4, Python 3.11, Java 17, Iceberg 1.7.1이며 AWS의 `public.ecr.aws/glue/aws-glue-libs:5` 이미지를 테스트/실행 환경 기반으로 사용합니다.
 
-- boto3가 public Proxy endpoint를 통해 Glue Data Catalog API를 검증합니다.
+- boto3가 공개 Proxy 엔드포인트를 통해 Glue Data Catalog API를 검증합니다.
 - Data Catalog가 type text를 검증하지 않는 공식 동작을 보존하면서 Hive 호환 type string을 저장합니다.
-- Spark Hive metastore와 Iceberg catalog adapter는 emulator와 LocalStack S3를 사용합니다.
-- boto3 contract는 catalog CRUD, 중복 오류, partition CRUD/batch, type 보존, table version을
+- Spark Hive metastore와 Iceberg 카탈로그 어댑터는 emulator와 LocalStack S3를 사용합니다.
+- boto3 계약는 카탈로그 CRUD, 중복 오류, partition CRUD/batch, type 보존, table version을
   검증합니다. 실제 Glue 5 E2E는 Hive complex type과 LocalStack S3 기반 Iceberg
   create/append/read/schema evolution을 수행합니다.
 
 Mystack은 Iceberg table format, manifest, snapshot, Spark extension 또는 별도 Iceberg wire
 protocol을 구현하지 않습니다. 수정하지 않은 Apache Iceberg 1.7.1 `SparkCatalog`, AWS
 `GlueCatalog`, `S3FileIO`가 이 책임을 가집니다. `GlueCatalog`는 일반 Glue Data Catalog AWS
-JSON 1.1 호출을 Mystack으로 보내고 Iceberg metadata/data file은 LocalStack S3에 저장합니다.
+JSON 1.1 호출을 Mystack으로 보내고 Iceberg 메타데이터/data 파일은 LocalStack S3에 저장합니다.
 이 경계는 공식 [Iceberg AWS integration](https://iceberg.apache.org/docs/1.7.1/aws/)을 따릅니다.
 
 공식 기준: [AWS Glue 버전](https://docs.aws.amazon.com/glue/latest/dg/release-notes.html),

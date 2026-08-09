@@ -9,7 +9,7 @@
 ## 목차
 
 - [책임 경계](#책임-경계)
-- [보장하는 profile](#보장하는-profile)
+- [보장하는 프로필](#보장하는-프로필)
 - [Glue wire와 원자성 계약](#glue-wire와-원자성-계약)
 - [검증 근거](#검증-근거)
 - [Logging과 수정 위치](#logging과-수정-위치)
@@ -26,16 +26,16 @@
 <!-- section: responsibility -->
 ## 책임 경계
 
-Apache Iceberg가 time travel, reference DDL, metadata-table query, snapshot 관리, compaction,
-expiration, orphan cleanup을 parse하고 실행합니다. S3 FileIO를 통해 metadata와 data object도
+Apache Iceberg가 time travel, reference DDL, 메타데이터-table query, snapshot 관리, compaction,
+expiration, orphan cleanup을 parse하고 실행합니다. S3 FileIO를 통해 메타데이터와 data object도
 작성합니다. Mystack은 이 알고리즘을 다시 구현하지 않으며 commit 중 snapshot JSON을 해석하지도
-않습니다. Client가 만든 Glue `TableInput`을 손실 없이 저장하고 예상 `VersionId`로
-`metadata_location`을 원자적으로 전진시킵니다. LocalStack은 설정한 S3 endpoint를 제공합니다.
+않습니다. 클라이언트가 만든 Glue `TableInput`을 손실 없이 저장하고 예상 `VersionId`로
+`metadata_location`을 원자적으로 전진시킵니다. LocalStack은 설정한 S3 엔드포인트를 제공합니다.
 
 <!-- section: behavior -->
-## 보장하는 profile
+## 보장하는 프로필
 
-고정한 실제 runtime scenario는 다음을 보장합니다.
+고정한 실제 실행 환경 시나리오는 다음을 보장합니다.
 
 | 영역 | 근거 |
 | --- | --- |
@@ -43,7 +43,7 @@ expiration, orphan cleanup을 parse하고 실행합니다. S3 FileIO를 통해 m
 | Reference | 특정 snapshot의 branch/tag 생성, branch append, main 격리, branch/tag read |
 | Metadata table | `history`, `snapshots`, `files`, `manifests`, `partitions` query가 비어 있지 않음 |
 | Snapshot procedure | `rollback_to_snapshot`, `set_current_snapshot`, append `cherrypick_snapshot`이 예상 snapshot ID를 반환하고 공개 |
-| Maintenance | `rewrite_data_files`가 작은 file을 두 개 이상 rewrite하고 `rewrite_manifests`가 row 변경 없이 manifest rewrite |
+| Maintenance | `rewrite_data_files`가 작은 파일을 두 개 이상 rewrite하고 `rewrite_manifests`가 row 변경 없이 manifest rewrite |
 | Expiration | Reference가 사라진 branch snapshot을 명시적으로 만료하고 current row 유지 |
 | Orphan cleanup | 전용 과거 candidate가 dry-run에 나타나고 S3에 유지되며 실제 삭제 결과에 나타난 뒤 S3에서 사라짐 |
 
@@ -54,10 +54,10 @@ E2E 실행마다 고유합니다.
 <!-- section: wire -->
 ## Glue wire와 원자성 계약
 
-Table metadata를 바꾸는 reference DDL이나 procedure는 최종적으로 마지막 Glue `VersionId`와 함께
+Table 메타데이터를 바꾸는 reference DDL이나 procedure는 최종적으로 마지막 Glue `VersionId`와 함께
 `UpdateTable`을 보냅니다. Version이 다르면 durable/visible state를 바꾸기 전에 HTTP 400
 `ConcurrentModificationException`을 반환합니다. 빠른 계약은 정확한 version, stale rollback
-candidate 이후 변경 없는 catalog, archive에 해당 metadata pointer가 없음을 증명합니다. 이는 AWS
+candidate 이후 변경 없는 카탈로그, archive에 해당 메타데이터 pointer가 없음을 증명합니다. 이는 AWS
 Glue [`UpdateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTable.html),
 [`GetTableVersions`](https://docs.aws.amazon.com/glue/latest/webapi/API_GetTableVersions.html)를 따릅니다.
 
@@ -65,33 +65,33 @@ Glue [`UpdateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTa
 ## 검증 근거
 
 `glue/tests/test_iceberg_snapshot_ref_catalog.py`가 빠른 AWS JSON 1.1 pointer 계약입니다.
-`glue/tests/workloads/iceberg_snapshot_refs.py`는 `tests/e2e/test_glue_spark_catalog.py`가 public Proxy를
-통해 호출하는 CI 전용 실제 Iceberg scenario입니다. Host test는 boto3로 최종 Glue pointer를 읽고
-metadata JSON을 내려받아 `main`만 남았는지와 만료 snapshot 부재를 확인하며 orphan object가 S3
+`glue/tests/workloads/iceberg_snapshot_refs.py`는 `tests/e2e/test_glue_spark_catalog.py`가 공개 Proxy를
+통해 호출하는 CI 전용 실제 Iceberg 시나리오입니다. Host 테스트는 boto3로 최종 Glue pointer를 읽고
+메타데이터 JSON을 내려받아 `main`만 남았는지와 만료 snapshot 부재를 확인하며 orphan object가 S3
 `404`/`NoSuchKey`인지 증명합니다. 모든 wait와 Spark process는 compatibility case에 설정한
-timeout을 사용합니다.
+제한 시간을 사용합니다.
 
 <!-- section: observability -->
 ## Logging과 수정 위치
 
 SQL/procedure/S3 side-effect 경계마다 `MYSTACK_E2E_SCENARIO`가 전, 후 또는 안전한 exception type만
 포함해 출력됩니다. 기존 `glue.iceberg.commit.*`, `glue.repository.*` event는 SQL, table location,
-payload를 기록하지 않고 catalog CAS와 persistence 경계를 보여줍니다.
+payload를 기록하지 않고 카탈로그 CAS와 persistence 경계를 보여줍니다.
 
-Iceberg나 Spark upgrade 후 이 profile이 깨지면 다음을 확인합니다.
+Iceberg나 Spark upgrade 후 이 프로필이 깨지면 다음을 확인합니다.
 
 1. SQL, 결과 schema, procedure 변화: `glue/tests/workloads/iceberg_snapshot_refs.py`
-2. Iceberg metadata format 표현 변화: `tests/support/iceberg_metadata.py`
+2. Iceberg 메타데이터 format 표현 변화: `tests/support/iceberg_metadata.py`
 3. Modeled Glue request member 변화: `glue/adapters/inbound/aws_table.py`
 4. CAS 또는 archive 손실: `glue/application/table.py`,
    `glue/adapters/outbound/sqlite_catalog/repository.py`
-5. 고정 runtime과 capability 근거: typed pytest compatibility annotation
+5. 고정 실행 환경과 capability 근거: typed pytest compatibility annotation
 
 <!-- section: limits -->
 ## 한계
 
 Rename/drop/purge는 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)이 다룹니다.
-이 계약은 예약 optimizer service, 모든 procedure option, 모든 metadata table을 보장하지 않습니다.
+이 계약은 예약 optimizer 서비스, 모든 procedure option, 모든 메타데이터 table을 보장하지 않습니다.
 Open Table Format input은 별도 [입력 계약](glue-open-table-format.ko.md)에서 다룹니다. 인증, 인가,
 IAM, Lake Formation, cross-account/cross-Region, PyIceberg, Flink, Trino는 명시적으로 제외합니다.
 

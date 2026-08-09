@@ -3,7 +3,7 @@
 
 [한국어](glue-sqlite-runtime.ko.md) | [English](glue-sqlite-runtime.md)
 
-# Glue SQLite runtime 계약
+# Glue SQLite 실행 환경 계약
 
 <!-- toc:start -->
 ## 목차
@@ -29,31 +29,31 @@
 <!-- section: boundary -->
 ## Runtime 경계
 
-Glue image는 `config/runtime/sqlite-runtime.json`에 고정한 SHA 검증 공식 SQLite amalgamation으로 target OCI
+Glue image는 `config/runtime/sqlite-runtime.json`에 고정한 SHA 검증 공식 SQLite amalgamation으로 대상 OCI
 architecture마다 `pysqlite3`를 별도 build합니다. 이 private DB-API module은
 `/opt/mystack/venv`에만 설치합니다. AWS Glue base image의 global SQLite library는 바꾸지 않습니다.
-생성한 runtime manifest에는 SQLite version, architecture, source digest를 기록합니다.
+생성한 실행 환경 manifest에는 SQLite version, architecture, 원본 digest를 기록합니다.
 
 WAL이 기본값입니다. SQLite는 concurrent connection이 WAL database를 write하거나 checkpoint할 때
 3.51.2 이하 version에 corruption race가 있음을 문서화합니다. Mystack은 3.51.3 이상을 요구하고
-unsafe runtime이면 Glue가 catalog를 초기화하기 전에 시작을 거부합니다.
+unsafe 실행 환경이면 Glue가 카탈로그를 초기화하기 전에 시작을 거부합니다.
 
-검증한 DB-API runtime은 Mystack의 유일한 영속 Glue catalog을 구동합니다. 검증이 성공하면 Glue
+검증한 DB-API 실행 환경은 Mystack의 유일한 영속 Glue 카탈로그을 구동합니다. 검증이 성공하면 Glue
 application은 `glue.sqlite.database_file`에 정규화된 SQLite schema를 초기화합니다. Model에 없는
 field를 보존해야 하는 Glue request document는 canonical JSON `TEXT`로 유지하되 database, table,
 archive version, partition, optimizer, optimizer run 식별자는 foreign key를 갖는 관계형 row로
 저장합니다. 따라서 database/table rename은 parent row만 바꾸고 delete cascade는 원자적으로
 처리됩니다.
 
-JSON catalog fallback이나 migration 경로는 없습니다. 이전에 `glue.state_file`을 사용했다면 설정한
-SQLite catalog file로 새로 시작해야 합니다. Mystack은 legacy JSON state document를 조용히 import,
+JSON 카탈로그 fallback이나 migration 경로는 없습니다. 이전에 `glue.state_file`을 사용했다면 설정한
+SQLite 카탈로그 파일로 새로 시작해야 합니다. Mystack은 legacy JSON state document를 조용히 import,
 사용 또는 overwrite하지 않습니다.
 
 <!-- section: configuration -->
 ## 설정
 
 `glue.sqlite`는 `config/runtime/mystack.yaml`의 일부입니다. 상대 `database_file` path는
-`glue.data_root` 아래에서 해석합니다. 상대 driver manifest path는 mount한 YAML file 옆에서
+`glue.data_root` 아래에서 해석합니다. 상대 driver manifest path는 mount한 YAML 파일 옆에서
 해석합니다.
 
 ```yaml
@@ -74,7 +74,7 @@ glue:
       auto_checkpoint_pages: 1000
 ```
 
-`database_file`은 영속 catalog database입니다. 그 **parent directory**를 write 가능하게 mount해야
+`database_file`은 영속 카탈로그 database입니다. 그 **parent directory**를 write 가능하게 mount해야
 합니다. WAL은 `catalog.sqlite3` 옆에 영속 `catalog.sqlite3-wal`, `catalog.sqlite3-shm` sibling을
 만듭니다. `journal_mode`에는 `wal` 또는 `rollback`을 지정하며, `rollback`은 SQLite의 명시적
 `DELETE` journal mode로 변환되고 자동으로 선택되지 않습니다. `synchronous`에는 `off`, `normal`,
@@ -87,7 +87,7 @@ writer 경합 시 application의 상한 있는 retry 횟수입니다. `checkpoin
 
 Catalog 초기화 전에 Glue process는 선택한 driver module, 보고한 SQLite version, WAL build manifest,
 쓰기가 가능한 database directory, foreign key, `busy_timeout`, `synchronous`, 선택한 journal mode,
-WAL sibling file 생성을 검사합니다. WAL 요청의 driver, version, manifest, PRAGMA 결과 중 하나라도
+WAL sibling 파일 생성을 검사합니다. WAL 요청의 driver, version, manifest, PRAGMA 결과 중 하나라도
 다르면 시작을 거부합니다. Mystack은 journal mode를 조용히 바꾸지 않습니다.
 
 HTTP를 시작하지 않고 같은 검증을 실행합니다.
@@ -104,13 +104,13 @@ command를 실행합니다.
 ## 저장소 운영
 
 `catalog.sqlite3` 하나가 아니라 write 가능한 directory 전체를 mount합니다. 시작 verifier는 schema
-초기화 전에 같은 directory에 격리된 probe와 `-wal`, `-shm` sibling을 만들고 지웁니다. 그 뒤 catalog은
+초기화 전에 같은 directory에 격리된 probe와 `-wal`, `-shm` sibling을 만들고 지웁니다. 그 뒤 카탈로그은
 database와 `-wal`, `-shm` sibling을 같은 directory에 유지합니다. 하나의 WAL database에 접근하는 모든
 Glue process는 같은 host에서 같은 mounted directory를 사용해야 합니다. Network filesystem은 지원하는
 WAL deployment가 아닙니다.
 
 Catalog mutation은 짧은 `BEGIN IMMEDIATE` transaction을 시작하고 application 소유 domain 판단,
-정규화 row의 조건부 update, 진단용 catalog revision 증가, commit 순서로 실행합니다. SQLite는 writer
+정규화 row의 조건부 update, 진단용 카탈로그 revision 증가, commit 순서로 실행합니다. SQLite는 writer
 하나를 허용하며 reader는 별도 short-lived connection을 사용합니다. Writer가 busy이면
 `busy_timeout_milliseconds`만큼 기다린 뒤 `retry_limit` 횟수까지만 재시도하며, 그 뒤에는 partial
 change 없이 요청이 실패합니다. Adapter는 진행 중인 commit을 task cancellation으로부터 보호한 뒤
@@ -118,10 +118,10 @@ commit/rollback 결과를 보고합니다.
 
 Filesystem level backup을 만들 때는 database를 사용하는 모든 Glue process를 멈춘 뒤 directory
 전체를 복사합니다. Online backup에는 SQLite backup API를 사용합니다. Maintenance checkpoint가
-필요하면 설정한 checkpoint mode를 실행하고 file을 복사하기 전에 `SQLITE_BUSY`가 없었는지
-확인합니다. Live database file을 `-wal` sibling과 분리해 복사하지 않습니다.
+필요하면 설정한 checkpoint mode를 실행하고 파일을 복사하기 전에 `SQLITE_BUSY`가 없었는지
+확인합니다. Live database 파일을 `-wal` sibling과 분리해 복사하지 않습니다.
 
-의도적으로 rollback을 선택하려면 mounted configuration을 바꾸고 Glue를 restart합니다.
+의도적으로 rollback을 선택하려면 mounted 설정을 바꾸고 Glue를 restart합니다.
 
 ```yaml
 glue:
@@ -131,7 +131,7 @@ glue:
       module: sqlite3
 ```
 
-이 선택은 runtime verification 출력의 `manifest_verified: false`로 확인합니다. Operator가
+이 선택은 실행 환경 verification 출력의 `manifest_verified: false`로 확인합니다. Operator가
 rollback-journal concurrency 특성을 의도적으로 수용할 때만 사용합니다. Mystack이 스스로 선택하는
 recovery 경로가 아닙니다.
 
@@ -139,13 +139,13 @@ recovery 경로가 아닙니다.
 ## 관측과 수정 위치
 
 `glue.sqlite.runtime.verify.before`, `.after`, `.failed` event는 선택한 driver module, journal mode,
-SQLite version, timeout, checkpoint policy, repair hint를 기록합니다.
+SQLite version, 제한 시간, checkpoint policy, repair hint를 기록합니다.
 `glue.sqlite_catalog.schema.*`, `glue.sqlite_catalog.transaction.*`은 schema 시작, 상한 있는 busy
 retry, commit/rollback, duration, resource fingerprint도 기록합니다. Source URL, credential,
-database content, request payload는 기록하지 않습니다. Health endpoint `/_mystack/health`는
-`sqlite_runtime`에 검증한 runtime document를 제공합니다.
+database content, request payload는 기록하지 않습니다. Health 엔드포인트 `/_mystack/health`는
+`sqlite_runtime`에 검증한 실행 환경 document를 제공합니다.
 
-새 base image 또는 Python runtime으로 이 경계가 깨지면 다음 순서로 확인합니다.
+새 base image 또는 Python 실행 환경으로 이 경계가 깨지면 다음 순서로 확인합니다.
 
 1. Source version, URL 형태, checksum: `config/runtime/sqlite-runtime.json`
 2. 검증, extraction, extension compilation: `glue/scripts/build_sqlite_driver.py`

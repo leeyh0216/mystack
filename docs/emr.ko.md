@@ -24,8 +24,8 @@
 <!-- section: cluster -->
 ## Cluster 만들기
 
-다른 AWS client와 같은 host endpoint를 사용합니다. `LogUri`는 선택 사항이지만, terminal Step log를
-LocalStack S3에 남기려면 bucket을 먼저 만들어야 합니다. 아래 release label은 기본 설정 profile이므로,
+다른 AWS 클라이언트와 같은 host 엔드포인트를 사용합니다. `LogUri`는 선택 사항이지만, terminal Step log를
+LocalStack S3에 남기려면 bucket을 먼저 만들어야 합니다. 아래 release label은 기본 설정 프로필이므로,
 다른 label을 사용한다면 [설정](configuration.ko.md)에서 선택합니다.
 
 ```python
@@ -46,7 +46,7 @@ cluster_id = created["JobFlowId"]
 ```
 
 `KeepJobFlowAliveWhenNoSteps=True`이면 나중에 `AddJobFlowSteps`를 호출할 수 있도록 cluster가 준비 상태로
-남습니다. Emulator는 EMR container 안에서 Spark 3.5 local mode로 실행합니다. Instance count는 EMR
+남습니다. Emulator는 EMR container 안에서 Spark 3.5 로컬 mode로 실행합니다. Instance count는 EMR
 요청을 모델링하지만 EC2나 YARN worker를 만들지는 않습니다.
 
 <!-- section: bootstrap -->
@@ -132,8 +132,8 @@ step_id = step_ids[0]
 
 Primary application과 `--archives`, `--files`, `--jars`, `--py-files`로 전달한 S3 resource는 Spark를
 시작하기 전에 Step work directory로 materialize됩니다. LocalStack host 주소를 command에 넣지 말고
-일반 `s3://` 또는 `s3a://` URI를 전달합니다. Mystack은 local Spark process에 설정된 LocalStack S3
-endpoint와 path-style S3A 설정을 제공합니다.
+일반 `s3://` 또는 `s3a://` URI를 전달합니다. Mystack은 로컬 Spark process에 설정된 LocalStack S3
+엔드포인트와 path-style S3A 설정을 제공합니다.
 
 <!-- section: observe -->
 ## Step 추적 및 log 확인
@@ -143,7 +143,7 @@ boto3에서 `describe_step(ClusterId=cluster_id, StepId=step_id)`를 polling하�
 Step을 추가하며, 제출한 인자 벡터와 해석된 인자 벡터를 보고, 실시간 stdout/stderr를 따라가고, log를
 내려받거나 실행 중인 Step을 취소할 수 있습니다. Add Step dialog에는 한 줄에 하나의 인자를 입력합니다.
 
-`LogUri`를 설정하면 terminal Step은 압축된 controller, syslog, stdout, stderr, synthetic local-driver
+`LogUri`를 설정하면 terminal Step은 압축된 controller, syslog, stdout, stderr, synthetic 로컬-driver
 application stream을 지정한 S3 prefix 아래에 게시합니다. Path, 재시도, 실행 중에 볼 수 있는 정보는
 [LogUri 배치와 복구 계약](protocols/emr/emr-log-layout.ko.md)에서 확인합니다.
 

@@ -60,15 +60,11 @@ returns HTTP 400 `AlreadyExistsException`, while batch operations return per-ite
 `ErrorDetail`. See the official [Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
 and [Glue exceptions](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html).
 
-The complete machine-generated table is [api-coverage.generated.md](README.md).
-It classifies every official operation in the pinned botocore 1.43.66 model: EMR has 13
-`COMPATIBLE` and 52 `PROTOCOL_ONLY` operations; Glue has 28 `COMPATIBLE`, 243
-`PROTOCOL_ONLY`, and 28 `NOT_PLANNED` operations. `PROTOCOL_ONLY` is not callable support;
-it means only that the upstream request/response model is tracked. The Glue `NOT_PLANNED` entries
-are Jobs, JobRuns, and Crawlers. The committed JSON baseline stores a status and operation-shape
-fingerprint for each entry. A new upstream operation is never assigned a default during `--check`;
-it is reported as unclassified and fails CI. Shape changes and removals are reported separately
-with adapter, test, and documentation fix hints.
+CI generates the complete classification under `ci-artifacts/compatibility/api-coverage.md`.
+It classifies every official operation in the pinned botocore 1.43.66 model. This is a CI report,
+not a checked-in reference page. `PROTOCOL_ONLY` is not callable support: it means only that the
+upstream request/response model is tracked. New or changed upstream operations are reported as
+unclassified and fail CI until the implementation decision, tests, and documentation agree.
 
 <!-- section: local-errors -->
 ## Deterministic local error contracts

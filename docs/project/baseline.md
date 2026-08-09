@@ -24,7 +24,7 @@
 
 - Status: approved
 - Owner: leeyh0216
-- Updated: 2026-08-09
+- Updated: 2026-08-10
 - Repository: public `leeyh0216/mystack`
 - Scan root: `/Users/leeyh0216/Documents/project/ministack-enhanced`
 
@@ -94,8 +94,8 @@ contracts.
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
   explicit configured timeouts.
 - CI reporting publishes concise job summaries plus downloadable escaped HTML/JUnit test reports.
-  Compatibility CI matrices and evidence are collected from typed pytest annotations without
-  executing test bodies; the legacy YAML/API baselines remain required parity guards pending #87.
+  Compatibility CI matrices and verification artifacts are collected from typed pytest annotations
+  without executing test bodies and are written to ignored `ci-artifacts/compatibility/` paths.
 
 <!-- section: entry-points -->
 ## Entry points and commands
@@ -129,9 +129,9 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
 
 ### Confirmed
 
-- Architecture, support scope, protocol, console, E2E, and release documents match the current code.
-- Complete upstream classification records EMR 65 and Glue 299 modeled operations without claiming
-  unimplemented operations are compatible.
+- The source and CI both use `config/runtime/mystack.yaml` and grouped `scripts/` directories.
+- Compatibility generators write their output beneath `ci-artifacts/compatibility/`; CI generates
+  those files before selecting compatibility jobs.
 
 ### Corrected drift
 
@@ -142,12 +142,12 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
   mixed user and contributor material, 115 configuration leaf paths with only top-level coverage,
   and raw rather than human-readable test diagnostics. The Markdown-first navigation (#75) and
   readable CI reports (#80) are now implemented; a static-site decision remains deferred.
+- Compatibility, contributor, CI, and support-scope documents now distinguish source policies from
+  ignored CI/local reports and no longer link to removed checked-in generated files.
 
 ### Unconfirmed
 
-- The `v0.1.3` workflow pushed all three images, but the anonymous external pull verification failed
-  because package visibility has not yet been changed. GitHub Release creation was skipped; #45
-  records that external blocker.
+- CI completion and publication for the outstanding release remain an external workflow state.
 
 <!-- section: candidates -->
 ## Remaining candidate gaps
@@ -168,6 +168,6 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 
 1. Continue expanding implemented Glue and EMR operations only with their documented semantic,
    pagination, conflict, and state-transition contracts.
-2. Keep the generated API inventory and client workflow labs synchronized with each supported client
-   and pinned dependency version.
-3. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).
+2. Keep CI reports out of user-facing navigation and update their source policy in the same change.
+3. Apply the Korean terminology table without translating product names, API names, commands, or
+   configuration keys.

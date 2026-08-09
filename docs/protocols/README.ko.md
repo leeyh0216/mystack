@@ -13,7 +13,7 @@
 <!-- toc:end -->
 
 <!-- section: overview -->
-이 문서는 공개 AWS 호환 API를 뒷받침하는 내부 동작을 설명합니다. 기여자는 service 안내에서 시작한 뒤
+이 문서는 공개 AWS 호환 API를 뒷받침하는 내부 동작을 설명합니다. 기여자는 서비스 안내에서 시작한 뒤
 변경하려는 경로를 순서대로 읽습니다.
 
 <!-- section: reading-order -->
@@ -34,8 +34,8 @@
 
 - [AWS JSON 1.1](aws-json/aws-json-1.1.ko.md)
 
-문서에서 CI 전용 workload를 언급하면 runtime 기능이 아니라 test infrastructure입니다. 해당 source와
-scenario 이름은 대응하는 `tests/e2e` case와 함께 변경합니다.
+문서에서 CI 전용 workload를 언급하면 실행 환경 기능이 아니라 테스트 infrastructure입니다. 해당 원본와
+시나리오 이름은 대응하는 `tests/e2e` case와 함께 변경합니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료

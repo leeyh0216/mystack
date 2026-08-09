@@ -39,10 +39,13 @@ guide](https://learn.microsoft.com/ko-kr/contribute/content/style-quick-start).
 Keep code identifiers, API names, configuration keys, error codes, and proper
 technical names in their original form and format them as inline code. Use
 natural Korean for ordinary explanatory nouns. The Korean counterpart contains
-the normative replacement table.
+the normative replacement table, including client, runtime, operation, endpoint,
+workflow, scenario, evidence, contract, artifact, coverage, adapter, service,
+catalog, metadata, and report.
 
-Literal field names and stable identifiers remain unchanged. Add a Korean
-explanation when they first appear.
+Literal field names and stable identifiers remain unchanged. Code blocks,
+commands, paths, configuration keys, API names, and product names also remain
+unchanged. Add a Korean explanation when they first appear.
 
 <!-- section: status -->
 ## Support status language

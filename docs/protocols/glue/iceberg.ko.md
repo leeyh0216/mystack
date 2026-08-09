@@ -13,22 +13,22 @@
 <!-- toc:end -->
 
 <!-- section: overview -->
-이 안내는 지원하는 Apache Iceberg Java GlueCatalog lifecycle과 metadata 경계를 다룹니다.
+이 안내는 지원하는 Apache Iceberg Java GlueCatalog lifecycle과 메타데이터 경계를 다룹니다.
 
 <!-- section: reading-order -->
 ## 읽는 순서
 
-1. [Open Table Format](glue-open-table-format.ko.md) — Iceberg metadata의 Glue 요청 경계
-2. [Commit](glue-iceberg-commits.ko.md) — 원자적 metadata compare-and-swap과 retry
+1. [Open Table Format](glue-open-table-format.ko.md) — Iceberg 메타데이터의 Glue 요청 경계
+2. [Commit](glue-iceberg-commits.ko.md) — 원자적 메타데이터 compare-and-swap과 retry
 3. [Evolution](glue-iceberg-evolution.ko.md) — schema, partition, sort evolution
 4. [Row-level DML](glue-iceberg-row-level-dml.ko.md) — COW/MOR write 경로
 5. [Snapshot, ref, procedure](glue-iceberg-snapshots-refs-procedures.ko.md) — query와 maintenance
    의미론
 6. [Lifecycle](glue-iceberg-lifecycle.ko.md) — rename, drop, purge, managed table
-7. [Table optimizer](glue-table-optimizers.ko.md) — Glue optimizer control-plane operation
+7. [Table optimizer](glue-table-optimizers.ko.md) — Glue optimizer control-plane API 작업
 
 고정한 Apache Iceberg Java GlueCatalog 시나리오로 이 경로를 검증합니다. PyIceberg, Flink, Trino,
-Glue Iceberg REST endpoint는 명시적인 제외 범위입니다.
+Glue Iceberg REST 엔드포인트는 명시적인 제외 범위입니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료
