@@ -33,6 +33,9 @@ entry만 읽으며 client/runtime 전수 조합을 암묵적으로 만들지 않
 `compatibility/cases.yaml`과 생성 matrix를 필수 parity 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
 방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
 따릅니다.
+생성한 profile의 `expected_duration_minutes`는 명시적인 바깥 job 시간 상한입니다. Local에서
+collection만 수행하는 generator에는 별도의 `tests.compatibility_collection_timeout_seconds` 제한이
+있고 test body를 실행하지 않습니다.
 PR과 push는 `required`, manual 실행은 `preview`, 정기·manual E2E는 `nightly`를 추가합니다. 선택
 lane을 비워도 항상 비어 있지 않은 required lane과 합치므로 유효합니다.
 Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의

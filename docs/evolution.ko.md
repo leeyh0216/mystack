@@ -37,7 +37,7 @@ Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container
 ## Client 또는 runtime version 추가
 
 1. `test_support/compatibility_profiles.py`에서 `CompatibilityProfile`을 만들거나 재사용합니다.
-   정확한 client version, runtime, lane, timeout 예산, 공식 URL을 기록합니다.
+   정확한 client version, runtime, lane, GitHub Actions 바깥 job 시간 상한, 공식 URL을 기록합니다.
 2. 실제 client 동작을 검증하는 가장 작은 `contract` 또는 `e2e` 시험에
    `@compatibility_evidence(...)`를 붙입니다. scenario, operation, capability, support 값은
    계획한 기능이 아니라 실행하는 test body를 설명해야 합니다.
@@ -54,6 +54,8 @@ Annotation compiler는 잘못된 marker 구조, 없거나 맞지 않는 실행 m
 차이, 알 수 없는 modeled operation, 빠진 API 근거, 변경된 기존 case 선택을 실행 전에 거부합니다.
 Case는 정확한 version, scenario/operation ID, model fingerprint, 결정적 evidence hash를 기록하므로
 log에서 깨진 경계를 찾을 수 있습니다.
+`tests.compatibility_collection_timeout_seconds`가 그 collection subprocess를 제한하며 profile의
+duration은 pytest timeout이 아닙니다.
 
 <!-- section: checklist -->
 ## 호환성 변경 체크리스트

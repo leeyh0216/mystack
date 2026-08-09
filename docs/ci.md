@@ -33,6 +33,9 @@ Actions reads only the `include` entries compiled from pytest annotations into
 cross-product. `compatibility/cases.yaml` and its generated matrix remain required parity baselines
 during the migration. The approach follows GitHub's [shared matrix
 pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
+Each compiled profile's `expected_duration_minutes` is the explicit outer job
+ceiling. The local, collection-only generator has a separate
+`tests.compatibility_collection_timeout_seconds` deadline and does not run test bodies.
 Pull requests and pushes select `required`; manual runs add `preview`, and scheduled/manual E2E runs
 add `nightly`. An empty optional lane is valid because the event selection always merges it with the
 non-empty required lane.

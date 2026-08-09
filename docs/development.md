@@ -134,7 +134,7 @@ make threads
 make down
 ```
 
-Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible.
+Timeouts come from the YAML `tests` section. Service process/bootstrap timeouts are separate so a hung subprocess is stopped by its adapter before the outer test timeout whenever possible. The annotation collector has its own bounded child process at `tests.compatibility_collection_timeout_seconds`; it does not execute tests.
 
 `make frontend` runs ESLint, TypeScript project-reference checking, Vitest component contracts, and
 both Vite production builds. Set `MYSTACK_FRONTEND_TEST_TIMEOUT_MS` to a positive millisecond value
@@ -149,6 +149,8 @@ Compatibility scenarios are declared next to real `contract` or `e2e` tests with
 annotations. `make compatibility-evidence-generate` runs collection only, produces the CI matrix
 and bilingual evidence, and never executes those test bodies. `make compatibility-evidence-check`
 rejects marker, lock/runtime, modeled-operation, API-evidence, or retained-legacy-selection drift.
+`CompatibilityProfile.expected_duration_minutes` is the generated GitHub Actions job ceiling, not
+the local collection deadline or a pytest timeout.
 The retained YAML compiler still runs during the migration, so use `make compatibility-check` too.
 The ordinary Python CI job downloads both frontend build artifacts before running the full contract
 modules, while the browser E2E job owns rendered UI behavior. This keeps SDK matrix failures

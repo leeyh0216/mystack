@@ -300,11 +300,12 @@
     "tests": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["unit_timeout_seconds", "contract_timeout_seconds", "package_smoke_timeout_seconds", "e2e_timeout_seconds", "compose_wait_timeout_seconds", "e2e"],
+      "required": ["unit_timeout_seconds", "contract_timeout_seconds", "package_smoke_timeout_seconds", "compatibility_collection_timeout_seconds", "e2e_timeout_seconds", "compose_wait_timeout_seconds", "e2e"],
       "properties": {
         "unit_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "contract_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "package_smoke_timeout_seconds": {"$ref": "#/$defs/positive_number"},
+        "compatibility_collection_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "e2e_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "compose_wait_timeout_seconds": {"$ref": "#/$defs/positive_number"},
         "e2e": {

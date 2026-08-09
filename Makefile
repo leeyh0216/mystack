@@ -87,13 +87,13 @@ compatibility-check: ## Reject interoperability manifest, runtime, and generated
 	@uv run python scripts/compatibility_matrix.py --check
 
 compatibility-evidence-generate: ## Generate CI cases and bilingual evidence from pytest annotations.
-	@uv run --all-packages python scripts/compatibility_evidence.py --write
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --write
 
 compatibility-evidence-check: ## Reject pytest annotation, API evidence, parity, and generated-output drift.
-	@uv run --all-packages python scripts/compatibility_evidence.py --check
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --check
 
 compatibility-evidence-parity: ## Verify test annotations still select every retained legacy case.
-	@uv run --all-packages python scripts/compatibility_evidence.py --parity
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --parity
 
 compatibility-case: ## Run CASE=id from annotated evidence in one bounded, isolated process.
 	@test -n "$(CASE)" || (echo "CASE is required; run: make compatibility-case CASE=<id>" >&2; exit 2)

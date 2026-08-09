@@ -19,6 +19,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -29,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from mystack.aws_protocol import ConfigurationError, load_configuration
 
 try:
     from scripts.operation_inventory import (
@@ -49,15 +51,57 @@ DEFAULT_CONFIG = ROOT / "config/mystack.yaml"
 DEFAULT_LOCK = ROOT / "uv.lock"
 LOGGER = logging.getLogger("mystack.compatibility.evidence")
 _PYTHON_PACKAGES = frozenset({"boto3", "botocore", "awswrangler"})
+_SENSITIVE_DIAGNOSTIC_ASSIGNMENT = re.compile(
+    r"(?i)\b("
+    r"(?:aws_)?(?:access[_-]?key(?:[_-]?id)?|secret(?:[_-]?access[_-]?key)?|"
+    r"session[_-]?token|security[_-]?token|authorization|credential|password|signature|token)"
+    r")\s*([=:])\s*(?:\"[^\"]*\"|'[^']*'|[^\s,;]+)"
+)
+_SENSITIVE_DIAGNOSTIC_HEADER = re.compile(
+    r"(?im)\b(?P<name>proxy-authorization|authorization|x-amz-security-token)"
+    r"\s*(?P<separator>[:=])\s*[^\r\n]*"
+)
+_SENSITIVE_BEARER_VALUE = re.compile(r"(?i)\bbearer\s+[^\s,;]+")
 
 
 class EvidenceCompilationError(ValueError):
     """Collected compatibility evidence cannot safely drive CI or user-facing claims."""
 
 
-def collect_annotations() -> dict[str, Any]:
+def _configured_config_path(config_path: Path | None = None) -> Path:
+    """Resolve the same file-based configuration selection used by Make targets and services."""
+
+    if config_path is not None:
+        return config_path
+    configured = os.environ.get("MYSTACK_CONFIG_FILE")
+    return Path(configured) if configured else DEFAULT_CONFIG
+
+
+def _collection_timeout_seconds(config_path: Path) -> float:
+    """Read the collection-process deadline from the selected YAML configuration file."""
+
+    try:
+        document = load_configuration(config_path).document
+    except ConfigurationError as error:
+        raise EvidenceCompilationError(
+            "cannot load effective compatibility collection configuration "
+            f"config={config_path}: {error}"
+        ) from error
+    tests = _mapping(document.get("tests"), "config.tests")
+    value = tests.get("compatibility_collection_timeout_seconds")
+    if isinstance(value, bool) or not isinstance(value, int | float) or value <= 0:
+        raise EvidenceCompilationError(
+            "compatibility collection timeout must be a positive number "
+            f"path=config.tests.compatibility_collection_timeout_seconds config={config_path}"
+        )
+    return float(value)
+
+
+def collect_annotations(*, config_path: Path | None = None) -> dict[str, Any]:
     """Run one isolated pytest collection subprocess and load its JSON output."""
 
+    selected_config = _configured_config_path(config_path)
+    timeout_seconds = _collection_timeout_seconds(selected_config)
     with tempfile.TemporaryDirectory(prefix="mystack-compatibility-") as directory:
         output = Path(directory) / "collected.json"
         test_paths = _annotated_test_paths()
@@ -83,18 +127,34 @@ def collect_annotations() -> dict[str, Any]:
         ]
         LOGGER.info(
             "event=compatibility.annotation_collect.before command=%s test_files=%d "
-            "executes_tests=false",
+            "timeout_seconds=%s executes_tests=false",
             json.dumps(command),
             len(test_paths),
+            timeout_seconds,
         )
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            check=False,
-            cwd=ROOT,
-            env=_collection_environment(),
-            text=True,
-        )
+        try:
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                check=False,
+                cwd=ROOT,
+                env=_collection_environment(),
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as error:
+            LOGGER.error(
+                "event=compatibility.annotation_collect.timeout timeout_seconds=%s stdout_tail=%s "
+                "stderr_tail=%s fix_hint=%s",
+                timeout_seconds,
+                _tail(error.output),
+                _tail(error.stderr),
+                "increase-tests.compatibility_collection_timeout_seconds-or-repair-collection-imports",
+            )
+            raise EvidenceCompilationError(
+                "pytest compatibility collection timed out; "
+                "fix_hint=inspect-annotation-imports-or-tests.compatibility_collection_timeout_seconds"
+            ) from error
         if completed.returncode != 0:
             LOGGER.error(
                 "event=compatibility.annotation_collect.failed returncode=%d stdout_tail=%s "
@@ -750,10 +810,22 @@ def _read(path: Path) -> str | None:
         return None
 
 
-def _tail(value: str, limit: int = 4_000) -> str:
+def _tail(value: str | bytes | None, limit: int = 4_000) -> str:
     """Bound collection diagnostics so a malformed marker never floods CI logs."""
 
-    return value[-limit:]
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        value = value.decode("utf-8", errors="replace")
+    value = _SENSITIVE_DIAGNOSTIC_HEADER.sub(
+        lambda match: f"{match.group('name')}{match.group('separator')}<redacted>", value
+    )
+    value = _SENSITIVE_BEARER_VALUE.sub("Bearer <redacted>", value)
+    value = _SENSITIVE_DIAGNOSTIC_ASSIGNMENT.sub(
+        lambda match: f"{match.group(1)}{match.group(2)}<redacted>", value
+    )
+    tail = value[-limit:]
+    return tail
 
 
 def parse_args() -> argparse.Namespace:
@@ -767,6 +839,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--english", type=Path, default=DEFAULT_ENGLISH)
     parser.add_argument("--korean", type=Path, default=DEFAULT_KOREAN)
     parser.add_argument("--legacy-matrix", type=Path, default=DEFAULT_LEGACY_MATRIX)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=_configured_config_path(),
+        help="YAML configuration that supplies runtime facts and the collection timeout",
+    )
     return parser.parse_args()
 
 
@@ -774,8 +852,12 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
     args = parse_args()
     try:
-        collected = _load_json(args.collection) if args.collection else collect_annotations()
-        compiled = EvidenceCompiler().compile(collected)
+        collected = (
+            _load_json(args.collection)
+            if args.collection
+            else collect_annotations(config_path=args.config)
+        )
+        compiled = EvidenceCompiler(config_path=args.config).compile(collected)
         assert_legacy_parity(compiled, args.legacy_matrix)
         if args.parity:
             return 0

@@ -134,7 +134,7 @@ make threads
 make down
 ```
 
-Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap timeout은 별도이며 가능한 경우 바깥 test timeout보다 먼저 adapter가 hung subprocess를 종료합니다.
+Timeout은 YAML `tests` section에서 읽습니다. Service process/bootstrap timeout은 별도이며 가능한 경우 바깥 test timeout보다 먼저 adapter가 hung subprocess를 종료합니다. Annotation collector는 `tests.compatibility_collection_timeout_seconds`로 제한한 별도 child process이며 test를 실행하지 않습니다.
 
 `make frontend`는 ESLint, TypeScript project-reference 검사, Vitest component 계약, 두 Vite
 production build를 실행합니다. `MYSTACK_FRONTEND_TEST_TIMEOUT_MS`를 양의 millisecond 값으로
@@ -149,7 +149,8 @@ Compatibility scenario는 실제 `contract` 또는 `e2e` test 옆의 type이 있
 선언합니다. `make compatibility-evidence-generate`는 collection만 실행하고 CI matrix와 한·영 근거를
 만들며 test body를 실행하지 않습니다. `make compatibility-evidence-check`는 marker, lock/runtime,
 modeled operation, API 근거, 유지하는 기존 case 선택의 차이를 거부합니다. 이행 기간에는 남긴 YAML
-compiler도 실행하므로 `make compatibility-check`도 사용합니다. 일반 Python CI job은 전체 contract module을
+compiler도 실행하므로 `make compatibility-check`도 사용합니다. `CompatibilityProfile.expected_duration_minutes`는
+생성한 GitHub Actions job 시간 상한이며 local collection deadline이나 pytest timeout이 아닙니다. 일반 Python CI job은 전체 contract module을
 실행하기 전에 두 frontend build artifact를 내려받고, browser E2E job은 화면 동작을 맡습니다. 이 구조는
 UI coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정합니다. Artifact
 lifecycle은 공식 [GitHub Actions artifact

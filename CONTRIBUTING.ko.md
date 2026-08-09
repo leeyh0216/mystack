@@ -105,8 +105,8 @@ botocore만 설치한 model-drift job도 emulator import 없이 이 literal inve
 
 Client 또는 runtime을 바꿀 때는 다음 순서를 사용합니다.
 
-1. `test_support/compatibility_profiles.py`에서 정확한 version, runtime, lane, timeout 예산,
-   공식 출처 URL을 가진 `CompatibilityProfile`을 만들거나 재사용합니다.
+1. `test_support/compatibility_profiles.py`에서 정확한 version, runtime, lane,
+   GitHub Actions job 실행 시간 상한, 공식 출처 URL을 가진 `CompatibilityProfile`을 만들거나 재사용합니다.
 2. 가장 작은 실제 `@pytest.mark.contract` 또는 `@pytest.mark.e2e` 시험에
    `@compatibility_evidence(...)`를 붙입니다. 그 test body가 실행하는 operation과 scenario만
    선언합니다.
@@ -116,6 +116,26 @@ Client 또는 runtime을 바꿀 때는 다음 순서를 사용합니다.
 4. 바꾼 case에 `make compatibility-case CASE=<id>`를 실행합니다. 이행 기간에는
    `make compatibility-check`도 실행합니다. 생성한 근거를 직접 수정하거나 두 기준 파일을
    제거하지 않습니다.
+
+가장 작은 annotation은 증명하는 test 가까이에 둡니다.
+
+```python
+import pytest
+
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+
+
+@pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-get-database",),
+    operations={"glue": ("GetDatabase",)},
+    capabilities=("glue-database-read",),
+)
+def test_get_database() -> None:
+    ...
+```
 
 Generator는 pytest를 `--collect-only`로 호출합니다. Test body를 실행하지 않고 marker와 node ID를
 결정합니다. 실행 marker, 고정 lock/runtime, API 근거, 기존 case 선택 중 하나라도 달라지면 실패합니다.
@@ -127,6 +147,19 @@ Generator는 pytest를 `--collect-only`로 호출합니다. Test body를 실행�
 `awswrangler` 또는 `pyarrow` import가 발생하면 실패합니다. 선택 client는 test body 안에서만
 import해야 합니다. 이는 pytest의 [plugin loading 제어](https://docs.pytest.org/en/stable/how-to/plugins.html#disabling-plugin-autoloading)를
 따릅니다.
+`CompatibilityProfile.expected_duration_minutes`는 GitHub Actions 바깥 job의 실행 시간 상한입니다.
+pytest timeout이 아닙니다. Collection subprocess는
+`tests.compatibility_collection_timeout_seconds`로 제한하고, 선택한 test body는 기존 contract 또는
+E2E YAML timeout을 사용합니다.
+
+| 실패 종류 | 수정 위치 |
+| --- | --- |
+| Marker/profile 구조 또는 execution marker | annotation을 붙인 test와 `test_support/compatibility.py` |
+| Claim한 operation이 구현 inventory에 없음 | 소유한 `emr` 또는 `glue` `adapters/inbound/aws_*.py` registry와 test annotation |
+| Operation이 고정한 botocore model에 없음 | inbound handler, 고정 model 검토, test annotation |
+| Lock client/runtime 불일치 | `uv.lock`, `test_support/compatibility_profiles.py`, `config/mystack.yaml` |
+| Collection 제한 시간 초과 | `tests.compatibility_collection_timeout_seconds` 또는 annotation test collection 중 import한 항목 |
+| 생성 output 차이 | `make compatibility-evidence-generate` 실행; 생성 file을 직접 수정하지 않음 |
 
 <!-- section: issues -->
 ## 이중 언어 이슈

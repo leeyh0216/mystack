@@ -224,6 +224,10 @@ Browser interaction deadline과 Chromium 누락을 실패로 볼지는
 `tests.e2e.browser_action_timeout_seconds` 및
 `tests.e2e.browser_required_environment_variable`이 가리키는 환경변수로 설정합니다.
 격리된 wheel 동시 설치 제한 시간은 `tests.package_smoke_timeout_seconds`로 설정합니다.
+`tests.compatibility_collection_timeout_seconds`는 type이 있는 compatibility annotation을 찾는 pytest
+`--collect-only` subprocess만 제한합니다. Test body는 실행하지 않습니다.
+`CompatibilityProfile.expected_duration_minutes`는 별도로 생성한 GitHub Actions 바깥 job 시간 상한이고,
+선택한 contract 또는 E2E test는 기존 YAML test timeout을 사용합니다.
 `tests.e2e.glue_iceberg_contention_script`는 CI 전용 두 container optimistic-commit 시나리오에서
 사용하는 image 내부 Spark job path입니다. Custom Glue image가 harness 위치를 바꾸더라도 test
 코드를 고치지 않도록 file 설정으로 둡니다.

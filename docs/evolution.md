@@ -37,7 +37,7 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 ## Adding a client or runtime version
 
 1. Add or reuse a `CompatibilityProfile` in `test_support/compatibility_profiles.py`. It records
-   exact client versions, runtime, lane, timeout budget, and official URLs.
+   exact client versions, runtime, lane, outer GitHub Actions job ceiling, and official URLs.
 2. Add `@compatibility_evidence(...)` to the smallest real `contract` or `e2e` test that proves
    the client behavior. Its scenario, operation, capability, and support values must describe the
    executed test body rather than a planned feature.
@@ -56,6 +56,8 @@ execution marker, duplicate profile, lock/runtime drift, unknown modeled operati
 evidence, or changed legacy selection. A case records exact versions, scenario/operation IDs,
 model fingerprints, and a deterministic evidence hash so logs point maintainers at the broken
 boundary.
+`tests.compatibility_collection_timeout_seconds` bounds that collection subprocess; the profile's
+duration is not a pytest timeout.
 
 <!-- section: checklist -->
 ## Compatibility change checklist
