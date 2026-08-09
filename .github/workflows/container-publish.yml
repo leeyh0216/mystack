@@ -165,7 +165,7 @@ jobs:
           path: |
             contracts/compatibility-matrix.generated.json
             contracts/compatibility-evidence.generated.json
-            contracts/api-coverage.json
+            contracts/api-coverage.generated.json
             contracts/glue-error-conditions.yaml
             docs/compatibility/release-acceptance.generated.md
             docs/compatibility/release-acceptance.ko.generated.md

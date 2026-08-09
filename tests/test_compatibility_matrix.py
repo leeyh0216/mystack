@@ -58,6 +58,14 @@ def test_scope_policy_rejects_unknown_source(tmp_path: Path) -> None:
         compile_manifest(policy_path, evidence_path=EVIDENCE)
 
 
+def test_release_preflight_preserves_generated_api_coverage_evidence() -> None:
+    workflow = (ROOT / ".github/workflows/container-publish.yml").read_text(encoding="utf-8")
+
+    assert "required-validation-evidence" in workflow
+    assert "contracts/api-coverage.generated.json" in workflow
+    assert "contracts/api-coverage.json" not in workflow
+
+
 def test_isolated_runner_uses_generated_nodes_and_configured_timeout() -> None:
     case = CompiledCaseRepository(DEFAULT_OUTPUT).get("boto3-botocore-1.43.66-contract")
     runner = IsolatedCaseRunner(
