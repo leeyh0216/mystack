@@ -61,7 +61,10 @@ def _settings(
         journal_mode="rollback",
         synchronous="full",
         busy_timeout_milliseconds=busy_timeout_milliseconds,
-        retry_limit=0,
+        # The interprocess CAS contract expects the losing writer to retry a transient SQLite
+        # lock and observe the durable VersionId mismatch, not surface a scheduler-dependent
+        # busy error before the winner commits.
+        retry_limit=3,
         checkpoint=SQLiteCheckpointSettings(mode="passive", auto_checkpoint_pages=1000),
     )
 
