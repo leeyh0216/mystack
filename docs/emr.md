@@ -19,8 +19,6 @@
 Use this guide to create a local EMR cluster, prepare it with a bootstrap action, and run a
 Spark or PySpark application whose code and data are in LocalStack S3.
 
-For the request-to-Spark-process and LogUri flow, see the optional [EMR execution architecture](emr-execution-architecture.md).
-
 <!-- section: cluster -->
 ## Create a cluster
 

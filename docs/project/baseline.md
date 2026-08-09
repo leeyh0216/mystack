@@ -67,11 +67,11 @@ contracts.
   cancels and awaits scheduler tasks and child processes with a file-configured shutdown deadline,
   closes artifacts, and releases driver locks.
 - Glue: 28 operations covering database, table/version, partition/batch, and table optimizers with
-  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. The
-  source-built SQLite DB-API runtime is capability-gated before catalog initialization. A normalized
-  SQLite catalog uses bounded writer retries, WAL, transactional schema initialization, and atomic
-  database/table rename, cascade, and VersionId checks; documented domain errors translate at the
-  inbound adapter.
+  deterministic modeled shape maxima, natural errors, stable batch item order, and rollback. Serialized
+  candidate transactions persist/fsync/replace schema-2 JSON before visible publication, migrate
+  schema 1, and keep rename/cascade/version checks atomic. A bounded POSIX lock and latest-state
+  reload extend the same transaction across emulator processes; documented domain errors translate
+  at the inbound adapter.
 - Glue responsibilities: immutable lossless domain snapshots own name/revision/archive/partition
   invariants; focused command/query/version/batch/pagination/initialization handlers own application
   policy; a separate Open Table Format planner/orchestrator owns Iceberg v2 input validation,
@@ -87,15 +87,12 @@ contracts.
 - Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
   resource/log views, route/thread/task diagnostics, and structured boundary logs without
   authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.
-- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11 CI,
+- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
   nightly/manual Docker E2E, model/API drift gates, immutable develop snapshots and main releases,
   multi-platform GHCR image publication, SBOM/provenance, OCI index validation, and Trivy policy.
 - Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
   explicit configured timeouts.
-- CI reporting publishes concise job summaries plus downloadable escaped HTML/JUnit test reports.
-  Compatibility CI matrices and evidence are collected from typed pytest annotations without
-  executing test bodies; the legacy YAML/API baselines remain required parity guards pending #87.
 
 <!-- section: entry-points -->
 ## Entry points and commands
@@ -140,8 +137,8 @@ These rules follow AWS [hexagonal architecture guidance](https://docs.aws.amazon
 - The previous test count described an early shared/Proxy slice rather than the current workspace.
 - The 2026-08-09 documentation/CI scan found 92 Markdown documents without a common top index,
   mixed user and contributor material, 115 configuration leaf paths with only top-level coverage,
-  and raw rather than human-readable test diagnostics. The Markdown-first navigation (#75) and
-  readable CI reports (#80) are now implemented; a static-site decision remains deferred.
+  and raw rather than human-readable test diagnostics. The Markdown-first rewrite is now tracked
+  separately from the later static-site decision.
 
 ### Unconfirmed
 
@@ -166,8 +163,9 @@ behavior changes remain ordinary reviewed source changes inside the owning bound
 <!-- section: next-sequence -->
 ## Recommended next sequence
 
-1. Continue expanding implemented Glue and EMR operations only with their documented semantic,
-   pagination, conflict, and state-transition contracts.
-2. Keep the generated API inventory and client workflow labs synchronized with each supported client
-   and pinned dependency version.
-3. Complete GHCR public visibility and re-run the blocked v0.1.3 release transaction (#45, #55).
+1. Complete the Markdown-first user navigation, service guides, top-of-document indexes, and
+   contributor routing (#75).
+2. Document service runtime architecture, then generate a complete configuration reference and
+   user support matrix after the SQLite catalog configuration is stable (#81, #79).
+3. Replace raw CI diagnostics with a concise job summary and downloadable HTML/JUnit evidence (#80).
+4. Complete the external GHCR visibility verification and GitHub Release (#45, #55).

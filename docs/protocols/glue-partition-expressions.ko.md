@@ -10,7 +10,7 @@
 
 - [문법과 우선순위](#문법과-우선순위)
 - [Type 기반 평가](#type-기반-평가)
-- [조회 pipeline, SQLite pushdown과 설정](#조회-pipeline-sqlite-pushdown과-설정)
+- [조회 pipeline과 설정](#조회-pipeline과-설정)
 - [검증](#검증)
 - [공식 출처](#공식-출처)
 <!-- toc:end -->
@@ -56,60 +56,35 @@ timestamp는 끝의 `Z`를 포함한 Python ISO-8601 형식을 받고 timezone�
 migration된 로컬 상태를 보호합니다.
 
 <!-- section: pipeline -->
-## 조회 pipeline, SQLite pushdown과 설정
+## 조회 pipeline과 설정
 
-`PartitionQueries`는 parent table을 찾기 전에 structural `NextToken`, segment 범위, ANTLR 문법을
-검증합니다. 그 뒤 해석된 partition key schema에 AST를 bind합니다. Repository는 expression text를
-parse하지 않습니다. 이미 bind된 immutable AST만 받아 지원 node를 parameterized SQLite predicate로
-compile합니다. field alias는 검증된 key ordinal에서만 만들고 literal, cursor position, segment 좌표는
-모두 DB-API parameter로 전달합니다.
-
-```text
-NextToken shape -> Segment -> ANTLR parse -> table lookup -> schema bind
-    -> stable evaluator 1건 probe -> typed SQLite predicate + segment join
-    -> ORDER BY (order_key, partition_id) -> LIMIT MaxResults + 1
-```
-
-첫 probe는 evaluator의 lazy literal conversion과 오류 순서를 유지합니다. 따라서 빈 table은 실제로
-사용되지 않는 잘못된 literal을 오류로 바꾸지 않습니다. Typed projection fact는 모든 partition을
-메모리에 올리지 않고 뒤쪽 row의 잘못된 value도 감지합니다. Application은 이 neutral fact를
-`InvalidInputException`으로 mapping하며, raw partition value나 SQL 문은 log에 남기지 않습니다.
-
-SQLite는 안정적인 binary order key와 total별 persisted segment assignment를 저장합니다. Opaque
-continuation token에는 version, request-context fingerprint, surrogate row ID만 있고 이름이나 partition
-value는 없습니다. 다른 catalog/table/expression/segment의 token은 거부됩니다. 일반
-`GetPartitions`는 total-count query를 실행하지 않습니다. 참조 key 검증은 index된 중립 health fact를
-읽으므로 invalid value가 없다는 이유만으로 모든 partition을 탐색하지 않습니다. 결과 materialization은
-요청 page와 lookahead로 제한됩니다. 현재 ANTLR grammar는 모두 SQL/UDF로 compile합니다. evaluator가
-지원하지만 정확한 SQLite compiler가 아직 없는 이후 node는 `ORDER BY (order_key, partition_id)` seek
-streaming으로 최대 `fallback_max_candidates` row만 평가하며 catalog 목록을 snapshot하지 않습니다. cap을
-넘으면 값과 식을 노출하지 않는 narrowing hint가 포함된 결정적 `InvalidInputException`을 반환합니다.
-fallback의 strategy는 `sqlite-keyset-bounded-evaluator`이며, 이후 node는 이 상한 검증 범위를
-갖춘 뒤에만 지원 범위에 포함할 수 있습니다.
+`PartitionQueries`는 먼저 catalog table을 찾은 뒤 격리된 compiler가 생성된 ANTLR
+lexer/parser를 호출하고 parse tree를 기술 독립적인 immutable AST로 한 번만 mapping하게 합니다.
+별도의 typed evaluator가 이 AST를 repository 조회 결과에
+평가하고, 그 다음 segment를 선택하며 pagination을 마지막에 적용합니다. Repository는 expression을
+parse하지 않고 filtering 정책도 소유하지 않습니다.
 
 Mount한 Mystack YAML의 `glue.partition_expressions.max_length`, `max_tokens`,
-`fallback_max_candidates`, `supported_key_types`로 resource limit과 호환 profile을 제어합니다. 기본 길이는 공식 API model과
+`supported_key_types`로 resource limit과 호환 profile을 제어합니다. 기본 길이는 공식 API model과
 같고 token 상한은 로컬 denial-of-service 방어입니다. 구조화 event
-`glue.partition_expression.parse.*`, `glue.partition_expression.bind.*`,
-`glue.partition_query.plan.*`, `glue.partition_query.preflight.failed`,
-`glue.partition_query.fallback`,
-`glue.sqlite_catalog.query.page.after`는 `INFO`에서 기록합니다. expression fingerprint,
-연산자만 포함한 AST 형태, key type, segment 좌표, 요청/반환 page 개수, strategy, duration, 수정 위치
-안내만 포함하며 literal, token, partition value, SQL text는 기록하지 않습니다. 이후 boto3, Spark Hive
-client, Glue API 변경으로 pruning이 깨지면 이 event를 먼저 확인하고
-`glue/grammar/GluePartitionExpression.g4`, parse-tree adapter/evaluator, 격리된 SQLite
-compiler/projection module을 수정합니다. `tools/antlr/glue-partition-expression.lock.json`은 generator
-URL, version, digest, timeout을 고정합니다. `make antlr-generate`로 생성 코드를 갱신하고 CI의
-`make antlr-check`가 drift를 차단합니다.
+`glue.partition_expression.parse.*`, `glue.partition_expression.evaluate.*`,
+`glue.partition_expression.segment.*`는 `INFO`에서 기록합니다. 짧은 SHA-256 fingerprint,
+연산자만 포함한 AST 형태, key type, segment 좌표, 길이, 개수, 수정 위치 안내만 포함하며 expression
+literal과 partition value는 기록하지 않습니다. 이후 boto3, Spark Hive client, Glue API 변경으로
+pruning이 깨지면 이 event를 먼저 확인하고 `glue/grammar/GluePartitionExpression.g4`, parse-tree
+adapter, typed evaluator, YAML policy를 독립적으로 수정합니다.
+`tools/antlr/glue-partition-expression.lock.json`은 generator URL, version, digest, timeout을
+고정합니다. `make antlr-generate`로 생성 코드를 갱신하고 CI의 `make antlr-check`가 drift를
+차단합니다.
 
 <!-- section: verification -->
 ## 검증
 
-빠른 unit test는 SQLite result page와 evaluator를 비교하고, keyset continuation, token scope, order,
-typed projection, `LIKE`, segment union/disjointness, 오류 순서를 검증합니다. 실제 port의 boto3
-contract는 typed filtering과 `NextToken`, `Segment`를 함께 검증합니다. CI 전용 Glue 5 Spark
-시나리오는 S3에 partitioned Hive table을 만들고 partition을 insert한 뒤 Glue Hive metastore client를
-통한 pruning query를 검증합니다. 모든 test process는 `config/mystack.yaml`의 deadline을 사용합니다.
+빠른 unit test는 우선순위, 문서화된 모든 연산자 계열, 지원 key type 전체, escaping, 잘못된
+문법/type, 설정 limit을 검증합니다. 실제 port의 boto3 contract는 typed filtering과 `NextToken`,
+`Segment`를 함께 검증합니다. CI 전용 Glue 5 Spark 시나리오는 S3에 partitioned Hive table을 만들고
+partition을 insert한 뒤 Glue Hive metastore client를 통한 pruning query를 검증합니다. 모든 test
+process는 `config/mystack.yaml`의 deadline을 사용합니다.
 
 <!-- section: sources -->
 ## 공식 출처
@@ -119,7 +94,3 @@ contract는 typed filtering과 `NextToken`, `Segment`를 함께 검증합니다.
 - [Glue Data Catalog를 Hive metastore로 사용](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [Spark 3.5.4 Hive metastore filter 변환](https://github.com/apache/spark/blob/v3.5.4/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/HiveShim.scala)
 - [ANTLR4 시작 안내](https://github.com/antlr/antlr4/blob/4.13.2/doc/getting-started.md)
-- [SQLite query planner](https://www.sqlite.org/queryplanner.html)
-- [SQLite query planner](https://www.sqlite.org/queryplanner.html)
-- [SQLite expression syntax](https://www.sqlite.org/lang_expr.html)
-- [SQLite application-defined function](https://www.sqlite.org/appfunc.html)

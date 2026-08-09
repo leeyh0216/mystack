@@ -10,7 +10,7 @@
 
 - [Responsibility boundary](#responsibility-boundary)
 - [Atomic decision and persistence order](#atomic-decision-and-persistence-order)
-- [SQLite transaction configuration](#sqlite-transaction-configuration)
+- [File-lock configuration](#file-lock-configuration)
 - [Logging and repair locations](#logging-and-repair-locations)
 - [Evidence and exclusions](#evidence-and-exclusions)
 - [Official sources](#official-sources)
@@ -40,39 +40,39 @@ writers prepare independent metadata and use an atomic current-metadata pointer 
 One durable update uses this order:
 
 1. The AWS JSON 1.1 boundary validates the modeled `UpdateTable` request.
-2. A short-lived SQLite connection applies the configured foreign-key, journal, synchronous, and
-   busy-timeout policy, then starts `BEGIN IMMEDIATE`.
-3. The application resolves the current normalized table row and compares the request `VersionId`
-   with its current value.
-4. A matching writer builds exactly one candidate: the supplied table definition becomes current,
+2. The repository acquires its process-local asynchronous mutex and the configured POSIX advisory
+   file lock.
+3. While holding both locks, it reloads the latest JSON catalog revision from disk.
+4. The application resolves the table and compares the request `VersionId` with its current value.
+5. A matching writer builds exactly one candidate: the supplied table definition becomes current,
    the integer version advances once, and the prior version is archived unless `SkipArchive=true`.
-5. The adapter conditionally updates the current table with the old `VersionId`, writes archive and
-   partition-key rows in the same transaction, increments the diagnostic catalog revision, and
-   commits.
-6. It closes the connection. A failed validation, conditional update, or commit rolls the entire
-   SQLite transaction back.
+6. The repository writes a same-directory temporary document, fsyncs it, atomically replaces the
+   state file, attempts directory fsync, and only then publishes the candidate as visible state.
+7. It releases the file lock and then the process-local mutex.
 
 A stale writer raises modeled `ConcurrentModificationException` before save. A validation, conflict, or
-persistence failure never publishes its candidate. Cancellation while a commit is in progress waits
-for the bounded commit result before deciding whether the durable candidate is visible.
+persistence failure never publishes its candidate. Cancellation while a save is in progress waits
+for the bounded save result before deciding whether the committed candidate is visible. Lock
+acquisition and release also shield their worker thread so cancellation cannot leave a descriptor
+locked.
 
 Two processes committing from the same base version therefore produce one version-1 winner and one
 stale-version failure. An Iceberg client may refresh the new pointer and retry its independent
 change. This is catalog compare-and-swap, not global transaction isolation for S3 data files.
 
 <!-- section: configuration -->
-## SQLite transaction configuration
+## File-lock configuration
 
-`glue.sqlite.database_file` is the only durable catalog path. Its parent directory must be mounted
-writable because WAL retains `-wal` and `-shm` siblings. `busy_timeout_milliseconds` bounds one
-busy writer wait; `retry_limit` bounds additional short retries. A contention timeout fails the
-request without committing a partial change. `journal_mode: wal` is the verified default;
-`journal_mode: rollback` is an explicit escape hatch and never an automatic fallback.
+`glue.catalog_lock.file`, `acquire_timeout_seconds`, and `poll_interval_seconds` are required YAML
+settings. Relative paths resolve under `glue.data_root`. The lock file must differ from
+`glue.state_file`, the poll interval must not exceed the acquisition timeout, and all Glue emulator
+processes sharing one state file must use the same lock file on a filesystem that honors POSIX
+`flock`. Python documents this primitive in [`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock).
 
-SQLite WAL supports concurrent readers and one writer on one host using the same mounted directory.
-Multi-host deployment and network filesystems are outside this contract. The complete driver gate,
-backup procedure, checkpoint policy, and mounted configuration are defined by the
-[Glue SQLite runtime contract](glue-sqlite-runtime.md).
+The lock wait is bounded. A timeout fails the operation without changing state. The lock file is
+retained rather than deleted because unlink/recreate can split concurrent processes across
+different inodes. This implementation supports Docker/Linux and local POSIX hosts; multi-host
+distributed locking and filesystems without reliable advisory locks are outside the contract.
 
 <!-- section: observability -->
 ## Logging and repair locations
@@ -80,8 +80,8 @@ backup procedure, checkpoint policy, and mounted configuration are defined by th
 `glue.iceberg.commit.begin`, `.version.accepted`, `.persist.before`, `.conflict`, `.succeeded`, and
 `.failed` expose the expected/current/candidate version and only SHA-256 prefixes for resource and
 metadata location. They never contain the S3 path, table body, credentials, or authorization
-headers. `glue.sqlite_catalog.schema.*`, `.transaction.begin.*`, `.transaction.busy.retry`,
-`.transaction.commit.*`, and `.transaction.rolled_back` show the catalog storage boundary.
+headers. `glue.repository.process_lock.*`, `.external_state.refresh.after`, `.transaction.*`, and
+`.persist.*` show the lock/reload/save boundary.
 
 When an upgraded Spark/Iceberg client breaks this path:
 
@@ -91,8 +91,8 @@ When an upgraded Spark/Iceberg client breaks this path:
    `glue/application/table.py`.
 3. Iceberg identification and safe commit events belong in
    `glue/application/iceberg_commit.py`.
-4. Cross-process lost updates, writer contention, schema mapping, or commit/rollback belong in
-   `glue/adapters/outbound/sqlite_catalog/` and `glue.sqlite` configuration.
+4. Cross-process lost updates, lock timeouts, reload, fsync, or replacement belong in
+   `glue/adapters/outbound/repository.py` and `glue.catalog_lock` configuration.
 5. Real-client retry drift belongs in `glue/scripts/e2e/iceberg_contention_job.py` and the generated
    compatibility case.
 
@@ -100,8 +100,8 @@ When an upgraded Spark/Iceberg client breaks this path:
 ## Evidence and exclusions
 
 The fast contract `glue/tests/test_iceberg_commit.py` starts two spawned processes from one base
-version, enforces configurable waits, and checks one winner, one conflict, foreign-key integrity,
-archive policy, and bounded SQLite writer contention. CI additionally starts two separate Glue-image containers, runs
+version, enforces configurable waits, and checks one winner, one conflict, valid JSON, archive
+policy, and bounded lock timeout. CI additionally starts two separate Glue-image containers, runs
 real Spark 3.5.4/Iceberg 1.7.1 writers through the public Proxy, and requires both retried appends to
 remain visible. Docker Compose defines the one-off container behavior in its
 [`run` reference](https://docs.docker.com/reference/cli/docker/compose/run/).
@@ -127,6 +127,4 @@ are excluded.
 - [Apache Iceberg 1.7.1 reliability](https://iceberg.apache.org/docs/1.7.1/reliability/)
 - [AWS Glue `UpdateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTable.html)
 - [AWS Glue `TableVersion`](https://docs.aws.amazon.com/glue/latest/webapi/API_TableVersion.html)
-- [SQLite transactions](https://www.sqlite.org/lang_transaction.html)
-- [SQLite WAL](https://www.sqlite.org/wal.html)
-- [SQLite PRAGMA reference](https://www.sqlite.org/pragma.html)
+- [Python `fcntl`](https://docs.python.org/3/library/fcntl.html)

@@ -7,7 +7,7 @@
 - [Operations](#operations)
 <!-- toc:end -->
 
-This file is generated from annotated pytest evidence and operation inventory; do not edit it directly. The official inventory is the [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data).
+This file is generated from `contracts/api-coverage.json`; do not edit it directly. The official inventory is the [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data).
 
 botocore: `1.43.66`
 

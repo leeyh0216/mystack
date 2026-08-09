@@ -7,7 +7,7 @@
 - [Operation](#operation)
 <!-- toc:end -->
 
-이 파일은 주석 pytest 증거와 operation inventory에서 생성됩니다. 직접 수정하지 마세요. 공식 inventory는 [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data)입니다.
+이 파일은 `contracts/api-coverage.json`에서 생성됩니다. 직접 수정하지 마세요. 공식 inventory는 [botocore service model](https://github.com/boto/botocore/tree/develop/botocore/data)입니다.
 
 botocore: `1.43.66`
 
