@@ -26,7 +26,7 @@ repos:
         files: ^(ui|emr/ui|glue/ui)/|^(package(-lock)?\.json|eslint\.config\.js|tsconfig\.json)$
       - id: documentation-contract
         name: Bilingual documentation contract
-        entry: uv run python scripts/check_docs.py
+        entry: uv run python scripts/quality/check_docs.py
         language: system
         pass_filenames: false
         always_run: true
@@ -56,13 +56,13 @@ repos:
         always_run: true
       - id: requirement-locks
         name: Container requirement lock drift
-        entry: uv run python scripts/export_requirements.py --check
+        entry: uv run python scripts/development/export_requirements.py --check
         language: system
         pass_filenames: false
         always_run: true
       - id: aws-model-manifest
         name: AWS service-model drift
-        entry: uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+        entry: uv run python scripts/quality/model_manifest.py --check contracts/service-model-manifest.json
         language: system
         pass_filenames: false
         always_run: true

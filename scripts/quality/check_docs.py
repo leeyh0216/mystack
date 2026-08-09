@@ -10,7 +10,7 @@ import argparse
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 OFFICIAL_SOURCES = (
     "https://docs.aws.amazon.com",
     "https://docs.github.com",
@@ -210,7 +210,7 @@ def validate_toc(path: Path, text: str, violations: list[str]) -> None:
     if text != expected:
         violations.append(
             f"missing or stale top-of-document contents index: {path.relative_to(ROOT)}; "
-            "run uv run python scripts/check_docs.py --write-toc"
+            "run uv run python scripts/quality/check_docs.py --write-toc"
         )
 
 

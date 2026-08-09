@@ -16,7 +16,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 CONFIG_PATH = ROOT / ".devcontainer" / "devcontainer.json"
 DOCKERFILE_PATH = ROOT / ".devcontainer" / "Dockerfile"
 IMAGES_PATH = ROOT / ".devcontainer" / "images.json"
@@ -150,12 +150,12 @@ class DevContainerContract:
 
     def _validate_lifecycle(self, document: dict[str, Any]) -> None:
         command = document.get("postCreateCommand")
-        expected = "bash scripts/devcontainer-setup.sh"
+        expected = "bash scripts/development/devcontainer-setup.sh"
         if command != expected:
             self.violations.append(f"postCreateCommand must be {expected!r}")
-        script = self.root / "scripts" / "devcontainer-setup.sh"
+        script = self.root / "scripts" / "development" / "devcontainer-setup.sh"
         if not script.is_file():
-            self.violations.append("scripts/devcontainer-setup.sh is missing")
+            self.violations.append("scripts/development/devcontainer-setup.sh is missing")
 
     def _validate_dockerfile(self) -> None:
         text = DOCKERFILE_PATH.read_text(encoding="utf-8")

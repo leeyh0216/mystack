@@ -26,7 +26,7 @@ if __package__ in {None, ""}:
 
 try:
     from scripts.compatibility.operation_inventory import extract_implemented_operation_inventory
-    from scripts.model_manifest import SERVICES, create_manifest
+    from scripts.quality.model_manifest import SERVICES, create_manifest
 except ModuleNotFoundError as error:  # pragma: no cover - import failures are configuration errors.
     raise RuntimeError("run from the Mystack repository root") from error
 

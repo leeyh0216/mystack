@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.verify_glue_sqlite_runtime import (
+from scripts.quality.verify_glue_sqlite_runtime import (
     SQLiteRuntimePreflightError,
     failure_report,
     load_expected_version,
@@ -194,7 +194,7 @@ def test_cli_writes_a_failure_artifact_when_the_runtime_probe_fails(
         del kwargs
         raise SQLiteRuntimePreflightError("failed", diagnostic=diagnostic)
 
-    monkeypatch.setattr("scripts.verify_glue_sqlite_runtime.verify", failed_verify)
+    monkeypatch.setattr("scripts.quality.verify_glue_sqlite_runtime.verify", failed_verify)
 
     assert (
         main(

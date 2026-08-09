@@ -146,7 +146,7 @@ jobs:
       - name: Verify downloaded UI build provenance
         if: steps.reusable_ui.outcome == 'success'
         run: >-
-          python3 scripts/reusable_build_artifact.py verify
+          python3 scripts/development/reusable_build_artifact.py verify
           --manifest .mystack/reusable-ui/manifest.json
           --source-sha "${{ inputs.source_sha }}"
           --platform "$RUNNER_OS-$RUNNER_ARCH"
@@ -265,7 +265,7 @@ jobs:
           set -euo pipefail
           directory="release-artifacts/preflight/${{ matrix.name }}/${{ matrix.platform_slug }}"
           mkdir -p "$directory"
-          python3 scripts/verify_glue_sqlite_runtime.py \
+          python3 scripts/quality/verify_glue_sqlite_runtime.py \
             --image "$IMAGE_NAME" \
             --platform "${{ matrix.platform }}" \
             --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \
@@ -582,7 +582,7 @@ jobs:
                 directory="release-evidence/$name-$platform_slug"
                 mkdir -p "$directory"
                 echo "event=registry.anonymous.sqlite_runtime.before image=$image digest=$platform_digest platform=$platform"
-                python3 scripts/verify_glue_sqlite_runtime.py \
+                python3 scripts/quality/verify_glue_sqlite_runtime.py \
                   --image "$image@$platform_digest" \
                   --platform "$platform" \
                   --timeout-seconds "$((PREFLIGHT_TIMEOUT_MINUTES * 60))" \

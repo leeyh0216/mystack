@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.architecture_contract import (
+from scripts.quality.architecture_contract import (
     COMPOSITION_ROOT_MODULES,
     DEFAULT_BOUNDARIES,
     GENERATED_PYTHON_EXCLUSIONS,

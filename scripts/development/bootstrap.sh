@@ -39,13 +39,13 @@ npm ci --ignore-scripts
 echo "[mystack] checking shared UI, EMR UI, and Glue UI"
 npm run frontend:check
 echo "[mystack] checking bilingual documentation and official references"
-uv run python scripts/check_docs.py
+uv run python scripts/quality/check_docs.py
 echo "[mystack] checking the published-image Compose user workflow"
 make ghcr-compose-check
 echo "[mystack] checking hash-locked container requirements"
-uv run python scripts/export_requirements.py --check
+uv run python scripts/development/export_requirements.py --check
 echo "[mystack] checking pinned AWS service models"
-uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+uv run python scripts/quality/model_manifest.py --check contracts/service-model-manifest.json
 echo "[mystack] checking test-declared compatibility evidence"
 uv run --all-packages python scripts/compatibility/compatibility_evidence.py --check
 echo "[mystack] checking annotation-backed interoperability cases"
@@ -56,7 +56,7 @@ uv run python scripts/compatibility/api_coverage.py \
   --english docs/compatibility/api-coverage.generated.md \
   --korean docs/compatibility/api-coverage.ko.generated.md
 echo "[mystack] running fast tests with configured timeout"
-test_timeout=$(uv run python scripts/config_value.py tests.unit_timeout_seconds)
+test_timeout=$(uv run python scripts/development/config_value.py tests.unit_timeout_seconds)
 uv run pytest shared/tests proxy/tests tests/architecture \
   --timeout "$test_timeout" --timeout-method thread
 

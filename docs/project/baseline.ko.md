@@ -100,7 +100,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 실행 파일: `mystack-proxy`, `mystack-emr`, `mystack-glue`
 - 설정: `config/runtime/mystack.yaml`; release/version 설정: `config/release/registry-release.json`,
   `config/release/version-files.json`, root `VERSION`
-- 설정 시작: `./scripts/bootstrap.sh`, `direnv allow`, 또는 제공된 Dev Container
+- 설정 시작: `./scripts/development/bootstrap.sh`, `direnv allow`, 또는 제공된 Dev Container
 - Fast 검증: `make version-check`, `make architecture-check`, `make test`, `make contract`,
   `make registry-check`, `make pre-commit`
 - Runtime 검증: `make up`, `make e2e`, `make down`
