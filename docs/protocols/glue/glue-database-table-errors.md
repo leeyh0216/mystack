@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-database-table-errors -->
+<!-- doc-id: protocols/glue/glue-database-table-errors -->
 <!-- lang: en -->
 
 [한국어](glue-database-table-errors.ko.md) | [English](glue-database-table-errors.md)

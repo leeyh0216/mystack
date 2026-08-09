@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/emr-startup-clusters -->
+<!-- doc-id: protocols/emr/emr-startup-clusters -->
 <!-- lang: en -->
 
 [한국어](emr-startup-clusters.ko.md) | [English](emr-startup-clusters.md)
@@ -44,7 +44,7 @@ Supported entry members are `Name`, `ReleaseLabel`, `Instances`, `Applications`,
 `BootstrapActions`, `Steps`, `LogUri`, `ServiceRole`, `VisibleToAllUsers`,
 `StepConcurrencyLevel`, and `Tags`. A member may exist in the upstream botocore model and still be
 rejected when Mystack does not emulate it. This prevents a valid-looking file from silently losing
-intent. The normal [support scope](../support-scope.md) still applies to initial bootstrap actions
+intent. The normal [support scope](../../support-scope.md) still applies to initial bootstrap actions
 and Steps.
 
 <!-- section: validation -->

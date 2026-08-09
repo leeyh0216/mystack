@@ -84,4 +84,4 @@ The EMR Console is unauthenticated by design for trusted local networks; do not 
 - [EMR RunJobFlow API](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html)
 - [EMR Spark Steps](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-submit-step.html)
 - [Spark application submission](https://spark.apache.org/docs/3.5.4/submitting-applications.html)
-- [EMR LogUri contract](protocols/emr-log-layout.md)
+- [EMR LogUri contract](protocols/emr/emr-log-layout.md)

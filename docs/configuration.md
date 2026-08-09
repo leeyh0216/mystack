@@ -95,7 +95,7 @@ variables.
 `glue.partition_expressions` configures the bounded `GetPartitions.Expression` compiler.
 `max_length` defaults to the official 2,048-character API limit, `max_tokens` bounds parser work,
 and `supported_key_types` defines the typed compatibility profile. See the
-[partition-expression protocol](protocols/glue-partition-expressions.md).
+[partition-expression protocol](protocols/glue/glue-partition-expressions.md).
 
 `glue.sqlite` configures the only durable Glue catalog store. `database_file` resolves below
 `glue.data_root` unless absolute. Mount its parent directory writable, rather than mounting only the
@@ -119,13 +119,13 @@ is an explicit development escape hatch, never an automatic fallback.
 
 There is no JSON catalog fallback or migration. The full durability, same-host WAL restriction,
 backup procedure, logging, and repair boundary are in the
-[Glue SQLite runtime contract](protocols/glue-sqlite-runtime.md); Iceberg pointer commits use the
-[SQLite transaction contract](protocols/glue-iceberg-commits.md).
+[Glue SQLite runtime contract](protocols/glue/glue-sqlite-runtime.md); Iceberg pointer commits use the
+[SQLite transaction contract](protocols/glue/glue-iceberg-commits.md).
 
 Glue Open Table Format metadata uses the shared `localstack.endpoint_url`, region, credentials, and
 path-style setting through an injected S3 port. The application never assumes a Compose service
 name, and the configured S3 bucket must already exist. Create/update ordering, candidate cleanup,
-and exclusions are in the [Open Table Format input protocol](protocols/glue-open-table-format.md).
+and exclusions are in the [Open Table Format input protocol](protocols/glue/glue-open-table-format.md).
 The endpoint and credentials follow the official [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html).
 
 `glue.table_optimizers` configures the managed Iceberg optimizer scheduler and its bounded Glue 5
@@ -156,7 +156,7 @@ glue:
 ```
 
 The S3 endpoint, region, and local credentials come from `localstack`; S3 catalog locations stay
-as `s3://` URIs. See the [managed optimizer protocol](protocols/glue-table-optimizers.md) for API,
+as `s3://` URIs. See the [managed optimizer protocol](protocols/glue/glue-table-optimizers.md) for API,
 lifecycle, logs, and repair boundaries. AWS documents the three managed types in its
 [table optimizer guide](https://docs.aws.amazon.com/glue/latest/dg/table-optimizers.html).
 
@@ -178,7 +178,7 @@ glue:
 
 Authentication/authorization failures cannot be configured. Remove or disable rules and restart
 the Glue container after the failure scenario. See the [Glue error decision
-protocol](protocols/glue-error-decisions.md) for precedence and logging.
+protocol](protocols/glue/glue-error-decisions.md) for precedence and logging.
 
 `management.console.refresh_interval_seconds` controls state-preserving polling for the selected
 EMR or Glue workspace. It must be at least 0.5 seconds. Each emulator exposes the value through its
@@ -208,7 +208,7 @@ and Spark documents these [submission options](https://spark.apache.org/docs/3.5
 S3 log publication has no separate hard-coded bucket or prefix. Each cluster supplies the standard
 `RunJobFlow.LogUri`; the publisher reuses `localstack.endpoint_url`, region, credentials, and
 path-style setting. This keeps image deployments configurable and lets the same boto3 S3 route
-reach LocalStack. See the [exact log protocol](protocols/emr-log-layout.md).
+reach LocalStack. See the [exact log protocol](protocols/emr/emr-log-layout.md).
 `emr.live_log_chunk_bytes` bounds each filesystem read. `emr.log_publication` configures retry
 attempts, exponential-backoff bounds, and an attempt timeout; deterministic S3 keys make retries
 idempotent. `emr.log_retention_seconds` applies only to terminal work directories whose publication
@@ -220,12 +220,12 @@ Relative paths resolve beside the selected main configuration. The file uses off
 is fully validated before any side effect. The optional
 `compose.emr-startup-clusters.yaml` overlay performs an explicit read-only
 [bind mount](https://docs.docker.com/engine/storage/bind-mounts/). See the [startup cluster
-protocol](protocols/emr-startup-clusters.md) for its allowlist and restart semantics.
+protocol](protocols/emr/emr-startup-clusters.md) for its allowlist and restart semantics.
 
 Trusted EMR image initialization is deliberately earlier than this YAML resolution boundary.
 `MYSTACK_EMR_PRESTART_ENABLED`, `MYSTACK_EMR_PRESTART_DIR`, and the Compose-only host variable
 `MYSTACK_EMR_PRESTART_SOURCE` control the opt-in read-only script mount. They are never exposed to
-Domain or Application modules. See the [EMR pre-start contract](protocols/emr-prestart.md) for file
+Domain or Application modules. See the [EMR pre-start contract](protocols/emr/emr-prestart.md) for file
 validation, root-to-`hadoop` transition, runtime paths, and environment propagation.
 
 The E2E harness resolves the EMR route from `tests.emr_service` and copies the prebuilt Java

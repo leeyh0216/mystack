@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-table-optimizers -->
+<!-- doc-id: protocols/glue/glue-table-optimizers -->
 <!-- lang: ko -->
 
 [한국어](glue-table-optimizers.ko.md) | [English](glue-table-optimizers.md)
@@ -65,7 +65,7 @@ location, location 포함 관계는 table 조회 뒤 mutation 전에 결합합�
 `EntityNotFoundException`, 중복 create는
 `AlreadyExistsException`, type/config/location이 잘못되면 `InvalidInputException`입니다.
 `BatchGetTableOptimizer`는 최대 20개 entry를 받고 항목별 `ErrorDetail` 실패를 반환합니다. 실행
-가능한 전체 순서는 생성된 [오류 matrix](../compatibility/glue-errors.ko.generated.md)에 있습니다.
+가능한 전체 순서는 생성된 [오류 matrix](../../compatibility/glue-errors.ko.generated.md)에 있습니다.
 인증·인가·IAM·Lake Formation·cross-account·cross-Region 분기는 의도적으로 없습니다.
 
 <!-- section: execution -->
@@ -104,7 +104,7 @@ Boundary log에는 run ID, optimizer type, timeout, endpoint host, result metric
 ## 설정과 변경 시 수정 위치
 
 Scheduler와 process 값은 모두 mounted YAML의 `glue.table_optimizers` 아래에 있습니다. 전체 block은
-[설정 안내](../configuration.ko.md)를 참고하세요. 의존 방향은 다음과 같습니다.
+[설정 안내](../../configuration.ko.md)를 참고하세요. 의존 방향은 다음과 같습니다.
 
 ```text
 AWS JSON adapter -> optimizer use case -> optimizer domain

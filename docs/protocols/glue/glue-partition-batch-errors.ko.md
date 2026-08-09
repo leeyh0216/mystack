@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-partition-batch-errors -->
+<!-- doc-id: protocols/glue/glue-partition-batch-errors -->
 <!-- lang: ko -->
 
 [한국어](glue-partition-batch-errors.ko.md) | [English](glue-partition-batch-errors.md)
@@ -20,7 +20,7 @@
 이 문서는 Mystack이 구현한 partition operation 9개의 결정적인 동작을 정의합니다. 공개 AWS Glue
 API 문서와 고정한 botocore model을 기준으로 합니다. 실 AWS 계정을 호출하는 시험이나 판단은
 없습니다. Operation 목록의 단일 기준은 생성한 [Glue 오류
-표](../compatibility/glue-errors.ko.generated.md)입니다.
+표](../../compatibility/glue-errors.ko.generated.md)입니다.
 
 <!-- section: layers -->
 ## 검증 계층과 첫 번째 오류

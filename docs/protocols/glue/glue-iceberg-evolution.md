@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-iceberg-evolution -->
+<!-- doc-id: protocols/glue/glue-iceberg-evolution -->
 <!-- lang: en -->
 
 [한국어](glue-iceberg-evolution.ko.md) | [English](glue-iceberg-evolution.md)

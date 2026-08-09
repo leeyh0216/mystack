@@ -23,7 +23,7 @@ scenario, release 확인 절차를 바꾸는 경우에만 생성 보고서를 �
 1. [Client와 라이브러리 호환성](client-matrix.ko.md) — 지원 client, 정확한 version, 검증한 세로 흐름
 2. [API 호환성 범위](api-coverage.ko.md) — 구현 operation과 지원 상태 의미
 3. [지원 범위](../support-scope.ko.md) — 제품 약속과 제외 항목
-4. [Glue 오류 결정](../protocols/glue-error-decisions.ko.md) — 모델 오류와 우선순위
+4. [Glue 오류 결정](../protocols/glue/glue-error-decisions.ko.md) — 모델 오류와 우선순위
 
 <!-- section: generated-artifacts -->
 ## CI가 만드는 파일

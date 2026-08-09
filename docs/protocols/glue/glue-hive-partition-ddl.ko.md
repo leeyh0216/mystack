@@ -1,4 +1,4 @@
-<!-- doc-id: protocols/glue-hive-partition-ddl -->
+<!-- doc-id: protocols/glue/glue-hive-partition-ddl -->
 <!-- lang: ko -->
 
 [한국어](glue-hive-partition-ddl.ko.md) | [English](glue-hive-partition-ddl.md)

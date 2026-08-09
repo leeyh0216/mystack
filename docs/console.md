@@ -86,7 +86,7 @@ and cancel controls. EMR reads local files by byte offset, publishes SSE event I
 and honors `Last-Event-ID` on reconnect. `management.console.log_stream_timeout_seconds` limits one
 connection, while `log_buffer_bytes` caps stdout and stderr retained by the browser. Durable recovered
 Step projections and S3 publication statuses remain visible after an emulator restart. Interpret
-synthetic local-driver objects with the [EMR log layout](protocols/emr-log-layout.md) and AWS
+synthetic local-driver objects with the [EMR log layout](protocols/emr/emr-log-layout.md) and AWS
 [EMR log guidance](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-manage-view-web-log-files.html).
 
 The Glue application explores database → table → schema/partitions/parameters/raw detail. It keeps

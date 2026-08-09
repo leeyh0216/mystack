@@ -69,7 +69,7 @@ AWS GetPartitions
 
 이 AWS request path에는 total-count query나 Catalog 전체 materialization이 없습니다. Management read
 model은 별도 query port로 필요한 count를 명시적으로 요청합니다. Operator와 오류 순서 계약은
-[partition-expression protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+[partition-expression protocol](protocols/glue/glue-partition-expressions.ko.md)을 참고하세요.
 
 <!-- section: constraints -->
 ## Local 제약
@@ -84,5 +84,5 @@ model이며 mutation은 계속 public AWS endpoint를 사용합니다. 신뢰하
 - [Glue GetPartitions API](https://docs.aws.amazon.com/glue/latest/webapi/API_GetPartitions.html)
 - [Glue Data Catalog Hive 통합](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html)
 - [Iceberg with Glue](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html)
-- [SQLite runtime 경계](protocols/glue-sqlite-runtime.ko.md)
+- [SQLite runtime 경계](protocols/glue/glue-sqlite-runtime.ko.md)
 - [SQLite query planner](https://www.sqlite.org/queryplanner.html)

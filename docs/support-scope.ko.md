@@ -44,34 +44,34 @@ run history를 원자적으로 포함합니다. `glue.sqlite.database_file`이 �
 migration은 없습니다. Iceberg table도 같은 transaction에서 원자적
 `VersionId`/`metadata_location` compare-and-swap을 적용합니다. Data, manifest, metadata,
 snapshot과 retry는 계속 Iceberg가 소유합니다. 자세한 내용은 [Iceberg commit
-protocol](protocols/glue-iceberg-commits.ko.md)을 참고하세요.
+protocol](protocols/glue/glue-iceberg-commits.ko.md)을 참고하세요.
 고정된 partition, schema, sort, identifier 동작은 별도 [Iceberg evolution
-protocol](protocols/glue-iceberg-evolution.ko.md)에 기록합니다. 고정된 `INSERT`/`UPDATE`/`DELETE`/`MERGE`
-동작과 COW/MOR 근거는 [Iceberg row-level DML protocol](protocols/glue-iceberg-row-level-dml.ko.md)에
+protocol](protocols/glue/glue-iceberg-evolution.ko.md)에 기록합니다. 고정된 `INSERT`/`UPDATE`/`DELETE`/`MERGE`
+동작과 COW/MOR 근거는 [Iceberg row-level DML protocol](protocols/glue/glue-iceberg-row-level-dml.ko.md)에
 있습니다. Time travel, reference, metadata table, snapshot/maintenance procedure, S3 cleanup은
-[Iceberg snapshot/reference/procedure protocol](protocols/glue-iceberg-snapshots-refs-procedures.ko.md)에
+[Iceberg snapshot/reference/procedure protocol](protocols/glue/glue-iceberg-snapshots-refs-procedures.ko.md)에
 있습니다. Rename, catalog-only drop, 추적 file purge, 보상 작업, Glue/S3 사이 실패 경계는
-[Iceberg lifecycle protocol](protocols/glue-iceberg-lifecycle.ko.md)에 있습니다.
+[Iceberg lifecycle protocol](protocols/glue/glue-iceberg-lifecycle.ko.md)에 있습니다.
 `OpenTableFormatInput`과 `UpdateOpenTableFormatInput`을 통한 service 소유 Iceberg v2 metadata
 materialization, S3 보상, catalog CAS는 [Open Table Format 입력
-protocol](protocols/glue-open-table-format.ko.md)에 있습니다.
+protocol](protocols/glue/glue-open-table-format.ko.md)에 있습니다.
 Managed optimizer API, 기본값, scheduling, Spark procedure mapping, 오류, log와 제외 범위는
-[table optimizer protocol](protocols/glue-table-optimizers.ko.md)에 고정했습니다.
+[table optimizer protocol](protocols/glue/glue-table-optimizers.ko.md)에 고정했습니다.
 `GetPartitions`는 type이 있는 key, 우선순위,
 pagination, segment와 함께 문서화된 비교·논리·`IN`·`BETWEEN`·`LIKE`·null predicate를
 지원합니다. 문법과 limit은 [partition expression
-protocol](protocols/glue-partition-expressions.ko.md)을 참고하세요.
+protocol](protocols/glue/glue-partition-expressions.ko.md)을 참고하세요.
 Spark Hive partition add/drop/rename/location과 repair mapping은 [Hive partition DDL
-protocol](protocols/glue-hive-partition-ddl.ko.md)에 정리했습니다.
+protocol](protocols/glue/glue-hive-partition-ddl.ko.md)에 정리했습니다.
 지원하는 table-level column/property/SerDe/location 변경과 client가 거부하는 variant는 [Hive
-table ALTER protocol](protocols/glue-hive-table-alter.ko.md)에 정리했습니다.
+table ALTER protocol](protocols/glue/glue-hive-table-alter.ko.md)에 정리했습니다.
 구현한 모든 operation은 생성한 [Glue 오류
 matrix](compatibility/glue-errors.ko.generated.md)에 포함됩니다. 우선순위, 안전한 logging, file 기반
-failure injection은 [오류 결정 protocol](protocols/glue-error-decisions.ko.md)에 정의했습니다.
+failure injection은 [오류 결정 protocol](protocols/glue/glue-error-decisions.ko.md)에 정의했습니다.
 Database/table/version의 validation, conflict, version, archive, rename, cascade, rollback은
-[resource 오류 계약](protocols/glue-database-table-errors.ko.md)에 고정했습니다.
+[resource 오류 계약](protocols/glue/glue-database-table-errors.ko.md)에 고정했습니다.
 Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`, rollback은
-[partition/batch 오류 계약](protocols/glue-partition-batch-errors.ko.md)에 고정했습니다.
+[partition/batch 오류 계약](protocols/glue/glue-partition-batch-errors.ko.md)에 고정했습니다.
 
 현재 구현된 control-plane operation 전부(EMR 13개, Glue 28개)는 public Proxy boto3 E2E를
 가집니다. 이는 구현 범위 coverage이며 upstream EMR/Glue 전체를 지원한다는 뜻이 아닙니다.
@@ -81,10 +81,10 @@ Partition value, 목록, update, batch 순서, 항목 오류, `UnprocessedKeys`,
 결합한 release-blocking 기준입니다.
 Startup-file entry는 문서화한 allowlist만 받고 `RunJobFlow` member 이름을 사용하며 EMR process
 재시작 후 새 ID로 다시 생성합니다. 자세한 내용은 [시작 클러스터
-protocol](protocols/emr-startup-clusters.ko.md)에 있습니다.
+protocol](protocols/emr/emr-startup-clusters.ko.md)에 있습니다.
 신뢰된 pre-start script는 명시적으로 활성화하는 EMR container 경계이며 process 안의 plugin API나
 EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-start
-계약](protocols/emr-prestart.ko.md)에 있습니다.
+계약](protocols/emr/emr-prestart.ko.md)에 있습니다.
 
 <!-- section: exclusions -->
 ## 명시적 제외

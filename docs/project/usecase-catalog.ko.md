@@ -164,9 +164,9 @@
   `glue/tests/test_iceberg_snapshot_ref_catalog.py`,
   `glue/tests/test_iceberg_lifecycle_catalog.py`,
   `glue/tests/test_open_table_format.py`,
-  `docs/protocols/glue-iceberg-snapshots-refs-procedures.ko.md`,
-  `docs/protocols/glue-iceberg-lifecycle.ko.md`,
-  `docs/protocols/glue-open-table-format.ko.md`
+  `docs/protocols/glue/glue-iceberg-snapshots-refs-procedures.ko.md`,
+  `docs/protocols/glue/glue-iceberg-lifecycle.ko.md`,
+  `docs/protocols/glue/glue-open-table-format.ko.md`
 - 신뢰도: High
 
 <!-- section: uc-007 -->
@@ -190,7 +190,7 @@
   public Proxy E2E입니다.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/inbound/aws.py`,
-  `docs/protocols/glue-partition-batch-errors.ko.md`
+  `docs/protocols/glue/glue-partition-batch-errors.ko.md`
 - 신뢰도: High
 
 <!-- section: uc-008 -->
@@ -322,7 +322,7 @@
   `ConcurrentModificationException`, 정제되거나 설정한 system 오류입니다.
 - 관측: 요청 값 없이 operation boundary, condition ID, mutation 보장, transaction rollback,
   persistence 전·후·실패 event를 기록합니다.
-- 근거: `docs/protocols/glue-database-table-errors.ko.md`,
+- 근거: `docs/protocols/glue/glue-database-table-errors.ko.md`,
   `glue/tests/test_database_table_error_semantics.py`,
   `contracts/glue-error-conditions.yaml`
 - 신뢰도: High
@@ -350,7 +350,7 @@
   `glue/src/mystack/glue/application/table_optimizer_runtime.py`,
   `glue/src/mystack/glue/adapters/outbound/table_optimizer_executor.py`,
   `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`,
-  `docs/protocols/glue-table-optimizers.ko.md`.
+  `docs/protocols/glue/glue-table-optimizers.ko.md`.
 - 신뢰도: 문서화한 Glue 5/Spark 3.5.4/Iceberg 1.7.1 경로는 High.
 
 <!-- section: uc-016 -->

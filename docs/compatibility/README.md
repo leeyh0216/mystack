@@ -26,7 +26,7 @@ supported operation, test scenario, or release gate.
 2. [API compatibility coverage](api-coverage.md) — implemented operations and the difference
    between compatible, partial, protocol-only, and out-of-scope APIs.
 3. [Support scope](../support-scope.md) — product commitments and exclusions.
-4. [Glue error decisions](../protocols/glue-error-decisions.md) — why an operation returns a given
+4. [Glue error decisions](../protocols/glue/glue-error-decisions.md) — why an operation returns a given
    modeled error and how its precedence is chosen.
 
 <!-- section: generated-artifacts -->

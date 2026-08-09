@@ -146,18 +146,18 @@ cancel a running Step. In its Add Step dialog, enter one argument per line.
 
 With `LogUri`, terminal Steps publish compressed controller, syslog, stdout, stderr, and synthetic
 local-driver application streams below the configured S3 prefix. The detailed
-[LogUri layout and recovery contract](protocols/emr-log-layout.md) describes paths, retries, and
+[LogUri layout and recovery contract](protocols/emr/emr-log-layout.md) describes paths, retries, and
 what is available while a Step is running.
 
 <!-- section: prepare -->
 ## Prepare the image or provision clusters at startup
 
 For enterprise certificates, proxy environment variables, or other image-wide prerequisites before
-the emulator starts, use the reviewed [EMR pre-start guide](protocols/emr-prestart.md). It is
+the emulator starts, use the reviewed [EMR pre-start guide](protocols/emr/emr-prestart.md). It is
 separate from `BootstrapActions` and is intended for image initialization.
 
 To make clusters available as soon as the container becomes healthy, provide the versioned
-[startup cluster file](protocols/emr-startup-clusters.md). Its entries use supported `RunJobFlow`
+[startup cluster file](protocols/emr/emr-startup-clusters.md). Its entries use supported `RunJobFlow`
 members and enter the same lifecycle as boto3-created clusters.
 
 <!-- section: sources -->
