@@ -35,3 +35,13 @@ def test_keyset_token_is_rejected_for_a_different_catalog_query() -> None:
 def test_malformed_keyset_tokens_are_rejected_deterministically(token: str) -> None:
     with pytest.raises(InvalidInputError, match="Invalid pagination token"):
         Paginator(100).prepare_keyset(token, 10)
+
+
+def test_malformed_keyset_token_keeps_precedence_over_page_size_validation() -> None:
+    with pytest.raises(InvalidInputError, match="Invalid pagination token"):
+        Paginator(100).prepare_keyset("not-a-token", 0)
+
+
+def test_zero_keyset_page_size_is_rejected() -> None:
+    with pytest.raises(InvalidInputError, match="MaxResults must be positive"):
+        Paginator(100).prepare_keyset(None, 0)
