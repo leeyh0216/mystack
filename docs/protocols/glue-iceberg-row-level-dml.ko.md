@@ -92,8 +92,7 @@ Client를 올린 뒤 이 profile이 깨지면 다음을 확인합니다.
 1. Spark SQL 또는 Iceberg write-mode 변화: `glue/scripts/e2e/iceberg_row_level.py`
 2. Iceberg snapshot-summary 표현 변화: `test_support/iceberg_metadata.py`
 3. Glue request member 변화: `glue/adapters/inbound/aws_table.py`
-4. CAS/version 손실: `glue/application/table.py`,
-   `glue/adapters/outbound/sqlite_catalog/repository.py`
+4. CAS/version 손실: `glue/application/table.py`, `glue/adapters/outbound/repository.py`
 5. 고정 profile과 scenario 변경: typed pytest compatibility annotation
 
 <!-- section: limits -->

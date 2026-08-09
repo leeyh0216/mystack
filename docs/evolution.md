@@ -48,7 +48,7 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
    `make compatibility-case CASE=<id>`. GitHub Actions derives a new isolated job from the
    generated `include` entry without workflow-source changes.
 5. During the transition, also run `make compatibility-check`. Keep
-   `compatibility/cases.yaml` and `contracts/api-coverage.json` as parity baselines; do not remove
+   typed pytest compatibility annotations and the generated `contracts/api-coverage.generated.json`
    them or alter the independent Glue error-condition policy in this change.
 
 The annotation compiler fails before execution for an invalid marker shape, missing or mismatched
