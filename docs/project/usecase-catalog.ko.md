@@ -119,14 +119,14 @@
 - 입력: CatalogId, name, DatabaseInput, pagination token/page size; 공식 데이터 구조와 normalized non-empty
   name을 검증합니다.
 - 출력: modeled database document/list/next token 또는 빈 response입니다.
-- 저장/변경: JSON-backed database와 선택적 초기 default database입니다.
+- 저장/변경: normalized SQLite database와 선택적 초기 default database입니다.
 - 책임: `CatalogDatabase`가 normalized name과 방어적 document snapshot을 소유하고
   `DatabaseCommands`, `DatabaseQueries`, `CatalogInitializer`가 flow를 분리합니다.
-- 부수효과: persist/fsync/atomic replacement 뒤 visible candidate publish.
+- 부수효과: 상한이 있는 SQLite transaction commit과 durable catalog publish입니다.
 - 선행조건/규칙: case-normalized key, uniqueness, child constraint, 직렬화한 candidate transaction,
   최대 크기가 정해진 pagination.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput, 잘못된 pagination token.
-- 관측: transaction/persist 전·후·rollback·migration event, direct/public boto3 test,
+- 관측: SQLite transaction/schema 전·후·rollback·retry event, direct/public boto3 test,
   failure/cancellation/restart 주입 test.
 - 근거: `glue/src/mystack/glue/application/service.py`,
   `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/repository.py`
@@ -150,8 +150,8 @@
   sort/identifier evolution, COW/MOR row-level commit, ref, snapshot/maintenance procedure commit,
   rename/drop/purge가 이 무손실 pointer 경로와 Iceberg 소유 lifecycle 순서에서 유지되는지
   확인합니다.
-- 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작이며 같은
-  state file을 공유하는 JSON-backed process는 설정된 상한이 있는 POSIX lock도 공유합니다.
+- 선행조건/규칙: database 존재, unique normalized name, optimistic version/archive 동작이며 하나의
+  normalized SQLite catalog가 설정한 busy timeout과 상한이 있는 writer retry를 적용합니다.
 - 실패: AlreadyExists, EntityNotFound, InvalidInput과 modeled `ConcurrentModificationException`으로
   변환하는 domain version mismatch입니다. 잘못된 Open Table Format document는 같은 결정적
   `InvalidInputException` 경계를 사용합니다.

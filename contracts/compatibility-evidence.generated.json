@@ -91,9 +91,11 @@
         "cluster-lifecycle",
         "hive-partition-ddl",
         "hive-table-alter",
+        "list-filters",
         "management-read-model",
         "modeled-errors",
         "pagination",
+        "pagination-marker-validation",
         "partition-repair",
         "segments",
         "step-cancellation",
@@ -112,9 +114,11 @@
             "cluster-lifecycle",
             "hive-partition-ddl",
             "hive-table-alter",
+            "list-filters",
             "management-read-model",
             "modeled-errors",
             "pagination",
+            "pagination-marker-validation",
             "partition-repair",
             "segments",
             "step-cancellation",
@@ -141,7 +145,7 @@
           }
         }
       },
-      "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
+      "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -218,6 +222,7 @@
         "test_nodes": [
           "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
           "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+          "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
@@ -231,6 +236,7 @@
       "test_nodes": [
         "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
         "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+        "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
         "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
         "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
         "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
@@ -550,7 +556,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "926104be0e0517fc6f603927359cb551688ecc9164ef2343c937fa74093438eb",
+          "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -586,5 +592,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "2861f61db9c28a8798930a3d3cb363cbce20b549cbd7e6372f982512596193f9"
+  "source_sha256": "1aad2c0c5173bd715bab3e6988ce37fed7e6a0670a18a75715ff1b7f00d154ea"
 }

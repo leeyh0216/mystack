@@ -40,7 +40,7 @@ RUN python3 /opt/mystack/sqlite-build/install_python_build_dependencies.py \
 # https://spark.apache.org/docs/3.5.4/configuration.html#environment-variables
 FROM ${GLUE_BASE} AS final
 
-ARG MYSTACK_VERSION=0.1.5
+ARG MYSTACK_VERSION=0.1.4
 ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
 ARG GLUE_VERSION=5.0
 ARG SPARK_VERSION=3.5.4

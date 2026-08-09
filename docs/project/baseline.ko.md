@@ -64,12 +64,10 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   설정한 shutdown deadline 안에서 scheduler task와 child process를 cancel/await하고 artifact를
   닫으며 driver lock을 해제합니다.
 - Glue는 database, table/version, partition/batch/table-optimizer의 28개 operation을 구현합니다. Model 최댓값,
-  자연 오류, batch 항목 순서와 rollback을 결정적으로 처리합니다. 직렬화한 candidate
-  transaction이 visible publish 전에 schema-2 JSON을 persist/fsync/replace하고 schema 1을
-  migration하며 rename/cascade/version check를 한 commit으로 처리합니다. 제한된 POSIX lock과 최신
-  state reload로 같은 transaction을 emulator process 사이까지 확장합니다. Inbound adapter는
-  domain error를 문서화된 오류로 변환합니다. Source-built SQLite DB-API runtime은 catalog 초기화 전에
-  실행 가능 여부 확인 절차를 통과하지만 SQLite port migration 전까지 catalog persistence는 JSON 기반입니다.
+  자연 오류, batch 항목 순서와 rollback을 결정적으로 처리합니다. Source-built SQLite DB-API runtime은
+  catalog 초기화 전에 실행 가능 여부 확인 절차를 통과합니다. Normalized SQLite catalog는 상한이 있는
+  writer 재시도, WAL, transaction schema 초기화와 atomic database/table rename, cascade, VersionId
+  check를 사용하며 inbound adapter는 domain error를 문서화된 오류로 변환합니다.
 - Glue 책임은 immutable lossless domain snapshot이 name/revision/archive/partition invariant를,
   focused command/query/version/batch/pagination/initialization handler가 application policy를
   소유하도록 분리했습니다. 별도의 Open Table Format planner/orchestrator는 Iceberg v2 입력 검증,
@@ -168,9 +166,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. JSON 기반 Glue catalog를 normalized SQLite port로 옮기고 filtering/pagination 및 management explorer를
-   상한이 있는 SQLite read로 전환합니다 (#77, #74, #78; parent #73).
-2. 안정된 SQLite configuration 기준으로 service runtime architecture와 configuration/support reference를
-   작성합니다 (#81, #79).
-3. 유지 중인 compatibility YAML/API parity baseline을 최종 생성 inventory workflow로 교체합니다 (#87).
-4. GHCR public visibility를 완료하고 막힌 v0.1.3 release transaction을 다시 실행합니다 (#45, #55).
+1. 구현할 Glue와 EMR operation마다 문서화된 semantic, pagination, conflict, state-transition contract를
+   계속 확장합니다.
+2. 생성 API inventory와 client workflow lab을 지원 client 및 고정 dependency version과 동기화합니다.
+3. GHCR public visibility를 완료하고 막힌 v0.1.3 release transaction을 다시 실행합니다 (#45, #55).
