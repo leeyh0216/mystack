@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _METADATA_STATEMENT = """
     CREATE TABLE IF NOT EXISTS catalog_metadata (
@@ -107,6 +107,17 @@ _TABLE_STATEMENTS = (
     )
     """,
     """
+    CREATE TABLE IF NOT EXISTS catalog_partition_projection_health (
+        table_id INTEGER NOT NULL REFERENCES catalog_tables(table_id) ON DELETE CASCADE,
+        issue_kind TEXT NOT NULL COLLATE BINARY,
+        ordinal INTEGER NOT NULL,
+        first_order_key BLOB NOT NULL,
+        first_partition_id INTEGER NOT NULL REFERENCES catalog_partitions(partition_id)
+            ON DELETE CASCADE,
+        PRIMARY KEY (table_id, issue_kind, ordinal)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS catalog_partition_segments (
         partition_id INTEGER NOT NULL REFERENCES catalog_partitions(partition_id) ON DELETE CASCADE,
         table_id INTEGER NOT NULL REFERENCES catalog_tables(table_id) ON DELETE CASCADE,
@@ -171,6 +182,8 @@ _INDEX_STATEMENTS = (
     "ON catalog_partition_value_projections("
     "table_id, ordinal, type_family, conversion_valid, "
     "numeric_value COLLATE MYSTACK_NUMERIC, partition_id)",
+    "CREATE INDEX IF NOT EXISTS catalog_partition_projection_health_lookup "
+    "ON catalog_partition_projection_health(table_id, issue_kind, ordinal)",
     "CREATE INDEX IF NOT EXISTS catalog_partition_segments_lookup "
     "ON catalog_partition_segments(table_id, total_segments, segment_number, partition_id)",
     "CREATE INDEX IF NOT EXISTS catalog_optimizers_table_type "
@@ -186,7 +199,7 @@ def initialize_schema(connection: Any, *, now: float) -> None:
     """Create/validate the only supported catalog schema inside one immediate transaction.
 
     Mystack deliberately has no legacy JSON importer or implicit schema migration. A version-1
-    SQLite file must be backed up and recreated before it can be mounted by the version-2 query
+    SQLite file must be backed up and recreated before it can be mounted by the version-3 query
     projection runtime; failing closed avoids silently changing a catalog under a live client.
     """
 
