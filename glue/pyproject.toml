@@ -2,7 +2,7 @@
 name = "mystack-glue"
 version = "0.1.3"
 description = "Protocol-compatible AWS Glue Data Catalog emulator for Mystack"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.12"
 dependencies = [
   "antlr4-python3-runtime==4.13.2",
   "boto3==1.43.66",

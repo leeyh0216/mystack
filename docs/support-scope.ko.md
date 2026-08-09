@@ -100,7 +100,7 @@ EMR bootstrap action이 아닙니다. 정확한 검사와 제외 범위는 [pre-
 <!-- section: versions -->
 ## 버전 기준선
 
-- Python API 서비스: Python 3.11, CI에서 3.11/3.12 검증
+- Python API 서비스: Python 3.11
 - Protocol model: botocore 1.43.66, `contracts/service-model-manifest.json`에서 추적
 - Spark: 3.5.x, Glue 상호운용 profile은 Spark 3.5.4
 - Java: 17
