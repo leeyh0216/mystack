@@ -58,6 +58,13 @@ class PartitionExpressionCompiler:
     def __init__(self, policy: PartitionExpressionPolicy) -> None:
         self._parser = PartitionExpressionParser(policy)
         self._evaluator = PartitionExpressionEvaluator(policy)
+        self._fallback_max_candidates = policy.fallback_max_candidates
+
+    @property
+    def fallback_max_candidates(self) -> int:
+        """Maximum adapter candidates inspected for a future non-SQL AST node."""
+
+        return self._fallback_max_candidates
 
     def compile(
         self,
