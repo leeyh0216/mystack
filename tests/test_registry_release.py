@@ -352,7 +352,12 @@ def _workflow(path: str) -> dict:
 def test_publication_workflow_is_reusable_only_and_write_permission_is_final() -> None:
     workflow = _workflow(".github/workflows/container-publish.yml")
     assert set(workflow["on"]) == {"workflow_call"}
-    assert workflow["permissions"] == {"contents": "read"}
+    assert workflow["permissions"] == {"actions": "read", "contents": "read"}
+    assert set(workflow["on"]["workflow_call"]["inputs"]) >= {
+        "channel",
+        "ci_run_id",
+        "source_sha",
+    }
 
     jobs = workflow["jobs"]
     package_writers = [
@@ -433,6 +438,7 @@ def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     publish = workflow["jobs"]["publish"]
     assert publish["uses"] == "./.github/workflows/container-publish.yml"
     assert publish["permissions"] == {"contents": "write", "packages": "write"}
+    assert publish["with"]["ci_run_id"] == "${{ github.event.workflow_run.id }}"
     assert "pull_request" not in json.dumps(workflow["on"])
 
 
