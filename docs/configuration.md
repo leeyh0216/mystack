@@ -72,6 +72,9 @@ and is not required for image consumers.
 <!-- section: sections -->
 ## Main sections
 
+The [complete configuration reference](configuration-reference.generated.md) is generated from
+the runtime schema and defaults; `make configuration-reference-check` rejects drift in CI.
+
 | Path | Responsibility |
 | --- | --- |
 | `logging` | Structured log level and format contract |
