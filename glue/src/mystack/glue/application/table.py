@@ -11,7 +11,12 @@ from __future__ import annotations
 import re
 
 from mystack.glue.application.catalog_identity import database, name, table
-from mystack.glue.application.catalog_ports import CatalogReadPort, CatalogWritePort
+from mystack.glue.application.catalog_ports import (
+    CatalogQueryPort,
+    CatalogReadPort,
+    CatalogWritePort,
+)
+from mystack.glue.application.catalog_query_models import TablePageQuery
 from mystack.glue.application.iceberg_commit import IcebergCommitObserver
 from mystack.glue.application.pagination import Paginator
 from mystack.glue.application.ports import Clock
@@ -164,8 +169,14 @@ class TableCommands:
 
 
 class TableQueries:
-    def __init__(self, catalog: CatalogReadPort, paginator: Paginator) -> None:
-        self._catalog = catalog
+    def __init__(
+        self,
+        read_catalog: CatalogReadPort,
+        query_catalog: CatalogQueryPort,
+        paginator: Paginator,
+    ) -> None:
+        self._read_catalog = read_catalog
+        self._query_catalog = query_catalog
         self._paginator = paginator
 
     async def get(
@@ -176,7 +187,7 @@ class TableQueries:
     ) -> CatalogTable:
         normalized_database = name(database_name)
         normalized_table = name(table_name)
-        return await table(self._catalog, catalog_id, normalized_database, normalized_table)
+        return await table(self._read_catalog, catalog_id, normalized_database, normalized_table)
 
     async def list(
         self,
@@ -188,18 +199,28 @@ class TableQueries:
         max_results: int | None,
     ) -> tuple[list[CatalogTable], str | None]:
         normalized_database = name(database_name)
-        page_request = self._paginator.prepare(next_token, max_results)
-        pattern = None
+        page_request = self._paginator.prepare_keyset(next_token, max_results)
         if expression:
             try:
-                pattern = re.compile(expression)
+                re.compile(expression)
             except re.error as error:
                 raise InvalidInputError(f"Invalid table expression: {error}") from error
-        await database(self._catalog, catalog_id, normalized_database)
-        values = list(await self._catalog.list_tables(catalog_id, normalized_database))
-        if pattern is not None:
-            values = [value for value in values if pattern.search(value.name)]
-        return page_request.apply(values)
+        await database(self._read_catalog, catalog_id, normalized_database)
+        page_request = page_request.bind(
+            self._paginator.context("tables", catalog_id, normalized_database, expression)
+        )
+        page = await self._query_catalog.page_tables(
+            TablePageQuery(
+                catalog_id,
+                normalized_database,
+                page_request.size,
+                page_request.cursor,
+                expression,
+            )
+        )
+        if page.invalid_cursor:
+            raise InvalidInputError("Pagination token does not match this request")
+        return list(page.values), self._paginator.complete_keyset(page_request, page.next_cursor)
 
 
 class TableVersionQueries:

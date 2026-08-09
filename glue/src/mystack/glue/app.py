@@ -100,6 +100,7 @@ def create_app(
             iceberg_metadata_store = owned_metadata_store
         application = CatalogApplication(
             read_catalog=catalog,
+            query_catalog=catalog,
             write_catalog=catalog,
             clock=clock,
             policy=settings.policy,
