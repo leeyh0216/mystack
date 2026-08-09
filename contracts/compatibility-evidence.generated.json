@@ -91,11 +91,9 @@
         "cluster-lifecycle",
         "hive-partition-ddl",
         "hive-table-alter",
-        "list-filters",
         "management-read-model",
         "modeled-errors",
         "pagination",
-        "pagination-marker-validation",
         "partition-repair",
         "segments",
         "step-cancellation",
@@ -114,11 +112,9 @@
             "cluster-lifecycle",
             "hive-partition-ddl",
             "hive-table-alter",
-            "list-filters",
             "management-read-model",
             "modeled-errors",
             "pagination",
-            "pagination-marker-validation",
             "partition-repair",
             "segments",
             "step-cancellation",
@@ -145,7 +141,7 @@
           }
         }
       },
-      "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
+      "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
@@ -222,11 +218,10 @@
         "test_nodes": [
           "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
           "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
-          "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-          "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
+          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
           "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
           "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
         ]
@@ -236,11 +231,10 @@
       "test_nodes": [
         "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
         "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
-        "emr/tests/test_boto3_contract.py::test_boto3_list_filters_and_rejects_an_invalid_marker",
         "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
         "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
         "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
-        "glue/tests/test_boto3_contract.py::test_management_read_model_pages_only_the_requested_catalog_branch",
+        "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
         "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
         "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
       ],
@@ -556,7 +550,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "b2acf2470d81cb6b9c84fd0fafef579f0bdb7df342647c0eb9a13c48cd595fea",
+          "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -592,5 +586,5 @@
     }
   },
   "schema_version": 1,
-  "source_sha256": "1aad2c0c5173bd715bab3e6988ce37fed7e6a0670a18a75715ff1b7f00d154ea"
+  "source_sha256": "54192ed48e73ea6a93786a05f88127be327ce7f073ccebffcb5d3cd867d7ef03"
 }

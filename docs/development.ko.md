@@ -117,6 +117,7 @@ make ghcr-compose-check
 make compatibility-check
 make compatibility-evidence-generate
 make compatibility-evidence-check
+make compatibility-evidence-parity
 make antlr-check
 make glue-errors-check
 make version-show
@@ -147,13 +148,13 @@ Python과 React/TypeScript lint/format, 한·영 문서, container requirement l
 Compatibility scenario는 실제 `contract` 또는 `e2e` test 옆의 type이 있는 pytest annotation으로
 선언합니다. `make compatibility-evidence-generate`는 collection만 실행하고 CI matrix와 한·영 근거를
 만들며 test body를 실행하지 않습니다. `make compatibility-evidence-check`는 marker, lock/runtime,
-modeled operation, API 근거 차이를 거부합니다. `make compatibility-check`는 생성 matrix와 명시적 scope policy도 검증합니다.
-`CompatibilityProfile.expected_duration_minutes`는
+modeled operation, API 근거, 유지하는 기존 case 선택의 차이를 거부합니다. 이행 기간에는 남긴 YAML
+compiler도 실행하므로 `make compatibility-check`도 사용합니다. `CompatibilityProfile.expected_duration_minutes`는
 생성한 GitHub Actions job 시간 상한이며 local collection deadline이나 pytest timeout이 아닙니다. 일반 Python CI job은 전체 contract module을
-실행 전에 source SHA, lock/config, platform, producer run, file digest를 담은 frontend bundle manifest를 검증합니다.
-Docker E2E와 release preflight도 같은 bundle을 검증해 재사용하며, artifact가 없으면 local build로 전환하고
-stale/corrupt artifact는 거부합니다. browser E2E는 독립 실행 가능하게 유지합니다. Artifact lifecycle은 공식
-[GitHub Actions artifact 계약](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts)을 따릅니다.
+실행하기 전에 두 frontend build artifact를 내려받고, browser E2E job은 화면 동작을 맡습니다. 이 구조는
+UI coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정합니다. Artifact
+lifecycle은 공식 [GitHub Actions artifact
+계약](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts)을 따릅니다.
 
 `VERSION`은 정식 버전의 단일 원천이고 pre-commit hook이 파생 파일의 불일치를 거부합니다. Release
 PR을 열기 전에 [Version과 branch 안내](versioning.ko.md)를 따릅니다. Version 명령 자체는 commit,

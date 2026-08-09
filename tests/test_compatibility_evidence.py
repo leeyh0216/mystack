@@ -25,6 +25,7 @@ from scripts.compatibility_evidence import (
     EvidenceCompilationError,
     EvidenceCompiler,
     GeneratedArtifacts,
+    assert_legacy_parity,
     collect_annotations,
 )
 from test_support.compatibility import CompatibilityProfile, ExecutionKind, Lane
@@ -358,23 +359,11 @@ def test_cli_passes_the_selected_config_to_collection_and_compiler(
 
     monkeypatch.setattr(compatibility_evidence_module, "EvidenceCompiler", Compiler)
     monkeypatch.setattr(compatibility_evidence_module, "collect_annotations", collect)
-
-    class Artifacts:
-        def __init__(self, *_: object) -> None:
-            pass
-
-        def expected(self, compiled: dict[str, object]) -> dict[Path, str]:
-            assert compiled == {"compiled": True}
-            return {}
-
-        def check(self, expected: dict[Path, str]) -> None:
-            assert expected == {}
-
-    monkeypatch.setattr(compatibility_evidence_module, "GeneratedArtifacts", Artifacts)
+    monkeypatch.setattr(compatibility_evidence_module, "assert_legacy_parity", lambda *_: None)
     monkeypatch.setattr(
         compatibility_evidence_module.sys,
         "argv",
-        ["compatibility_evidence.py", "--check", "--config", str(config)],
+        ["compatibility_evidence.py", "--parity", "--config", str(config)],
     )
 
     assert compatibility_evidence_module.main() == 0
@@ -388,7 +377,7 @@ def collected_evidence() -> dict[str, Any]:
     return collect_annotations()
 
 
-def test_current_annotations_compile_and_match_generated_artifacts(
+def test_current_annotations_compile_match_legacy_and_generated_artifacts(
     collected_evidence: dict[str, Any],
 ) -> None:
     compiled = EvidenceCompiler().compile(collected_evidence)
@@ -400,6 +389,7 @@ def test_current_annotations_compile_and_match_generated_artifacts(
         "emr-7.8.0-spark-3.5.4",
         "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
     }
+    assert_legacy_parity(compiled)
     artifacts = GeneratedArtifacts(DEFAULT_OUTPUT, DEFAULT_ENGLISH, DEFAULT_KOREAN)
     artifacts.check(artifacts.expected(compiled))
 

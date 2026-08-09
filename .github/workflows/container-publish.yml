@@ -23,13 +23,8 @@ on:
         description: Exact successful CI SHA to build and publish
         required: true
         type: string
-      ci_run_id:
-        description: Successful CI run that produced reusable prerequisite artifacts
-        required: true
-        type: string
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
@@ -134,31 +129,6 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-      - id: reusable_ui
-        name: Download UI build from the authorized CI run
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: service-ui-builds-${{ inputs.source_sha }}
-          path: .
-          run-id: ${{ inputs.ci_run_id }}
-          github-token: ${{ github.token }}
-      - name: Verify downloaded UI build provenance
-        if: steps.reusable_ui.outcome == 'success'
-        run: >-
-          python3 scripts/reusable_build_artifact.py verify
-          --manifest .mystack/reusable-ui/manifest.json
-          --source-sha "${{ inputs.source_sha }}"
-          --platform "$RUNNER_OS-$RUNNER_ARCH"
-          --input package-lock.json --input package.json --input .node-version
-          --artifact emr/src/mystack/emr/static/ui
-          --artifact glue/src/mystack/glue/static/ui
-      - name: Rebuild UI after unavailable CI artifact
-        if: steps.reusable_ui.outcome != 'success'
-        run: |
-          echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}'
-          npm ci --ignore-scripts
-          npm run frontend:build
       - name: Install and run repository-local required checks
         run: |
           uv sync --locked --all-packages
@@ -166,6 +136,7 @@ jobs:
           uv run pre-commit run --all-files
           npm run frontend:typecheck
           npm run frontend:test
+          npm run frontend:build
           make test package-check compatibility-check compatibility-evidence-check
       - name: Run required contract cases as isolated processes
         run: |
@@ -194,7 +165,7 @@ jobs:
           path: |
             contracts/compatibility-matrix.generated.json
             contracts/compatibility-evidence.generated.json
-            contracts/api-coverage.generated.json
+            contracts/api-coverage.json
             contracts/glue-error-conditions.yaml
             docs/compatibility/release-acceptance.generated.md
             docs/compatibility/release-acceptance.ko.generated.md
