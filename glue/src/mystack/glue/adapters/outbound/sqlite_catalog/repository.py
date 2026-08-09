@@ -35,6 +35,10 @@ from mystack.glue.adapters.outbound.sqlite_catalog.mapping import (
     partition_values_key,
     table_from_row,
 )
+from mystack.glue.adapters.outbound.sqlite_catalog.partition_page_plan import (
+    PartitionPagePlan,
+    PartitionSeek,
+)
 from mystack.glue.adapters.outbound.sqlite_catalog.projection import PartitionValueProjector
 from mystack.glue.adapters.outbound.sqlite_catalog.query_compiler import (
     ProjectionRequirement,
@@ -326,8 +330,7 @@ class SqliteCatalogRepository(CatalogStore):
             if table_id is None:
                 return PartitionCatalogPage((), None, 0, "sqlite-keyset-pushdown")
 
-            cursor_order_key: bytes | None = None
-            cursor_identifier: int | None = None
+            seek = PartitionSeek(None, None)
             if query.after is not None:
                 cursor = connection.execute(
                     "SELECT order_key, partition_id FROM catalog_partitions "
@@ -336,18 +339,16 @@ class SqliteCatalogRepository(CatalogStore):
                 ).fetchone()
                 if cursor is None:
                     return PartitionCatalogPage((), None, 0, "sqlite-keyset-pushdown", True)
-                cursor_order_key = bytes(cursor[0])
-                cursor_identifier = int(cursor[1])
+                seek = PartitionSeek(bytes(cursor[0]), int(cursor[1]))
+            plan = PartitionPagePlan(table_id, query, seek)
 
             try:
                 compiled = SqlitePartitionQueryCompiler().compile(query.predicate)
             except UnsupportedPartitionSqlExpression:
                 return _bounded_partition_expression_fallback(
                     connection,
-                    table_id,
                     query,
-                    cursor_order_key,
-                    cursor_identifier,
+                    plan,
                 )
             preflight = _partition_projection_issue(
                 connection,
@@ -364,36 +365,13 @@ class SqliteCatalogRepository(CatalogStore):
                     invalid_partition_key_type=preflight.key_type,
                     invalid_partition_value_count=preflight.value_count_mismatch,
                 )
-            parameters: list[object] = []
-            joins = list(compiled.joins)
-            if query.total_segments is not None:
-                joins.append(
-                    "JOIN catalog_partition_segments AS ps "
-                    "ON ps.partition_id = p.partition_id AND ps.total_segments = ? "
-                    "AND ps.segment_number = ?"
-                )
-                parameters.extend((query.total_segments, query.segment_number))
-            seek = ""
-            if cursor_order_key is not None and cursor_identifier is not None:
-                seek = " AND (p.order_key > ? OR (p.order_key = ? AND p.partition_id > ?))"
-            parameters.append(table_id)
-            parameters.extend(compiled.parameters)
-            if cursor_order_key is not None and cursor_identifier is not None:
-                parameters.extend((cursor_order_key, cursor_order_key, cursor_identifier))
-            rows = connection.execute(
-                "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
-                "p.definition_json, p.creation_time, p.update_time "
-                "FROM catalog_partitions AS p "
-                "JOIN catalog_tables AS t ON t.table_id = p.table_id "
-                "JOIN catalog_databases AS d ON d.database_id = t.database_id "
-                + " ".join(joins)
-                + " WHERE p.table_id = ? AND ("
-                + compiled.predicate_sql
-                + ")"
-                + seek
-                + " ORDER BY p.order_key, p.partition_id LIMIT ?",
-                (*parameters, query.page_size + 1),
-            ).fetchall()
+            statement, parameters = plan.statement(
+                predicate_sql=compiled.predicate_sql,
+                predicate_parameters=compiled.parameters,
+                joins=compiled.joins,
+                limit=query.page_size + 1,
+            )
+            rows = connection.execute(statement, parameters).fetchall()
             page_rows = rows[: query.page_size]
             values = tuple(partition_from_row(tuple(row[1:])) for row in page_rows)
             next_cursor = (
@@ -1271,40 +1249,13 @@ def _table_id(
 
 def _bounded_partition_expression_fallback(
     connection: Any,
-    table_id: int,
     query: PartitionPageQuery,
-    cursor_order_key: bytes | None,
-    cursor_identifier: int | None,
+    plan: PartitionPagePlan,
 ) -> PartitionCatalogPage[CatalogPartition]:
     """Seek-stream a future AST node without materializing a catalog collection."""
 
-    joins: list[str] = []
-    parameters: list[object] = []
-    if query.total_segments is not None:
-        joins.append(
-            "JOIN catalog_partition_segments AS ps "
-            "ON ps.partition_id = p.partition_id AND ps.total_segments = ? "
-            "AND ps.segment_number = ?"
-        )
-        parameters.extend((query.total_segments, query.segment_number))
-    seek = ""
-    if cursor_order_key is not None and cursor_identifier is not None:
-        seek = " AND (p.order_key > ? OR (p.order_key = ? AND p.partition_id > ?))"
-    parameters.append(table_id)
-    if cursor_order_key is not None and cursor_identifier is not None:
-        parameters.extend((cursor_order_key, cursor_order_key, cursor_identifier))
-    rows = connection.execute(
-        "SELECT p.partition_id, d.catalog_id, d.name, t.name, p.values_json, "
-        "p.definition_json, p.creation_time, p.update_time "
-        "FROM catalog_partitions AS p "
-        "JOIN catalog_tables AS t ON t.table_id = p.table_id "
-        "JOIN catalog_databases AS d ON d.database_id = t.database_id "
-        + " ".join(joins)
-        + " WHERE p.table_id = ?"
-        + seek
-        + " ORDER BY p.order_key, p.partition_id",
-        tuple(parameters),
-    )
+    statement, parameters = plan.statement(predicate_sql=None, limit=None)
+    rows = connection.execute(statement, parameters)
     inspected = 0
     matched: list[tuple[int, CatalogPartition]] = []
     has_next = False
