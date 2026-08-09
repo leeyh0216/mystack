@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.3
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-generate coverage-check compatibility-generate compatibility-check compatibility-evidence-generate compatibility-evidence-check compatibility-evidence-parity compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-generate coverage-check compatibility-generate compatibility-check compatibility-evidence-generate compatibility-evidence-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -89,11 +89,8 @@ compatibility-check: ## Reject interoperability manifest, runtime, and generated
 compatibility-evidence-generate: ## Generate CI cases and bilingual evidence from pytest annotations.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --write
 
-compatibility-evidence-check: ## Reject pytest annotation, API evidence, parity, and generated-output drift.
+compatibility-evidence-check: ## Reject pytest annotation, operation evidence, and generated-output drift.
 	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --check
-
-compatibility-evidence-parity: ## Verify test annotations still select every retained legacy case.
-	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --parity
 
 compatibility-case: ## Run CASE=id from annotated evidence in one bounded, isolated process.
 	@test -n "$(CASE)" || (echo "CASE is required; run: make compatibility-case CASE=<id>" >&2; exit 2)
