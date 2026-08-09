@@ -161,6 +161,7 @@ async def test_local_spark_runner_records_the_exact_resolved_argument_vector(
             secret_access_key="test",
             s3_path_style=True,
         ),
+        spark_ui=SimpleNamespace(port_min=4040, port_max=4040),
     )
     runner = LocalSparkStepRunner(
         settings,  # type: ignore[arg-type]
@@ -185,6 +186,9 @@ async def test_local_spark_runner_records_the_exact_resolved_argument_vector(
     assert result.succeeded is True
     assert recorded["arguments"] == executor.command
     assert recorded["arguments"][0] == "/opt/spark/bin/spark-submit"
+    assert "spark.ui.enabled=true" in recorded["arguments"]
+    assert "spark.ui.port=4040" in recorded["arguments"]
+    assert "spark.ui.bindAddress=127.0.0.1" in recorded["arguments"]
     assert recorded["arguments"][-2:] == ["--mode", "verify"]
 
 
