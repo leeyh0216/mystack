@@ -98,7 +98,7 @@ EMR bootstrap action. Exact checks and exclusions are in the [pre-start contract
 <!-- section: versions -->
 ## Version baseline
 
-- Python API services: Python 3.11, tested on 3.11 and 3.12
+- Python API services: Python 3.11
 - Protocol model: botocore 1.43.66; tracked by `contracts/service-model-manifest.json`
 - Spark: 3.5.x; Glue interoperability profile uses Spark 3.5.4
 - Java: 17

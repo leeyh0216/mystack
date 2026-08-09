@@ -86,7 +86,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 운영 기능은 EMR cluster/Step command와 Glue metadata 탐색을 제공하는 service-aware Console,
   resource/log view, route/thread/task 진단, authorization과 payload 내용을 제외한 구조화 boundary
   log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.
-- 배포는 하나의 안정된 `VERSION` 원천, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
+- 배포는 하나의 안정된 `VERSION` 원천, `feature/*` → `develop` → `main`, Python 3.11 CI,
   nightly/manual Docker E2E, 모델/API 변경 검사, 변경 불가 develop snapshot과 main release,
   multi-platform GHCR image 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
 - Test 정책상 fast suite는 실 AWS 비교 없이 전부 local에서 실행합니다. 별도

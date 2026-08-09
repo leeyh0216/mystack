@@ -21,7 +21,7 @@
 
 | Workflow | Trigger | Contract |
 | --- | --- | --- |
-| `ci.yml` | `main`/`develop`/`feature/*` push, pull request, manual | Version readiness plus Python 3.11/3.12 contracts, required-case matrix, source-free GHCR Compose validation, and a frozen Dev Container build; `Required CI` aggregates the result |
+| `ci.yml` | `main`/`develop`/`feature/*` push, pull request, manual | Version readiness plus Python 3.11 contracts, required-case matrix, source-free GHCR Compose validation, and a frozen Dev Container build; `Required CI` aggregates the result |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | One isolated Docker job per explicit required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case, plus Chromium console accessibility E2E |
 | `release.yml` → reusable `container-publish.yml` | successful `CI` `workflow_run` for a direct `develop`/`main` push | Snapshot or stable policy resolution, required validation, local scans, immutable same-SHA publication, anonymous verification, and stable GitHub Release |
