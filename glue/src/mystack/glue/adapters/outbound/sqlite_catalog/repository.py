@@ -1284,13 +1284,25 @@ def _partition_projection_issue(
         return None
     candidates: list[tuple[bytes, int, int, str | None, bool]] = []
     expected_key_count = len(predicate.keys)
+    if expected_key_count == 0:
+        arity_sql = (
+            "EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id)"
+        )
+        arity_parameters: tuple[object, ...] = (table_id,)
+    else:
+        arity_sql = (
+            "(EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id AND pv.ordinal >= ?) OR "
+            "NOT EXISTS (SELECT 1 FROM catalog_partition_value_projections AS pv "
+            "WHERE pv.partition_id = p.partition_id AND pv.ordinal = ?))"
+        )
+        arity_parameters = (table_id, expected_key_count, expected_key_count - 1)
     arity_row = connection.execute(
         "SELECT p.order_key, p.partition_id FROM catalog_partitions AS p "
-        "WHERE p.table_id = ? AND ("
-        "SELECT COUNT(*) FROM catalog_partition_value_projections AS pv "
-        "WHERE pv.partition_id = p.partition_id) != ? "
+        "WHERE p.table_id = ? AND " + arity_sql + " "
         "ORDER BY p.order_key, p.partition_id LIMIT 1",
-        (table_id, expected_key_count),
+        arity_parameters,
     ).fetchone()
     if arity_row is not None:
         candidates.append((bytes(arity_row[0]), int(arity_row[1]), -1, None, True))
