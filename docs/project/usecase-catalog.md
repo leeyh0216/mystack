@@ -214,21 +214,25 @@
 <!-- section: uc-011 -->
 ## UC-011: Publish and verify public multi-platform images
 
-- Purpose/actor/trigger: maintainer pushes a semantic tag or manually dispatches GHCR publication.
-- Input: component/version plus file-configured packages, Dockerfiles, platforms, Trivy version/policy and
-  explicit timeouts.
+- Purpose/actor/trigger: a successful direct `develop` or `main` CI run authorizes post-CI
+  publication for its exact SHA.
+- Input: root `VERSION`, branch/event policy, file-configured packages, Dockerfiles, platforms,
+  Trivy policy, and explicit timeouts.
 - Output: anonymously pullable public GHCR tags/digests, BuildKit SBOM/provenance, raw OCI index and
   scan/release artifacts.
-- Stored/changed data: GHCR packages and GitHub workflow artifacts.
+- Stored/changed data: GHCR packages, workflow artifacts, and for stable main releases an annotated
+  Git tag plus GitHub Release.
 - Side effects: publisher token login, image build/push/pull, scanner DB/image downloads, and the
   one-time manual package visibility transition.
-- Preconditions/rules: ephemeral publisher `GITHUB_TOKEN`, public consumer visibility, new tag,
-  amd64+arm64 index; never `latest`.
-- Failures: permission/tag collision, build/push, platform verification, timeout or vulnerability policy.
+- Preconditions/rules: successful exact-SHA `CI`, allowed source event/branch, same-SHA immutable
+  retry, ephemeral `GITHUB_TOKEN`, public consumer visibility, amd64+arm64 index; never `latest`.
+- Failures: version drift/non-increment, another-SHA binding, permission, build/push, anonymous
+  platform verification, timeout, or vulnerability policy.
 - Observability: registry before/after/failure events and uploaded evidence.
-- Evidence: `/Users/leeyh0216/Documents/project/ministack-enhanced/.github/workflows/container-publish.yml:1`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/scripts/registry_release.py:75`
-- Confidence: High for implementation; first complete remote three-package run not yet confirmed.
+- Evidence: `.github/workflows/release.yml`, `.github/workflows/container-publish.yml`,
+  `scripts/release_policy.py`, `scripts/github_release.py`, `scripts/registry_release.py`
+- Confidence: High for deterministic policy and transaction tests; remote publication remains
+  subject to GitHub runner and package visibility state.
 
 <!-- section: uc-012 -->
 ## UC-012: Round-trip data and metadata with AWS SDK for pandas

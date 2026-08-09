@@ -128,6 +128,8 @@ def test_committed_release_config_references_real_builds_and_official_sources() 
     assert "docs.github.com" in serialized
     assert "opencontainers/image-spec" in serialized
     assert config["preflight_timeout_minutes"] == 60
+    assert config["tags"]["snapshot_retention_days"] == 30
+    assert config["tags"]["publish_latest"] is False
 
 
 def test_release_config_rejects_non_public_consumer_visibility() -> None:
@@ -262,14 +264,22 @@ def test_publication_workflow_is_reusable_only_and_write_permission_is_final() -
         name for name, job in jobs.items() if job.get("permissions", {}).get("packages") == "write"
     ]
     assert package_writers == ["publish"]
+    content_writers = [
+        name for name, job in jobs.items() if job.get("permissions", {}).get("contents") == "write"
+    ]
+    assert content_writers == ["ensure-stable-tag", "finalize-stable-release"]
     assert set(jobs["aggregate-gate"]["needs"]) == {
         "prepare",
         "required-validation",
         "local-build-scan",
     }
-    assert set(jobs["publish"]["needs"]) == {"prepare", "aggregate-gate"}
+    assert set(jobs["publish"]["needs"]) == {
+        "prepare",
+        "aggregate-gate",
+        "ensure-stable-tag",
+    }
     assert jobs["aggregate-gate"]["if"] == "${{ success() }}"
-    assert jobs["publish"]["if"] == "${{ success() }}"
+    assert "ensure-stable-tag.result" in jobs["publish"]["if"]
 
 
 def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
@@ -285,12 +295,32 @@ def test_only_final_job_can_mutate_registry_and_preflight_is_local() -> None:
     assert '"push": "true"' in publish
     assert "authorize-publication" in publish
     assert publish.index("authorize-publication") < publish.index("docker/login-action")
+    assert "-m scripts.release_policy binding" in publish
+    assert "steps.identity.outputs.exists != 'true'" in publish
 
 
 def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     workflow = _workflow(".github/workflows/release.yml")
-    assert set(workflow["on"]) == {"push", "workflow_dispatch"}
-    assert set(workflow["jobs"]) == {"release"}
-    release = workflow["jobs"]["release"]
-    assert release["uses"] == "./.github/workflows/container-publish.yml"
-    assert release["permissions"] == {"contents": "read", "packages": "write"}
+    assert set(workflow["on"]) == {"workflow_run"}
+    assert set(workflow["jobs"]) == {"plan", "publish"}
+    trigger = workflow["on"]["workflow_run"]
+    assert trigger["workflows"] == ["CI"]
+    assert set(trigger["branches"]) == {"main", "develop"}
+    publish = workflow["jobs"]["publish"]
+    assert publish["uses"] == "./.github/workflows/container-publish.yml"
+    assert publish["permissions"] == {"contents": "write", "packages": "write"}
+    assert "pull_request" not in json.dumps(workflow["on"])
+
+
+def test_prepare_version_pr_can_change_git_but_never_packages_or_releases() -> None:
+    workflow = _workflow(".github/workflows/prepare-version-pr.yml")
+
+    assert set(workflow["on"]) == {"workflow_dispatch"}
+    job = workflow["jobs"]["prepare"]
+    assert job["permissions"] == {"contents": "write", "pull-requests": "write"}
+    serialized = json.dumps(job, sort_keys=True)
+    assert "version.py" in serialized
+    assert "gh pr create" in serialized
+    assert "packages" not in serialized
+    assert "gh release" not in serialized
+    assert "docker" not in serialized

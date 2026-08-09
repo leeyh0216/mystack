@@ -1,0 +1,90 @@
+# Git-UI command surface for deterministic version changes only.
+# https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow
+name: Prepare version PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      change:
+        description: SemVer bump part, or exact to use exact_version
+        required: true
+        type: choice
+        options: [patch, minor, major, exact]
+        default: patch
+      exact_version:
+        description: Stable X.Y.Z; required only when change is exact
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-version-pr
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Update every version-bearing file and open a develop PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+      - id: version
+        name: Apply the same local version tool without publication side effects
+        env:
+          CHANGE: ${{ inputs.change }}
+          EXACT_VERSION: ${{ inputs.exact_version }}
+        run: |
+          set -euo pipefail
+          if [ "$CHANGE" = exact ]; then
+            test -n "$EXACT_VERSION" || \
+              (echo "exact_version is required when change=exact" >&2; exit 2)
+            python3 scripts/version.py set "$EXACT_VERSION"
+          else
+            test -z "$EXACT_VERSION" || \
+              (echo "exact_version must be blank for a bump operation" >&2; exit 2)
+            python3 scripts/version.py bump --part "$CHANGE"
+          fi
+          python3 scripts/version.py check --base-ref origin/main
+          version=$(tr -d '\n' <VERSION)
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "branch=prepare/version-$version-$GITHUB_RUN_ID" >>"$GITHUB_OUTPUT"
+      - name: Commit a reviewable version-only branch
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch --create "$BRANCH"
+          git add --all
+          git diff --cached --check
+          git commit -m "chore(release): prepare v$VERSION"
+          git push origin "$BRANCH"
+      - name: Open the develop pull request; never tag, release, or publish
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh pr create \
+            --base develop \
+            --head "$BRANCH" \
+            --title "Prepare v$VERSION" \
+            --body "## English
+
+          Synchronize the repository version authority and every derived version marker to \`$VERSION\`.
+          This PR does not publish images, create a tag, or create a GitHub Release.
+
+          ## 한국어
+
+          저장소 버전 원천과 모든 파생 version marker를 \`$VERSION\`으로 동기화합니다.
+          이 PR은 image, tag, GitHub Release를 게시하지 않습니다."

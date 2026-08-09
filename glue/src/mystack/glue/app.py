@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -207,7 +208,11 @@ def create_app(
                 finally:
                     log_event(_LOGGER, logging.INFO, "glue.stopping")
 
-    app = FastAPI(title="Mystack Glue Data Catalog Emulator", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Mystack Glue Data Catalog Emulator",
+        version=distribution_version("mystack-glue"),
+        lifespan=lifespan,
+    )
     app.include_router(create_diagnostics_router("glue", diagnostics_settings))
     app.include_router(
         create_diagnostics_router(

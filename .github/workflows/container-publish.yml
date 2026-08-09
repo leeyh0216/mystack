@@ -7,21 +7,20 @@ name: Reusable GHCR publication
 on:
   workflow_call:
     inputs:
-      event_name:
-        description: Original caller event name
+      channel:
+        description: stable or snapshot publication channel
         required: true
         type: string
-      component:
-        description: all, proxy, emr, or glue
+      version:
+        description: Exact immutable OCI tag derived by release_policy.py
         required: true
         type: string
-      requested_version:
-        description: Optional manual OCI tag
-        required: false
-        default: ""
+      python_version:
+        description: PEP 440 rendering derived from the same stable authority
+        required: true
         type: string
-      ref_name:
-        description: Original caller Git ref name
+      source_sha:
+        description: Exact successful CI SHA to build and publish
         required: true
         type: string
 
@@ -42,6 +41,10 @@ jobs:
       registry: ${{ steps.release.outputs.registry }}
       selection: ${{ steps.release.outputs.selection }}
       version: ${{ steps.release.outputs.version }}
+      channel: ${{ steps.release.outputs.channel }}
+      python_version: ${{ steps.release.outputs.python_version }}
+      source_sha: ${{ steps.release.outputs.source_sha }}
+      snapshot_retention_days: ${{ steps.release.outputs.snapshot_retention_days }}
       trivy_version: ${{ steps.release.outputs.trivy_version }}
       scan_timeout: ${{ steps.release.outputs.scan_timeout }}
       ignore_unfixed: ${{ steps.release.outputs.ignore_unfixed }}
@@ -49,53 +52,62 @@ jobs:
       preflight_timeout_minutes: ${{ steps.release.outputs.preflight_timeout_minutes }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
       - id: release
         name: Resolve a file-driven, non-mutating release plan
         env:
-          EVENT_NAME: ${{ inputs.event_name }}
-          REF_NAME: ${{ inputs.ref_name }}
-          REQUESTED_COMPONENT: ${{ inputs.component }}
-          REQUESTED_VERSION: ${{ inputs.requested_version }}
+          CHANNEL: ${{ inputs.channel }}
+          PYTHON_VERSION: ${{ inputs.python_version }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           config=config/registry-release.json
           python3 scripts/registry_release.py --config "$config" check-config
-          component_matrix=$(jq -c --arg selection "$REQUESTED_COMPONENT" \
-            '{include: [.components[] | select($selection == "all" or .name == $selection)]}' \
+          python3 scripts/version.py check
+          test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
+          grep -Eq '^[0-9a-f]{40}$' <<<"$SOURCE_SHA"
+          test "$CHANNEL" = stable -o "$CHANNEL" = snapshot
+          pattern=$(jq -r --arg channel "$CHANNEL" \
+            'if $channel == "stable" then .tags.stable_pattern else .tags.snapshot_pattern end' \
             "$config")
+          jq -en --arg value "$VERSION" --arg pattern "$pattern" \
+            '$value | test($pattern)' >/dev/null
+          stable=$(tr -d '\n' <VERSION)
+          case "$CHANNEL" in
+            stable)
+              test "$VERSION" = "v$stable"
+              test "$PYTHON_VERSION" = "$stable"
+              ;;
+            snapshot)
+              [[ "$VERSION" == "v$stable-snapshot."* ]]
+              [[ "$PYTHON_VERSION" == "$stable.dev"*"+g"* ]]
+              ;;
+          esac
+          component_matrix=$(jq -c '{include: .components}' "$config")
           test "$(jq '.include | length' <<<"$component_matrix")" -gt 0
-          preflight_matrix=$(jq -c --arg selection "$REQUESTED_COMPONENT" \
+          preflight_matrix=$(jq -c \
             '.components as $components | .platforms as $platforms | \
-             {include: [$components[] | select($selection == "all" or .name == $selection) as $component | \
+             {include: [$components[] as $component | \
              $platforms[] as $platform | $component + {platform: $platform, platform_slug: ($platform | gsub("/"; "-"))}]}' \
             "$config")
           expected=$(($(jq '.include | length' <<<"$component_matrix") * $(jq '.platforms | length' "$config")))
           test "$(jq '.include | length' <<<"$preflight_matrix")" -eq "$expected"
 
-          version="$REQUESTED_VERSION"
-          if [ "$EVENT_NAME" = push ]; then
-            version="$REF_NAME"
-            release_pattern=$(jq -r '.tags.release_pattern' "$config")
-            if ! jq -en --arg value "$version" --arg pattern "$release_pattern" \
-              '$value | test($pattern)' >/dev/null; then
-              echo "Release tag does not match configured pattern: $version" >&2
-              exit 2
-            fi
-          elif [ -z "$version" ]; then
-            prefix=$(jq -r '.tags.manual_prefix' "$config")
-            version="${prefix}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          fi
-          if ! grep -Eq '^[0-9A-Za-z][0-9A-Za-z._-]{0,127}$' <<<"$version"; then
-            echo "Invalid OCI image tag: $version" >&2
-            exit 2
-          fi
+          echo "event=registry.plan.resolve.after channel=$CHANNEL version=$VERSION python_version=$PYTHON_VERSION source_sha=$SOURCE_SHA components=$(jq '.include | length' <<<"$component_matrix")"
           {
             echo "component_matrix=$component_matrix"
             echo "preflight_matrix=$preflight_matrix"
             echo "platforms=$(jq -r '.platforms | join(",")' "$config")"
             echo "registry=$(jq -r '.registry' "$config")"
-            echo "selection=$REQUESTED_COMPONENT"
-            echo "version=$version"
+            echo "selection=all"
+            echo "version=$VERSION"
+            echo "channel=$CHANNEL"
+            echo "python_version=$PYTHON_VERSION"
+            echo "source_sha=$SOURCE_SHA"
+            echo "snapshot_retention_days=$(jq -r '.tags.snapshot_retention_days' "$config")"
             echo "trivy_version=$(jq -r '.scan.trivy_version' "$config")"
             echo "scan_timeout=$(jq -r '.scan.timeout' "$config")"
             echo "ignore_unfixed=$(jq -r '.scan.ignore_unfixed' "$config")"
@@ -112,6 +124,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.11"
@@ -184,6 +198,8 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.preflight_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
       - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - id: build
@@ -196,10 +212,10 @@ jobs:
           pull: true
           load: true
           push: false
-          tags: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ github.sha }}
+          tags: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ inputs.source_sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ inputs.source_sha }}
             io.mystack.preflight.platform=${{ matrix.platform }}
           cache-from: type=gha,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
           cache-to: type=gha,mode=max,scope=preflight-${{ matrix.name }}-${{ matrix.platform_slug }}
@@ -214,7 +230,8 @@ jobs:
         env:
           IGNORE_UNFIXED: ${{ needs.prepare.outputs.ignore_unfixed }}
           IMAGE_ID: ${{ steps.build.outputs.imageid }}
-          IMAGE_NAME: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ github.sha }}
+          IMAGE_NAME: mystack-preflight-${{ matrix.name }}:${{ matrix.platform_slug }}-${{ inputs.source_sha }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
           SCAN_TIMEOUT: ${{ needs.prepare.outputs.scan_timeout }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
@@ -232,7 +249,7 @@ jobs:
             --component "${{ matrix.name }}" \
             --platform "${{ matrix.platform }}" \
             --image-id "$IMAGE_ID" \
-            --source-sha "$GITHUB_SHA" \
+            --source-sha "$SOURCE_SHA" \
             --version "$VERSION" \
             --scan "$directory/trivy.json" \
             --report "$directory/preflight.json"
@@ -255,6 +272,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
       - name: Download every successful preflight record
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -264,12 +283,13 @@ jobs:
       - name: Reject missing, extra, mismatched, or modified evidence
         env:
           SELECTION: ${{ needs.prepare.outputs.selection }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python3 scripts/registry_release.py verify-gate \
             --evidence-root preflight-evidence \
             --selection "$SELECTION" \
-            --source-sha "$GITHUB_SHA" \
+            --source-sha "$SOURCE_SHA" \
             --version "$VERSION" \
             --report release-gate/gate.json
       - name: Upload the publication authorization
@@ -279,10 +299,41 @@ jobs:
           path: release-gate/gate.json
           if-no-files-found: error
 
+  ensure-stable-tag:
+    name: Bind the stable annotated tag to the validated SHA
+    needs: [prepare, aggregate-gate]
+    if: needs.prepare.outputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+          fetch-depth: 0
+      - name: Recheck stable uniqueness and create or resume the annotated tag
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          python3 scripts/version.py check \
+            --require-unreleased \
+            --github-repository "$GITHUB_REPOSITORY" \
+            --allow-existing-at-sha "$SOURCE_SHA"
+          python3 -m scripts.github_release \
+            --repository "$GITHUB_REPOSITORY" \
+            --timeout-seconds 30 \
+            ensure-tag --tag "$VERSION" --sha "$SOURCE_SHA"
+
   publish:
     name: Publish ${{ matrix.name }} only after authorization
-    needs: [prepare, aggregate-gate]
-    if: ${{ success() }}
+    needs: [prepare, aggregate-gate, ensure-stable-tag]
+    if: >-
+      always() &&
+      needs.aggregate-gate.result == 'success' &&
+      (needs.ensure-stable-tag.result == 'success' || needs.ensure-stable-tag.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: ${{ fromJSON(needs.prepare.outputs.workflow_timeout_minutes) }}
     permissions:
@@ -293,6 +344,8 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.component_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
       - name: Download the aggregate authorization only
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -302,13 +355,14 @@ jobs:
         name: Bind authorization to this source, version, and component selection
         env:
           SELECTION: ${{ needs.prepare.outputs.selection }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
           result=$(python3 scripts/registry_release.py authorize-publication \
             --gate release-gate/gate.json \
             --selection "$SELECTION" \
-            --source-sha "$GITHUB_SHA" \
+            --source-sha "$SOURCE_SHA" \
             --version "$VERSION")
           echo "sha256=$(jq -r '.authorization_sha256' <<<"$result")" >>"$GITHUB_OUTPUT"
       - name: Authenticate to GHCR with the ephemeral workflow token
@@ -320,9 +374,10 @@ jobs:
       - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       - id: identity
-        name: Resolve package identity and reject an existing tag
+        name: Resolve package identity and safely resume an existing same-SHA tag
         env:
           REGISTRY: ${{ needs.prepare.outputs.registry }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
@@ -330,13 +385,40 @@ jobs:
           image="$REGISTRY/$owner/${{ matrix.package }}"
           echo "event=registry.tag.check.before image=$image tag=$VERSION"
           if docker buildx imagetools inspect "$image:$VERSION" >/dev/null 2>&1; then
-            echo "event=registry.tag.check.failed image=$image tag=$VERSION fix_hint=choose-a-new-tag" >&2
-            exit 2
+            platform=$(jq -r '.platforms[0]' config/registry-release.json)
+            config_json=$(docker buildx imagetools inspect \
+              --format "{{json (index .Image \"$platform\")}}" "$image:$VERSION")
+            if ! actual_sha=$(jq -er '.config.Labels["org.opencontainers.image.revision"]' \
+              <<<"$config_json"); then
+              echo "event=registry.tag.check.failed image=$image tag=$VERSION fix_hint=existing-tag-has-no-mystack-revision-label" >&2
+              exit 2
+            fi
+            python3 -m scripts.release_policy binding \
+              --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
+            manifest_json=$(docker buildx imagetools inspect \
+              --format '{{json .Manifest}}' "$image:$VERSION")
+            digest=$(jq -er '.digest' <<<"$manifest_json")
+            test -n "$digest"
+            echo "exists=true" >>"$GITHUB_OUTPUT"
+            echo "digest=$digest" >>"$GITHUB_OUTPUT"
+            echo "event=registry.tag.check.after image=$image tag=$VERSION action=resume digest=$digest"
+          else
+            echo "exists=false" >>"$GITHUB_OUTPUT"
+            echo "event=registry.tag.check.after image=$image tag=$VERSION action=create"
           fi
           echo "image=$image" >>"$GITHUB_OUTPUT"
-          echo "event=registry.tag.check.after image=$image tag=$VERSION available=true"
+      - name: Log the registry mutation boundary
+        if: steps.identity.outputs.exists != 'true'
+        env:
+          IMAGE: ${{ steps.identity.outputs.image }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: >-
+          echo "event=registry.image.publish.before image=$IMAGE tag=$VERSION
+          source_sha=$SOURCE_SHA side_effect=true"
       - id: build
         name: Build and publish the authorized multi-platform image
+        if: steps.identity.outputs.exists != 'true'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
@@ -347,21 +429,34 @@ jobs:
           tags: ${{ steps.identity.outputs.image }}:${{ needs.prepare.outputs.version }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.revision=${{ inputs.source_sha }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
             io.mystack.authorization.sha256=${{ steps.authorization.outputs.sha256 }}
+            io.mystack.python.version=${{ needs.prepare.outputs.python_version }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
           provenance: mode=max
           sbom: true
-      - name: Capture and verify the published OCI image index
+      - name: Log the completed image push
+        if: steps.identity.outputs.exists != 'true'
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ steps.identity.outputs.image }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: >-
+          echo "event=registry.image.publish.after image=$IMAGE tag=$VERSION
+          digest=$DIGEST side_effect=true"
+      - name: Capture and verify the published OCI image index
+        env:
+          CREATED_DIGEST: ${{ steps.build.outputs.digest }}
+          EXISTING_DIGEST: ${{ steps.identity.outputs.digest }}
           IMAGE: ${{ steps.identity.outputs.image }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
           mkdir -p release-artifacts
+          DIGEST="${CREATED_DIGEST:-$EXISTING_DIGEST}"
+          test -n "$DIGEST"
           echo "event=registry.index.fetch.before image=$IMAGE digest=$DIGEST"
           docker buildx imagetools inspect --raw "$IMAGE@$DIGEST" \
             >"release-artifacts/index.json"
@@ -381,3 +476,106 @@ jobs:
             release-artifacts/
             release-gate/gate.json
           if-no-files-found: warn
+
+  verify-publication:
+    name: Verify anonymous public consumption and retain release evidence
+    needs: [prepare, publish]
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - name: Prove every exact tag is anonymously readable and bound to this SHA
+        env:
+          REGISTRY: ${{ needs.prepare.outputs.registry }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          owner=${GITHUB_REPOSITORY_OWNER,,}
+          mkdir -p release-evidence
+          jq -c '.components[]' config/registry-release.json | while IFS= read -r component; do
+            name=$(jq -r '.name' <<<"$component")
+            package=$(jq -r '.package' <<<"$component")
+            image="$REGISTRY/$owner/$package"
+            echo "event=registry.anonymous.verify.before component=$name image=$image tag=$VERSION"
+            manifest_json=$(docker buildx imagetools inspect \
+              --format '{{json .Manifest}}' "$image:$VERSION")
+            digest=$(jq -er '.digest' <<<"$manifest_json")
+            docker buildx imagetools inspect --raw "$image:$VERSION" \
+              >"release-evidence/$name-index.json"
+            jq -r '.platforms[]' config/registry-release.json | while IFS= read -r platform; do
+              config_json=$(docker buildx imagetools inspect \
+                --format "{{json (index .Image \"$platform\")}}" "$image:$VERSION")
+              if ! actual_sha=$(jq -er '.config.Labels["org.opencontainers.image.revision"]' \
+                <<<"$config_json"); then
+                echo "event=registry.anonymous.verify.failed component=$name platform=$platform fix_hint=inspect-published-oci-labels" >&2
+                exit 2
+              fi
+              python3 -m scripts.release_policy binding \
+                --expected-sha "$SOURCE_SHA" --actual-sha "$actual_sha"
+            done
+            python3 scripts/registry_release.py verify-index \
+              --component "$name" --image "$image" --tag "$VERSION" --digest "$digest" \
+              --manifest "release-evidence/$name-index.json" \
+              --report "release-evidence/$name-release.json"
+            echo "event=registry.anonymous.verify.after component=$name image=$image tag=$VERSION digest=$digest"
+          done
+      - name: Emit configured snapshot retention metadata
+        env:
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
+          RETENTION_DAYS: ${{ needs.prepare.outputs.snapshot_retention_days }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          jq -n \
+            --arg channel "$CHANNEL" \
+            --arg version "$VERSION" \
+            --arg source_sha "$SOURCE_SHA" \
+            --argjson snapshot_retention_days "$RETENTION_DAYS" \
+            '{schema_version: 1, channel: $channel, version: $version, source_sha: $source_sha,
+              snapshot_retention_days: (if $channel == "snapshot" then $snapshot_retention_days else null end),
+              deletion_automated: false}' >release-evidence/retention.json
+      - name: Upload anonymous index and retention evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: published-release-evidence-${{ needs.prepare.outputs.version }}
+          path: release-evidence/
+          if-no-files-found: error
+
+  finalize-stable-release:
+    name: Create or resume the GitHub Release after image verification
+    needs: [prepare, verify-publication]
+    if: needs.prepare.outputs.channel == 'stable'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source_sha }}
+      - name: Create or resume the release with image and evidence links
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          owner=${GITHUB_REPOSITORY_OWNER,,}
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          body=$(printf '%s\n' \
+            "## Container images" \
+            "- \`ghcr.io/$owner/mystack-proxy:$VERSION\`" \
+            "- \`ghcr.io/$owner/mystack-emr:$VERSION\`" \
+            "- \`ghcr.io/$owner/mystack-glue:$VERSION\`" \
+            "" \
+            "Publication and anonymous-pull evidence: $run_url")
+          python3 -m scripts.github_release \
+            --repository "$GITHUB_REPOSITORY" \
+            --timeout-seconds 30 \
+            ensure-release --tag "$VERSION" --sha "$SOURCE_SHA" --body "$body"

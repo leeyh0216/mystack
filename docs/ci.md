@@ -10,10 +10,11 @@
 
 | Workflow | Trigger | Contract |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, manual | Python 3.11/3.12 contracts, generated required-case matrix, source-free GHCR Compose validation, and an actual Dev Container build with the frozen feature lock |
+| `ci.yml` | `main`/`develop`/`feature/*` push, pull request, manual | Version readiness plus Python 3.11/3.12 contracts, required-case matrix, source-free GHCR Compose validation, and a frozen Dev Container build; `Required CI` aggregates the result |
 | `model-drift.yml` | weekly, manual | latest botocore versus pinned model; opens or updates one actionable issue |
 | `e2e.yml` | relevant pull request, nightly, manual | One isolated Docker job per explicit required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case, plus Chromium console accessibility E2E |
-| `release.yml` → reusable `container-publish.yml` | version tag, manual | Required validation and local per-platform scans, aggregate authorization, then public-consumption GHCR publish with SBOM/provenance and OCI evidence |
+| `release.yml` → reusable `container-publish.yml` | successful `CI` `workflow_run` for a direct `develop`/`main` push | Snapshot or stable policy resolution, required validation, local scans, immutable same-SHA publication, anonymous verification, and stable GitHub Release |
+| `prepare-version-pr.yml` | manual | Version-file update branch and PR to `develop`; no package, tag, or release mutation |
 
 Workflow design follows [GitHub Actions workflow documentation](https://docs.github.com/actions/writing-workflows). Timeouts are explicit in CI and sourced from YAML locally.
 Actions reads only the `include` entries compiled into
@@ -29,7 +30,10 @@ The Dev Container job uses the [official CLI](https://github.com/devcontainers/c
 <!-- section: branch-protection -->
 ## Branch protection expectations
 
-Require the Python contract matrix and Docker E2E for changes to runtime paths. Require reviewed pull requests, resolved conversations, and linear history. CI never calls a real AWS account and requires no cloud credentials.
+Use the repository rules in the [versioning guide](versioning.md). `main` is PR-only and `develop`
+is PR-preferred; both reject force pushes/deletion, require linear history, and require `Required CI`.
+The version-readiness job rejects a `main` PR without a new stable, unreleased version and repeats the
+check on the accepted SHA. CI never calls a real AWS account and requires no cloud credentials.
 
 <!-- section: dependencies -->
 ## Dependency updates
@@ -47,7 +51,8 @@ immutable multi-architecture digests rather than mutable tags.
 <!-- section: publication -->
 ## GHCR publication
 
-Follow the complete [public GHCR image procedure](container-release.md). The publication job uses the
+Follow the [version/branch workflow](versioning.md) and complete [public GHCR image
+procedure](container-release.md). The publication job uses the
 repository's ephemeral `GITHUB_TOKEN` with `packages: write`; there are no AWS/GCP credentials or
 registry secrets. GitHub documents this authentication and automatic repository/package association
 in the official [Container registry guide](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry).
@@ -56,9 +61,9 @@ The workflow creates a new package as private; an administrator then makes it pu
 official visibility procedure. Consumers pull the resulting public images anonymously. Publication
 authorization and consumption visibility are separate controls.
 
-Version tags are append-only by workflow policy and `latest` is intentionally absent. Consumers pin
-the verified OCI index digest. Rollback selects a prior verified digest and does not mutate registry
-history.
+Stable and snapshot tags are append-only by workflow policy and `latest` is intentionally absent.
+A retry resumes only artifacts carrying the same source SHA. Consumers pin the verified OCI index
+digest; rollback selects a prior verified digest and does not mutate registry history.
 
 <!-- section: artifacts -->
 ## Failure artifacts

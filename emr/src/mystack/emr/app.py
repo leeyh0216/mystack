@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version as distribution_version
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -182,7 +183,11 @@ def create_app(
             else:
                 await application.close()
 
-    app = FastAPI(title="Mystack EMR Emulator", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Mystack EMR Emulator",
+        version=distribution_version("mystack-emr"),
+        lifespan=lifespan,
+    )
     app.include_router(create_diagnostics_router("emr", diagnostics_settings))
     app.include_router(
         create_diagnostics_router(

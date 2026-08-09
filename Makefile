@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.0
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -88,6 +88,35 @@ registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
 	@uv run python scripts/registry_release.py check-config
 	@uv run ruff check scripts/registry_release.py tests/test_registry_release.py
 	@uv run pytest tests/test_registry_release.py --timeout 60 --timeout-method thread -vv
+
+rulesets-check: ## Validate the file-driven main/develop repository governance policy.
+	@uv run python scripts/github_rulesets.py check
+
+rulesets-apply: ## Converge only Mystack-owned rulesets; use REPOSITORY=owner/name DRY_RUN=--dry-run.
+	@test -n "$(REPOSITORY)" || (echo "REPOSITORY is required" >&2; exit 2)
+	@uv run python scripts/github_rulesets.py apply --repository "$(REPOSITORY)" $(DRY_RUN)
+
+version-show: ## Show the stable version authority; use CHANNEL=snapshot RUN_NUMBER=N SHA=hex.
+	@args="--json"; \
+	if [ "$(CHANNEL)" = "snapshot" ]; then \
+	  test -n "$(RUN_NUMBER)" -a -n "$(SHA)" || \
+	    (echo "RUN_NUMBER and SHA are required for CHANNEL=snapshot" >&2; exit 2); \
+	  args="--channel snapshot --run-number $(RUN_NUMBER) --sha $(SHA) --json"; \
+	fi; \
+	uv run python scripts/version.py show $$args
+
+version-check: ## Reject version authority drift; optionally pass BASE_REF and RELEASE_REPOSITORY.
+	@args=""; \
+	if [ -n "$(BASE_REF)" ]; then args="$$args --base-ref $(BASE_REF)"; fi; \
+	if [ -n "$(RELEASE_REPOSITORY)" ]; then \
+	  args="$$args --require-unreleased --github-repository $(RELEASE_REPOSITORY)"; \
+	fi; \
+	uv run python scripts/version.py check $$args
+
+version-bump: ## Update all managed version files; PART=patch|minor|major, VERSION_ARGS=--dry-run.
+	@test "$(PART)" = major -o "$(PART)" = minor -o "$(PART)" = patch || \
+	  (echo "PART must be major, minor, or patch" >&2; exit 2)
+	@uv run python scripts/version.py bump --part "$(PART)" $(VERSION_ARGS)
 
 package-check: ## Build and co-install all wheels under the implicit Mystack namespace.
 	@uv build --all-packages

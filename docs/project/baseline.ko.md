@@ -71,8 +71,10 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 운영 기능은 EMR cluster/Step command와 Glue metadata 탐색을 제공하는 service-aware Console,
   resource/log view, route/thread/task 진단, authorization과 payload 내용을 제외한 구조화 boundary
   log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.
-- 배포는 Python 3.11/3.12 CI, nightly/manual Docker E2E, 모델/API 변경 검사, 익명으로 소비할 수
-  있는 public GHCR multi-platform 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
+- 배포는 하나의 안정된 `VERSION` 원천, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
+  nightly/manual Docker E2E, 모델/API 변경 검사, 변경 불가 develop snapshot과 main release,
+  익명으로 소비할 수 있는 public GHCR multi-platform image, SBOM/provenance, OCI index 검증,
+  Trivy 정책을 포함합니다.
 - Test 정책상 fast suite는 실 AWS 비교 없이 전부 local에서 실행합니다. 별도
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane은 CI가 소유합니다. 두 계층 모두
   설정된 명시적 timeout을 적용합니다.
@@ -81,12 +83,14 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 ## Entry point와 명령
 
 - 실행 파일: `mystack-proxy`, `mystack-emr`, `mystack-glue`
-- 설정: `config/mystack.yaml`; release 설정: `config/registry-release.json`
+- 설정: `config/mystack.yaml`; release/version 설정: `config/registry-release.json`,
+  `config/version-files.json`, root `VERSION`
 - 설정 시작: `./scripts/bootstrap.sh`, `direnv allow`, 또는 제공된 Dev Container
-- Fast 검증: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
-  `make pre-commit`
+- Fast 검증: `make version-check`, `make architecture-check`, `make test`, `make contract`,
+  `make registry-check`, `make pre-commit`
 - Runtime 검증: `make up`, `make e2e`, `make down`
-- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`, `container-publish.yml`
+- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`,
+  `container-publish.yml`, `prepare-version-pr.yml`
 - 구현 UseCase: [구현 기반 catalog](usecase-catalog.ko.md)
 
 <!-- section: decisions -->

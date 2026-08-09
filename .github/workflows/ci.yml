@@ -3,7 +3,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, "feature/**"]
   pull_request:
   workflow_dispatch:
 
@@ -15,6 +15,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  version-policy:
+    name: Version and release readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Reject drift and apply the event/target version policy
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/version.py check
+          if [ "$EVENT_NAME" = pull_request ] && [ "$BASE_REF" = main ]; then
+            python3 scripts/version.py check \
+              --base-ref origin/main \
+              --require-unreleased \
+              --github-repository "$GITHUB_REPOSITORY"
+          elif [ "$EVENT_NAME" = push ] && [ "$REF_NAME" = main ]; then
+            python3 scripts/version.py check \
+              --base-ref "$BEFORE_SHA" \
+              --require-unreleased \
+              --github-repository "$GITHUB_REPOSITORY" \
+              --allow-existing-at-sha "$GITHUB_SHA"
+          fi
+          stable=$(tr -d '\n' <VERSION)
+          python3 -m scripts.release_policy plan \
+            --event-name "${EVENT_NAME/workflow_dispatch/push}" \
+            --ref-name "$REF_NAME" \
+            --stable-version "$stable" \
+            --run-number "$GITHUB_RUN_NUMBER" \
+            --sha "$GITHUB_SHA"
+
   frontend:
     name: React TypeScript contracts
     runs-on: ubuntu-latest
@@ -198,3 +238,34 @@ jobs:
           npx --yes @devcontainers/cli@0.88.0 build
           --workspace-folder .
           --frozen-lockfile
+
+  required:
+    name: Required CI
+    if: always()
+    needs:
+      - version-policy
+      - frontend
+      - prepare-compatibility
+      - required-compatibility-contracts
+      - python-contracts
+      - devcontainer
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Require every build, test, and version gate
+        env:
+          VERSION_RESULT: ${{ needs.version-policy.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          PREPARE_RESULT: ${{ needs.prepare-compatibility.result }}
+          COMPATIBILITY_RESULT: ${{ needs.required-compatibility-contracts.result }}
+          PYTHON_RESULT: ${{ needs.python-contracts.result }}
+          DEVCONTAINER_RESULT: ${{ needs.devcontainer.result }}
+        run: |
+          set -euo pipefail
+          for result in "$VERSION_RESULT" "$FRONTEND_RESULT" "$PREPARE_RESULT" \
+            "$COMPATIBILITY_RESULT" "$PYTHON_RESULT" "$DEVCONTAINER_RESULT"; do
+            test "$result" = success
+          done
+          echo "event=ci.required.evaluate result=success"

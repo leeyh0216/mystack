@@ -89,6 +89,7 @@ pandas 3.17.0은 문서에 적힌 세로 경로만 E2E로 검증합니다. Athen
 
 아키텍처, 프로토콜, 개발 환경, 시험, CI, 배포와 상위 의존성 변경 대응 문서는 사용자 안내와
 분리한 [유지보수 안내](docs/maintainers.ko.md)에 있습니다. 기여를 시작할 때는 이 안내와
-[기여 가이드](CONTRIBUTING.ko.md)를 따르세요.
+[기여 가이드](CONTRIBUTING.ko.md)를 따르세요. Release 관리자는 [Version과 branch
+흐름](docs/versioning.ko.md)을 사용하며 consumer는 변경 불가 GHCR tag를 계속 사용합니다.
 
 동작 기준은 [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html), [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html), [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data), [AWS Glue 타입 문서](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html)입니다.

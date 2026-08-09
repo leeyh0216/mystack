@@ -87,6 +87,7 @@ production IAM, and YARN/HDFS environments are not currently supported.
 
 Architecture, protocol, development, testing, CI, release, and upstream-evolution material is
 separated into the [maintainer guide](docs/maintainers.md). Start there and follow the
-[contributing guide](CONTRIBUTING.md) before changing the repository.
+[contributing guide](CONTRIBUTING.md) before changing the repository. Release maintainers use the
+[version and branch workflow](docs/versioning.md); consumers continue to use immutable GHCR tags.
 
 Official behavior sources include the [Amazon EMR API Reference](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html), [AWS Glue Web API Reference](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html), [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data), and [AWS Glue type-system documentation](https://docs.aws.amazon.com/glue/latest/dg/glue-types.html).

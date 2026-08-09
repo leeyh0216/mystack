@@ -91,13 +91,18 @@ documentation](https://docs.github.com/issues/tracking-your-work-with-issues/usi
 ## Issue-sized changes and publication
 
 - Create a bilingual issue with a milestone and classification labels before implementation.
+- Branch from `develop` as `feature/<issue>-<topic>` and open the implementation PR back to
+  `develop`. Move reviewed batches from `develop` to `main` only with a new stable version.
 - Complete implementation, tests, user documentation, and maintainer documentation for that issue
   together.
-- Do not accumulate completed changes in the working tree. After gates pass, create one logical commit
-  referencing the issue number.
-- Push the commit immediately and inspect the GitHub CI result.
+- Do not accumulate completed changes in the working tree. After local checks pass, create one
+  logical commit referencing the issue number, push the feature branch, and inspect CI.
 - Close the issue only after its acceptance criteria and CI pass. Split the next concern into a new
   issue and commit.
+
+PRs and feature branches cannot publish. A successful accepted `develop` commit publishes a unique
+snapshot, while a successful accepted `main` commit publishes the stable version. Follow the
+[versioning guide](docs/versioning.md); never create the release tag by hand.
 
 Use GitHub's [issue-closing commit
 mechanism](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)

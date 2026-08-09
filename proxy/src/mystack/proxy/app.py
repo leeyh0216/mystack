@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from importlib.metadata import version as distribution_version
 
 import httpx
 from fastapi import FastAPI, Request
@@ -76,7 +77,11 @@ def create_app(
             _log(logging.INFO, "proxy.stopping", runtime_state=runtime.state)
             await runtime.aclose()
 
-    app = FastAPI(title="Mystack Proxy", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Mystack Proxy",
+        version=distribution_version("mystack-proxy"),
+        lifespan=lifespan,
+    )
     app.include_router(create_diagnostics_router("proxy", diagnostics_settings))
 
     @app.get("/_mystack/health")

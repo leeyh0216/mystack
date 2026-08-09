@@ -5,154 +5,112 @@
 
 # Public GHCR image publication
 
-Mystack publishes Proxy, EMR, and Glue as public multi-platform OCI images in GitHub Container
-Registry so consumers can pull them anonymously. Publication needs no AWS/GCP account, cloud role,
-personal access token, or repository secret. GitHub's official [Container registry
-documentation](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
-supports `GITHUB_TOKEN` for a package associated with its workflow repository. A newly published
-package starts private, so a maintainer performs the documented one-time visibility change after
-each package first exists.
+This page covers container consumption and registry operations. Maintainers should read the full
+[version and branch workflow](versioning.md) first. Mystack uses GitHub's official [Container
+registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+and the repository-scoped `GITHUB_TOKEN`; no AWS/GCP account, cloud role, PAT, or custom registry
+secret is required.
 
 <!-- section: images -->
 ## Images and ownership
 
-| Component | Package |
+| Component | Public package |
 | --- | --- |
 | Proxy | `ghcr.io/leeyh0216/mystack-proxy` |
 | EMR | `ghcr.io/leeyh0216/mystack-emr` |
 | Glue | `ghcr.io/leeyh0216/mystack-glue` |
 
-The owner is resolved from `github.repository_owner` and lowercased at runtime; the table shows the
-current repository. Component package names, Dockerfiles, platforms, Trivy version, severity policy,
-and timeouts live in [`config/registry-release.json`](../config/registry-release.json). Event-facing
-orchestration lives in [`release.yml`](../.github/workflows/release.yml); the called
-[`container-publish.yml`](../.github/workflows/container-publish.yml) accepts only `workflow_call`.
-
-GitHub does not let a called workflow elevate the caller token, so the caller supplies a
-`packages: write` ceiling. Every called job explicitly downgrades to `contents: read` except the
-final `publish` job. Only that final job logs in to `ghcr.io` with the ephemeral `GITHUB_TOKEN`,
-following GitHub's official
-[Docker image publishing example](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images).
-No registry credential is logged or stored.
+The owner is derived from and lowercased from `github.repository_owner`; the table shows this
+repository. `config/registry-release.json` owns component names, Dockerfiles, platforms, scan policy,
+timeouts, exact tag patterns, and snapshot retention. `latest` is not published.
 
 <!-- section: contract -->
 ## Publication contract
 
-- A `vMAJOR.MINOR.PATCH` tag publishes all three components.
-- `consumer_visibility` in the release configuration is `public`; normal pulls must not depend on a
-  consumer credential.
-- A manual dispatch can publish one component or all. Blank version input generates a unique
-  `manual-RUN_ID-ATTEMPT` tag.
-- `latest` is never published. Production and repeatable development should pull the reported digest.
-- Validation runs repository checks plus every generated required compatibility contract/E2E case.
-- Buildx then builds each configured component/platform into the local Docker engine with
-  `push: false`. Pinned Trivy scans each local image and produces a content-hashed record.
-- The aggregate job rejects missing, extra, modified, wrong-commit, wrong-version, or failed records.
-  A failed, cancelled, or skipped prerequisite prevents the aggregate authorization and final job.
-- Existing tags are rejected after authorization and before the registry-mutating build. GHCR does
-  not provide repository-level immutable tags, so the entrypoint serializes releases to avoid races.
-- Only after authorization does Buildx publish `linux/amd64` and `linux/arm64` in one OCI image
-  index. The final image is rebuilt from the same commit, digest-pinned bases, and hash-locked
-  dependencies because Docker's local exporter cannot directly publish a multi-platform index.
-- BuildKit attaches maximum provenance and an SBOM. GitHub's own artifact-attestation service is not
-  used because GitHub documents that private repositories need Enterprise Cloud for that feature.
-- The published index is fetched by digest and validated against the official
-  [OCI Image Index specification](https://github.com/opencontainers/image-spec/blob/main/image-index.md).
-- Pinned Trivy scans both locally built platform images, ignores unfixed findings as configured, and
-  rejects the severities in the file policy. Trivy's official
-  [image command](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/)
-  searches the local Docker engine before a registry.
-- Every job and scan has an explicit timeout. Raw local scans, content-hashed preflight records,
-  aggregate authorization, published index, and release evidence are retained as artifacts.
+- PR and feature events build/test only and have no package permission.
+- Successful `develop` CI publishes all three images under one immutable snapshot tag.
+- Successful `main` CI publishes all three images under the exact stable `vX.Y.Z`, creates an
+  annotated tag for the same SHA, verifies anonymous access, then creates the GitHub Release.
+- Each configured component/platform is built locally and scanned before login. Content-hashed
+  evidence must authorize the entire set before registry mutation.
+- A same-tag/same-SHA retry verifies and skips an existing component. A different SHA is rejected.
+- BuildKit provenance and SBOM are attached. Runtime descriptors must satisfy the official [OCI
+  image index](https://github.com/opencontainers/image-spec/blob/main/image-index.md); attestation
+  descriptors with `unknown/unknown` are ignored.
+- Pinned Trivy follows its official [image command
+  contract](https://trivy.dev/docs/latest/guide/references/configuration/cli/trivy_image/). Every job,
+  scan, test, and external command has an explicit timeout.
 
-BuildKit provenance/SBOM descriptors may use `unknown/unknown`; the validator ignores those
-attestations while requiring both configured runtime platforms. Mystack validates the OCI output but
-does not implement the OCI registry or image format protocol.
+Mystack validates OCI output but does not implement a registry or OCI protocol.
 
 <!-- section: publish -->
-## Publish
+## Publishing and first-time visibility
 
-For a semantic release:
+Do not create or push release tags manually. Merge a reviewed, version-bumped PR through `develop`
+to `main`; the successful `CI` run starts the post-CI transaction. For a version-only change, use
+the **Prepare version PR** workflow or the commands in `versioning.md`.
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+A newly created personal-account package may initially be private. For each package once:
 
-For an isolated pre-release:
+1. Open the account **Packages** page, choose the package, and open **Package settings**.
+2. Under **Danger Zone**, choose **Change visibility**, select **Public**, and confirm the name.
+3. Repeat for all three and rerun the same failed release SHA.
 
-```bash
-gh workflow run release.yml \
-  --repo leeyh0216/mystack \
-  --ref main \
-  -f component=proxy \
-  -f version=
-```
+GitHub's official [personal-account visibility
+procedure](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account)
+warns that this public transition cannot be reversed. Automation deliberately does not perform it.
+The workflow's anonymous verification fails until all three packages are public.
 
-The first successful workflow creates private packages and links them to this repository. For each
-of `mystack-proxy`, `mystack-emr`, and `mystack-glue`, a package administrator must then:
-
-1. Open the package page from the account's **Packages** page and select **Package settings**.
-2. In **Danger Zone**, select **Change visibility**, choose **Public**, and enter the package name to
-   confirm.
-3. Repeat for all three packages and verify each package page displays public visibility.
-
-GitHub's official [visibility instructions](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#configuring-visibility-of-packages-for-your-personal-account)
-document these controls and warn that a public package cannot be made private again. If a linked
-repository's inherited permissions hide granular controls, follow the same official page to remove
-inherited permissions first. This manual, irreversible transition is intentionally not performed by
-the release workflow. Public pull access does not change the workflow's narrowly scoped
-`packages: write` publication permission.
-
-After the visibility change, pull a fixed image identity from the `release.json` artifact without a
-registry credential:
+Consumers then pull without credentials, preferably using the verified digest:
 
 ```bash
 docker pull ghcr.io/leeyh0216/mystack-proxy@sha256:FULL_INDEX_DIGEST
 ```
 
-GitHub's [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)
-states that public container packages allow anonymous access. A permission error on this pull means
-the visibility transition is incomplete or the identity is wrong; do not add a consumer token to
-mask that release-policy failure.
+GitHub's [package permissions
+guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages)
+documents anonymous access for public container packages. Do not add a consumer token to hide a
+visibility failure.
 
 <!-- section: vulnerability -->
-## Vulnerability result and rollback semantics
+## Vulnerability and rollback semantics
 
-GHCR has no ECR-style scan-on-push API. Mystack therefore scans local images before authentication or
-registry mutation. A validation, build, timeout, missing evidence, or vulnerability-policy failure
-creates no final GHCR tag. Raw reports remain in `preflight-*` artifacts for diagnosis. Patch the
-base/runtime and rerun with a new version; never weaken or overwrite evidence for a failed run.
+GHCR has no ECR-style scan-on-push contract used by this project. Mystack scans local platform
+images before authentication. A validation, build, timeout, missing-evidence, or configured
+vulnerability failure prevents authorization. Raw `preflight-*` artifacts remain for diagnosis.
 
-Rollback does not require a registry mutation: change the consumer back to an earlier verified
-`image@sha256:...` identity. Tags are human release labels; digests are deployment identities.
+Rollback changes the consumer to an earlier verified `image@sha256:...`; it never overwrites a tag.
+Snapshot metadata records a 30-day retention target, but deletion is not yet automated.
 
 <!-- section: failures -->
 ## Failure map
 
 | Event or failure | Meaning | Change point |
 | --- | --- | --- |
-| `registry.preflight.record.*` | One local component/platform build was scanned | Dockerfile, platform, or scan policy |
-| `registry.gate.verify.*` | Complete content-hashed evidence set was checked | Missing/extra artifact, source SHA, version, or scan result |
-| `registry.publication.authorize.*` | Final job rebound the authorization to its context | Rerun the complete release; never copy a gate between runs |
-| `registry.tag.check.failed` | The requested tag already exists | Choose a new semantic/manual tag |
-| package permission denied | Workflow/package link or `packages: write` differs | Package access and workflow permissions |
-| `registry.index.verify.failed` | An architecture disappeared | Dockerfile base manifest or `platforms` config |
-| Trivy timeout | Image/DB download exceeded the bound | `scan.timeout` in release config |
-| `registry.scan.evaluate.failed` | Configured fixed vulnerability exists | Base/runtime pins, then a new version |
-| anonymous pull denied | One or more packages are not public | Complete the one-time visibility procedure |
-| digest mismatch/pull failure | Published identity differs | Build output, package visibility, consumer digest |
+| `registry.preflight.record.*` | One local component/platform passed scanning | Dockerfile, platform, or scan policy |
+| `registry.gate.verify.*` | Complete evidence set was checked | Missing/extra artifact, source SHA, version, or scan result |
+| immutable binding conflict | Existing image revision differs | Bump version; never overwrite |
+| package permission denied during push | Workflow/package association differs | Workflow permission and package access |
+| anonymous verification denied | Package is still private | Complete the one-time visibility change and rerun the same SHA |
+| `registry.index.verify.failed` | Runtime platform is missing | Dockerfile base manifest or configured platforms |
+| `registry.scan.evaluate.failed` | Configured fixed vulnerability exists | Patch runtime/base and use a new version |
+| GitHub Release absent after images | Final transaction step failed | Rerun the same SHA; matching tag/images resume |
 
-Boundary events use `registry.*.before`, `.after`, and `.failed`; credentials, image layers, and full
-environment values are never logged.
+Logs use structured `.before`, `.after`, and `.failed` events around side effects. Tokens, complete
+environment values, and image layers are never logged.
 
 <!-- section: local-checks -->
-## Local checks
+## Local non-publishing checks
 
 ```bash
+make version-check
 make registry-check
 go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 \
-  .github/workflows/release.yml .github/workflows/container-publish.yml
+  .github/workflows/ci.yml \
+  .github/workflows/release.yml \
+  .github/workflows/container-publish.yml \
+  .github/workflows/prepare-version-pr.yml
 ```
 
-Local checks do not push. Only a version tag or an explicit manual workflow dispatch can mutate GHCR.
+These checks do not push. Only successful post-CI `develop` or `main` publication receives a
+package-writing token.

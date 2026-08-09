@@ -43,7 +43,9 @@ CONFIG_FIELDS = frozenset(
 )
 COMPONENT_FIELDS = frozenset({"name", "package", "dockerfile"})
 SCAN_FIELDS = frozenset({"trivy_version", "timeout", "ignore_unfixed", "fail_severities"})
-TAG_FIELDS = frozenset({"release_pattern", "manual_prefix"})
+TAG_FIELDS = frozenset(
+    {"stable_pattern", "snapshot_pattern", "snapshot_retention_days", "publish_latest"}
+)
 
 
 class ReleaseContractError(RuntimeError):
@@ -523,10 +525,16 @@ def check_config(config: dict[str, Any], root: Path) -> dict[str, Any]:
         timeout = config.get(timeout_name)
         if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0:
             errors.append(f"{timeout_name} must be a positive integer")
-    try:
-        re.compile(config["tags"]["release_pattern"])
-    except re.error:
-        errors.append("tags.release_pattern must be a valid regular expression")
+    for pattern_name in ("stable_pattern", "snapshot_pattern"):
+        try:
+            re.compile(config["tags"][pattern_name])
+        except re.error:
+            errors.append(f"tags.{pattern_name} must be a valid regular expression")
+    retention = config["tags"].get("snapshot_retention_days")
+    if not isinstance(retention, int) or isinstance(retention, bool) or retention <= 0:
+        errors.append("tags.snapshot_retention_days must be a positive integer")
+    if config["tags"].get("publish_latest") is not False:
+        errors.append("tags.publish_latest must remain false until a moving-tag policy exists")
     if not config.get("official_sources") or not all(
         source.startswith("https://") for source in config["official_sources"]
     ):

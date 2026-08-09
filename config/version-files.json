@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "authority": "VERSION",
+  "command_timeout_seconds": 30,
+  "files": [
+    {"path": "pyproject.toml", "kind": "toml-project"},
+    {"path": "shared/pyproject.toml", "kind": "toml-project"},
+    {"path": "proxy/pyproject.toml", "kind": "toml-project"},
+    {"path": "emr/pyproject.toml", "kind": "toml-project"},
+    {"path": "glue/pyproject.toml", "kind": "toml-project"},
+    {
+      "path": "uv.lock",
+      "kind": "uv-lock",
+      "packages": ["mystack-aws-protocol", "mystack-dev", "mystack-emr", "mystack-glue", "mystack-proxy"]
+    },
+    {"path": "package.json", "kind": "json", "fields": [["version"]]},
+    {"path": "ui/package.json", "kind": "json", "fields": [["version"]]},
+    {
+      "path": "emr/ui/package.json",
+      "kind": "json",
+      "fields": [["version"], ["dependencies", "@mystack/ui"]]
+    },
+    {
+      "path": "glue/ui/package.json",
+      "kind": "json",
+      "fields": [["version"], ["dependencies", "@mystack/ui"]]
+    },
+    {
+      "path": "package-lock.json",
+      "kind": "json",
+      "fields": [
+        ["version"],
+        ["packages", "", "version"],
+        ["packages", "emr/ui", "version"],
+        ["packages", "emr/ui", "dependencies", "@mystack/ui"],
+        ["packages", "glue/ui", "version"],
+        ["packages", "glue/ui", "dependencies", "@mystack/ui"],
+        ["packages", "ui", "version"]
+      ]
+    },
+    {
+      "path": "proxy/Dockerfile",
+      "kind": "regex",
+      "pattern": "(?m)^ARG MYSTACK_VERSION=[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "replacement": "ARG MYSTACK_VERSION={version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "emr/Dockerfile",
+      "kind": "regex",
+      "pattern": "(?m)^ARG MYSTACK_VERSION=[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "replacement": "ARG MYSTACK_VERSION={version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "glue/Dockerfile",
+      "kind": "regex",
+      "pattern": "(?m)^ARG MYSTACK_VERSION=[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "replacement": "ARG MYSTACK_VERSION={version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "compose.yaml",
+      "kind": "regex",
+      "pattern": "\\$\\{MYSTACK_VERSION:-[0-9]+\\.[0-9]+\\.[0-9]+\\}",
+      "replacement": "${{MYSTACK_VERSION:-{version}}}",
+      "expected_matches": 3
+    },
+    {
+      "path": "Makefile",
+      "kind": "regex",
+      "pattern": "(?m)^MYSTACK_VERSION \\?= [0-9]+\\.[0-9]+\\.[0-9]+$",
+      "replacement": "MYSTACK_VERSION ?= {version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "README.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "README.ko.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "docs/getting-started.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+  # replace with a published tag",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}  # replace with a published tag",
+      "expected_matches": 1
+    },
+    {
+      "path": "docs/getting-started.ko.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+  # 실제 게시 tag로 교체",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}  # 실제 게시 tag로 교체",
+      "expected_matches": 1
+    },
+    {
+      "path": "docs/protocols/emr-prestart.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
+      "expected_matches": 1
+    },
+    {
+      "path": "docs/protocols/emr-prestart.ko.md",
+      "kind": "regex",
+      "pattern": "export MYSTACK_IMAGE_TAG=v[0-9]+\\.[0-9]+\\.[0-9]+",
+      "replacement": "export MYSTACK_IMAGE_TAG=v{version}",
+      "expected_matches": 1
+    }
+  ],
+  "official_sources": [
+    "https://semver.org/",
+    "https://packaging.python.org/en/latest/specifications/version-specifiers/",
+    "https://docs.npmjs.com/cli/commands/npm-version"
+  ]
+}

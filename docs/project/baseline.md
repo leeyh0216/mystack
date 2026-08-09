@@ -73,9 +73,10 @@ contracts.
 - Operations: service-aware Console for EMR cluster/Step commands and Glue metadata exploration,
   resource/log views, route/thread/task diagnostics, and structured boundary logs without
   authorization or payload contents. Console mutations traverse the same public AWS endpoint as boto3.
-- Delivery: Python 3.11/3.12 CI, nightly/manual Docker E2E, model/API drift gates, anonymously
-  consumable public GHCR multi-platform publication, SBOM/provenance, OCI index validation, and
-  Trivy policy.
+- Delivery: one stable `VERSION` authority, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
+  nightly/manual Docker E2E, model/API drift gates, immutable develop snapshots and main releases,
+  anonymously consumable public GHCR multi-platform images, SBOM/provenance, OCI index validation,
+  and Trivy policy.
 - Test policy: the fast suite is entirely local and contains no real-AWS comparison. The separate
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane is CI-owned. Both layers apply
   explicit configured timeouts.
@@ -84,12 +85,14 @@ contracts.
 ## Entry points and commands
 
 - Executables: `mystack-proxy`, `mystack-emr`, and `mystack-glue`
-- Configuration: `config/mystack.yaml`; release configuration: `config/registry-release.json`
+- Configuration: `config/mystack.yaml`; release/version configuration:
+  `config/registry-release.json`, `config/version-files.json`, and root `VERSION`
 - Setup: `./scripts/bootstrap.sh`, `direnv allow`, or the provided Dev Container
-- Fast verification: `make architecture-check`, `make test`, `make contract`, `make registry-check`,
-  `make pre-commit`
+- Fast verification: `make version-check`, `make architecture-check`, `make test`, `make contract`,
+  `make registry-check`, `make pre-commit`
 - Runtime verification: `make up`, `make e2e`, `make down`
-- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`, `container-publish.yml`
+- CI: `.github/workflows/ci.yml`, `e2e.yml`, `model-drift.yml`, `release.yml`,
+  `container-publish.yml`, `prepare-version-pr.yml`
 - Implemented use cases: [implementation-derived catalog](usecase-catalog.md)
 
 <!-- section: decisions -->

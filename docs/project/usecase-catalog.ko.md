@@ -216,20 +216,25 @@
 <!-- section: uc-011 -->
 ## UC-011: Public multi-platform image 게시와 검증
 
-- 목적/actor/trigger: maintainer가 semantic tag를 push하거나 GHCR workflow를 수동 실행합니다.
-- 입력: component/version과 파일 설정 package, Dockerfile, platform, Trivy version/policy, timeout.
+- 목적/actor/trigger: `develop` 또는 `main` 직접 push의 CI가 성공하면 정확한 SHA의 post-CI 게시를
+  승인합니다.
+- 입력: root `VERSION`, branch/event 정책, 파일 설정 package, Dockerfile, platform, Trivy 정책,
+  명시적 timeout.
 - 출력: 익명으로 pull할 수 있는 public GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index,
   scan/release artifact입니다.
-- 저장/변경: GHCR package와 GitHub workflow artifact입니다.
+- 저장/변경: GHCR package, workflow artifact, 정식 main release의 annotated Git tag와 GitHub
+  Release입니다.
 - 부수효과: 게시자 token login, image build/push/pull, scanner DB/image download와 1회성 수동
   package visibility 전환입니다.
-- 선행조건/규칙: 일회성 게시자 `GITHUB_TOKEN`, public consumer visibility, 새 tag, amd64+arm64
-  index, `latest` 미사용.
-- 실패: permission/tag collision, build/push, platform 검증, timeout, vulnerability policy.
+- 선행조건/규칙: 정확한 SHA의 `CI` 성공, 허용된 source event와 branch, 같은 SHA의 변경 불가 재시도,
+  일회성 `GITHUB_TOKEN`, public consumer visibility, amd64+arm64 index, `latest` 미사용.
+- 실패: Version 불일치 또는 비증가, 다른 SHA binding, permission, build/push, 익명 platform 검증,
+  timeout, vulnerability policy.
 - 관측: registry 전/후/실패 event와 upload evidence.
-- 근거: `/Users/leeyh0216/Documents/project/ministack-enhanced/.github/workflows/container-publish.yml:1`,
-  `/Users/leeyh0216/Documents/project/ministack-enhanced/scripts/registry_release.py:75`
-- 신뢰도: 구현 High; 최초 remote 세 package 전체 성공은 아직 미확정.
+- 근거: `.github/workflows/release.yml`, `.github/workflows/container-publish.yml`,
+  `scripts/release_policy.py`, `scripts/github_release.py`, `scripts/registry_release.py`
+- 신뢰도: 결정적 정책과 transaction test는 High이며 remote 게시는 GitHub runner 및 package
+  visibility 상태의 영향을 받습니다.
 
 <!-- section: uc-012 -->
 ## UC-012: AWS SDK for pandas data와 metadata 왕복

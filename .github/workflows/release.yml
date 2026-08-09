@@ -1,41 +1,87 @@
-# Human/event-facing release entrypoint. Registry mutation is delegated to the reusable workflow.
-# https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows
+# Privileged post-CI entrypoint. It never accepts PR or manual publication events.
+# https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run
 name: Release GHCR images
 
 on:
-  push:
-    tags: ["v*"]
-  workflow_dispatch:
-    inputs:
-      component:
-        description: Component to publish
-        required: true
-        type: choice
-        options: [all, proxy, emr, glue]
-        default: all
-      version:
-        description: Optional new tag; blank generates a unique manual tag
-        required: false
-        type: string
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main, develop]
 
 permissions:
   contents: read
 
 concurrency:
-  group: ghcr-release-${{ github.repository }}
+  group: ghcr-publication-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Validate, preflight, authorize, and publish
+  plan:
+    name: Authorize the exact successful CI SHA and resolve its channel
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
-      # A called workflow cannot elevate the caller's token. Its non-publish jobs explicitly
-      # downgrade to contents:read; only its final publish job retains this ceiling.
+    outputs:
+      action: ${{ steps.plan.outputs.action }}
+      channel: ${{ steps.plan.outputs.channel }}
+      python_version: ${{ steps.plan.outputs.python_version }}
+      source_sha: ${{ steps.plan.outputs.source_sha }}
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - id: plan
+        name: Apply the file-driven event/ref policy without side effects
+        env:
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          SOURCE_EVENT: ${{ github.event.workflow_run.event }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+        run: |
+          set -euo pipefail
+          python3 scripts/version.py check
+          stable=$(tr -d '\n' <VERSION)
+          plan=$(python3 -m scripts.release_policy plan \
+            --event-name workflow_run \
+            --ref-name "$BRANCH" \
+            --source-event "$SOURCE_EVENT" \
+            --conclusion "$CONCLUSION" \
+            --source-workflow "$SOURCE_WORKFLOW" \
+            --stable-version "$stable" \
+            --run-number "$GITHUB_RUN_NUMBER" \
+            --sha "$SOURCE_SHA")
+          action=$(jq -r '.action' <<<"$plan")
+          test "$action" = snapshot-publish -o "$action" = release-publish
+          channel=snapshot
+          if [ "$action" = release-publish ]; then channel=stable; fi
+          echo "event=release.entrypoint.authorized action=$action channel=$channel source_sha=$SOURCE_SHA actor=$GITHUB_ACTOR run_id=$GITHUB_RUN_ID run_attempt=$GITHUB_RUN_ATTEMPT"
+          {
+            echo "action=$action"
+            echo "channel=$channel"
+            echo "python_version=$(jq -r '.python_version' <<<"$plan")"
+            echo "source_sha=$SOURCE_SHA"
+            echo "version=$(jq -r '.oci_tag' <<<"$plan")"
+          } >>"$GITHUB_OUTPUT"
+
+  publish:
+    name: Build, verify, and publish the authorized channel
+    needs: plan
+    if: >-
+      needs.plan.outputs.action == 'snapshot-publish' ||
+      needs.plan.outputs.action == 'release-publish'
+    permissions:
+      contents: write
       packages: write
     uses: ./.github/workflows/container-publish.yml
     with:
-      event_name: ${{ github.event_name }}
-      component: ${{ github.event_name == 'workflow_dispatch' && inputs.component || 'all' }}
-      requested_version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || '' }}
-      ref_name: ${{ github.ref_name }}
+      channel: ${{ needs.plan.outputs.channel }}
+      version: ${{ needs.plan.outputs.version }}
+      python_version: ${{ needs.plan.outputs.python_version }}
+      source_sha: ${{ needs.plan.outputs.source_sha }}

@@ -8,7 +8,7 @@
 <!-- section: prerequisites -->
 ## 사전 요구사항
 
-- Private repository 접근 권한이 있는 Git과 GitHub CLI
+- Branch push 또는 pull request 생성 시 인증된 Git과 GitHub CLI
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - `.node-version`의 Node.js 24.6.0과 npm(Dev Container 사용 시 별도 설치 불필요)
 - [Docker Desktop 또는 Docker Engine과 Compose](https://docs.docker.com/compose/install/)
@@ -105,6 +105,9 @@ make ghcr-compose-check
 make compatibility-check
 make antlr-check
 make glue-errors-check
+make version-show
+make version-check
+make version-bump PART=patch VERSION_ARGS=--dry-run
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
@@ -133,6 +136,10 @@ frontend build artifact를 내려받고, browser E2E job은 rendering된 UI 동�
 coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정할 수 있습니다. Artifact
 lifecycle은 공식 [GitHub Actions artifact
 계약](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts)을 따릅니다.
+
+`VERSION`은 정식 버전의 단일 원천이고 pre-commit hook이 파생 파일의 불일치를 거부합니다. Release
+PR을 열기 전에 [Version과 branch 안내](versioning.ko.md)를 따릅니다. Version 명령 자체는 commit,
+push, tag, 게시를 수행하지 않습니다.
 
 <!-- section: locations -->
 ## 변경 위치

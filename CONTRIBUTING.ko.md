@@ -87,12 +87,17 @@ Issues 문서](https://docs.github.com/issues/tracking-your-work-with-issues/usi
 ## 이슈 단위 변경과 게시
 
 - 구현 전에 이중 언어 이슈를 만들고 milestone과 분류 label을 지정합니다.
+- `develop`에서 `feature/<issue>-<topic>` branch를 만들고 구현 PR도 `develop`으로 엽니다. 검토한
+  변경 묶음은 새 정식 version과 함께 있을 때만 `develop`에서 `main`으로 전달합니다.
 - 한 이슈의 구현, 시험, 사용자 문서와 유지보수 문서를 함께 완료합니다.
-- 완료한 변경을 working tree에 누적하지 않습니다. 확인 절차를 통과하면 이슈 번호를 참조하는
-  하나의 논리적 commit을 만듭니다.
-- Commit을 원격 저장소에 바로 push하고 GitHub CI 결과를 확인합니다.
+- 완료한 변경을 working tree에 누적하지 않습니다. Local 검사를 통과하면 이슈 번호를 참조하는
+  하나의 논리적 commit을 만들고 feature branch를 push한 뒤 CI 결과를 확인합니다.
 - 완료 조건과 CI를 모두 확인한 뒤 이슈를 닫습니다. 다음 관심사는 새 이슈와 commit으로
   분리합니다.
+
+PR과 feature branch는 게시할 수 없습니다. 반영된 `develop` commit의 CI가 성공하면 고유 snapshot,
+반영된 `main` commit의 CI가 성공하면 정식 version을 게시합니다. [Version
+안내](docs/versioning.ko.md)를 따르고 release tag를 직접 만들지 않습니다.
 
 GitHub의 [commit으로 이슈 닫기
 기능](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)을

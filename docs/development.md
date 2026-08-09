@@ -8,7 +8,7 @@
 <!-- section: prerequisites -->
 ## Prerequisites
 
-- Git and GitHub CLI authenticated for the private repository
+- Git and GitHub CLI authenticated when pushing branches or opening pull requests
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Node.js 24.6.0 from `.node-version` and npm (not required when using the Dev Container)
 - [Docker Desktop or Docker Engine with Compose](https://docs.docker.com/compose/install/)
@@ -105,6 +105,9 @@ make ghcr-compose-check
 make compatibility-check
 make antlr-check
 make glue-errors-check
+make version-show
+make version-check
+make version-bump PART=patch VERSION_ARGS=--dry-run
 make compatibility-case CASE=boto3-botocore-1.43.66-contract
 make package-check
 make architecture-check
@@ -133,6 +136,10 @@ before running the full contract modules, while the browser E2E job owns rendere
 keeps SDK matrix failures attributable to protocol code without reducing UI coverage. The artifact
 lifecycle follows the official [GitHub Actions artifact
 contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
+
+`VERSION` is the sole stable version authority and the pre-commit hook rejects derived-file drift.
+Use the [version and branch guide](versioning.md) before opening a release PR. The version command
+itself never commits, pushes, tags, or publishes.
 
 <!-- section: locations -->
 ## Where to make changes
