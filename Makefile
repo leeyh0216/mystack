@@ -48,10 +48,10 @@ antlr-check: ## Reject ANTLR version, grammar, or committed generated-parser dri
 	@uv run python scripts/generate_glue_expression_parser.py --check
 
 glue-errors-generate: ## Regenerate bilingual evidence from the Glue error-condition catalog.
-	@uv run python scripts/glue_error_contracts.py --write
+	@uv run python scripts/compatibility/glue_error_contracts.py --write
 
 glue-errors-check: ## Reject Glue error coverage, precedence, model, or evidence drift.
-	@uv run python scripts/glue_error_contracts.py --check
+	@uv run python scripts/compatibility/glue_error_contracts.py --check
 
 architecture-check: ## Enforce dependency directions, composition roots, and import cycles.
 	@uv run python scripts/architecture_contract.py --root .
@@ -75,32 +75,32 @@ model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 
 coverage-generate: compatibility-evidence-generate ## Render API classification from generated evidence.
-	@uv run python scripts/api_coverage.py \
+	@uv run python scripts/compatibility/api_coverage.py \
 	  --write contracts/api-coverage.generated.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
 
 coverage-check: compatibility-evidence-check ## Verify generated API classification and bilingual matrices.
-	@uv run python scripts/api_coverage.py \
+	@uv run python scripts/compatibility/api_coverage.py \
 	  --check contracts/api-coverage.generated.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
 
 compatibility-generate: compatibility-evidence-generate coverage-generate ## Compile annotated cases into CI and bilingual evidence.
-	@uv run python scripts/compatibility_matrix.py --write
+	@uv run python scripts/compatibility/compatibility_matrix.py --write
 
 compatibility-check: compatibility-evidence-check coverage-check ## Reject annotation, policy, and generated-output drift.
-	@uv run python scripts/compatibility_matrix.py --check
+	@uv run python scripts/compatibility/compatibility_matrix.py --check
 
 compatibility-evidence-generate: ## Generate CI cases and bilingual evidence from pytest annotations.
-	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --write
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility/compatibility_evidence.py --write
 
 compatibility-evidence-check: ## Reject pytest annotation, operation evidence, and generated-output drift.
-	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility_evidence.py --check
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run --all-packages python scripts/compatibility/compatibility_evidence.py --check
 
 compatibility-case: ## Run CASE=id from annotated evidence in one bounded, isolated process.
 	@test -n "$(CASE)" || (echo "CASE is required; run: make compatibility-case CASE=<id>" >&2; exit 2)
-	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/run_compatibility_case.py "$(CASE)"
+	@MYSTACK_CONFIG_FILE="$(CONFIG)" uv run python scripts/compatibility/run_compatibility_case.py "$(CASE)"
 
 registry-check: ## Verify GHCR config, OCI index validation, and scanner policy.
 	@uv run python scripts/registry_release.py check-config

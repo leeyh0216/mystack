@@ -206,7 +206,7 @@ jobs:
         run: make compatibility-check compatibility-evidence-check
       - name: Run the explicit case in an isolated process
         run: >-
-          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          uv run python scripts/compatibility/run_compatibility_case.py "${{ matrix.case_id }}"
           --junitxml "ci-artifacts/compatibility-${{ matrix.case_id }}/junit.xml"
       - name: Publish compatibility test evidence
         if: always()
@@ -294,12 +294,12 @@ jobs:
       - name: Verify test-declared interoperability evidence
         run: make compatibility-evidence-check
       - name: Verify annotation-backed interoperability evidence
-        run: uv run python scripts/compatibility_matrix.py --check
+        run: uv run python scripts/compatibility/compatibility_matrix.py --check
       - name: Verify deterministic Glue error contracts
         run: make glue-errors-check
       - name: Verify complete API classification and generated bilingual matrix
         run: >-
-          uv run python scripts/api_coverage.py
+          uv run python scripts/compatibility/api_coverage.py
           --check contracts/api-coverage.generated.json
           --english docs/compatibility/api-coverage.generated.md
           --korean docs/compatibility/api-coverage.ko.generated.md

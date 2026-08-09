@@ -33,7 +33,7 @@ jobs:
         continue-on-error: true
         run: >-
           uv run --no-project --with botocore
-          python scripts/api_coverage.py
+          python scripts/compatibility/api_coverage.py
           --check contracts/api-coverage.generated.json
           --english docs/compatibility/api-coverage.generated.md
           --korean docs/compatibility/api-coverage.ko.generated.md

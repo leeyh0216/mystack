@@ -47,11 +47,11 @@ uv run python scripts/export_requirements.py --check
 echo "[mystack] checking pinned AWS service models"
 uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 echo "[mystack] checking test-declared compatibility evidence"
-uv run --all-packages python scripts/compatibility_evidence.py --check
+uv run --all-packages python scripts/compatibility/compatibility_evidence.py --check
 echo "[mystack] checking annotation-backed interoperability cases"
-uv run python scripts/compatibility_matrix.py --check
+uv run python scripts/compatibility/compatibility_matrix.py --check
 echo "[mystack] checking exhaustive API classification and generated matrices"
-uv run python scripts/api_coverage.py \
+uv run python scripts/compatibility/api_coverage.py \
   --check contracts/api-coverage.generated.json \
   --english docs/compatibility/api-coverage.generated.md \
   --korean docs/compatibility/api-coverage.ko.generated.md

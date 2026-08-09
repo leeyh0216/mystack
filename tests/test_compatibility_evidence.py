@@ -17,8 +17,8 @@ from typing import Any
 import pytest
 import yaml
 
-import scripts.compatibility_evidence as compatibility_evidence_module
-from scripts.compatibility_evidence import (
+import scripts.compatibility.compatibility_evidence as compatibility_evidence_module
+from scripts.compatibility.compatibility_evidence import (
     DEFAULT_ENGLISH,
     DEFAULT_KOREAN,
     DEFAULT_OUTPUT,

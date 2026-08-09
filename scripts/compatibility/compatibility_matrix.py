@@ -22,7 +22,7 @@ from typing import Any, ClassVar
 
 import yaml
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 DEFAULT_MANIFEST = ROOT / "contracts/compatibility-scope-policy.yaml"
 DEFAULT_EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
 DEFAULT_OUTPUT = ROOT / "contracts/compatibility-matrix.generated.json"

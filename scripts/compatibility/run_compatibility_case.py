@@ -19,7 +19,7 @@ from typing import Any
 
 import yaml
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 LOGGER = logging.getLogger("mystack.compatibility.runner")
 APPROVED_RUNNERS = {
     "pytest": ("contract", ["uv", "run", "pytest"]),

@@ -172,7 +172,7 @@ jobs:
           set -euo pipefail
           jq -r '.github_matrices.required_contract.include[].case_id' \
             contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
-              uv run python scripts/run_compatibility_case.py "$case_id"
+              uv run python scripts/compatibility/run_compatibility_case.py "$case_id"
             done
       - name: Build and start Mystack for required Docker cases
         run: make up
@@ -181,7 +181,7 @@ jobs:
           set -euo pipefail
           jq -r '.github_matrices.required_e2e.include[].case_id' \
             contracts/compatibility-evidence.generated.json | while IFS= read -r case_id; do
-              uv run python scripts/run_compatibility_case.py "$case_id"
+              uv run python scripts/compatibility/run_compatibility_case.py "$case_id"
             done
       - name: Collect component logs
         if: failure()

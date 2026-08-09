@@ -18,7 +18,7 @@
 
 Mystack defines Glue errors from public API documentation, the pinned botocore model, and internal
 catalog invariants. It never queries a live AWS account. The source of truth is
-`contracts/glue-error-conditions.yaml`; `scripts/glue_error_contracts.py` requires all 28 implemented
+`contracts/glue-error-conditions.yaml`; `scripts/compatibility/glue_error_contracts.py` requires all 28 implemented
 operations to have an ordered contract and generates the [English](../compatibility/glue-errors.generated.md)
 and [Korean](../compatibility/glue-errors.ko.generated.md) matrices.
 
