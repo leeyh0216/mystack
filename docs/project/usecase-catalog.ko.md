@@ -24,6 +24,7 @@
 - [UC-013: 문서화된 Glue timeout 또는 internal failure 재현](#uc-013-문서화된-glue-timeout-또는-internal-failure-재현)
 - [UC-014: 결정적인 Glue catalog 오류 판단 적용](#uc-014-결정적인-glue-catalog-오류-판단-적용)
 - [UC-015: Glue Iceberg table optimizer 관리와 실행](#uc-015-glue-iceberg-table-optimizer-관리와-실행)
+- [UC-016: Test 선언 compatibility evidence 생성](#uc-016-test-선언-compatibility-evidence-생성)
 - [후보 차이: 사용자 문서와 contributor 근거](#후보-차이-사용자-문서와-contributor-근거)
 <!-- toc:end -->
 
@@ -242,8 +243,8 @@
   승인합니다.
 - 입력: root `VERSION`, branch/event 정책, 파일 설정 package, Dockerfile, platform, Trivy 정책,
   명시적 timeout.
-- 출력: 익명으로 pull할 수 있는 public GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index,
-  scan/release artifact입니다.
+- 출력: 변경 불가 GHCR tag/digest, BuildKit SBOM/provenance, raw OCI index, scan/release artifact입니다.
+  익명 public pull은 일회성 package visibility 전환 뒤에만 가능합니다.
 - 저장/변경: GHCR package, workflow artifact, 정식 main release의 annotated Git tag와 GitHub
   Release입니다.
 - 부수효과: 게시자 token login, image build/push/pull, scanner DB/image download와 1회성 수동
@@ -352,6 +353,26 @@
   `docs/protocols/glue-table-optimizers.ko.md`.
 - 신뢰도: 문서화한 Glue 5/Spark 3.5.4/Iceberg 1.7.1 경로는 High.
 
+<!-- section: uc-016 -->
+## UC-016: Test 선언 compatibility evidence 생성
+
+- 목적/actor/trigger: Contributor가 contract 또는 E2E test에 typed compatibility annotation을 추가한 뒤
+  compatibility evidence check 또는 generation 명령을 실행합니다.
+- 입력: 수집한 pytest metadata, 고정 workspace/runtime 사실, 등록된 EMR/Glue operation, commit된
+  generated artifact입니다.
+- 출력: 결정적인 case evidence, 한·영 annotated-evidence 문서, CI matrix이며 check는 중복/잘못된
+  metadata, stale output, evidence/registry 불일치를 보고합니다.
+- 저장/변경: generation은 review 가능한 compatibility evidence artifact만 갱신하며 collection은 test
+  body를 실행하지 않습니다.
+- 선행조건/규칙: strict pytest marker 등록, 상한이 있는 collection timeout, collection 중 금지한
+  heavyweight client import 없음, public-Proxy 호환 verification boundary입니다.
+- 실패: 잘못되거나 중복된 case ID, 알 수 없는 operation, source/test metadata 누락, timeout 또는
+  generated-file drift입니다.
+- 관측: case count와 source digest를 포함하는 collection/compile/parity 구조화 event입니다.
+- 근거: `scripts/compatibility_evidence.py`, `test_support/compatibility_plugin.py`,
+  `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
+- 신뢰도: High
+
 <!-- section: candidate-documentation -->
 ## 후보 차이: 사용자 문서와 contributor 근거
 
@@ -361,6 +382,6 @@
   지원 또는 미지원 client 경로를 찾을 수 있어야 합니다.
 - Contributor 결과: contributor는 사용자 문서를 과도하게 늘리지 않고 API/endpoint 인벤토리, runtime
   architecture, configuration key, CI 근거, protocol 수정 위치를 찾을 수 있어야 합니다.
-- 근거: #75, #79, #80, #81; [Spark 문서 index](https://spark.apache.org/docs/latest/),
+- 근거: #79, #81, #87; [Spark 문서 index](https://spark.apache.org/docs/latest/),
   [Trino deployment 문서](https://trino.io/docs/current/installation/deployment.html).
 - 신뢰도: Candidate이며 구현은 issue로 추적하고 정적 site를 아직 확정하지 않았습니다.
