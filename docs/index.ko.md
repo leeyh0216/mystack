@@ -3,64 +3,68 @@
 
 [한국어](index.ko.md) | [English](index.md)
 
-# 사용자 안내
+# Mystack 문서
 
-이 문서의 기본 독자는 Mystack을 사용해 애플리케이션과 데이터 파이프라인을 개발하는 분입니다.
-저장소 구현, 프로토콜, CI와 배포를 관리하는 분은 [유지보수 안내](maintainers.ko.md)로
-이동하세요.
+<!-- toc:start -->
+## 목차
+
+- [개요](#개요)
+- [시작하기](#시작하기)
+- [Glue Data Catalog](#glue-data-catalog)
+- [Amazon EMR](#amazon-emr)
+- [설정과 운영](#설정과-운영)
+- [Contributors](#contributors)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
+이 문서는 애플리케이션 또는 데이터 파이프라인 개발자가 Mystack 문서를 탐색하는 출발점입니다.
+각 문서는 답하려는 작업부터 설명하고, 필요한 경우에만 더 깊은 기술 문서로 연결합니다.
+
+<!-- section: overview -->
+## 개요
+
+Mystack은 Amazon EMR, AWS Glue Data Catalog, Spark, LocalStack S3를 위한 로컬 개발 환경을
+제공합니다. Docker Compose를 시작한 뒤 실행하려는 작업에 따라 Glue 또는 EMR 문서를 선택합니다.
 
 <!-- section: start -->
-## 처음 시작하기
+## 시작하기
 
-1. [상세 사용 안내](getting-started.ko.md)로 source clone 없이 public GHCR image를 익명으로
-   pull하고 Docker Compose를 시작한 뒤 공개 endpoint를 확인합니다.
-2. [설정 안내](configuration.ko.md)에서 port, 제한 시간, data path와 file override를 선택합니다.
-3. [생성된 release 수용 범위](compatibility/release-acceptance.ko.generated.md),
-   [지원 범위](support-scope.ko.md), [Client 호환성 표](compatibility/client-matrix.ko.md)에서
-   사용하려는 API와 라이브러리의 실제 검증 범위를 확인합니다.
+- [Docker Compose 시작과 AWS CLI 또는 boto3 설정](getting-started.ko.md)
+- [게시 image 배포 변경](configuration.ko.md)
+- [관리 UI와 진단 사용](operations.ko.md)
 
-<!-- section: clients -->
-## Client별 경로
+<!-- section: glue -->
+## Glue Data Catalog
 
-| Client 또는 사용 목적 | 현재 검증 | 시작 문서 |
-| --- | --- | --- |
-| AWS CLI와 boto3 | 같은 공개 Proxy에서 EMR 13개, Glue 28개 operation | [상세 사용 안내](getting-started.ko.md) |
-| AWS SDK for pandas 3.17.0 | Partitioned Parquet S3 write/read와 Glue table/partition | [상세 사용 안내](getting-started.ko.md) |
-| Spark 3.5.4 Glue Hive client | Complex type Parquet create/insert/read | [Client 호환성 표](compatibility/client-matrix.ko.md) |
-| Apache Iceberg 1.7.1 GlueCatalog | Open Table Format API create/update, read/write/evolution, COW/MOR DML, time travel, ref, metadata/maintenance procedure, managed table optimizer, rename/drop/purge | [Client 호환성 표](compatibility/client-matrix.ko.md), [table optimizer protocol](protocols/glue-table-optimizers.ko.md) |
-| EMR Spark step | S3 bootstrap, Python/JAR local Spark, S3A output, cancel | [지원 범위](support-scope.ko.md) |
+- [boto3, AWS SDK for pandas, Spark Hive, Iceberg로 Glue 사용](glue.ko.md)
+- [Client와 library 호환성 확인](compatibility/client-matrix.ko.md)
+- [사용자 관점 지원 범위 확인](support-scope.ko.md)
 
-표에 없는 라이브러리나 함수는 자동으로 지원되는 것으로 간주하지 않습니다. 고정 botocore model의
-operation별 구현 상태는 [API coverage](compatibility/api-coverage.ko.md)에 있습니다.
+<!-- section: emr -->
+## Amazon EMR
 
-<!-- section: operate -->
-## 사용 중 설정과 진단
+- [Cluster 생성과 Spark 또는 PySpark Step 제출](emr.ko.md)
+- [Step log와 LogUri object 찾기](protocols/emr-log-layout.ko.md)
+- [신뢰한 image pre-start action 설정](protocols/emr-prestart.ko.md)
+- [Container 시작 시 cluster 미리 구성](protocols/emr-startup-clusters.ko.md)
 
-- YAML, environment override, Docker mount: [설정 안내](configuration.ko.md)
-- EMR cluster/Step 생성·추적, Glue metadata 탐색, 진단 확인: [관리 Console 안내](console.ko.md)
-- 구조화 log와 관리 endpoint: [관찰성 안내](observability.ko.md)
-- EMR `LogUri` S3 object 이름과 local-mode 정합성: [EMR log 배치](protocols/emr-log-layout.ko.md)
-- 미리 구성한 cluster와 재시작 동작: [EMR 시작 클러스터 file](protocols/emr-startup-clusters.ko.md)
-- Enterprise CA, proxy, image 정보와 신뢰된 초기화: [EMR pre-start 안내](protocols/emr-prestart.ko.md)
+<!-- section: operations -->
+## 설정과 운영
 
-<!-- section: limits -->
-## 먼저 알아야 할 제한
+- [설정 reference](configuration.ko.md)
+- [관리 UI, live log, 진단](operations.ko.md)
+- [구조화 log와 문제 해결](observability.ko.md)
 
-Glue Job, JobRun, Crawler와 Athena query 실행은 현재 범위가 아닙니다. Spark/Iceberg와 AWS
-SDK for pandas도 호환성 표에 적힌 경로만 검증했습니다. Production IAM, EC2/YARN/HDFS 분산
-환경과 미문서화된 AWS 결함을 재현하지 않습니다.
+<!-- section: contributors -->
+## Contributors
 
-<!-- section: maintainers -->
-## 저장소를 변경하는 경우
-
-개발 환경, 아키텍처, 프로토콜 분석, 시험, CI, 배포, 상위 의존성 변경 대응은
-[유지보수 안내](maintainers.ko.md)에만 분류합니다. 사용자에게 필요한 문서는 이 안내에 먼저
-연결하고, 구현 상세는 유지보수 안내로 보냅니다.
+구현, protocol, architecture, 개발 환경, test, CI, release 문서는
+[Contributors 안내](maintainers.ko.md)에서 시작합니다. 사용자 지원 안내와 분리된 전체 AWS
+API/endpoint 인벤토리는 [API 호환성 reference](compatibility/api-coverage.ko.md)에 있습니다.
 
 <!-- section: sources -->
 ## 공식 참고 자료
 
-- [AWS SDK endpoint 구성](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
-- [Amazon EMR API](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)
-- [AWS Glue API](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)
-- [Docker Compose](https://docs.docker.com/reference/compose-file/)
+- [Amazon EMR 문서](https://docs.aws.amazon.com/emr/)
+- [AWS Glue 문서](https://docs.aws.amazon.com/glue/)
+- [Docker Compose reference](https://docs.docker.com/reference/compose-file/)

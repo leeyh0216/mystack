@@ -1,6 +1,16 @@
 # 생성된 Client 호환성 Matrix
 
+<!-- toc:start -->
+## 목차
+
+- [호환성 Case](#호환성-case)
+- [실행 구분 정책](#실행-구분-정책)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 파일은 `compatibility/cases.yaml`에서 결정적으로 생성됩니다. 직접 수정하지 마세요. 각 행은 CI가 독립 process에서 실행하는 명시적 조합이며 지원하지 않는 전수 조합을 뜻하지 않습니다.
+
+## 호환성 Case
 
 | Case | 실행 구분 | Runtime | 고정 버전 | Scenario | Evidence |
 | --- | --- | --- | --- | --- | --- |

@@ -5,6 +5,17 @@
 
 # EMR LogUri S3 layout
 
+<!-- toc:start -->
+## Contents
+
+- [Enable log archiving](#enable-log-archiving)
+- [Object layout](#object-layout)
+- [Success, failure, and cancellation](#success-failure-and-cancellation)
+- [Durable publication and restart recovery](#durable-publication-and-restart-recovery)
+- [Implementation and repair boundaries](#implementation-and-repair-boundaries)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack archives terminal Step process logs when `RunJobFlow.LogUri` is an S3 URI. The Step path
 follows Amazon EMR's documented S3 layout. Spark runs in local/client mode, so application IDs below
 `containers/` are deliberately synthetic and do not represent YARN applications.

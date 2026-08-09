@@ -5,6 +5,16 @@
 
 # Client and library compatibility
 
+<!-- toc:start -->
+## Contents
+
+- [Status levels](#status-levels)
+- [Verified clients](#verified-clients)
+- [Closed client set](#closed-client-set)
+- [Current exclusions](#current-exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This document records whether an external AWS-protocol client has actually been verified through
 Mystack's single public endpoint. A passing vertical path for one library is never a claim of support
 for that library's entire API.

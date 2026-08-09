@@ -5,6 +5,19 @@
 
 # Mystack 시작 전에 EMR image 구성하기
 
+<!-- toc:start -->
+## 목차
+
+- [검토한 script로 게시 image 시작하기](#검토한-script로-게시-image-시작하기)
+- [실행 순서와 사용자 계약](#실행-순서와-사용자-계약)
+- [신뢰 경계와 file 검사](#신뢰-경계와-file-검사)
+- [인증서, proxy, Python과 Java](#인증서-proxy-python과-java)
+- [추측 대신 image 정보 확인하기](#추측-대신-image-정보-확인하기)
+- [안전하게 시작 실패 진단하기](#안전하게-시작-실패-진단하기)
+- [지원 범위](#지원-범위)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 게시한 EMR image에 enterprise CA 인증서, proxy 환경변수 또는 machine 수준 선행 구성이 필요할 때
 이 운영자 전용 hook을 사용하세요. EMR service, bootstrap action과 Spark Step보다 먼저 실행합니다.
 기본값은 비활성이며 EMR container에만 적용됩니다.

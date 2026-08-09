@@ -5,6 +5,17 @@
 
 # Glue database, table, version 오류 의미론
 
+<!-- toc:start -->
+## 목차
+
+- [지원하는 판단](#지원하는-판단)
+- [Archive, rename, delete 상태](#archive-rename-delete-상태)
+- [System failure와 concurrency](#system-failure와-concurrency)
+- [명시적 제외](#명시적-제외)
+- [검증과 유지보수](#검증과-유지보수)
+- [공식 출처](#공식-출처)
+<!-- toc:end -->
+
 Mystack은 아래 13개 database, table, table-version, import-status operation에 대해 결정적인 local
 catalog 판단을 구현합니다. 고정한 botocore model이 public 요청 구조를 먼저 검증합니다. 저장된
 schema가 필요하지 않은 application 값은 catalog 조회 전에 검증합니다. 이는 공개 문서에 근거한

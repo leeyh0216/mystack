@@ -5,6 +5,16 @@
 
 # Korean technical writing standard
 
+<!-- toc:start -->
+## Contents
+
+- [Principles](#principles)
+- [Terminology](#terminology)
+- [Support status language](#support-status-language)
+- [Sentences and sections](#sentences-and-sections)
+- [Review and automated validation](#review-and-automated-validation)
+<!-- toc:end -->
+
 This document defines how Mystack's Korean documentation is written and
 reviewed. Korean pages are not sentence-by-sentence translations. They preserve
 technical meaning and sources while organizing the content for Korean readers.

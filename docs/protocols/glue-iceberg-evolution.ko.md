@@ -5,6 +5,18 @@
 
 # GlueCatalog을 통한 Iceberg metadata evolution
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [보장하는 evolution profile](#보장하는-evolution-profile)
+- [Glue wire 계약](#glue-wire-계약)
+- [검증 근거](#검증-근거)
+- [Logging과 수정 위치](#logging과-수정-위치)
+- [한계](#한계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 계약은 Glue 5.0 상호운용 profile에서 지원하는 Apache Iceberg 1.7.1 partition, schema, sort,
 identifier evolution 동작을 고정합니다. 문법과 의미 규칙은 Iceberg 공식
 [partitioning](https://iceberg.apache.org/docs/1.7.1/partitioning/),

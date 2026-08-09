@@ -5,6 +5,17 @@
 
 # EMR LogUri S3 배치
 
+<!-- toc:start -->
+## 목차
+
+- [Log 보관 활성화](#log-보관-활성화)
+- [Object 배치](#object-배치)
+- [성공, 실패, 취소](#성공-실패-취소)
+- [Durable 게시와 재시작 복구](#durable-게시와-재시작-복구)
+- [구현 및 수정 경계](#구현-및-수정-경계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 `RunJobFlow.LogUri`가 S3 URI이면 Mystack은 terminal Step의 process log를 보관합니다. Step
 경로는 Amazon EMR이 문서화한 S3 배치를 따릅니다. Spark는 local/client mode로 실행되므로
 `containers/` 아래 application ID는 의도적으로 만든 synthetic ID이며 YARN application을

@@ -5,6 +5,15 @@
 
 # Service-owned management UIs
 
+<!-- toc:start -->
+## Contents
+
+- [URLs and component boundary](#urls-and-component-boundary)
+- [Service workflows](#service-workflows)
+- [Local security model](#local-security-model)
+- [Development, accessibility, and browser E2E](#development-accessibility-and-browser-e2e)
+<!-- toc:end -->
+
 Mystack provides separate React and TypeScript applications for EMR and Glue. Each emulator builds,
 packages, and serves its own application; the Proxy only exposes stable gateway paths. All service
 applications compose primitives from the root `@mystack/ui` workspace and consume the same Tailwind

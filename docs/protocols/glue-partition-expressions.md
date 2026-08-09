@@ -5,6 +5,16 @@
 
 # Glue partition expressions
 
+<!-- toc:start -->
+## Contents
+
+- [Grammar and precedence](#grammar-and-precedence)
+- [Typed evaluation](#typed-evaluation)
+- [Query pipeline and configuration](#query-pipeline-and-configuration)
+- [Verification](#verification)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack implements the documented `GetPartitions.Expression` language locally with an ANTLR4
 `.g4` grammar. It does not send
 requests to AWS or use AWS credentials for comparison. The protocol source is the official

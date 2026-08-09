@@ -5,6 +5,19 @@
 
 # GlueCatalog을 통한 Iceberg rename, drop, purge
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [Rename 순서와 보장](#rename-순서와-보장)
+- [Drop과 purge 순서](#drop과-purge-순서)
+- [실패와 복구 경계](#실패와-복구-경계)
+- [검증 근거](#검증-근거)
+- [Logging과 수정 위치](#logging과-수정-위치)
+- [한계](#한계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 계약은 Glue 5.0, Spark 3.5.4, Iceberg 1.7.1의 table lifecycle 동작을 고정합니다.
 Iceberg 공식 [Spark DDL](https://iceberg.apache.org/docs/1.7.1/spark-ddl/)과 고정한
 [`GlueCatalog` 구현](https://github.com/apache/iceberg/blob/apache-iceberg-1.7.1/aws/src/main/java/org/apache/iceberg/aws/glue/GlueCatalog.java#L311-L416)을

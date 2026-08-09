@@ -5,6 +5,18 @@
 
 # Glue partition and batch error contract
 
+<!-- toc:start -->
+## Contents
+
+- [Validation layers and first failure](#validation-layers-and-first-failure)
+- [Single-operation decisions](#single-operation-decisions)
+- [Update and Spark Hive rename](#update-and-spark-hive-rename)
+- [Batch ordering and partial success](#batch-ordering-and-partial-success)
+- [Logging, tests, and repair location](#logging-tests-and-repair-location)
+- [Exclusions](#exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract defines the deterministic behavior of Mystack's nine implemented partition
 operations. It is based on the public AWS Glue API pages and the pinned botocore model; no test or
 decision calls a live AWS account. The generated [Glue error matrix](../compatibility/glue-errors.generated.md)

@@ -40,7 +40,7 @@ echo "[mystack] checking shared UI, EMR UI, and Glue UI"
 npm run frontend:check
 echo "[mystack] checking bilingual documentation and official references"
 uv run python scripts/check_docs.py
-echo "[mystack] checking the source-free GHCR user Compose file"
+echo "[mystack] checking the published-image Compose user workflow"
 make ghcr-compose-check
 echo "[mystack] checking hash-locked container requirements"
 uv run python scripts/export_requirements.py --check

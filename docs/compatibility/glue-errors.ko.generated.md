@@ -5,6 +5,13 @@
 
 # Glue 오류 계약 (생성됨)
 
+<!-- toc:start -->
+## 목차
+
+- [결정 순서](#결정-순서)
+- [공식 출처](#공식-출처)
+<!-- toc:end -->
+
 이 문서는 `contracts/glue-error-conditions.yaml`에서 결정적으로 생성됩니다. 직접 수정하지 마세요.
 
 <!-- section: matrix -->

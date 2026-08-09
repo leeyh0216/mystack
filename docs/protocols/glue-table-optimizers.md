@@ -5,6 +5,15 @@
 
 # Glue managed table optimizer protocol
 
+<!-- toc:start -->
+## Contents
+
+- [User-visible contract](#user-visible-contract)
+- [Defaults and validation](#defaults-and-validation)
+- [Scheduler and Spark execution](#scheduler-and-spark-execution)
+- [Configuration and repair locations](#configuration-and-repair-locations)
+<!-- toc:end -->
+
 <!-- section: user-contract -->
 ## User-visible contract
 

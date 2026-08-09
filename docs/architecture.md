@@ -5,6 +5,21 @@
 
 # Architecture
 
+<!-- toc:start -->
+## Contents
+
+- [Goals](#goals)
+- [System boundaries](#system-boundaries)
+- [Dependency rule](#dependency-rule)
+- [Executable architecture contract](#executable-architecture-contract)
+- [Runtime topology](#runtime-topology)
+- [Compatibility strategy](#compatibility-strategy)
+- [Logging](#logging)
+- [Persistence and execution](#persistence-and-execution)
+- [Non-goals](#non-goals)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 <!-- section: goals -->
 ## Goals
 

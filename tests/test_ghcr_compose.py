@@ -11,10 +11,9 @@ from pathlib import Path
 import pytest
 
 from scripts.check_ghcr_compose import (
-    PUBLIC_PACKAGE_SOURCE,
     ImageComposeContractError,
     ImageComposePolicy,
-    PublicImageDocumentationPolicy,
+    PublishedImageDocumentationPolicy,
     load_compose,
 )
 
@@ -48,7 +47,7 @@ def test_policy_rejects_mutable_or_development_tags(tag: str) -> None:
         ImageComposePolicy().validate(document)
 
 
-def test_user_docs_require_anonymous_public_image_onboarding() -> None:
+def test_user_docs_require_the_versioned_published_image_workflow() -> None:
     documents = {
         ROOT / "README.md": (ROOT / "README.md").read_text(encoding="utf-8"),
         ROOT / "README.ko.md": (ROOT / "README.ko.md").read_text(encoding="utf-8"),
@@ -60,18 +59,18 @@ def test_user_docs_require_anonymous_public_image_onboarding() -> None:
         ),
     }
 
-    report = PublicImageDocumentationPolicy().validate(documents)
+    report = PublishedImageDocumentationPolicy().validate(documents)
 
-    assert report["visibility"] == "public"
+    assert report["versioned_compose_workflow"] is True
     assert report["consumer_registry_credentials"] == 0
 
 
 @pytest.mark.parametrize("forbidden", ("docker login ghcr.io", "read:packages", "CR_PAT"))
-def test_public_image_docs_reject_consumer_registry_credentials(forbidden: str) -> None:
+def test_published_image_docs_reject_consumer_registry_credentials(forbidden: str) -> None:
     documents = {
-        Path("README.md"): f"Pull anonymously. {PUBLIC_PACKAGE_SOURCE}\n{forbidden}\n",
-        Path("README.ko.md"): f"익명으로 pull합니다. {PUBLIC_PACKAGE_SOURCE}\n",
+        Path("README.md"): f"MYSTACK_IMAGE_TAG\ncompose.ghcr.yaml\n{forbidden}\n",
+        Path("README.ko.md"): "MYSTACK_IMAGE_TAG\ncompose.ghcr.yaml\n",
     }
 
-    with pytest.raises(ImageComposeContractError, match="onboarding policy"):
-        PublicImageDocumentationPolicy().validate(documents)
+    with pytest.raises(ImageComposeContractError, match="documentation policy"):
+        PublishedImageDocumentationPolicy().validate(documents)

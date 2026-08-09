@@ -5,6 +5,15 @@
 
 # ADR 0002: Versioned upstream adapters and file-driven configuration
 
+<!-- toc:start -->
+## Contents
+
+- [Context](#context)
+- [Decision](#decision)
+- [Consequences](#consequences)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 - Status: Accepted
 - Date: 2026-08-08
 

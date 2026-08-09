@@ -5,6 +5,18 @@
 
 # Iceberg metadata evolution through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Guaranteed evolution profile](#guaranteed-evolution-profile)
+- [Glue wire contract](#glue-wire-contract)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the supported Apache Iceberg 1.7.1 partition, schema, sort, and identifier
 evolution behavior for the Glue 5.0 interoperability profile. The syntax and semantic rules come
 from Iceberg's [partitioning](https://iceberg.apache.org/docs/1.7.1/partitioning/),

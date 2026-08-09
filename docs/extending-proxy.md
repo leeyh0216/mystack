@@ -5,6 +5,13 @@
 
 # Add another emulator without changing Proxy code
 
+<!-- toc:start -->
+## Contents
+
+- [Procedure](#procedure)
+- [Protocol change versus service change](#protocol-change-versus-service-change)
+<!-- toc:end -->
+
 The Proxy route registry uses official AWS request evidence: `X-Amz-Target`, the SigV4 credential-scope service, and service host prefixes. See [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html) and [botocore service models](https://github.com/boto/botocore/tree/develop/botocore/data).
 
 <!-- section: procedure -->

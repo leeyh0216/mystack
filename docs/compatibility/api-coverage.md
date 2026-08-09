@@ -5,6 +5,15 @@
 
 # API compatibility coverage
 
+<!-- toc:start -->
+## Contents
+
+- [Overview](#overview)
+- [Policy](#policy)
+- [Implemented operations](#implemented-operations)
+- [Deterministic local error contracts](#deterministic-local-error-contracts)
+<!-- toc:end -->
+
 <!-- section: overview -->
 ## Overview
 

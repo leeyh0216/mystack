@@ -5,6 +5,16 @@
 
 # EMR startup cluster file
 
+<!-- toc:start -->
+## Contents
+
+- [Versioned format](#versioned-format)
+- [Validation and startup semantics](#validation-and-startup-semantics)
+- [Published-image Compose usage](#published-image-compose-usage)
+- [Diagnose and maintain](#diagnose-and-maintain)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack can create a reviewed set of process-local EMR clusters before its health endpoint becomes
 ready. This is an emulator deployment input, not a new AWS operation. Each `clusters` entry uses the
 official [`RunJobFlow` request members](https://docs.aws.amazon.com/emr/latest/APIReference/API_RunJobFlow.html),

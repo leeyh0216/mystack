@@ -4,7 +4,7 @@ SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.3
 
-.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-check compatibility-generate compatibility-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
+.PHONY: help bootstrap sync frontend pre-commit requirements lint format docs antlr-generate antlr-check glue-errors-generate glue-errors-check architecture-check devcontainer-check devcontainer-verify-images ghcr-compose-check model-check coverage-generate coverage-check compatibility-generate compatibility-check compatibility-case registry-check rulesets-check rulesets-apply version-show version-check version-bump package-check test contract up e2e logs down routes threads tasks
 
 help: ## List supported developer commands.
 	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -60,13 +60,19 @@ devcontainer-check: ## Validate pinned tools, host paths, endpoint, and lifecycl
 devcontainer-verify-images: ## Compare Dev Container image tags with locked registry digests.
 	@uv run python scripts/check_devcontainer.py --verify-images
 
-ghcr-compose-check: ## Prove image-only Compose and anonymous public-image onboarding policy.
+ghcr-compose-check: ## Prove image-only Compose and concise published-image user guidance.
 	@uv run python scripts/check_ghcr_compose.py
 	@MYSTACK_IMAGE_TAG="$${MYSTACK_IMAGE_TAG:-v0.0.0}" \
 	  docker compose -f compose.ghcr.yaml config --quiet
 
 model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
+
+coverage-generate: ## Render bilingual API classification matrices from the reviewed baseline.
+	@uv run python scripts/api_coverage.py \
+	  --write contracts/api-coverage.json \
+	  --english docs/compatibility/api-coverage.generated.md \
+	  --korean docs/compatibility/api-coverage.ko.generated.md
 
 coverage-check: ## Verify exhaustive API statuses and bilingual generated matrices.
 	@uv run python scripts/api_coverage.py \

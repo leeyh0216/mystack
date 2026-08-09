@@ -5,6 +5,18 @@
 
 # Development setup
 
+<!-- toc:start -->
+## Contents
+
+- [Prerequisites](#prerequisites)
+- [Ten-minute setup](#ten-minute-setup)
+- [Dev Container setup](#dev-container-setup)
+- [Configuration precedence](#configuration-precedence)
+- [Daily commands](#daily-commands)
+- [Where to make changes](#where-to-make-changes)
+- [Troubleshooting](#troubleshooting)
+<!-- toc:end -->
+
 <!-- section: prerequisites -->
 ## Prerequisites
 

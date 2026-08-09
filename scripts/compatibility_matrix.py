@@ -801,6 +801,13 @@ class MatrixRenderer:
             )
             policy = "## 실행 구분 정책"
             source_heading = "## 공식 참고 자료"
+            cases_heading = "## 호환성 Case"
+            toc_title = "목차"
+            toc_entries = (
+                "- [호환성 Case](#호환성-case)",
+                "- [실행 구분 정책](#실행-구분-정책)",
+                "- [공식 참고 자료](#공식-참고-자료)",
+            )
         else:
             title = "# Generated client compatibility matrix"
             intro = (
@@ -814,7 +821,28 @@ class MatrixRenderer:
             )
             policy = "## Lane policy"
             source_heading = "## Official sources"
-        lines = [title, "", intro, "", headings]
+            cases_heading = "## Compatibility cases"
+            toc_title = "Contents"
+            toc_entries = (
+                "- [Compatibility cases](#compatibility-cases)",
+                "- [Lane policy](#lane-policy)",
+                "- [Official sources](#official-sources)",
+            )
+        lines = [
+            title,
+            "",
+            "<!-- toc:start -->",
+            f"## {toc_title}",
+            "",
+            *toc_entries,
+            "<!-- toc:end -->",
+            "",
+            intro,
+            "",
+            cases_heading,
+            "",
+            headings,
+        ]
         for case in compiled["cases"]:
             versions: dict[str, str] = {}
             for profile in case["compatibility_profiles"].values():
@@ -857,6 +885,12 @@ class AcceptanceRenderer:
             source_heading = "## 공식 참고 자료"
             summary = acceptance["summary_ko"]
             evidence_label = "수용 근거"
+            toc_title = "목차"
+            toc_entries = (
+                "- [Release-blocking 보장](#release-blocking-보장)",
+                "- [명시적 제외](#명시적-제외)",
+                "- [공식 참고 자료](#공식-참고-자료)",
+            )
         else:
             counterpart = "release-acceptance.ko.generated.md"
             counterpart_label = "한국어"
@@ -880,10 +914,22 @@ class AcceptanceRenderer:
             source_heading = "## Official references"
             summary = acceptance["summary_en"]
             evidence_label = "Acceptance evidence"
+            toc_title = "Contents"
+            toc_entries = (
+                "- [Release-blocking guarantees](#release-blocking-guarantees)",
+                "- [Explicit exclusions](#explicit-exclusions)",
+                "- [Official references](#official-references)",
+            )
         lines = [
             f"[{counterpart_label}]({counterpart})",
             "",
             title,
+            "",
+            "<!-- toc:start -->",
+            f"## {toc_title}",
+            "",
+            *toc_entries,
+            "<!-- toc:end -->",
             "",
             intro,
             "",

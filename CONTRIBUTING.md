@@ -5,6 +5,19 @@
 
 # Contributing to Mystack
 
+<!-- toc:start -->
+## Contents
+
+- [Define scope before implementation](#define-scope-before-implementation)
+- [Architecture rules](#architecture-rules)
+- [Provenance and compatibility rules](#provenance-and-compatibility-rules)
+- [Bilingual documentation](#bilingual-documentation)
+- [Tests and timeouts](#tests-and-timeouts)
+- [Bilingual issues](#bilingual-issues)
+- [Issue-sized changes and publication](#issue-sized-changes-and-publication)
+- [Change description](#change-description)
+<!-- toc:end -->
+
 <!-- section: scope -->
 ## Define scope before implementation
 

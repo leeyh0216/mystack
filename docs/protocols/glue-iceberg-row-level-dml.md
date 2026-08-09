@@ -5,6 +5,18 @@
 
 # Iceberg row-level DML through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Guaranteed profile](#guaranteed-profile)
+- [Glue wire and failure contract](#glue-wire-and-failure-contract)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the supported row-level write behavior for the Glue 5.0, Spark 3.5.4, and
 Iceberg 1.7.1 profile. It follows Iceberg's official
 [Spark writes](https://iceberg.apache.org/docs/1.7.1/spark-writes/) and

@@ -3,10 +3,23 @@
 
 [한국어](maintainers.ko.md) | [English](maintainers.md)
 
-# 유지보수 안내
+# Contributors
 
-이 문서는 Mystack을 구현, 검토, 운영하거나 배포하는 분을 위한 문서 지도입니다. Mystack을
-애플리케이션에서 사용하는 방법은 [사용자 안내](index.ko.md)를 먼저 읽으세요.
+<!-- toc:start -->
+## 목차
+
+- [처음 기여하기](#처음-기여하기)
+- [Architecture와 의존성](#architecture와-의존성)
+- [Protocol과 호환성](#protocol과-호환성)
+- [구현 경계](#구현-경계)
+- [Test와 CI](#test와-ci)
+- [관찰성과 release](#관찰성과-release)
+- [Issue 단위 작업 흐름](#issue-단위-작업-흐름)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
+이 문서는 Mystack을 구현, 검토, 운영하거나 배포하는 contributor를 위한 문서 지도입니다. Mystack을
+애플리케이션에서 사용하는 방법은 [사용자 안내](index.ko.md)부터 읽으세요.
 
 <!-- section: start -->
 ## 처음 기여하기

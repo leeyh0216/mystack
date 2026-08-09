@@ -5,6 +5,16 @@
 
 # Glue를 통한 Spark Hive table ALTER
 
+<!-- toc:start -->
+## 목차
+
+- [SQL과 protocol mapping](#sql과-protocol-mapping)
+- [Glue API와 persistence 의미론](#glue-api와-persistence-의미론)
+- [검증과 진단](#검증과-진단)
+- [제외 범위](#제외-범위)
+- [공식 출처](#공식-출처)
+<!-- toc:end -->
+
 Mystack은 Spark와 공식 Glue Hive metastore client가 선택한 Glue catalog 요청을 보존하며 Spark
 SQL을 직접 parse하지 않습니다. SQL 분석, V1/V2 capability 검사, cache invalidation, SQL 예외는
 Spark 책임입니다. `UpdateTable`, 불변 table version, 원자적 catalog persistence는 Mystack

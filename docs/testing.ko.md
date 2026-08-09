@@ -5,6 +5,16 @@
 
 # 시험 전략
 
+<!-- toc:start -->
+## 목차
+
+- [계층](#계층)
+- [Contract 규칙](#contract-규칙)
+- [실제 runtime E2E](#실제-runtime-e2e)
+- [재현성](#재현성)
+- [Local 호환성 기준](#local-호환성-기준)
+<!-- toc:end -->
+
 <!-- section: layers -->
 ## 계층
 

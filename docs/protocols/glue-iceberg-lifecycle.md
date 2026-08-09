@@ -5,6 +5,19 @@
 
 # Iceberg rename, drop, and purge through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Rename sequence and guarantees](#rename-sequence-and-guarantees)
+- [Drop and purge sequence](#drop-and-purge-sequence)
+- [Failure and recovery boundary](#failure-and-recovery-boundary)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the table-lifecycle behavior for Glue 5.0, Spark 3.5.4, and Iceberg 1.7.1.
 It follows Iceberg's official [Spark DDL](https://iceberg.apache.org/docs/1.7.1/spark-ddl/)
 and the pinned

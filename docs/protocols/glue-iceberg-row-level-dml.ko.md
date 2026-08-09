@@ -5,6 +5,18 @@
 
 # GlueCatalog을 통한 Iceberg row-level DML
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [보장하는 profile](#보장하는-profile)
+- [Glue wire와 실패 계약](#glue-wire와-실패-계약)
+- [검증 근거](#검증-근거)
+- [Logging과 수정 위치](#logging과-수정-위치)
+- [한계](#한계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 계약은 Glue 5.0, Spark 3.5.4, Iceberg 1.7.1 profile에서 지원하는 row-level write 동작을
 고정합니다. Iceberg 공식 [Spark writes](https://iceberg.apache.org/docs/1.7.1/spark-writes/)와
 [write-mode configuration](https://iceberg.apache.org/docs/1.7.1/configuration/) 계약을 따릅니다.

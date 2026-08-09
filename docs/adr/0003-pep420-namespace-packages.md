@@ -5,6 +5,17 @@
 
 # ADR-0003: Compose Python distributions under a PEP 420 namespace
 
+<!-- toc:start -->
+## Contents
+
+- [Status](#status)
+- [Context](#context)
+- [Decision](#decision)
+- [Consequences](#consequences)
+- [Verification](#verification)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 <!-- section: status -->
 ## Status
 

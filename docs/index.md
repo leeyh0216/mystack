@@ -3,63 +3,69 @@
 
 [한국어](index.ko.md) | [English](index.md)
 
-# User guide
+# Mystack documentation
 
-This guide is for people using Mystack to develop applications and data pipelines. If you implement
-the repository, protocol, CI, or releases, go to the [maintainer guide](maintainers.md).
+<!-- toc:start -->
+## Contents
+
+- [Overview](#overview)
+- [Getting started](#getting-started)
+- [Glue Data Catalog](#glue-data-catalog)
+- [Amazon EMR](#amazon-emr)
+- [Configuration and operations](#configuration-and-operations)
+- [Contributors](#contributors)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
+Use this guide to navigate Mystack as an application or data-pipeline developer. Each page starts
+with the task it answers and links to deeper technical material only when it is useful.
+
+<!-- section: overview -->
+## Overview
+
+Mystack provides a local development environment for Amazon EMR, AWS Glue Data Catalog, Spark, and
+LocalStack S3. Start with Docker Compose, then choose Glue or EMR based on the workload you want to
+run.
 
 <!-- section: start -->
-## Start here
+## Getting started
 
-1. Follow the [detailed usage guide](getting-started.md) to anonymously pull public GHCR images
-   without a source clone, start Docker Compose, and verify the public endpoint.
-2. Choose ports, timeouts, data paths, and file overrides in the [configuration guide](configuration.md).
-3. Check the exact API and library evidence in the [generated release acceptance](compatibility/release-acceptance.generated.md),
-   [support scope](support-scope.md), and [client compatibility matrix](compatibility/client-matrix.md).
+- [Start Docker Compose and configure AWS CLI or boto3](getting-started.md)
+- [Change a published-image deployment](configuration.md)
+- [Use the management UI and diagnostics](operations.md)
 
-<!-- section: clients -->
-## Paths by client
+<!-- section: glue -->
+## Glue Data Catalog
 
-| Client or task | Current evidence | Start with |
-| --- | --- | --- |
-| AWS CLI and boto3 | 13 EMR and 28 Glue operations through the same public Proxy | [Detailed usage guide](getting-started.md) |
-| AWS SDK for pandas 3.17.0 | Partitioned Parquet S3 write/read and Glue table/partitions | [Detailed usage guide](getting-started.md) |
-| Spark 3.5.4 Glue Hive client | Complex-type Parquet create/insert/read | [Client compatibility matrix](compatibility/client-matrix.md) |
-| Apache Iceberg 1.7.1 GlueCatalog | Open Table Format API create/update, read/write/evolution, COW/MOR DML, time travel, refs, metadata/maintenance procedures, managed table optimizers, rename/drop/purge | [Client compatibility matrix](compatibility/client-matrix.md), [table optimizer protocol](protocols/glue-table-optimizers.md) |
-| EMR Spark step | S3 bootstrap, Python/JAR local Spark, S3A output, and cancellation | [Support scope](support-scope.md) |
+- [Use Glue with boto3, AWS SDK for pandas, Spark Hive, and Iceberg](glue.md)
+- [Check client and library compatibility](compatibility/client-matrix.md)
+- [Check user-facing support boundaries](support-scope.md)
 
-An unlisted library or function is not implicitly supported. See [API coverage](compatibility/api-coverage.md)
-for operation-by-operation status from the pinned botocore models.
+<!-- section: emr -->
+## Amazon EMR
 
-<!-- section: operate -->
-## Configure and diagnose usage
+- [Create clusters and submit Spark or PySpark Steps](emr.md)
+- [Find Step logs and LogUri objects](protocols/emr-log-layout.md)
+- [Configure trusted image pre-start actions](protocols/emr-prestart.md)
+- [Provision clusters when the container starts](protocols/emr-startup-clusters.md)
 
-- YAML, environment overrides, and Docker mounts: [configuration guide](configuration.md)
-- Create/track EMR clusters and Steps, explore Glue metadata, and inspect diagnostics:
-  [management console guide](console.md)
-- Structured logs and management endpoints: [observability guide](observability.md)
-- EMR `LogUri` S3 object names and local-mode fidelity: [EMR log layout](protocols/emr-log-layout.md)
-- Preconfigured clusters and restart semantics: [EMR startup cluster file](protocols/emr-startup-clusters.md)
-- Enterprise CA, proxy, image inventory, and trusted initialization: [EMR pre-start guide](protocols/emr-prestart.md)
+<!-- section: operations -->
+## Configuration and operations
 
-<!-- section: limits -->
-## Know the limits first
+- [Configuration reference](configuration.md)
+- [Management UI, live logs, and diagnostics](operations.md)
+- [Structured logging and troubleshooting](observability.md)
 
-Glue Jobs, JobRuns, Crawlers, and Athena query execution are out of scope. Spark/Iceberg and AWS SDK
-for pandas are verified only along the paths listed in the compatibility matrix. Mystack does not
-reproduce production IAM, EC2/YARN/HDFS distributed environments, or undocumented AWS bugs.
+<!-- section: contributors -->
+## Contributors
 
-<!-- section: maintainers -->
-## When changing the repository
-
-Development setup, architecture, protocol analysis, testing, CI, release, and upstream evolution are
-classified only in the [maintainer guide](maintainers.md). User-facing material should be linked here
-first; implementation details belong in the maintainer guide.
+Implementation, protocol, architecture, development, testing, CI, and release documentation starts
+in the [Contributors guide](maintainers.md). The exhaustive AWS API/endpoint inventory is kept in the
+[API compatibility reference](compatibility/api-coverage.md), separate from user support guidance.
 
 <!-- section: sources -->
 ## Official sources
 
-- [AWS SDK endpoint configuration](https://docs.aws.amazon.com/sdkref/latest/guide/feature-ss-endpoints.html)
-- [Amazon EMR API](https://docs.aws.amazon.com/emr/latest/APIReference/Welcome.html)
-- [AWS Glue API](https://docs.aws.amazon.com/glue/latest/webapi/Welcome.html)
-- [Docker Compose](https://docs.docker.com/reference/compose-file/)
+- [Amazon EMR documentation](https://docs.aws.amazon.com/emr/)
+- [AWS Glue documentation](https://docs.aws.amazon.com/glue/)
+- [Docker Compose reference](https://docs.docker.com/reference/compose-file/)
