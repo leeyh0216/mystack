@@ -90,7 +90,7 @@ Compose의 설정 bind mount를 Host daemon이 해석하므로 Host와 container
 3. executable `--host`, `--port`로 process listener만 마지막 override
 
 ```bash
-export MYSTACK_CONFIG_FILE=config/mystack.yaml
+export MYSTACK_CONFIG_FILE=config/runtime/mystack.yaml
 export MYSTACK__LOGGING__LEVEL=DEBUG
 export MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600
 mystack-proxy --config "$MYSTACK_CONFIG_FILE"

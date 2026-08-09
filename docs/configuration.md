@@ -14,7 +14,7 @@
 - [Reproducible build inputs](#reproducible-build-inputs)
 <!-- toc:end -->
 
-Mystack keeps runtime behavior in the versioned `config/mystack.yaml` document. The application
+Mystack keeps runtime behavior in the versioned `config/runtime/mystack.yaml` document. The application
 does not contain fallback service endpoints, credentials, release mappings, process deadlines,
 Spark submit parsing tables, route registrations, or test deadlines. Docker's official guidance
 distinguishes image build arguments, runtime environment variables, read-only configs, and
@@ -25,7 +25,7 @@ and [Compose configs](https://docs.docker.com/reference/compose-file/configs/).
 <!-- section: resolution -->
 ## Resolution order
 
-1. `--config PATH`, then `MYSTACK_CONFIG_FILE`, then `config/mystack.yaml` selects the base file.
+1. `--config PATH`, then `MYSTACK_CONFIG_FILE`, then `config/runtime/mystack.yaml` selects the base file.
 2. Every `MYSTACK__SECTION__KEY` environment variable replaces that nested YAML value. Its value
    is parsed as YAML, so numbers, booleans, lists, mappings, and `null` keep their types.
 3. Process-only `--host` and `--port` options override the selected service listener.
@@ -33,7 +33,7 @@ and [Compose configs](https://docs.docker.com/reference/compose-file/configs/).
 Examples:
 
 ```bash
-MYSTACK_CONFIG_FILE=config/mystack.yaml \
+MYSTACK_CONFIG_FILE=config/runtime/mystack.yaml \
 MYSTACK__LOGGING__LEVEL=DEBUG \
 MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600 \
 MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
@@ -54,7 +54,7 @@ The normal user command uses `compose.ghcr.yaml`. Each published image contains 
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, and `MYSTACK_GLUE_IMAGE` for digest pinning. Keep the tag
 defined even when all three overrides are present because Compose evaluates nested fallbacks.
 
-To customize a published deployment, download `config/mystack.yaml` and
+To customize a published deployment, download `config/runtime/mystack.yaml` and
 `compose.mount-config.yaml` from the same Git tag as the images, then mount the file read-only:
 
 ```bash
@@ -65,7 +65,7 @@ docker compose -f compose.ghcr.yaml -f compose.mount-config.yaml up --detach --w
 Restart the affected container after editing the mounted file. Configuration is intentionally
 loaded once at process startup; no partially applied hot reload is performed.
 
-Repository maintainers can use `make up CONFIG=config/mystack.yaml`; that source-build path passes
+Repository maintainers can use `make up CONFIG=config/runtime/mystack.yaml`; that source-build path passes
 `MYSTACK_CONFIG_SOURCE` as a build argument. It is documented in the [development guide](development.md)
 and is not required for image consumers.
 

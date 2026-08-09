@@ -44,7 +44,7 @@ def _work(run_id: str = "run-1") -> TableOptimizerWork:
 
 
 def test_optimizer_runtime_settings_are_loaded_from_the_mounted_yaml() -> None:
-    settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = GlueSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
 
     assert settings.table_optimizers.enabled is True
     assert settings.table_optimizers.work_root == (settings.data_root / "table-optimizer-runs")

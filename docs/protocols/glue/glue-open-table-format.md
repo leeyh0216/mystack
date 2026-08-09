@@ -120,7 +120,7 @@ authorization, IAM, Lake Formation, cross-account, and cross-Region errors are o
 ## Configuration, logging, and repair locations
 
 The Glue S3 adapter receives `localstack.endpoint_url`, region, credentials, and path-style setting
-from `config/mystack.yaml`; no service/container name is hard-coded in the use case. Structured
+from `config/runtime/mystack.yaml`; no service/container name is hard-coded in the use case. Structured
 `glue.open_table_format.*` and `glue.iceberg_metadata.*` events cover validation, read/write/delete,
 publication, compensation, size, safe URI/document fingerprints, failure type, and `fix_hint`.
 Metadata bodies and authorization values are never logged.

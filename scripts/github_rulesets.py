@@ -19,7 +19,7 @@ from typing import Any, Protocol
 
 LOGGER = logging.getLogger("mystack.github_rulesets")
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONFIG = ROOT / "config/github-rulesets.json"
+DEFAULT_CONFIG = ROOT / "config/governance/github-rulesets.json"
 TOP_FIELDS = frozenset(
     {"schema_version", "command_timeout_seconds", "required_check", "rulesets", "official_sources"}
 )

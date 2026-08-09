@@ -81,7 +81,7 @@ public-Proxy contract, and E2E in the same issue rather than changing only a con
 
 - Unit, architecture, deterministic contract, and Docker E2E: [testing strategy](testing.md)
 - Pull-request and scheduled workflows: [CI guide](ci.md)
-- Every test command uses a timeout from `config/mystack.yaml` or an explicit `--timeout`.
+- Every test command uses a timeout from `config/runtime/mystack.yaml` or an explicit `--timeout`.
 - Protocol or client compatibility changes include both unit/contract coverage and real public-Proxy
   E2E evidence.
 

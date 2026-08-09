@@ -75,7 +75,7 @@ gh api -H "Accept: application/vnd.github.raw+json" \
   "repos/leeyh0216/mystack/contents/compose.emr-startup-clusters.yaml?ref=$MYSTACK_IMAGE_TAG" \
   > compose.emr-startup-clusters.yaml
 gh api -H "Accept: application/vnd.github.raw+json" \
-  "repos/leeyh0216/mystack/contents/config/emr-clusters.example.yaml?ref=$MYSTACK_IMAGE_TAG" \
+  "repos/leeyh0216/mystack/contents/config/examples/emr-clusters.example.yaml?ref=$MYSTACK_IMAGE_TAG" \
   > emr-clusters.yaml
 
 export MYSTACK_EMR_STARTUP_CLUSTERS_FILE="$PWD/emr-clusters.yaml"

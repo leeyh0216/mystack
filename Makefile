@@ -1,5 +1,5 @@
 # Human-facing command surface. Detailed guide: docs/development.md
-CONFIG ?= config/mystack.yaml
+CONFIG ?= config/runtime/mystack.yaml
 SERVICE ?= proxy
 MYSTACK_URL ?= http://localhost:4566
 MYSTACK_VERSION ?= 0.1.5

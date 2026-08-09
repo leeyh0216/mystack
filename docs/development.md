@@ -91,7 +91,7 @@ guide](https://code.visualstudio.com/docs/devcontainers/create-dev-container).
 Examples:
 
 ```bash
-export MYSTACK_CONFIG_FILE=config/mystack.yaml
+export MYSTACK_CONFIG_FILE=config/runtime/mystack.yaml
 export MYSTACK__LOGGING__LEVEL=DEBUG
 export MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600
 mystack-proxy --config "$MYSTACK_CONFIG_FILE"

@@ -63,7 +63,7 @@ then mount the file read-only for all Mystack services.
 
 ```bash
 curl --fail --location --output mystack.yaml \
-  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/config/mystack.yaml"
+  "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/config/runtime/mystack.yaml"
 curl --fail --location --output compose.mount-config.yaml \
   "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.mount-config.yaml"
 

@@ -14,7 +14,7 @@
 - [재현 가능한 build 입력](#재현-가능한-build-입력)
 <!-- toc:end -->
 
-Mystack의 runtime 동작은 versioned `config/mystack.yaml`에 둡니다. Service endpoint,
+Mystack의 runtime 동작은 versioned `config/runtime/mystack.yaml`에 둡니다. Service endpoint,
 credential, release mapping, process deadline, Spark submit parsing table, route 등록, test
 deadline의 fallback을 application 코드에 두지 않습니다. Docker 공식 지침이 구분하는
 build argument, runtime environment variable, read-only config, secret을 각 경계에 맞게
@@ -25,13 +25,13 @@ build argument, runtime environment variable, read-only config, secret을 각 �
 <!-- section: resolution -->
 ## 적용 순서
 
-1. `--config PATH`, `MYSTACK_CONFIG_FILE`, `config/mystack.yaml` 순으로 base file을 선택합니다.
+1. `--config PATH`, `MYSTACK_CONFIG_FILE`, `config/runtime/mystack.yaml` 순으로 base file을 선택합니다.
 2. 모든 `MYSTACK__SECTION__KEY` 환경변수가 해당 nested YAML 값을 대체합니다. 값은 YAML로
    parse하므로 숫자, boolean, list, mapping, `null` 타입을 보존합니다.
 3. Process 전용 `--host`, `--port`가 해당 service listener를 마지막으로 override합니다.
 
 ```bash
-MYSTACK_CONFIG_FILE=config/mystack.yaml \
+MYSTACK_CONFIG_FILE=config/runtime/mystack.yaml \
 MYSTACK__LOGGING__LEVEL=DEBUG \
 MYSTACK__PROXY__REQUEST_TIMEOUT_SECONDS=600 \
 MYSTACK__MANAGEMENT__CONSOLE__REFRESH_INTERVAL_SECONDS=5 \
@@ -52,7 +52,7 @@ mystack-proxy
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, `MYSTACK_GLUE_IMAGE`로 지정할 수 있습니다. Compose가
 nested fallback을 평가하므로 세 override를 모두 써도 tag를 정의해야 합니다.
 
-게시 환경을 바꾸려면 image와 같은 Git tag에서 `config/mystack.yaml`과
+게시 환경을 바꾸려면 image와 같은 Git tag에서 `config/runtime/mystack.yaml`과
 `compose.mount-config.yaml`을 받은 뒤 read-only mount를 사용합니다.
 
 ```bash
@@ -63,7 +63,7 @@ docker compose -f compose.ghcr.yaml -f compose.mount-config.yaml up --detach --w
 Mounted file을 수정한 뒤 해당 container를 재시작합니다. 설정은 process 시작 시 한 번만
 읽으며 일부 값만 적용된 hot reload는 하지 않습니다.
 
-Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_SOURCE` build argument를
+Repository 관리자는 `make up CONFIG=config/runtime/mystack.yaml`로 `MYSTACK_CONFIG_SOURCE` build argument를
 사용할 수 있습니다. 이 source build 경로는 [개발 환경 안내](development.ko.md)에 있으며 image
 사용자에게 필요하지 않습니다.
 

@@ -180,4 +180,4 @@ def test_config_rejects_repository_escape_and_missing_markers(tmp_path: Path) ->
 
 
 def test_default_version_config_is_repository_relative() -> None:
-    assert DEFAULT_CONFIG == ROOT / "config/version-files.json"
+    assert DEFAULT_CONFIG == ROOT / "config/release/version-files.json"

@@ -36,7 +36,7 @@ def glue_test_timeout() -> float:
 
 @pytest.fixture
 def glue_server(tmp_path: Path, glue_test_timeout: float) -> Iterator[str]:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
     # Unit/contract processes intentionally use the explicit rollback escape hatch. The source-

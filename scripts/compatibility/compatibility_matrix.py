@@ -187,7 +187,7 @@ class ManifestValidator:
 
     def __init__(self, *, root: Path = ROOT) -> None:
         self._root = root
-        self._config = self._read_yaml(root / "config/mystack.yaml")
+        self._config = self._read_yaml(root / "config/runtime/mystack.yaml")
         self._models = self._read_json(root / "contracts/service-model-manifest.json")
         self._lock = tomllib.loads((root / "uv.lock").read_text(encoding="utf-8"))
 
@@ -742,8 +742,8 @@ class MatrixCompiler:
                     "the model fingerprint."
                 ),
                 (
-                    "Runtime drift: update config/mystack.yaml, the Dockerfile lock, and the "
-                    "matching runtime profile together."
+                    "Runtime drift: update config/runtime/mystack.yaml, the Dockerfile lock, "
+                    "and the matching runtime profile together."
                 ),
                 (
                     "Scenario drift: update only the named scenario set; do not create an "

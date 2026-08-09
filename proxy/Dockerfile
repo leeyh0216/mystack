@@ -4,7 +4,7 @@ ARG PYTHON_BASE=public.ecr.aws/docker/library/python:3.11-slim-bookworm@sha256:d
 FROM ${PYTHON_BASE}
 
 ARG MYSTACK_VERSION=0.1.5
-ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
+ARG MYSTACK_CONFIG_SOURCE=config/runtime/mystack.yaml
 LABEL org.opencontainers.image.title="Mystack AWS Proxy" \
       org.opencontainers.image.version="${MYSTACK_VERSION}" \
       org.opencontainers.image.source="https://github.com/leeyh0216/mystack"

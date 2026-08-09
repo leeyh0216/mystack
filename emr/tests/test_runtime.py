@@ -23,7 +23,7 @@ from mystack.emr.config import EmrSettings
 
 @pytest.mark.asyncio
 async def test_cancellation_before_process_registration_is_applied(tmp_path: Path) -> None:
-    settings = EmrSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = EmrSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
     executor = LocalProcessExecutor(settings)
 
     await executor.cancel("j-race", "s-race")
@@ -80,7 +80,7 @@ async def test_scheduler_starts_no_work_before_explicit_start() -> None:
 
 @pytest.mark.asyncio
 async def test_process_executor_close_stops_children_and_is_idempotent(tmp_path: Path) -> None:
-    settings = EmrSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = EmrSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
     executor = LocalProcessExecutor(settings)
     execution = asyncio.create_task(
         executor.execute(

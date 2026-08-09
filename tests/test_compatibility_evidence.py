@@ -38,7 +38,7 @@ ROOT = Path(__file__).parents[1]
 
 
 def _config_with_collection_timeout(tmp_path: Path, timeout: float) -> Path:
-    document = yaml.safe_load((ROOT / "config/mystack.yaml").read_text(encoding="utf-8"))
+    document = yaml.safe_load((ROOT / "config/runtime/mystack.yaml").read_text(encoding="utf-8"))
     document["tests"]["compatibility_collection_timeout_seconds"] = timeout
     path = tmp_path / "mystack.yaml"
     path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")

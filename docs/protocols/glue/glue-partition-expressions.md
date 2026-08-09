@@ -114,7 +114,7 @@ scope, ordering, typed projections, `LIKE`, segment union/disjointness, and erro
 real-port boto3 contract combines typed filtering with `NextToken` and `Segment`. The CI-only Glue
 5 Spark scenario creates a partitioned Hive table in S3, inserts partitions, and verifies a pruned
 query through the Glue Hive metastore client. All test processes use the deadlines in
-`config/mystack.yaml`.
+`config/runtime/mystack.yaml`.
 
 <!-- section: sources -->
 ## Official sources

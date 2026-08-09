@@ -30,7 +30,7 @@
 ## Runtime boundary
 
 The Glue image builds `pysqlite3` separately for each OCI architecture from the SHA-verified
-official SQLite amalgamation pinned in `config/sqlite-runtime.json`. It installs that private
+official SQLite amalgamation pinned in `config/runtime/sqlite-runtime.json`. It installs that private
 DB-API module only in `/opt/mystack/venv`; it does not replace the AWS Glue base image's global
 SQLite library. The generated runtime manifest records the SQLite version, architecture, and source
 digests.
@@ -52,7 +52,7 @@ uses, or overwrites a legacy JSON state document.
 <!-- section: configuration -->
 ## Configuration
 
-`glue.sqlite` is part of `config/mystack.yaml`. Relative `database_file` paths resolve below
+`glue.sqlite` is part of `config/runtime/mystack.yaml`. Relative `database_file` paths resolve below
 `glue.data_root`; a relative driver manifest path resolves beside the mounted YAML file.
 
 ```yaml
@@ -147,14 +147,14 @@ database contents, or request payloads. The health endpoint exposes the verified
 
 When a new base image or Python runtime breaks this boundary, inspect in this order:
 
-1. `config/sqlite-runtime.json` for source version, URL shape, and checksums.
+1. `config/runtime/sqlite-runtime.json` for source version, URL shape, and checksums.
 2. `glue/scripts/build_sqlite_driver.py` for verification, extraction, and extension compilation.
 3. `glue/scripts/install_python_build_dependencies.py` for active-Python ABI header selection.
 4. `glue/Dockerfile` for the private virtualenv installation boundary.
 5. `glue/src/mystack/glue/adapters/outbound/sqlite_runtime.py` for startup capability checks.
 6. `glue/src/mystack/glue/adapters/outbound/sqlite_catalog/` for schema, mapping, connection, and
    transaction behavior.
-7. `config/mystack.yaml` and `glue/src/mystack/glue/config.py` for mounted policy parsing.
+7. `config/runtime/mystack.yaml` and `glue/src/mystack/glue/config.py` for mounted policy parsing.
 
 <!-- section: sources -->
 ## Official sources

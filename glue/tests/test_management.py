@@ -34,7 +34,7 @@ async def test_database_page_failure_propagates() -> None:
 
 
 def test_glue_emulator_serves_its_compiled_react_ui_and_runtime_config(tmp_path) -> None:
-    loaded = load_configuration("config/mystack.yaml")
+    loaded = load_configuration("config/runtime/mystack.yaml")
     document = copy.deepcopy(loaded.document)
     document["glue"]["data_root"] = str(tmp_path)
     document["glue"]["sqlite"]["journal_mode"] = "rollback"

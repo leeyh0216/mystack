@@ -6,7 +6,7 @@
 - [Complete leaf keys](#complete-leaf-keys)
 <!-- toc:end -->
 
-Do not edit: generated from the runtime JSON Schema and `config/mystack.yaml`.
+Do not edit: generated from the runtime JSON Schema and `config/runtime/mystack.yaml`.
 All values load once at process startup; restart the affected service after a change.
 
 ## Complete leaf keys

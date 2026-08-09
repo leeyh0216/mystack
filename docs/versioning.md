@@ -33,7 +33,7 @@ uv run python scripts/version.py set 1.4.0
 uv run python scripts/version.py check --base-ref origin/main
 ```
 
-`version-bump` and `set` update every file declared in `config/version-files.json`, print a unified
+`version-bump` and `set` update every file declared in `config/release/version-files.json`, print a unified
 diff, and stop on a dirty working tree. `--dry-run` writes nothing. `--allow-dirty` is intended only
 for controlled automation. These commands never commit, push, tag, publish an image, or create a
 release. Python snapshot versions use the official [PEP 440 version
@@ -102,7 +102,7 @@ tag, image, or release only when its revision label/tag target equals the origin
 SHA fails before overwrite. The stable release is deliberately created last, so it never advertises
 images that failed anonymous verification.
 
-Snapshot retention is recorded as 30 days in `config/registry-release.json` and in each run's
+Snapshot retention is recorded as 30 days in `config/release/registry-release.json` and in each run's
 `retention.json`. Deletion is not automated yet; stable images are not part of snapshot cleanup.
 
 <!-- section: governance -->
@@ -120,7 +120,7 @@ Approval count is a repository-owner choice and is intentionally not embedded in
 serializes publication by branch; the version and immutable-binding checks remain the final defense
 against stale PRs and retries.
 
-`config/github-rulesets.json` is the reviewable authority. Approval count remains a configuration
+`config/governance/github-rulesets.json` is the reviewable authority. Approval count remains a configuration
 choice and defaults to zero for this single-maintainer repository. Validate or converge only the two
 Mystack-owned rulesets with:
 

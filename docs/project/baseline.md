@@ -101,8 +101,8 @@ contracts.
 ## Entry points and commands
 
 - Executables: `mystack-proxy`, `mystack-emr`, and `mystack-glue`
-- Configuration: `config/mystack.yaml`; release/version configuration:
-  `config/registry-release.json`, `config/version-files.json`, and root `VERSION`
+- Configuration: `config/runtime/mystack.yaml`; release/version configuration:
+  `config/release/registry-release.json`, `config/release/version-files.json`, and root `VERSION`
 - Setup: `./scripts/bootstrap.sh`, `direnv allow`, or the provided Dev Container
 - Fast verification: `make version-check`, `make architecture-check`, `make test`, `make contract`,
   `make registry-check`, `make pre-commit`

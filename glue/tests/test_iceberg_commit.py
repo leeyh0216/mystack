@@ -272,7 +272,7 @@ async def test_sqlite_writer_busy_wait_is_bounded(tmp_path: Path) -> None:
 
 
 def test_sqlite_configuration_resolves_database_file() -> None:
-    settings = GlueSettings.from_configuration(load_configuration("config/mystack.yaml"))
+    settings = GlueSettings.from_configuration(load_configuration("config/runtime/mystack.yaml"))
     assert settings.sqlite.database_file == Path("/var/lib/mystack/glue/catalog.sqlite3")
     assert settings.sqlite.busy_timeout_milliseconds == 5000
     assert settings.object_store.endpoint_url == "http://localstack:4566"

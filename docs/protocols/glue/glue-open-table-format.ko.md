@@ -117,7 +117,7 @@ URI, transform, action, 상호 배타 input은 `InvalidInputException`, 없는 d
 <!-- section: configuration-observability -->
 ## 설정, logging, 수정 위치
 
-Glue S3 adapter는 `config/mystack.yaml`의 `localstack.endpoint_url`, region, credential, path-style
+Glue S3 adapter는 `config/runtime/mystack.yaml`의 `localstack.endpoint_url`, region, credential, path-style
 설정을 주입받습니다. Use case에 service/container 이름을 hard-code하지 않습니다. 구조화한
 `glue.open_table_format.*`, `glue.iceberg_metadata.*` event가 validation, read/write/delete, 공개,
 보상, 크기, 안전한 URI/document fingerprint, failure type, `fix_hint`를 기록합니다. Metadata body와
