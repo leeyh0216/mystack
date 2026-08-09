@@ -17,7 +17,7 @@ import botocore.session
 import yaml
 from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CATALOG = ROOT / "contracts/glue-error-conditions.yaml"
 DEFAULT_ENGLISH = ROOT / "docs/compatibility/glue-errors.generated.md"
 DEFAULT_KOREAN = ROOT / "docs/compatibility/glue-errors.ko.generated.md"

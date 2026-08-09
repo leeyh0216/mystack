@@ -102,7 +102,7 @@ jobs:
         run: make compatibility-check compatibility-evidence-check
       - name: Run the selected contract case
         run: >-
-          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          uv run python scripts/compatibility/run_compatibility_case.py "${{ matrix.case_id }}"
           --junitxml "ci-artifacts/selected-contract-${{ matrix.case_id }}/junit.xml"
       - name: Publish selected contract test evidence
         if: always()
@@ -164,7 +164,7 @@ jobs:
         run: make up
       - name: Run the explicit case in an isolated process
         run: >-
-          uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
+          uv run python scripts/compatibility/run_compatibility_case.py "${{ matrix.case_id }}"
           --junitxml "ci-artifacts/e2e-${{ matrix.case_id }}/junit.xml"
       - name: Publish Docker E2E test evidence
         if: always()

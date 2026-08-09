@@ -32,14 +32,14 @@ import yaml
 from mystack.aws_protocol import ConfigurationError, load_configuration
 
 try:
-    from scripts.operation_inventory import (
+    from scripts.compatibility.operation_inventory import (
         OperationInventoryError,
         extract_implemented_operation_inventory,
     )
-except ModuleNotFoundError:  # Direct ``python scripts/compatibility_evidence.py`` execution.
+except ModuleNotFoundError:  # Direct module-file execution.
     from operation_inventory import OperationInventoryError, extract_implemented_operation_inventory
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = ROOT / "contracts/compatibility-evidence.generated.json"
 DEFAULT_ENGLISH = ROOT / "docs/compatibility/annotated-evidence.generated.md"
 DEFAULT_KOREAN = ROOT / "docs/compatibility/annotated-evidence.ko.generated.md"

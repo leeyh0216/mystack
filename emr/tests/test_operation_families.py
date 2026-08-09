@@ -15,8 +15,8 @@ from mystack.emr.adapters.inbound.aws_step import StepOperationFamily
 from mystack.emr.adapters.inbound.aws_tag import TagOperationFamily
 from mystack.emr.domain.errors import InvalidClusterStateError
 
-from scripts.api_coverage import IMPLEMENTED
-from scripts.operation_inventory import extract_implemented_operation_inventory
+from scripts.compatibility.api_coverage import IMPLEMENTED
+from scripts.compatibility.operation_inventory import extract_implemented_operation_inventory
 
 
 class _FailingQueries:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.operation_inventory import (
+from scripts.compatibility.operation_inventory import (
     OperationInventoryError,
     _extract_frozenset_literal,
     extract_implemented_operation_inventory,

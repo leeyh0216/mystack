@@ -19,21 +19,22 @@ from typing import Any
 
 import yaml
 
-try:
-    from scripts.operation_inventory import extract_implemented_operation_inventory
-except ModuleNotFoundError:  # Direct ``python scripts/api_coverage.py`` execution.
-    from operation_inventory import extract_implemented_operation_inventory
+# Keep direct ``python scripts/compatibility/api_coverage.py`` execution equivalent to module
+# execution. CI and Make intentionally use the file path as a stable command surface.
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 try:
+    from scripts.compatibility.operation_inventory import extract_implemented_operation_inventory
     from scripts.model_manifest import SERVICES, create_manifest
-except ModuleNotFoundError:  # Direct ``python scripts/api_coverage.py`` execution.
-    from model_manifest import SERVICES, create_manifest
+except ModuleNotFoundError as error:  # pragma: no cover - import failures are configuration errors.
+    raise RuntimeError("run from the Mystack repository root") from error
 
 ALLOWED_STATUSES = frozenset({"COMPATIBLE", "PARTIAL", "PROTOCOL_ONLY", "NOT_PLANNED"})
 # This remains code-owned, not test-owned. The extractor avoids importing emulator packages so the
 # botocore-only upstream-drift workflow can still compare classifications against registrations.
 IMPLEMENTED = extract_implemented_operation_inventory()
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
 DEFAULT_POLICY = ROOT / "contracts/compatibility-scope-policy.yaml"
 

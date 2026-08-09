@@ -9,13 +9,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.compatibility_matrix import (
+from scripts.compatibility.compatibility_matrix import (
     DEFAULT_MANIFEST,
     DEFAULT_OUTPUT,
     ManifestError,
     compile_manifest,
 )
-from scripts.run_compatibility_case import (
+from scripts.compatibility.run_compatibility_case import (
     CaseSelectionError,
     CompiledCaseRepository,
     IsolatedCaseRunner,

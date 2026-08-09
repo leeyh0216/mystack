@@ -68,7 +68,7 @@ repos:
         always_run: true
       - id: compatibility-matrix
         name: Annotation-backed interoperability matrix drift
-        entry: uv run python scripts/compatibility_matrix.py --check
+        entry: uv run python scripts/compatibility/compatibility_matrix.py --check
         language: system
         pass_filenames: false
         always_run: true
@@ -86,7 +86,7 @@ repos:
         always_run: true
       - id: api-coverage
         name: Complete API classification and generated matrix drift
-        entry: uv run python scripts/api_coverage.py --check contracts/api-coverage.generated.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md
+        entry: uv run python scripts/compatibility/api_coverage.py --check contracts/api-coverage.generated.json --english docs/compatibility/api-coverage.generated.md --korean docs/compatibility/api-coverage.ko.generated.md
         language: system
         pass_filenames: false
         always_run: true

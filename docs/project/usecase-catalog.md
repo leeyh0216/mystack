@@ -371,7 +371,7 @@
 - Failures: malformed/duplicate case IDs, unknown operations, missing source/test metadata, timeout,
   or generated-file drift.
 - Observability: structured collection/compile/parity events with case count and source digest.
-- Evidence: `scripts/compatibility_evidence.py`, `test_support/compatibility_plugin.py`,
+- Evidence: `scripts/compatibility/compatibility_evidence.py`, `test_support/compatibility_plugin.py`,
   `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
 - Confidence: High
 

@@ -10,7 +10,7 @@ import copy
 
 import pytest
 
-from scripts.glue_error_contracts import DEFAULT_CATALOG, _load, _validate
+from scripts.compatibility.glue_error_contracts import DEFAULT_CATALOG, _load, _validate
 
 
 def test_committed_glue_error_catalog_is_complete_and_modeled() -> None:
