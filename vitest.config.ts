@@ -9,6 +9,7 @@ if (!Number.isFinite(configuredTimeout) || configuredTimeout <= 0) {
 export default defineConfig({
   test: {
     environment: "jsdom",
+    setupFiles: ["./ui/tests/setup.ts"],
     include: ["ui/tests/**/*.test.{ts,tsx}", "emr/ui/src/**/*.test.{ts,tsx}", "glue/ui/src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
     testTimeout: configuredTimeout,
