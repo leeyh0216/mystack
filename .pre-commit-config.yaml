@@ -30,6 +30,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: configuration-reference
+        name: Generated configuration reference drift
+        entry: make configuration-reference-check
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: glue-expression-grammar
         name: Glue ANTLR grammar generated-source drift
         entry: make antlr-check

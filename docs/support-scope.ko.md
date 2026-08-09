@@ -16,6 +16,10 @@
 <!-- section: overview -->
 ## 개요
 
+사용자용 기능·버전·검증 수준의 간단한 답변은 생성된
+[client compatibility matrix](compatibility/client-matrix.generated.md)를 사용합니다. 전체 유지보수자
+인벤토리는 별도의 [API coverage reference](compatibility/api-coverage.generated.md)에 있습니다.
+
 이 문서는 현재 구현과 장기 목표를 구분합니다. “목표”는 현재 빌드가 이미 호환된다는 뜻이 아닙니다.
 
 | 영역 | 현재 상태 | 목표 |

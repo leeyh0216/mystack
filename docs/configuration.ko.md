@@ -70,6 +70,9 @@ Repository 관리자는 `make up CONFIG=config/mystack.yaml`로 `MYSTACK_CONFIG_
 <!-- section: sections -->
 ## 주요 section
 
+[전체 설정 레퍼런스](configuration-reference.generated.md)는 runtime schema와 기본값에서 생성하며,
+`make configuration-reference-check`가 CI에서 drift를 실패 처리합니다.
+
 | 경로 | 책임 |
 | --- | --- |
 | `logging` | 구조화 log level과 format 계약 |
