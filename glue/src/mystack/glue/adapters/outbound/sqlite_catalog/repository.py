@@ -984,8 +984,9 @@ class _SqliteCatalogTransaction:
             raise
         if cursor.rowcount != 1:
             return False
-        _replace_partition_keys(self._connection, table_id, revised)
-        _refresh_table_partition_query_facts(self._connection, table_id, revised)
+        if partition_key_rows(current) != partition_key_rows(revised):
+            _replace_partition_keys(self._connection, table_id, revised)
+            _refresh_table_partition_query_facts(self._connection, table_id, revised)
         _replace_table_versions(self._connection, table_id, revised)
         self.mutated = True
         return True

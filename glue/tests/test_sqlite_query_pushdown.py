@@ -393,6 +393,38 @@ async def test_table_partition_key_change_rebuilds_projection_and_reports_later_
         )
 
 
+async def test_table_update_without_partition_key_change_does_not_rebuild_all_projections(
+    tmp_path: Path,
+) -> None:
+    application, connections = _application(tmp_path / "catalog.sqlite3")
+    await _create_partition_table(
+        application,
+        partition_keys=[{"Name": "day", "Type": "string"}],
+    )
+    for value in ("2026-08-08", "2026-08-09"):
+        await application.create_partition("account", "analytics", "events", {"Values": [value]})
+
+    connections.clear()
+    await application.update_table(
+        "account",
+        "analytics",
+        "events",
+        {
+            "Name": "events",
+            "Parameters": {"metadata_location": "s3://warehouse/events/metadata/v2.json"},
+            "StorageDescriptor": {"Columns": []},
+            "PartitionKeys": [{"Name": "day", "Type": "string"}],
+        },
+        version_id="0",
+        skip_archive=False,
+    )
+
+    statements = "\n".join(connections.statements)
+    assert "SELECT partition_id, values_json FROM catalog_partitions" not in statements
+    assert "DELETE FROM catalog_partition_value_projections" not in statements
+    assert "DELETE FROM catalog_partition_segments" not in statements
+
+
 async def test_empty_table_preserves_lazy_literal_conversion_behavior(tmp_path: Path) -> None:
     application, _ = _application(tmp_path / "catalog.sqlite3")
     await _create_partition_table(
