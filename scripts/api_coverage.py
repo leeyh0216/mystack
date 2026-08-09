@@ -18,62 +18,19 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from scripts.operation_inventory import extract_implemented_operation_inventory
+except ModuleNotFoundError:  # Direct ``python scripts/api_coverage.py`` execution.
+    from operation_inventory import extract_implemented_operation_inventory
+
+try:
     from scripts.model_manifest import SERVICES, create_manifest
 except ModuleNotFoundError:  # Direct ``python scripts/api_coverage.py`` execution.
     from model_manifest import SERVICES, create_manifest
 
 ALLOWED_STATUSES = frozenset({"COMPATIBLE", "PARTIAL", "PROTOCOL_ONLY", "NOT_PLANNED"})
-IMPLEMENTED = {
-    "emr": frozenset(
-        {
-            "AddJobFlowSteps",
-            "AddTags",
-            "CancelSteps",
-            "DescribeCluster",
-            "DescribeStep",
-            "ListBootstrapActions",
-            "ListClusters",
-            "ListSteps",
-            "RemoveTags",
-            "RunJobFlow",
-            "SetTerminationProtection",
-            "SetVisibleToAllUsers",
-            "TerminateJobFlows",
-        }
-    ),
-    "glue": frozenset(
-        {
-            "BatchCreatePartition",
-            "BatchDeletePartition",
-            "BatchGetPartition",
-            "BatchGetTableOptimizer",
-            "BatchUpdatePartition",
-            "CreateDatabase",
-            "CreatePartition",
-            "CreateTable",
-            "CreateTableOptimizer",
-            "DeleteDatabase",
-            "DeletePartition",
-            "DeleteTable",
-            "DeleteTableOptimizer",
-            "GetCatalogImportStatus",
-            "GetDatabase",
-            "GetDatabases",
-            "GetPartition",
-            "GetPartitions",
-            "GetTable",
-            "GetTableOptimizer",
-            "GetTables",
-            "GetTableVersion",
-            "GetTableVersions",
-            "ListTableOptimizerRuns",
-            "UpdateDatabase",
-            "UpdatePartition",
-            "UpdateTable",
-            "UpdateTableOptimizer",
-        }
-    ),
-}
+# This remains code-owned, not test-owned. The extractor avoids importing emulator packages so the
+# botocore-only upstream-drift workflow can still compare classifications against registrations.
+IMPLEMENTED = extract_implemented_operation_inventory()
 
 
 def initial_status(service: str, operation: str) -> str:

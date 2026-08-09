@@ -13,6 +13,7 @@
 - [Provenance and compatibility rules](#provenance-and-compatibility-rules)
 - [Bilingual documentation](#bilingual-documentation)
 - [Tests and timeouts](#tests-and-timeouts)
+- [Test-declared compatibility evidence](#test-declared-compatibility-evidence)
 - [Bilingual issues](#bilingual-issues)
 - [Issue-sized changes and publication](#issue-sized-changes-and-publication)
 - [Change description](#change-description)
@@ -91,6 +92,50 @@ public protocol with boto3 and AWS CLI. Validate Spark integration with real
 Spark, Glue Catalog, Hive, and Iceberg execution paths. Every test has an
 explicit timeout. See the [testing strategy](docs/testing.md) for local and CI
 values.
+
+<!-- section: compatibility-evidence -->
+## Test-declared compatibility evidence
+
+Compatibility evidence has three owners:
+
+- The EMR/Glue inbound operation inventories own implementation status.
+- The annotated `contract` or `e2e` test owns the exact client, runtime,
+  scenario, operation, capability, and support claim that it actually proves.
+- `compatibility/cases.yaml` and `contracts/api-coverage.json` remain retained
+  parity baselines during this migration; the Glue error-condition catalog and
+  its precedence policy remain independent required contracts.
+
+Collection verifies the annotated operation union against the literal code-owned
+EMR/Glue dispatcher inventories. An annotation cannot make an unregistered
+operation compatible, and the botocore-only model-drift job extracts those
+literal inventories without importing an emulator.
+
+For a client or runtime change:
+
+1. Create or reuse a typed `CompatibilityProfile` in
+   `test_support/compatibility_profiles.py` with exact versions, runtime,
+   lane, timeout budget, and official source URLs.
+2. Decorate the smallest real `@pytest.mark.contract` or `@pytest.mark.e2e`
+   test with `@compatibility_evidence(...)`. Declare only operations and
+   scenarios exercised by that test body.
+3. Run `make compatibility-evidence-generate`, review
+   `contracts/compatibility-evidence.generated.json` and its Korean/English
+   tables, then run `make compatibility-evidence-check`.
+4. Run `make compatibility-case CASE=<id>` for the changed case. During the
+   migration also run `make compatibility-check`; do not hand-edit generated
+   evidence or remove either retained baseline.
+
+The generator invokes pytest with `--collect-only`: it resolves markers and
+node IDs without executing test bodies. It fails when the execution marker,
+pinned lock/runtime, API evidence, or legacy case selection drifts. This uses
+the [pytest marker](https://docs.pytest.org/en/stable/how-to/mark.html) and
+[collection invocation](https://docs.pytest.org/en/stable/how-to/usage.html)
+contracts; GitHub Actions consumes the generated `include` entries through the
+[shared matrix pattern](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
+To keep that local check lightweight, it explicitly loads only the configured
+timeout/asyncio plugins and rejects `awswrangler` or `pyarrow` imports during
+collection. Keep optional clients inside the test body; pytest documents this
+[plugin-loading control](https://docs.pytest.org/en/stable/how-to/plugins.html#disabling-plugin-autoloading).
 
 <!-- section: issues -->
 ## Bilingual issues

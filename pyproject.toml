@@ -40,6 +40,7 @@ markers = [
   "browser: browser-driven console and accessibility contract",
   "contract: boto3 or wire-level protocol contract test",
   "e2e: Docker and real runtime end-to-end test",
+  "mystack_compatibility: typed client/runtime/operation evidence collected for generated CI cases",
 ]
 
 [tool.ruff]

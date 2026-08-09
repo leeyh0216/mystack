@@ -115,6 +115,9 @@ make requirements
 make coverage-check
 make ghcr-compose-check
 make compatibility-check
+make compatibility-evidence-generate
+make compatibility-evidence-check
+make compatibility-evidence-parity
 make antlr-check
 make glue-errors-check
 make version-show
@@ -142,10 +145,13 @@ Python과 React/TypeScript lint/format, 한·영 문서, container requirement l
 전에 차단합니다. Hook lifecycle은 공식 [pre-commit 설치·사용
 계약](https://pre-commit.com/#install)을 따릅니다.
 
-Compatibility scenario는 SDK/protocol pytest node ID를 명시적으로 선택하며 생성된 React asset이
-필요한 test는 선택하지 않습니다. 일반 Python CI job은 전체 contract module을 실행하기 전에 두
-frontend build artifact를 내려받고, browser E2E job은 rendering된 UI 동작을 소유합니다. 따라서 UI
-coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정할 수 있습니다. Artifact
+Compatibility scenario는 실제 `contract` 또는 `e2e` test 옆의 type이 있는 pytest annotation으로
+선언합니다. `make compatibility-evidence-generate`는 collection만 실행하고 CI matrix와 한·영 근거를
+만들며 test body를 실행하지 않습니다. `make compatibility-evidence-check`는 marker, lock/runtime,
+modeled operation, API 근거, 유지하는 기존 case 선택의 차이를 거부합니다. 이행 기간에는 남긴 YAML
+compiler도 실행하므로 `make compatibility-check`도 사용합니다. 일반 Python CI job은 전체 contract module을
+실행하기 전에 두 frontend build artifact를 내려받고, browser E2E job은 화면 동작을 맡습니다. 이 구조는
+UI coverage를 줄이지 않으면서 SDK matrix 실패 원인을 protocol code로 한정합니다. Artifact
 lifecycle은 공식 [GitHub Actions artifact
 계약](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts)을 따릅니다.
 
@@ -194,5 +200,6 @@ import를 바꾼 뒤 `make architecture-check`를 실행하세요. 실패 결과
 - `model-drift-report.json`: 변경 operation과 수정 위치
 - `api-coverage-drift-report.json`: 미분류·삭제·데이터 구조 변경·잘못 분류된 작업과 수정 경계
 - 호환성 실패 log: case ID, 정확한 version, scenario ID, model fingerprint, evidence hash와 수정
-  안내. 공식 출처와 명시적 YAML case를 검토한 뒤에만 `make compatibility-generate` 실행
+  안내. 공식 출처와 test annotation을 검토한 뒤 `make compatibility-evidence-generate`와
+  `make compatibility-evidence-check` 실행
 - E2E artifact: 모든 container log

@@ -1,7 +1,7 @@
 """Run one compiled compatibility case in an isolated pytest process.
 
-The runner consumes generated evidence rather than interpreting the authoring YAML. This keeps
-GitHub Actions and local execution on the same reviewed contract.
+The runner consumes generated test-declared evidence rather than interpreting authoring metadata.
+This keeps GitHub Actions and local execution on the same reviewed contract.
 
 Official pytest invocation reference: https://docs.pytest.org/en/stable/how-to/usage.html
 JUnit XML output reference: https://docs.pytest.org/en/stable/how-to/output.html
@@ -43,7 +43,8 @@ class CompiledCaseRepository:
         cases = document.get("cases")
         if not isinstance(cases, list):
             raise CaseSelectionError(
-                "generated matrix has no case list; fix_hint=run-make-compatibility-generate"
+                "generated evidence has no case list; "
+                "fix_hint=run-make-compatibility-evidence-generate"
             )
         LOGGER.info("event=compatibility.case_repository.read.after cases=%d", len(cases))
         return cases
@@ -98,7 +99,7 @@ class IsolatedCaseRunner:
         if runner.get("command_prefix") != prefix or scenario.get("kind") != marker:
             raise CaseSelectionError(
                 f"generated runner contract mismatch case_id={case.get('id')} "
-                "fix_hint=regenerate-and-review-matrix"
+                "fix_hint=regenerate-and-review-evidence"
             )
         nodes = scenario.get("test_nodes")
         if not isinstance(nodes, list) or not nodes:
@@ -192,7 +193,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case_id", nargs="?")
     parser.add_argument(
-        "--matrix", type=Path, default=ROOT / "contracts/compatibility-matrix.generated.json"
+        "--matrix", type=Path, default=ROOT / "contracts/compatibility-evidence.generated.json"
     )
     parser.add_argument(
         "--config",

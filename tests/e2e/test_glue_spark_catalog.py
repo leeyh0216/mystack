@@ -18,6 +18,8 @@ from typing import Any
 import pytest
 from botocore.exceptions import ClientError
 
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import GLUE_SPARK_HIVE_ICEBERG
 from test_support.iceberg_metadata import IcebergMetadataDocument
 
 _ROW_LEVEL_MODE_PROPERTIES = (
@@ -28,6 +30,45 @@ _ROW_LEVEL_MODE_PROPERTIES = (
 
 
 @pytest.mark.e2e
+@compatibility_evidence(
+    GLUE_SPARK_HIVE_ICEBERG,
+    scenario_ids=(
+        "hive-complex-types",
+        "hive-partition-pruning",
+        "hive-partition-ddl-repair",
+        "hive-table-alter",
+        "iceberg-open-table-format-input",
+        "iceberg-create-append-read-evolve",
+        "iceberg-partition-schema-sort-evolution",
+        "iceberg-row-level-dml",
+        "iceberg-snapshots-refs-procedures",
+        "iceberg-managed-table-optimizers",
+        "iceberg-rename-drop-purge",
+        "iceberg-multi-container-contention",
+    ),
+    operations={
+        "glue": (
+            "CreateDatabase",
+            "CreateTable",
+            "CreateTableOptimizer",
+            "DeleteTableOptimizer",
+            "GetDatabase",
+            "GetTable",
+            "ListTableOptimizerRuns",
+            "UpdateTable",
+        )
+    },
+    capabilities=(
+        "hive-metastore",
+        "partition-pruning",
+        "partition-ddl",
+        "table-alter",
+        "iceberg-glue-catalog",
+        "iceberg-row-level-dml",
+        "iceberg-time-travel",
+        "iceberg-maintenance-procedures",
+    ),
+)
 def test_real_glue_spark_hive_and_iceberg_through_public_proxy(
     aws_clients: dict[str, Any],
     e2e_settings: Any,

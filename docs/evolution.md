@@ -36,21 +36,26 @@ Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and 
 <!-- section: manifest -->
 ## Adding a client or runtime version
 
-1. Add its exact artifact URL and content digest to `compatibility/cases.yaml`.
-2. Add or reuse one runtime profile, runner adapter, compatibility profile, and scenario set.
-3. Add one explicit case and assign every new required case/scenario to one bilingual acceptance
-   area. Do not add a version axis that creates unreviewed combinations.
-4. Run `make compatibility-generate`, review the JSON, exact-version tables, and generated
-   release-acceptance tables, then run
-   `make compatibility-case CASE=<id>`.
-5. Run `make compatibility-check`. CI derives a new job from the generated `include` entry without
-   workflow source changes.
+1. Add or reuse a `CompatibilityProfile` in `test_support/compatibility_profiles.py`. It records
+   exact client versions, runtime, lane, timeout budget, and official URLs.
+2. Add `@compatibility_evidence(...)` to the smallest real `contract` or `e2e` test that proves
+   the client behavior. Its scenario, operation, capability, and support values must describe the
+   executed test body rather than a planned feature.
+3. Run `make compatibility-evidence-generate` and review the generated JSON and bilingual tables.
+   The generator uses [pytest collection](https://docs.pytest.org/en/stable/how-to/usage.html), so
+   it resolves the exact node IDs without running test bodies.
+4. Run `make compatibility-evidence-check` and
+   `make compatibility-case CASE=<id>`. GitHub Actions derives a new isolated job from the
+   generated `include` entry without workflow-source changes.
+5. During the transition, also run `make compatibility-check`. Keep
+   `compatibility/cases.yaml` and `contracts/api-coverage.json` as parity baselines; do not remove
+   them or alter the independent Glue error-condition policy in this change.
 
-The compiler fails before tests for unknown fields, duplicate IDs, mutable sources, invalid digests,
-unknown adapters, runtime/config mismatches, stale model fingerprints, missing test nodes, unsafe
-evidence paths, and undocumented required cases or scenarios. A case records exact versions,
-scenario/operation IDs, model fingerprints, and a deterministic evidence hash so logs point
-maintainers at the broken boundary.
+The annotation compiler fails before execution for an invalid marker shape, missing or mismatched
+execution marker, duplicate profile, lock/runtime drift, unknown modeled operation, missing API
+evidence, or changed legacy selection. A case records exact versions, scenario/operation IDs,
+model fingerprints, and a deterministic evidence hash so logs point maintainers at the broken
+boundary.
 
 <!-- section: checklist -->
 ## Compatibility change checklist

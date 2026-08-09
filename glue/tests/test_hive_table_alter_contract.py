@@ -13,8 +13,16 @@ import copy
 import pytest
 from botocore.exceptions import ClientError
 
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import BOTO3_BOTOCORE_CONTRACT
+
 
 @pytest.mark.contract
+@compatibility_evidence(
+    BOTO3_BOTOCORE_CONTRACT,
+    scenario_ids=("glue-data-catalog",),
+    capabilities=("hive-table-alter", "table-versioning"),
+)
 def test_hive_table_alter_preserves_metadata_versions_and_partitions(glue_client) -> None:
     database = "hive_table_alter"
     source = "events"

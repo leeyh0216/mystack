@@ -115,6 +115,9 @@ make requirements
 make coverage-check
 make ghcr-compose-check
 make compatibility-check
+make compatibility-evidence-generate
+make compatibility-evidence-check
+make compatibility-evidence-parity
 make antlr-check
 make glue-errors-check
 make version-show
@@ -142,11 +145,14 @@ generated interoperability/error evidence
 drift. Their lifecycle follows the official [pre-commit installation and usage
 contract](https://pre-commit.com/#install).
 
-Compatibility scenarios select explicit SDK/protocol pytest node IDs. They do not select tests that
-require generated React assets. The ordinary Python CI job downloads both frontend build artifacts
-before running the full contract modules, while the browser E2E job owns rendered UI behavior. This
-keeps SDK matrix failures attributable to protocol code without reducing UI coverage. The artifact
-lifecycle follows the official [GitHub Actions artifact
+Compatibility scenarios are declared next to real `contract` or `e2e` tests with typed pytest
+annotations. `make compatibility-evidence-generate` runs collection only, produces the CI matrix
+and bilingual evidence, and never executes those test bodies. `make compatibility-evidence-check`
+rejects marker, lock/runtime, modeled-operation, API-evidence, or retained-legacy-selection drift.
+The retained YAML compiler still runs during the migration, so use `make compatibility-check` too.
+The ordinary Python CI job downloads both frontend build artifacts before running the full contract
+modules, while the browser E2E job owns rendered UI behavior. This keeps SDK matrix failures
+attributable to protocol code without reducing UI coverage. The artifact lifecycle follows the official [GitHub Actions artifact
 contract](https://docs.github.com/actions/using-workflows/storing-workflow-data-as-artifacts).
 
 `VERSION` is the sole stable version authority and the pre-commit hook rejects derived-file drift.
@@ -196,6 +202,6 @@ imported module, violated rule, and suggested repair.
 - `api-coverage-drift-report.json` names unclassified, removed, shape-changed, or
   misclassified operations and the owning boundary to update.
 - A compatibility failure logs the case ID, exact versions, scenario IDs, model fingerprints,
-  evidence hash, and a repair hint. Run `make compatibility-generate` only after reviewing the
-  matching official source and explicit YAML case.
+  evidence hash, and a repair hint. Review the matching official source and test annotation, then
+  run `make compatibility-evidence-generate` and `make compatibility-evidence-check`.
 - E2E failure artifacts include all container logs.

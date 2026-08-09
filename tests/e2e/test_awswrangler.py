@@ -12,19 +12,40 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-import awswrangler as wr
 import boto3
-import pandas as pd
 import pytest
+
+from test_support.compatibility import compatibility_evidence
+from test_support.compatibility_profiles import AWSWRANGLER_GLUE_S3
 
 
 @pytest.mark.e2e
+@compatibility_evidence(
+    AWSWRANGLER_GLUE_S3,
+    scenario_ids=("parquet-glue-s3-round-trip",),
+    operations={
+        "glue": (
+            "CreateDatabase",
+            "CreatePartition",
+            "CreateTable",
+            "GetDatabase",
+            "GetPartition",
+            "GetTable",
+        )
+    },
+    capabilities=("parquet-round-trip", "database", "table", "partition", "s3-head"),
+)
 def test_aws_sdk_for_pandas_parquet_glue_catalog_round_trip(
     aws_clients: dict[str, Any],
     e2e_settings: Any,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Write data and metadata, then read both through the same public Proxy."""
+
+    # Keep collection-only compatibility evidence independent of optional heavy client imports.
+    # The real E2E execution remains the authoritative compatibility check.
+    import awswrangler as wr
+    import pandas as pd
 
     for service in ("GLUE", "S3"):
         monkeypatch.setenv(f"AWS_ENDPOINT_URL_{service}", e2e_settings.endpoint_url)

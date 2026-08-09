@@ -48,6 +48,8 @@ echo "[mystack] checking pinned AWS service models"
 uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 echo "[mystack] checking manifest-driven interoperability cases"
 uv run python scripts/compatibility_matrix.py --check
+echo "[mystack] checking test-declared compatibility evidence and legacy parity"
+uv run --all-packages python scripts/compatibility_evidence.py --check
 echo "[mystack] checking exhaustive API classification and generated matrices"
 uv run python scripts/api_coverage.py \
   --check contracts/api-coverage.json \

@@ -16,6 +16,7 @@ from mystack.emr.adapters.inbound.aws_tag import TagOperationFamily
 from mystack.emr.domain.errors import InvalidClusterStateError
 
 from scripts.api_coverage import IMPLEMENTED
+from scripts.operation_inventory import extract_implemented_operation_inventory
 
 
 class _FailingQueries:
@@ -36,7 +37,8 @@ def test_emr_families_are_disjoint_complete_and_match_coverage() -> None:
 
     assert [family.name for family in families] == ["cluster", "step", "control", "tag", "query"]
     assert len(owners) == len(set(owners))
-    assert set(owners) == IMPLEMENTED_EMR_OPERATIONS == IMPLEMENTED["emr"]
+    extracted = extract_implemented_operation_inventory()
+    assert set(owners) == IMPLEMENTED_EMR_OPERATIONS == extracted["emr"] == IMPLEMENTED["emr"]
 
 
 @pytest.mark.asyncio
