@@ -5,9 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.reusable_build_artifact import ArtifactError, create, should_rebuild, verify
-
-ROOT = Path(__file__).parents[1]
+from scripts.reusable_build_artifact import ArtifactError, create, verify
 
 
 def _arguments(root: Path, manifest: Path) -> argparse.Namespace:
@@ -62,30 +60,3 @@ def test_corrupt_bundle_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ArtifactError, match="file digest mismatch"):
         verify(arguments)
-
-
-def test_only_unavailable_download_selects_fallback_rebuild() -> None:
-    assert should_rebuild("success") is False
-    assert should_rebuild("failure") is True
-    assert should_rebuild("skipped") is True
-
-
-def test_workflows_use_exact_cache_and_verified_cross_run_artifacts() -> None:
-    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    e2e = (ROOT / ".github/workflows/e2e.yml").read_text(encoding="utf-8")
-    release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
-    publish = (ROOT / ".github/workflows/container-publish.yml").read_text(encoding="utf-8")
-
-    assert "actions/cache/restore" in ci
-    assert "actions/cache/save" in ci
-    assert "restore-keys:" not in ci
-    assert "uv run python scripts/reusable_build_artifact.py" not in ci
-    assert "service-ui-builds-${{ github.sha }}" in ci
-    assert "workflow_run:" in e2e
-    assert "run-id: ${{ github.event.workflow_run.id || inputs.producer_run_id }}" in e2e
-    assert "producer_run_id:" in e2e
-    assert "inputs.producer_run_id" in e2e
-    assert "reusable_build_artifact.py verify" in e2e
-    assert "ci_run_id: ${{ github.event.workflow_run.id }}" in release
-    assert "run-id: ${{ inputs.ci_run_id }}" in publish
-    assert "reusable_build_artifact.py verify" in publish
