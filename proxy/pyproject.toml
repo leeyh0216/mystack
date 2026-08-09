@@ -1,6 +1,6 @@
 [project]
 name = "mystack-proxy"
-version = "0.1.4"
+version = "0.1.5"
 description = "Transparent AWS routing proxy for Mystack"
 requires-python = ">=3.11,<3.12"
 dependencies = [
