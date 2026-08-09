@@ -5,6 +5,17 @@
 
 # CI, dependency, and release automation
 
+<!-- toc:start -->
+## Contents
+
+- [Workflows](#workflows)
+- [Test reports contributors can use](#test-reports-contributors-can-use)
+- [Branch protection expectations](#branch-protection-expectations)
+- [Dependency updates](#dependency-updates)
+- [GHCR publication](#ghcr-publication)
+- [Failure diagnostics and release evidence](#failure-diagnostics-and-release-evidence)
+<!-- toc:end -->
+
 <!-- section: workflows -->
 ## Workflows
 

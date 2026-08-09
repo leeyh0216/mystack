@@ -19,8 +19,6 @@
 Use this guide when your application stores Catalog metadata through boto3, AWS SDK for pandas,
 Spark Hive, or Apache Iceberg.
 
-For the request, persistence, and Iceberg commit boundaries, see the optional [Glue Catalog architecture](glue-catalog-architecture.md).
-
 <!-- section: start -->
 ## Choose an endpoint
 

@@ -10,7 +10,7 @@
 
 - [책임 경계](#책임-경계)
 - [원자적 판단과 저장 순서](#원자적-판단과-저장-순서)
-- [SQLite transaction 설정](#sqlite-transaction-설정)
+- [File lock 설정](#file-lock-설정)
 - [Logging과 수정 위치](#logging과-수정-위치)
 - [검증과 제외 범위](#검증과-제외-범위)
 - [공식 참고 자료](#공식-참고-자료)
@@ -42,37 +42,37 @@ Iceberg의 [reliability model](https://iceberg.apache.org/docs/1.7.1/reliability
 Durable update 하나는 다음 순서로 실행합니다.
 
 1. AWS JSON 1.1 경계가 model에 따른 `UpdateTable` 요청을 검증합니다.
-2. Short-lived SQLite connection이 설정한 foreign key, journal, synchronous, busy-timeout policy를
-   적용하고 `BEGIN IMMEDIATE`를 시작합니다.
-3. Application이 현재 정규화 table row를 찾고 요청 `VersionId`와 현재 값을 비교합니다.
-4. 값이 일치하면 candidate 하나를 만듭니다. 전달받은 table definition이 current가 되고 정수
+2. Repository가 process-local asynchronous mutex와 설정된 POSIX advisory file lock을 얻습니다.
+3. 두 lock을 보유한 상태에서 disk의 최신 JSON catalog revision을 다시 읽습니다.
+4. Application이 table을 찾고 요청 `VersionId`와 현재 값을 비교합니다.
+5. 값이 일치하면 candidate 하나를 만듭니다. 전달받은 table definition이 current가 되고 정수
    version을 한 번 증가시키며 `SkipArchive=true`가 아니면 이전 version을 archive합니다.
-5. Adapter가 이전 `VersionId`를 조건으로 current table을 update하고, 같은 transaction에서 archive와
-   partition-key row를 쓰며 진단용 catalog revision을 증가시킨 뒤 commit합니다.
-6. Connection을 닫습니다. Validation, 조건부 update, commit 중 하나라도 실패하면 SQLite transaction
-   전체를 rollback합니다.
+6. 같은 directory의 temporary document를 쓰고 fsync한 뒤 state file을 원자적으로 교체합니다.
+   Directory fsync도 시도하며, 이 작업이 끝난 뒤에만 candidate를 visible state로 공개합니다.
+7. File lock과 process-local mutex 순서로 해제합니다.
 
 Stale writer는 save 전에 modeled `ConcurrentModificationException`으로 실패합니다. Validation, conflict,
-persistence 실패는 candidate를 공개하지 않습니다. Commit 중 cancellation은 제한된 commit 결과를
-기다린 뒤 durable candidate가 보이는지 판단합니다.
+persistence 실패는 candidate를 공개하지 않습니다. Save 중 cancellation은 제한된 save 결과를
+기다린 뒤 commit 여부에 맞춰 visible state를 결정합니다. Lock acquisition/release worker thread도
+보호하므로 cancellation이 잠긴 descriptor를 남기지 않습니다.
 
 따라서 같은 base version에서 commit한 두 process는 version 1 winner 하나와 stale-version 실패
 하나를 만듭니다. Iceberg client는 새 pointer를 refresh하고 자기 변경을 retry할 수 있습니다. 이는
 catalog compare-and-swap이며 S3 data file 전체에 대한 global transaction isolation은 아닙니다.
 
 <!-- section: configuration -->
-## SQLite transaction 설정
+## File lock 설정
 
-`glue.sqlite.database_file`은 유일한 영속 catalog path입니다. WAL이 `-wal`, `-shm` sibling을
-유지하므로 parent directory 전체를 write 가능하게 mount해야 합니다. `busy_timeout_milliseconds`는
-busy writer wait 하나의 상한이고 `retry_limit`은 추가 short retry 횟수의 상한입니다. 경합 timeout은
-partial change 없이 요청을 실패시킵니다. 검증한 기본값은 `journal_mode: wal`이며,
-`journal_mode: rollback`은 명시적 escape hatch이고 자동 fallback이 아닙니다.
+`glue.catalog_lock.file`, `acquire_timeout_seconds`, `poll_interval_seconds`는 필수 YAML 설정입니다.
+상대 path는 `glue.data_root` 아래에서 해석합니다. Lock file은 `glue.state_file`과 달라야 하며 poll
+interval은 acquisition timeout보다 클 수 없습니다. 같은 state file을 공유하는 모든 Glue emulator
+process는 POSIX `flock`을 보장하는 filesystem의 같은 lock file을 사용해야 합니다. 기반 primitive는
+Python 공식 [`fcntl.flock`](https://docs.python.org/3/library/fcntl.html#fcntl.flock) 문서를 따릅니다.
 
-SQLite WAL은 같은 host와 같은 mounted directory에서 concurrent reader와 writer 하나를 지원합니다.
-Multi-host deployment와 network filesystem은 이 계약의 범위 밖입니다. Driver 검증 절차, backup 절차,
-checkpoint policy, mounted configuration 전체는 [Glue SQLite runtime
-계약](glue-sqlite-runtime.ko.md)에 정의했습니다.
+Lock wait에는 상한이 있고 timeout은 state를 바꾸지 않습니다. Lock file을 삭제하지 않는 이유는
+unlink/recreate 시 동시 process가 서로 다른 inode를 잠글 수 있기 때문입니다. Docker/Linux와 local
+POSIX host를 지원합니다. Multi-host distributed lock과 advisory lock이 안정적이지 않은 filesystem은
+이 계약의 범위 밖입니다.
 
 <!-- section: observability -->
 ## Logging과 수정 위치
@@ -80,24 +80,24 @@ checkpoint policy, mounted configuration 전체는 [Glue SQLite runtime
 `glue.iceberg.commit.begin`, `.version.accepted`, `.persist.before`, `.conflict`, `.succeeded`,
 `.failed`는 expected/current/candidate version과 resource·metadata location의 SHA-256 앞부분만
 기록합니다. S3 path, table body, credential, authorization header는 기록하지 않습니다.
-`glue.sqlite_catalog.schema.*`, `.transaction.begin.*`, `.transaction.busy.retry`,
-`.transaction.commit.*`, `.transaction.rolled_back`는 catalog storage 경계를 보여줍니다.
+`glue.repository.process_lock.*`, `.external_state.refresh.after`, `.transaction.*`, `.persist.*`는
+lock/reload/save 경계를 보여줍니다.
 
 Spark/Iceberg client 변경으로 이 경로가 깨지면 다음 순서로 확인합니다.
 
 1. Wire member 변경은 고정 botocore model 경계와 `glue/adapters/inbound/aws_table.py`
 2. `VersionId`, archive, `SkipArchive` 판단은 `CatalogTable.revise`와 `glue/application/table.py`
 3. Iceberg 식별과 안전한 commit event는 `glue/application/iceberg_commit.py`
-4. Process 간 lost update, writer 경합, schema mapping, commit/rollback은
-   `glue/adapters/outbound/sqlite_catalog/`과 `glue.sqlite` 설정
+4. Process 간 lost update, lock timeout, reload, fsync, replacement는
+   `glue/adapters/outbound/repository.py`와 `glue.catalog_lock` 설정
 5. 실제 client retry 변화는 `glue/scripts/e2e/iceberg_contention_job.py`와 생성된 compatibility case
 
 <!-- section: evidence -->
 ## 검증과 제외 범위
 
 빠른 `glue/tests/test_iceberg_commit.py`는 같은 base version의 spawn process 두 개를 실행합니다.
-모든 wait를 설정 가능하게 제한하고 winner 하나, conflict 하나, foreign-key 무결성, archive policy와
-상한이 있는 SQLite writer 경합을 검증합니다. CI는 별도 Glue-image container 두 개에서 실제 Spark
+모든 wait를 설정 가능하게 제한하고 winner 하나, conflict 하나, 유효한 JSON, archive policy와
+상한이 있는 lock timeout을 검증합니다. CI는 별도 Glue-image container 두 개에서 실제 Spark
 3.5.4/Iceberg 1.7.1
 writer를 public Proxy로 실행하고 retry된 append 둘이 모두 보존되는지 확인합니다. One-off container
 동작은 Docker Compose 공식 [`run` 문서](https://docs.docker.com/reference/cli/docker/compose/run/)를
@@ -123,6 +123,4 @@ Rename/drop/purge는 [Iceberg lifecycle 계약](glue-iceberg-lifecycle.ko.md)에
 - [Apache Iceberg 1.7.1 reliability](https://iceberg.apache.org/docs/1.7.1/reliability/)
 - [AWS Glue `UpdateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_UpdateTable.html)
 - [AWS Glue `TableVersion`](https://docs.aws.amazon.com/glue/latest/webapi/API_TableVersion.html)
-- [SQLite transaction](https://www.sqlite.org/lang_transaction.html)
-- [SQLite WAL](https://www.sqlite.org/wal.html)
-- [SQLite PRAGMA reference](https://www.sqlite.org/pragma.html)
+- [Python `fcntl`](https://docs.python.org/3/library/fcntl.html)

@@ -41,9 +41,7 @@ curl --fail http://localhost:4566/_mystack/health
 | 하려는 일 | 시작 문서 |
 | --- | --- |
 | Docker Compose를 시작하고 AWS client 연결 | [시작 안내](docs/getting-started.ko.md) |
-| 로컬 AWS SDK for pandas 또는 Spark client lab을 끝까지 실행 | [Client lab](docs/client-workflows.ko.md#해당-lab-실행) |
 | boto3, AWS SDK for pandas, Spark Hive, Iceberg로 Glue Data Catalog 사용 | [Glue 안내](docs/glue.ko.md) |
-| Client별 Glue와 EMR 작업 흐름 따라가기 | [Client 작업 흐름](docs/client-workflows.ko.md) |
 | EMR cluster 생성, bootstrap action 실행, Spark Step 제출 | [EMR 안내](docs/emr.ko.md) |
 | Port, timeout, storage, runtime 설정 변경 | [설정](docs/configuration.ko.md) |
 | 지원하는 client 경로 확인 | [호환성](docs/compatibility/client-matrix.ko.md) |

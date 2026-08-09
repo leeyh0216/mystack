@@ -19,8 +19,6 @@
 이 문서는 로컬 EMR cluster를 만들고 bootstrap action으로 준비한 뒤 LocalStack S3의 코드와 데이터를
 사용하는 Spark 또는 PySpark application을 실행하는 방법을 안내합니다.
 
-요청부터 Spark process와 LogUri까지의 흐름은 선택적인 [EMR 실행 아키텍처](emr-execution-architecture.ko.md)를 참고하세요.
-
 <!-- section: cluster -->
 ## Cluster 만들기
 
