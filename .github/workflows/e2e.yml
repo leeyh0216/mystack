@@ -61,14 +61,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = schedule ]; then
-            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.nightly_contract.include[]])}' ci-artifacts/compatibility/compatibility-evidence.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.nightly_e2e.include[]])}' ci-artifacts/compatibility/compatibility-evidence.json)
           elif [ "$EVENT_NAME" = workflow_dispatch ]; then
-            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.preview_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[], .github_matrices.nightly_contract.include[]])}' ci-artifacts/compatibility/compatibility-evidence.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.preview_e2e.include[], .github_matrices.nightly_e2e.include[]])}' ci-artifacts/compatibility/compatibility-evidence.json)
           else
-            contract_matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '.github_matrices.required_e2e' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '.github_matrices.required_contract' ci-artifacts/compatibility/compatibility-evidence.json)
+            e2e_matrix=$(jq -c '.github_matrices.required_e2e' ci-artifacts/compatibility/compatibility-evidence.json)
           fi
           test "$(jq '.include | length' <<<"$contract_matrix")" -gt 0
           test "$(jq '.include | length' <<<"$e2e_matrix")" -gt 0

@@ -370,7 +370,7 @@
   generated-file drift입니다.
 - 관측: case count와 source digest를 포함하는 collection/compile/parity 구조화 event입니다.
 - 근거: `scripts/compatibility/compatibility_evidence.py`, `tests/support/compatibility_plugin.py`,
-  `contracts/compatibility-evidence.generated.json`, `tests/test_compatibility_evidence.py`.
+  `contracts/compatibility-scope-policy.yaml`, `tests/test_compatibility_evidence.py`.
 - 신뢰도: High
 
 <!-- section: candidate-documentation -->

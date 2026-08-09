@@ -9,6 +9,7 @@ Official model and exception sources:
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -17,10 +18,15 @@ import botocore.session
 import yaml
 from mystack.glue.adapters.inbound.aws_operations import IMPLEMENTED_GLUE_OPERATIONS
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.compatibility.artifacts import GLUE_ERRORS_ENGLISH, GLUE_ERRORS_KOREAN
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CATALOG = ROOT / "contracts/glue-error-conditions.yaml"
-DEFAULT_ENGLISH = ROOT / "docs/compatibility/glue-errors.generated.md"
-DEFAULT_KOREAN = ROOT / "docs/compatibility/glue-errors.ko.generated.md"
+DEFAULT_ENGLISH = GLUE_ERRORS_ENGLISH
+DEFAULT_KOREAN = GLUE_ERRORS_KOREAN
 FORBIDDEN_CODES = {
     "AccessDeniedException",
     "UnrecognizedClientException",

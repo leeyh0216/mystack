@@ -32,17 +32,23 @@ import yaml
 from mystack.aws_protocol import ConfigurationError, load_configuration
 
 try:
+    from scripts.compatibility.artifacts import (
+        ANNOTATED_EVIDENCE_ENGLISH,
+        ANNOTATED_EVIDENCE_KOREAN,
+        EVIDENCE_JSON,
+    )
     from scripts.compatibility.operation_inventory import (
         OperationInventoryError,
         extract_implemented_operation_inventory,
     )
 except ModuleNotFoundError:  # Direct module-file execution.
+    from artifacts import ANNOTATED_EVIDENCE_ENGLISH, ANNOTATED_EVIDENCE_KOREAN, EVIDENCE_JSON
     from operation_inventory import OperationInventoryError, extract_implemented_operation_inventory
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUTPUT = ROOT / "contracts/compatibility-evidence.generated.json"
-DEFAULT_ENGLISH = ROOT / "docs/compatibility/annotated-evidence.generated.md"
-DEFAULT_KOREAN = ROOT / "docs/compatibility/annotated-evidence.ko.generated.md"
+DEFAULT_OUTPUT = EVIDENCE_JSON
+DEFAULT_ENGLISH = ANNOTATED_EVIDENCE_ENGLISH
+DEFAULT_KOREAN = ANNOTATED_EVIDENCE_KOREAN
 DEFAULT_SERVICE_MODEL = ROOT / "contracts/service-model-manifest.json"
 DEFAULT_CONFIG = ROOT / "config/runtime/mystack.yaml"
 DEFAULT_LOCK = ROOT / "uv.lock"

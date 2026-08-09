@@ -52,9 +52,9 @@ echo "[mystack] checking annotation-backed interoperability cases"
 uv run python scripts/compatibility/compatibility_matrix.py --check
 echo "[mystack] checking exhaustive API classification and generated matrices"
 uv run python scripts/compatibility/api_coverage.py \
-  --check contracts/api-coverage.generated.json \
-  --english docs/compatibility/api-coverage.generated.md \
-  --korean docs/compatibility/api-coverage.ko.generated.md
+  --check ci-artifacts/compatibility/api-coverage.json \
+  --english ci-artifacts/compatibility/api-coverage.md \
+  --korean ci-artifacts/compatibility/api-coverage.ko.md
 echo "[mystack] running fast tests with configured timeout"
 test_timeout=$(uv run python scripts/development/config_value.py tests.unit_timeout_seconds)
 uv run pytest shared/tests proxy/tests tests/architecture \

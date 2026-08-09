@@ -34,9 +34,9 @@ jobs:
         run: >-
           uv run --no-project --with botocore
           python scripts/compatibility/api_coverage.py
-          --check contracts/api-coverage.generated.json
-          --english docs/compatibility/api-coverage.generated.md
-          --korean docs/compatibility/api-coverage.ko.generated.md
+          --check ci-artifacts/compatibility/api-coverage.json
+          --english ci-artifacts/compatibility/api-coverage.md
+          --korean ci-artifacts/compatibility/api-coverage.ko.md
           --report api-coverage-drift-report.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

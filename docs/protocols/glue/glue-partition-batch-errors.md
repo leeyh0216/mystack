@@ -19,7 +19,7 @@
 
 This contract defines the deterministic behavior of Mystack's nine implemented partition
 operations. It is based on the public AWS Glue API pages and the pinned botocore model; no test or
-decision calls a live AWS account. The generated [Glue error matrix](../../compatibility/glue-errors.generated.md)
+decision calls a live AWS account. The generated [Glue error matrix](../../compatibility/api-coverage.md)
 remains the machine-readable operation inventory.
 
 <!-- section: layers -->

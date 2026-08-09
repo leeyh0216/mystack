@@ -29,7 +29,7 @@
 | `prepare-version-pr.yml` | manual | Version file 변경 branch와 `develop` 대상 PR 생성, package/tag/release 변경 없음 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
-Actions는 pytest annotation에서 생성한 `contracts/compatibility-evidence.generated.json`의 `include`
+Actions는 pytest annotation에서 생성한 `contracts/compatibility-scope-policy.yaml`의 `include`
 entry만 읽으며 client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이행 기간에는
 typed pytest annotation과 생성 matrix를 필수 증거 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
 방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
@@ -128,6 +128,6 @@ component와 case 맥락을 남길 수 있습니다. 진단 log는 경계와 sid
 포함하면 안 됩니다.
 
 Release workflow는 검토한 수용 근거를 별도로 14일 보존합니다. 생성한 [테스트 선언 호환성
-근거](compatibility/annotated-evidence.ko.generated.md), [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
+근거](compatibility/client-matrix.md), [release 수용 범위](compatibility/client-matrix.md),
 유지하는 parity matrix, API 분류, 결정적 Glue 오류 catalog가 대상입니다. Local image preflight scan
 근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.

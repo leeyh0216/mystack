@@ -60,7 +60,7 @@ returns HTTP 400 `AlreadyExistsException`, while batch operations return per-ite
 `ErrorDetail`. See the official [Partition API](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-catalog-partitions.html)
 and [Glue exceptions](https://docs.aws.amazon.com/glue/latest/dg/aws-glue-api-exceptions.html).
 
-The complete machine-generated table is [api-coverage.generated.md](api-coverage.generated.md).
+The complete machine-generated table is [api-coverage.generated.md](README.md).
 It classifies every official operation in the pinned botocore 1.43.66 model: EMR has 13
 `COMPATIBLE` and 52 `PROTOCOL_ONLY` operations; Glue has 28 `COMPATIBLE`, 243
 `PROTOCOL_ONLY`, and 28 `NOT_PLANNED` operations. `PROTOCOL_ONLY` is not callable support;

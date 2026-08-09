@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+import sys
 import tempfile
 import tomllib
 from dataclasses import dataclass
@@ -22,14 +23,26 @@ from typing import Any, ClassVar
 
 import yaml
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from scripts.compatibility.artifacts import (
+    CLIENT_MATRIX_ENGLISH,
+    CLIENT_MATRIX_KOREAN,
+    EVIDENCE_JSON,
+    MATRIX_JSON,
+    RELEASE_ACCEPTANCE_ENGLISH,
+    RELEASE_ACCEPTANCE_KOREAN,
+)
+
 ROOT = Path(__file__).parents[2]
 DEFAULT_MANIFEST = ROOT / "contracts/compatibility-scope-policy.yaml"
-DEFAULT_EVIDENCE = ROOT / "contracts/compatibility-evidence.generated.json"
-DEFAULT_OUTPUT = ROOT / "contracts/compatibility-matrix.generated.json"
-DEFAULT_ENGLISH = ROOT / "docs/compatibility/client-matrix.generated.md"
-DEFAULT_KOREAN = ROOT / "docs/compatibility/client-matrix.ko.generated.md"
-DEFAULT_ACCEPTANCE_ENGLISH = ROOT / "docs/compatibility/release-acceptance.generated.md"
-DEFAULT_ACCEPTANCE_KOREAN = ROOT / "docs/compatibility/release-acceptance.ko.generated.md"
+DEFAULT_EVIDENCE = EVIDENCE_JSON
+DEFAULT_OUTPUT = MATRIX_JSON
+DEFAULT_ENGLISH = CLIENT_MATRIX_ENGLISH
+DEFAULT_KOREAN = CLIENT_MATRIX_KOREAN
+DEFAULT_ACCEPTANCE_ENGLISH = RELEASE_ACCEPTANCE_ENGLISH
+DEFAULT_ACCEPTANCE_KOREAN = RELEASE_ACCEPTANCE_KOREAN
 LOGGER = logging.getLogger("mystack.compatibility")
 ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9.-]*$")
 DIGEST_PATTERN = re.compile(r"^(sha256|sha512):([0-9a-f]+)$")
