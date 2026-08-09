@@ -68,22 +68,22 @@ ghcr-compose-check: ## Prove image-only Compose and concise published-image user
 model-check: ## Compare installed botocore with the committed protocol manifest.
 	@uv run python scripts/model_manifest.py --check contracts/service-model-manifest.json
 
-coverage-generate: ## Render bilingual API classification matrices from the reviewed baseline.
+coverage-generate: compatibility-evidence-generate ## Render API classification from generated evidence.
 	@uv run python scripts/api_coverage.py \
-	  --write contracts/api-coverage.json \
+	  --write contracts/api-coverage.generated.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
 
-coverage-check: ## Verify exhaustive API statuses and bilingual generated matrices.
+coverage-check: compatibility-evidence-check ## Verify generated API classification and bilingual matrices.
 	@uv run python scripts/api_coverage.py \
-	  --check contracts/api-coverage.json \
+	  --check contracts/api-coverage.generated.json \
 	  --english docs/compatibility/api-coverage.generated.md \
 	  --korean docs/compatibility/api-coverage.ko.generated.md
 
-compatibility-generate: ## Compile YAML cases into deterministic CI and bilingual evidence.
+compatibility-generate: compatibility-evidence-generate coverage-generate ## Compile annotated cases into CI and bilingual evidence.
 	@uv run python scripts/compatibility_matrix.py --write
 
-compatibility-check: ## Reject interoperability manifest, runtime, and generated-output drift.
+compatibility-check: compatibility-evidence-check coverage-check ## Reject annotation, policy, and generated-output drift.
 	@uv run python scripts/compatibility_matrix.py --check
 
 compatibility-evidence-generate: ## Generate CI cases and bilingual evidence from pytest annotations.

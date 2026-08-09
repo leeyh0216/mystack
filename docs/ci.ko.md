@@ -30,7 +30,7 @@
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
 Actions는 pytest annotation에서 생성한 `contracts/compatibility-evidence.generated.json`의 `include`
 entry만 읽으며 client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이행 기간에는
-`compatibility/cases.yaml`과 생성 matrix를 필수 parity 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
+typed pytest annotation과 생성 matrix를 필수 증거 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
 방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
 따릅니다.
 생성한 profile의 `expected_duration_minutes`는 명시적인 바깥 job 시간 상한입니다. Local에서

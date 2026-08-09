@@ -74,7 +74,7 @@ E2E coverage. This is implementation coverage, not a claim that all upstream EMR
 are supported; the exact upstream classification is generated from the pinned botocore model.
 The generated [release acceptance](compatibility/release-acceptance.generated.md) is the
 release-blocking view that joins these API/error contracts with the exact Hive, Iceberg, AWS SDK
-for pandas, and EMR PySpark/S3 scenarios from `compatibility/cases.yaml`.
+for pandas, and EMR PySpark/S3 scenarios from annotated compatibility tests.
 Startup-file entries accept only the documented allowlist, use `RunJobFlow` member names, and are
 recreated with new IDs after EMR process restart. See the [startup cluster protocol](protocols/emr-startup-clusters.md).
 Trusted pre-start scripts are an opt-in EMR container boundary, not an in-process plugin API or an

@@ -1,6 +1,6 @@
 {
   "botocore_version": "1.43.66",
-  "schema_version": 1,
+  "schema_version": 2,
   "services": {
     "emr": {
       "model_fingerprint": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad",
@@ -1469,7 +1469,7 @@
       }
     }
   },
-  "source": "official botocore service-2 models",
+  "source": "official botocore models + implementation inventory + annotated pytest evidence",
   "source_url": "https://github.com/boto/botocore/tree/develop/botocore/data",
   "status_definitions": {
     "COMPATIBLE": "Wire shape and documented semantics have contracts and public Proxy E2E.",

@@ -84,7 +84,7 @@ Iceberg나 Spark upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 2. Iceberg metadata format 표현 변화: `test_support/iceberg_metadata.py`
 3. Modeled Glue request member 변화: `glue/adapters/inbound/aws_table.py`
 4. CAS 또는 archive 손실: `glue/application/table.py`, `glue/adapters/outbound/repository.py`
-5. 고정 runtime과 capability 근거: `compatibility/cases.yaml`
+5. 고정 runtime과 capability 근거: typed pytest compatibility annotation
 
 <!-- section: limits -->
 ## 한계

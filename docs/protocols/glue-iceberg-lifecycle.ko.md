@@ -108,7 +108,7 @@ Upgrade 후 이 profile이 깨지면 다음을 확인합니다.
 2. 호출 순서 변화: Iceberg `GlueCatalog.renameTable`, `dropTable`
 3. Modeled request member 변화: `glue/adapters/inbound/aws_table.py`
 4. 원자성 회귀: `glue/application/table.py`, `glue/adapters/outbound/repository.py`
-5. 고정 runtime과 capability 근거: `compatibility/cases.yaml`
+5. 고정 runtime과 capability 근거: typed pytest compatibility annotation
 
 <!-- section: limits -->
 ## 한계

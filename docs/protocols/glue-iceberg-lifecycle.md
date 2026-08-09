@@ -110,7 +110,7 @@ When an upgrade breaks this profile, inspect:
 2. Iceberg `GlueCatalog.renameTable` and `dropTable` for changed call ordering.
 3. `glue/adapters/inbound/aws_table.py` for modeled request-member drift.
 4. `glue/application/table.py` and `glue/adapters/outbound/repository.py` for atomicity regressions.
-5. `compatibility/cases.yaml` for the pinned runtime and capability evidence.
+5. Typed pytest compatibility annotations for the pinned runtime and capability evidence.
 
 <!-- section: limits -->
 ## Limits

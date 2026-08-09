@@ -96,7 +96,8 @@ AWS CLI로 확인합니다. Spark 연동은 실제 Spark, Glue Catalog, Hive, Ic
 - EMR/Glue inbound operation 목록은 구현 상태를 맡습니다.
 - annotation을 붙인 `contract` 또는 `e2e` 시험은 실제로 검증한 정확한 client, runtime,
   scenario, operation, capability, support claim을 맡습니다.
-- `compatibility/cases.yaml`과 `contracts/api-coverage.json`은 이행 기간의 parity 기준으로
+- typed pytest compatibility annotation, `contracts/compatibility-scope-policy.yaml`,
+  `contracts/api-coverage.generated.json`이 생성 호환성 기준으로
   남깁니다. Glue 오류 조건 catalog와 우선순위 정책은 별도의 필수 계약으로 유지합니다.
 
 Collection은 annotation operation 합집합과 code가 소유한 EMR/Glue dispatcher inventory의 literal

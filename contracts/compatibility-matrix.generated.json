@@ -5,8 +5,8 @@
         "case_ids": [
           "awswrangler-3.17.0-glue-s3"
         ],
-        "claim_en": "The accepted AWS SDK for pandas profile writes and reads partitioned Parquet while registering and querying Glue database, table, partition, and S3 metadata through the public Proxy.",
-        "claim_ko": "\uc218\uc6a9\ud55c AWS SDK for pandas profile\uc774 \uacf5\uac1c Proxy\ub97c \ud1b5\ud574 partitioned Parquet\uc744 \uc4f0\uace0 \uc77d\uc73c\uba70 Glue database, table, partition\uacfc S3 metadata\ub97c \ub4f1\ub85d\ud558\uace0 \uc870\ud68c\ud569\ub2c8\ub2e4.",
+        "claim_en": "The annotated AWS SDK for pandas profile writes and reads partitioned Parquet while registering and querying Glue database, table, partition, and S3 metadata through the public Proxy.",
+        "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c AWS SDK for pandas profile\uc774 \uacf5\uac1c Proxy\ub97c \ud1b5\ud574 partitioned Parquet\uc744 \uc4f0\uace0 \uc77d\uc73c\uba70 Glue database, table, partition\uacfc S3 metadata\ub97c \ub4f1\ub85d\ud558\uace0 \uc870\ud68c\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
           "tests/e2e/test_awswrangler.py",
           "docs/compatibility/client-matrix.md"
@@ -49,10 +49,10 @@
           "boto3-botocore-1.43.66-contract",
           "boto3-botocore-1.43.66-public-proxy"
         ],
-        "claim_en": "Every Glue Catalog operation in the accepted boto3 profile crosses the service boundary, the public Proxy path is exercised, and the documented local error catalog stays exhaustive and ordered.",
-        "claim_ko": "\uc218\uc6a9\ud55c boto3 profile\uc758 \ubaa8\ub4e0 Glue Catalog operation\uc774 service boundary\ub97c \ud1b5\uacfc\ud558\uace0 \uacf5\uac1c Proxy \uacbd\ub85c\ub97c \uac80\uc99d\ud558\uba70, \ubb38\uc11c\ud654\ud55c \ub85c\uceec \uc624\ub958 catalog\uc758 \uc804\uccb4\uc131\uacfc \uc21c\uc11c\ub97c \uc720\uc9c0\ud569\ub2c8\ub2e4.",
+        "claim_en": "Every annotated Glue Catalog operation crosses the service boundary, the public Proxy path is exercised, and the documented local error catalog stays exhaustive and ordered.",
+        "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c \ubaa8\ub4e0 Glue Catalog operation\uc774 service boundary\ub97c \ud1b5\uacfc\ud558\uace0 \uacf5\uac1c Proxy \uacbd\ub85c\ub97c \uac80\uc99d\ud558\uba70, \ubb38\uc11c\ud654\ud55c \ub85c\uceec \uc624\ub958 catalog\uc758 \uc804\uccb4\uc131\uacfc \uc21c\uc11c\ub97c \uc720\uc9c0\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
-          "contracts/api-coverage.json",
+          "contracts/api-coverage.generated.json",
           "contracts/glue-error-conditions.yaml",
           "docs/compatibility/api-coverage.generated.md",
           "docs/compatibility/glue-errors.generated.md"
@@ -72,8 +72,8 @@
         "case_ids": [
           "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1"
         ],
-        "claim_en": "The Glue 5 profile covers Open Table Format input, create/read/write/evolution, row-level DML, snapshots and refs, maintenance procedures, managed optimizers, rename/drop/purge, and concurrent commit retry.",
-        "claim_ko": "Glue 5 profile\uc5d0\uc11c Open Table Format input, create/read/write/evolution, row-level DML, snapshot\uacfc ref, maintenance procedure, managed optimizer, rename/drop/purge, concurrent commit retry\ub97c \uac80\uc99d\ud569\ub2c8\ub2e4.",
+        "claim_en": "The annotated Glue 5 profile covers Open Table Format input, create/read/write/evolution, row-level DML, snapshots and refs, maintenance procedures, managed optimizers, rename/drop/purge, and concurrent commit retry.",
+        "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c Glue 5 profile\uc5d0\uc11c Open Table Format input, create/read/write/evolution, row-level DML, snapshot\uacfc ref, maintenance procedure, managed optimizer, rename/drop/purge, concurrent commit retry\ub97c \uac80\uc99d\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
           "tests/e2e/test_glue_spark_catalog.py",
           "docs/protocols/glue-open-table-format.md",
@@ -115,8 +115,8 @@
         "case_ids": [
           "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1"
         ],
-        "claim_en": "The Glue 5 Spark Hive client covers complex types, typed partition pruning, partition DDL and repair, and the supported ALTER TABLE metadata variants.",
-        "claim_ko": "Glue 5 Spark Hive client\ub85c complex type, type \uae30\ubc18 partition pruning, partition DDL\uacfc repair, \uc9c0\uc6d0\ud558\ub294 ALTER TABLE metadata \ubcc0\ud615\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.",
+        "claim_en": "The annotated Glue 5 Spark Hive client covers complex types, typed partition pruning, partition DDL and repair, and the supported ALTER TABLE metadata variants.",
+        "claim_ko": "\uc8fc\uc11d\uc73c\ub85c \uc120\uc5b8\ud55c Glue 5 Spark Hive client\ub85c complex type, type \uae30\ubc18 partition pruning, partition DDL\uacfc repair, \uc9c0\uc6d0\ud558\ub294 ALTER TABLE metadata \ubcc0\ud615\uc744 \uac80\uc99d\ud569\ub2c8\ub2e4.",
         "evidence_paths": [
           "tests/e2e/test_glue_spark_catalog.py",
           "docs/protocols/glue-partition-expressions.md",
@@ -137,7 +137,7 @@
         "title_ko": "Spark Hive catalog \ub3d9\uc791"
       }
     },
-    "evidence_sha256": "4599c54d79152fef04eeb57e8e07b222f2f533bcebcb3954f4656bb299e52647",
+    "evidence_sha256": "f9e2c10ae1c958e3cec0f57f7259affe1f248b536043c4d2b9ab842638f63e34",
     "exclusions": {
       "additional-catalog-clients": {
         "official_sources": [
@@ -176,56 +176,23 @@
         "title_ko": "\ubcf4\uc548\uacfc cloud account \uacbd\uacc4"
       }
     },
-    "summary_en": "Release acceptance is limited to the exact clients, runtimes, operations, and scenarios listed here; it is not a claim of complete AWS Glue or EMR compatibility.",
-    "summary_ko": "Release \uc218\uc6a9 \ubc94\uc704\ub294 \uc5ec\uae30\uc5d0 \uba85\uc2dc\ud55c client, runtime, operation, scenario\ub85c \uc81c\ud55c\ud558\uba70 AWS Glue \ub610\ub294 EMR \uc804\uccb4 \ud638\ud658\uc131\uc744 \uc758\ubbf8\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
+    "summary_en": "Release acceptance is limited to the exact clients, runtimes, operations, and scenarios collected from annotated tests; it is not a claim of complete AWS Glue or EMR compatibility.",
+    "summary_ko": "Release \uc218\uc6a9 \ubc94\uc704\ub294 \uc8fc\uc11d \ud14c\uc2a4\ud2b8\uc5d0\uc11c \uc218\uc9d1\ud55c \uc815\ud655\ud55c client, runtime, operation, scenario\ub85c \uc81c\ud55c\ud558\uba70 AWS Glue \ub610\ub294 EMR \uc804\uccb4 \ud638\ud658\uc131\uc744 \uc758\ubbf8\ud558\uc9c0 \uc54a\uc2b5\ub2c8\ub2e4."
   },
   "cases": [
     {
-      "artifact_ids": [
-        "awswrangler-3.17.0",
-        "boto3-1.43.66",
-        "botocore-1.43.66",
-        "glue-libs-5"
+      "capabilities": [
+        "parquet-round-trip",
+        "database",
+        "table",
+        "partition",
+        "s3-head"
       ],
-      "artifacts": {
-        "awswrangler-3.17.0": {
-          "digest": "sha256:e8093f46159708380d855f9b634e9fe4d6cfd9d0a8719fa6a43c645007e61bb0",
-          "immutable_uri": "https://files.pythonhosted.org/packages/1f/c8/200e6dbc5f5bebdc15fe0eaf676c7e6aa9372646d07c7635e5b822be0bbe/awswrangler-3.17.0-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "awswrangler",
-          "source": "pypi-file-api",
-          "version": "3.17.0"
-        },
-        "boto3-1.43.66": {
-          "digest": "sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb",
-          "immutable_uri": "https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "boto3",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "botocore-1.43.66": {
-          "digest": "sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325",
-          "immutable_uri": "https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "botocore",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "glue-libs-5": {
-          "digest": "sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "immutable_uri": "public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "kind": "oci-image",
-          "name": "aws-glue-libs",
-          "source": "glue-libs-image",
-          "version": "5"
-        }
-      },
       "compatibility_profile_ids": [
-        "awswrangler-glue-s3"
+        "awswrangler-3.17.0-glue-s3"
       ],
       "compatibility_profiles": {
-        "awswrangler-glue-s3": {
+        "awswrangler-3.17.0-glue-s3": {
           "capabilities": [
             "parquet-round-trip",
             "database",
@@ -237,26 +204,12 @@
           "model_fingerprints": {
             "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
           },
-          "official_sources": [
-            "aws-sdk-pandas",
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "glue": [
-              "CreateDatabase",
-              "CreatePartition",
-              "CreateTable",
-              "GetDatabase",
-              "GetPartition",
-              "GetTable"
-            ]
-          },
-          "runtime_kinds": [
-            "glue"
+          "reference_urls": [
+            "https://aws-sdk-pandas.readthedocs.io/en/stable/api.html",
+            "https://github.com/boto/botocore/tree/develop/botocore/data"
           ],
           "services": [
-            "glue",
-            "s3"
+            "glue"
           ],
           "versions": {
             "awswrangler": "3.17.0",
@@ -265,35 +218,34 @@
           }
         }
       },
-      "evidence_sha256": "74e5c09a57ec0c32a38b438cb9c8b964d4c6055ed35698551e5c29adec49a339",
+      "evidence_sha256": "2ca200c2978f172e0f19cbfa33dfa661e74a08bb70dc74ad5c3d1c9f2afde04b",
       "expected_duration_minutes": 60,
       "id": "awswrangler-3.17.0-glue-s3",
       "lane": "required",
+      "operations": {
+        "glue": [
+          "CreateDatabase",
+          "CreatePartition",
+          "CreateTable",
+          "GetDatabase",
+          "GetPartition",
+          "GetTable"
+        ]
+      },
       "release_blocking": true,
       "runner": {
-        "allowed_runtime_kinds": [
-          "emr",
-          "glue"
-        ],
         "command_prefix": [
           "uv",
           "run",
           "pytest"
         ],
         "kind": "docker-pytest",
-        "source": "docker-compose",
         "timeout_config_path": "tests.e2e_timeout_seconds"
       },
       "runner_adapter_id": "docker-e2e",
       "runtime": {
-        "config_profile": "glue-5.0",
-        "glue_version": "5.0",
-        "iceberg_version": "1.7.1",
-        "java_version": "17",
         "kind": "glue",
-        "python_version": "3.11",
-        "source": "glue-5.0",
-        "spark_version": "3.5.4"
+        "python_version": "3.11"
       },
       "runtime_profile_id": "glue-5.0-spark-3.5.4",
       "scenario": {
@@ -302,106 +254,62 @@
           "parquet-glue-s3-round-trip"
         ],
         "test_nodes": [
-          "tests/e2e/test_awswrangler.py"
+          "tests/e2e/test_awswrangler.py::test_aws_sdk_for_pandas_parquet_glue_catalog_round_trip"
         ]
       },
-      "scenario_set_id": "awswrangler-round-trip",
+      "scenario_set_id": "awswrangler-3.17.0-glue-s3",
+      "support": "verified",
+      "test_nodes": [
+        "tests/e2e/test_awswrangler.py::test_aws_sdk_for_pandas_parquet_glue_catalog_round_trip"
+      ],
       "title_en": "AWS SDK for pandas Glue and S3 round trip",
       "title_ko": "AWS SDK for pandas Glue\uc640 S3 \uc655\ubcf5"
     },
     {
-      "artifact_ids": [
-        "boto3-1.43.66",
-        "botocore-1.43.66"
+      "capabilities": [
+        "catalog-operation-boundary",
+        "cluster-lifecycle",
+        "hive-partition-ddl",
+        "hive-table-alter",
+        "management-read-model",
+        "modeled-errors",
+        "pagination",
+        "partition-repair",
+        "segments",
+        "step-cancellation",
+        "step-lifecycle",
+        "table-versioning",
+        "tag-control",
+        "typed-partition-expression"
       ],
-      "artifacts": {
-        "boto3-1.43.66": {
-          "digest": "sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb",
-          "immutable_uri": "https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "boto3",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "botocore-1.43.66": {
-          "digest": "sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325",
-          "immutable_uri": "https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "botocore",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        }
-      },
       "compatibility_profile_ids": [
-        "boto3-control-plane"
+        "boto3-botocore-1.43.66-contract"
       ],
       "compatibility_profiles": {
-        "boto3-control-plane": {
+        "boto3-botocore-1.43.66-contract": {
           "capabilities": [
-            "aws-json-1.1",
-            "sigv4",
+            "catalog-operation-boundary",
+            "cluster-lifecycle",
+            "hive-partition-ddl",
+            "hive-table-alter",
+            "management-read-model",
             "modeled-errors",
-            "pagination"
+            "pagination",
+            "partition-repair",
+            "segments",
+            "step-cancellation",
+            "step-lifecycle",
+            "table-versioning",
+            "tag-control",
+            "typed-partition-expression"
           ],
           "client": "boto3",
           "model_fingerprints": {
             "emr": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad",
             "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
           },
-          "official_sources": [
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "emr": [
-              "AddJobFlowSteps",
-              "AddTags",
-              "CancelSteps",
-              "DescribeCluster",
-              "DescribeStep",
-              "ListBootstrapActions",
-              "ListClusters",
-              "ListSteps",
-              "RemoveTags",
-              "RunJobFlow",
-              "SetTerminationProtection",
-              "SetVisibleToAllUsers",
-              "TerminateJobFlows"
-            ],
-            "glue": [
-              "BatchCreatePartition",
-              "BatchDeletePartition",
-              "BatchGetPartition",
-              "BatchGetTableOptimizer",
-              "BatchUpdatePartition",
-              "CreateDatabase",
-              "CreatePartition",
-              "CreateTable",
-              "CreateTableOptimizer",
-              "DeleteDatabase",
-              "DeletePartition",
-              "DeleteTable",
-              "DeleteTableOptimizer",
-              "GetCatalogImportStatus",
-              "GetDatabase",
-              "GetDatabases",
-              "GetPartition",
-              "GetPartitions",
-              "GetTable",
-              "GetTableOptimizer",
-              "GetTables",
-              "GetTableVersion",
-              "GetTableVersions",
-              "ListTableOptimizerRuns",
-              "UpdateDatabase",
-              "UpdatePartition",
-              "UpdateTable",
-              "UpdateTableOptimizer"
-            ]
-          },
-          "runtime_kinds": [
-            "python",
-            "emr",
-            "glue"
+          "reference_urls": [
+            "https://github.com/boto/botocore/tree/develop/botocore/data"
           ],
           "services": [
             "emr",
@@ -413,29 +321,71 @@
           }
         }
       },
-      "evidence_sha256": "60bcf2133f5fb289e3eaa67693ebbdf9c246c2f80b0cd9104cff3cf4b29cc1d7",
+      "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
       "expected_duration_minutes": 15,
       "id": "boto3-botocore-1.43.66-contract",
       "lane": "required",
+      "operations": {
+        "emr": [
+          "AddJobFlowSteps",
+          "AddTags",
+          "CancelSteps",
+          "DescribeCluster",
+          "DescribeStep",
+          "ListBootstrapActions",
+          "ListClusters",
+          "ListSteps",
+          "RemoveTags",
+          "RunJobFlow",
+          "SetTerminationProtection",
+          "SetVisibleToAllUsers",
+          "TerminateJobFlows"
+        ],
+        "glue": [
+          "BatchCreatePartition",
+          "BatchDeletePartition",
+          "BatchGetPartition",
+          "BatchGetTableOptimizer",
+          "BatchUpdatePartition",
+          "CreateDatabase",
+          "CreatePartition",
+          "CreateTable",
+          "CreateTableOptimizer",
+          "DeleteDatabase",
+          "DeletePartition",
+          "DeleteTable",
+          "DeleteTableOptimizer",
+          "GetCatalogImportStatus",
+          "GetDatabase",
+          "GetDatabases",
+          "GetPartition",
+          "GetPartitions",
+          "GetTable",
+          "GetTableOptimizer",
+          "GetTableVersion",
+          "GetTableVersions",
+          "GetTables",
+          "ListTableOptimizerRuns",
+          "UpdateDatabase",
+          "UpdatePartition",
+          "UpdateTable",
+          "UpdateTableOptimizer"
+        ]
+      },
       "release_blocking": true,
       "runner": {
-        "allowed_runtime_kinds": [
-          "python"
-        ],
         "command_prefix": [
           "uv",
           "run",
           "pytest"
         ],
         "kind": "pytest",
-        "source": "pytest",
         "timeout_config_path": "tests.contract_timeout_seconds"
       },
       "runner_adapter_id": "pytest-contract",
       "runtime": {
         "kind": "python",
-        "python_version": "3.11",
-        "source": "pytest"
+        "python_version": "3.11"
       },
       "runtime_profile_id": "python-3.11",
       "scenario": {
@@ -446,125 +396,53 @@
           "modeled-service-errors"
         ],
         "test_nodes": [
-          "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
           "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
+          "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
           "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
           "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
-          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
           "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
+          "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
           "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
           "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
         ]
       },
-      "scenario_set_id": "boto3-contracts",
+      "scenario_set_id": "boto3-botocore-1.43.66-contract",
+      "support": "verified",
+      "test_nodes": [
+        "emr/tests/test_boto3_contract.py::test_boto3_cancel_steps",
+        "emr/tests/test_boto3_contract.py::test_boto3_cluster_step_and_control_operations",
+        "emr/tests/test_boto3_contract.py::test_boto3_receives_documented_invalid_request",
+        "glue/tests/test_boto3_contract.py::test_all_implemented_glue_operations_through_service_boundary",
+        "glue/tests/test_boto3_contract.py::test_get_partitions_combines_typed_expression_paging_and_segments",
+        "glue/tests/test_boto3_contract.py::test_management_read_model_lists_catalog_tree",
+        "glue/tests/test_hive_partition_ddl_contract.py::test_hive_partition_ddl_operation_sequence_is_deterministic",
+        "glue/tests/test_hive_table_alter_contract.py::test_hive_table_alter_preserves_metadata_versions_and_partitions"
+      ],
       "title_en": "boto3 and botocore control-plane contracts",
       "title_ko": "boto3\uc640 botocore control plane \uacc4\uc57d"
     },
     {
-      "artifact_ids": [
-        "boto3-1.43.66",
-        "botocore-1.43.66",
-        "glue-libs-5"
+      "capabilities": [
+        "public-proxy",
+        "catalog-operation-boundary"
       ],
-      "artifacts": {
-        "boto3-1.43.66": {
-          "digest": "sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb",
-          "immutable_uri": "https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "boto3",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "botocore-1.43.66": {
-          "digest": "sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325",
-          "immutable_uri": "https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "botocore",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "glue-libs-5": {
-          "digest": "sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "immutable_uri": "public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "kind": "oci-image",
-          "name": "aws-glue-libs",
-          "source": "glue-libs-image",
-          "version": "5"
-        }
-      },
       "compatibility_profile_ids": [
-        "boto3-control-plane"
+        "boto3-botocore-1.43.66-public-proxy"
       ],
       "compatibility_profiles": {
-        "boto3-control-plane": {
+        "boto3-botocore-1.43.66-public-proxy": {
           "capabilities": [
-            "aws-json-1.1",
-            "sigv4",
-            "modeled-errors",
-            "pagination"
+            "public-proxy",
+            "catalog-operation-boundary"
           ],
           "client": "boto3",
           "model_fingerprints": {
-            "emr": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad",
             "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
           },
-          "official_sources": [
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "emr": [
-              "AddJobFlowSteps",
-              "AddTags",
-              "CancelSteps",
-              "DescribeCluster",
-              "DescribeStep",
-              "ListBootstrapActions",
-              "ListClusters",
-              "ListSteps",
-              "RemoveTags",
-              "RunJobFlow",
-              "SetTerminationProtection",
-              "SetVisibleToAllUsers",
-              "TerminateJobFlows"
-            ],
-            "glue": [
-              "BatchCreatePartition",
-              "BatchDeletePartition",
-              "BatchGetPartition",
-              "BatchGetTableOptimizer",
-              "BatchUpdatePartition",
-              "CreateDatabase",
-              "CreatePartition",
-              "CreateTable",
-              "CreateTableOptimizer",
-              "DeleteDatabase",
-              "DeletePartition",
-              "DeleteTable",
-              "DeleteTableOptimizer",
-              "GetCatalogImportStatus",
-              "GetDatabase",
-              "GetDatabases",
-              "GetPartition",
-              "GetPartitions",
-              "GetTable",
-              "GetTableOptimizer",
-              "GetTables",
-              "GetTableVersion",
-              "GetTableVersions",
-              "ListTableOptimizerRuns",
-              "UpdateDatabase",
-              "UpdatePartition",
-              "UpdateTable",
-              "UpdateTableOptimizer"
-            ]
-          },
-          "runtime_kinds": [
-            "python",
-            "emr",
-            "glue"
+          "reference_urls": [
+            "https://github.com/boto/botocore/tree/develop/botocore/data"
           ],
           "services": [
-            "emr",
             "glue"
           ],
           "versions": {
@@ -573,35 +451,56 @@
           }
         }
       },
-      "evidence_sha256": "8598a4f9863fce32982e6e090ef9ddcbdf7e15cb7253fb015581f7a39063defd",
+      "evidence_sha256": "19130720ce06069814dfb605d9c2947ff2648b8dbeab6783047e95f19679e394",
       "expected_duration_minutes": 60,
       "id": "boto3-botocore-1.43.66-public-proxy",
       "lane": "required",
+      "operations": {
+        "glue": [
+          "BatchCreatePartition",
+          "BatchDeletePartition",
+          "BatchGetPartition",
+          "BatchGetTableOptimizer",
+          "BatchUpdatePartition",
+          "CreateDatabase",
+          "CreatePartition",
+          "CreateTable",
+          "CreateTableOptimizer",
+          "DeleteDatabase",
+          "DeletePartition",
+          "DeleteTable",
+          "DeleteTableOptimizer",
+          "GetCatalogImportStatus",
+          "GetDatabase",
+          "GetDatabases",
+          "GetPartition",
+          "GetPartitions",
+          "GetTable",
+          "GetTableOptimizer",
+          "GetTableVersion",
+          "GetTableVersions",
+          "GetTables",
+          "ListTableOptimizerRuns",
+          "UpdateDatabase",
+          "UpdatePartition",
+          "UpdateTable",
+          "UpdateTableOptimizer"
+        ]
+      },
       "release_blocking": true,
       "runner": {
-        "allowed_runtime_kinds": [
-          "emr",
-          "glue"
-        ],
         "command_prefix": [
           "uv",
           "run",
           "pytest"
         ],
         "kind": "docker-pytest",
-        "source": "docker-compose",
         "timeout_config_path": "tests.e2e_timeout_seconds"
       },
       "runner_adapter_id": "docker-e2e",
       "runtime": {
-        "config_profile": "glue-5.0",
-        "glue_version": "5.0",
-        "iceberg_version": "1.7.1",
-        "java_version": "17",
         "kind": "glue",
-        "python_version": "3.11",
-        "source": "glue-5.0",
-        "spark_version": "3.5.4"
+        "python_version": "3.11"
       },
       "runtime_profile_id": "glue-5.0-spark-3.5.4",
       "scenario": {
@@ -610,136 +509,29 @@
           "glue-operations-through-public-proxy"
         ],
         "test_nodes": [
-          "tests/e2e/test_public_proxy_contracts.py"
+          "tests/e2e/test_public_proxy_contracts.py::test_all_implemented_glue_operations_through_public_proxy"
         ]
       },
-      "scenario_set_id": "boto3-public-proxy",
+      "scenario_set_id": "boto3-botocore-1.43.66-public-proxy",
+      "support": "verified",
+      "test_nodes": [
+        "tests/e2e/test_public_proxy_contracts.py::test_all_implemented_glue_operations_through_public_proxy"
+      ],
       "title_en": "boto3 Glue operations through the public Proxy",
       "title_ko": "\uacf5\uac1c Proxy\ub97c \ud1b5\uacfc\ud558\ub294 boto3 Glue operation"
     },
     {
-      "artifact_ids": [
-        "boto3-1.43.66",
-        "botocore-1.43.66",
-        "amazon-linux-2023",
-        "spark-3.5.4-hadoop3"
+      "capabilities": [
+        "bootstrap-action",
+        "s3-artifact-download",
+        "local-spark-step",
+        "step-lifecycle"
       ],
-      "artifacts": {
-        "amazon-linux-2023": {
-          "digest": "sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2",
-          "immutable_uri": "public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:6d8e068b91f351df5bf6acd4bd261316e42747ad4bae76689ff6f4939e2180a2",
-          "kind": "oci-image",
-          "name": "amazonlinux",
-          "source": "amazon-linux-image",
-          "version": "2023"
-        },
-        "boto3-1.43.66": {
-          "digest": "sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb",
-          "immutable_uri": "https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "boto3",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "botocore-1.43.66": {
-          "digest": "sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325",
-          "immutable_uri": "https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "botocore",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "spark-3.5.4-hadoop3": {
-          "digest": "sha512:df049be04119d4943f5c048108e511a95d05a7cdcf7f1256384a3a6caa322f7898b6b1b20b0ad45036887f4ae93ce5f17ac97906950b14f07532d94ed7fe1faa",
-          "immutable_uri": "https://archive.apache.org/dist/spark/spark-3.5.4/spark-3.5.4-bin-hadoop3.tgz",
-          "kind": "archive",
-          "name": "apache-spark",
-          "source": "spark-downloads",
-          "version": "3.5.4"
-        }
-      },
       "compatibility_profile_ids": [
-        "boto3-control-plane",
-        "emr-local-spark"
+        "emr-7.8.0-spark-3.5.4"
       ],
       "compatibility_profiles": {
-        "boto3-control-plane": {
-          "capabilities": [
-            "aws-json-1.1",
-            "sigv4",
-            "modeled-errors",
-            "pagination"
-          ],
-          "client": "boto3",
-          "model_fingerprints": {
-            "emr": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad",
-            "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
-          },
-          "official_sources": [
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "emr": [
-              "AddJobFlowSteps",
-              "AddTags",
-              "CancelSteps",
-              "DescribeCluster",
-              "DescribeStep",
-              "ListBootstrapActions",
-              "ListClusters",
-              "ListSteps",
-              "RemoveTags",
-              "RunJobFlow",
-              "SetTerminationProtection",
-              "SetVisibleToAllUsers",
-              "TerminateJobFlows"
-            ],
-            "glue": [
-              "BatchCreatePartition",
-              "BatchDeletePartition",
-              "BatchGetPartition",
-              "BatchGetTableOptimizer",
-              "BatchUpdatePartition",
-              "CreateDatabase",
-              "CreatePartition",
-              "CreateTable",
-              "CreateTableOptimizer",
-              "DeleteDatabase",
-              "DeletePartition",
-              "DeleteTable",
-              "DeleteTableOptimizer",
-              "GetCatalogImportStatus",
-              "GetDatabase",
-              "GetDatabases",
-              "GetPartition",
-              "GetPartitions",
-              "GetTable",
-              "GetTableOptimizer",
-              "GetTables",
-              "GetTableVersion",
-              "GetTableVersions",
-              "ListTableOptimizerRuns",
-              "UpdateDatabase",
-              "UpdatePartition",
-              "UpdateTable",
-              "UpdateTableOptimizer"
-            ]
-          },
-          "runtime_kinds": [
-            "python",
-            "emr",
-            "glue"
-          ],
-          "services": [
-            "emr",
-            "glue"
-          ],
-          "versions": {
-            "boto3": "1.43.66",
-            "botocore": "1.43.66"
-          }
-        },
-        "emr-local-spark": {
+        "emr-7.8.0-spark-3.5.4": {
           "capabilities": [
             "bootstrap-action",
             "s3-artifact-download",
@@ -750,62 +542,48 @@
           "model_fingerprints": {
             "emr": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad"
           },
-          "official_sources": [
-            "emr-7.8.0",
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "emr": [
-              "AddJobFlowSteps",
-              "DescribeCluster",
-              "DescribeStep",
-              "RunJobFlow",
-              "TerminateJobFlows"
-            ]
-          },
-          "runtime_kinds": [
-            "emr"
+          "reference_urls": [
+            "https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html",
+            "https://github.com/boto/botocore/tree/develop/botocore/data"
           ],
           "services": [
-            "emr",
-            "s3"
+            "emr"
           ],
           "versions": {
             "boto3": "1.43.66",
+            "botocore": "1.43.66",
             "emr": "7.8.0",
             "spark": "3.5.4"
           }
         }
       },
-      "evidence_sha256": "b70383d9abced9024296de8b77c5a84291670fd5847ef534599be44bb7f155f9",
+      "evidence_sha256": "7af9b050b4ac5de84d62c12e5e775b9d32f554c32b0ee1a83561d2b11218f022",
       "expected_duration_minutes": 60,
       "id": "emr-7.8.0-spark-3.5.4",
       "lane": "required",
+      "operations": {
+        "emr": [
+          "AddJobFlowSteps",
+          "DescribeCluster",
+          "DescribeStep",
+          "RunJobFlow",
+          "TerminateJobFlows"
+        ]
+      },
       "release_blocking": true,
       "runner": {
-        "allowed_runtime_kinds": [
-          "emr",
-          "glue"
-        ],
         "command_prefix": [
           "uv",
           "run",
           "pytest"
         ],
         "kind": "docker-pytest",
-        "source": "docker-compose",
         "timeout_config_path": "tests.e2e_timeout_seconds"
       },
       "runner_adapter_id": "docker-e2e",
       "runtime": {
-        "aws_spark_version": "3.5.4-amzn-0",
-        "config_profile": "spark-3.5.4",
-        "java_version": "17",
         "kind": "emr",
-        "python_version": "3.11",
-        "release_label": "emr-7.8.0",
-        "source": "emr-7.8.0",
-        "spark_version": "3.5.4"
+        "python_version": "3.11"
       },
       "runtime_profile_id": "emr-7.8.0-spark-3.5.4",
       "scenario": {
@@ -814,231 +592,95 @@
           "bootstrap-s3-spark-step-lifecycle"
         ],
         "test_nodes": [
-          "tests/e2e/test_emr_spark.py"
+          "tests/e2e/test_emr_spark.py::test_boto3_runs_bootstrap_and_real_spark_through_public_proxy"
         ]
       },
-      "scenario_set_id": "emr-real-spark",
+      "scenario_set_id": "emr-7.8.0-spark-3.5.4",
+      "support": "verified",
+      "test_nodes": [
+        "tests/e2e/test_emr_spark.py::test_boto3_runs_bootstrap_and_real_spark_through_public_proxy"
+      ],
       "title_en": "EMR bootstrap and real local Spark step",
       "title_ko": "EMR bootstrap\uacfc \uc2e4\uc81c local Spark step"
     },
     {
-      "artifact_ids": [
-        "boto3-1.43.66",
-        "botocore-1.43.66",
-        "glue-libs-5"
+      "capabilities": [
+        "hive-metastore",
+        "partition-pruning",
+        "partition-ddl",
+        "table-alter",
+        "iceberg-glue-catalog",
+        "iceberg-row-level-dml",
+        "iceberg-time-travel",
+        "iceberg-maintenance-procedures"
       ],
-      "artifacts": {
-        "boto3-1.43.66": {
-          "digest": "sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb",
-          "immutable_uri": "https://files.pythonhosted.org/packages/07/bc/131d596cf673f7b7c6b52ff88fa05f73bbdf9dff70d93e31d4b62645def3/boto3-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "boto3",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "botocore-1.43.66": {
-          "digest": "sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325",
-          "immutable_uri": "https://files.pythonhosted.org/packages/84/e6/53f0e28dea0f17a1b041bb3356d0c21fda7ba4198a515cfaf4d5f3088fe3/botocore-1.43.66-py3-none-any.whl",
-          "kind": "python-wheel",
-          "name": "botocore",
-          "source": "pypi-file-api",
-          "version": "1.43.66"
-        },
-        "glue-libs-5": {
-          "digest": "sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "immutable_uri": "public.ecr.aws/glue/aws-glue-libs:5@sha256:9a96a1097e7b992d8fb4e4430d01e6e797ddac26ff0ed405edbd0f3d71e426d7",
-          "kind": "oci-image",
-          "name": "aws-glue-libs",
-          "source": "glue-libs-image",
-          "version": "5"
-        }
-      },
       "compatibility_profile_ids": [
-        "boto3-control-plane",
-        "glue-spark-hive-iceberg"
+        "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1"
       ],
       "compatibility_profiles": {
-        "boto3-control-plane": {
-          "capabilities": [
-            "aws-json-1.1",
-            "sigv4",
-            "modeled-errors",
-            "pagination"
-          ],
-          "client": "boto3",
-          "model_fingerprints": {
-            "emr": "119ae1739d00d3e9361fa7e24d2e766e8f78e3c5f52c9b6b82c3ed271bafc2ad",
-            "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
-          },
-          "official_sources": [
-            "botocore-models"
-          ],
-          "operation_ids": {
-            "emr": [
-              "AddJobFlowSteps",
-              "AddTags",
-              "CancelSteps",
-              "DescribeCluster",
-              "DescribeStep",
-              "ListBootstrapActions",
-              "ListClusters",
-              "ListSteps",
-              "RemoveTags",
-              "RunJobFlow",
-              "SetTerminationProtection",
-              "SetVisibleToAllUsers",
-              "TerminateJobFlows"
-            ],
-            "glue": [
-              "BatchCreatePartition",
-              "BatchDeletePartition",
-              "BatchGetPartition",
-              "BatchGetTableOptimizer",
-              "BatchUpdatePartition",
-              "CreateDatabase",
-              "CreatePartition",
-              "CreateTable",
-              "CreateTableOptimizer",
-              "DeleteDatabase",
-              "DeletePartition",
-              "DeleteTable",
-              "DeleteTableOptimizer",
-              "GetCatalogImportStatus",
-              "GetDatabase",
-              "GetDatabases",
-              "GetPartition",
-              "GetPartitions",
-              "GetTable",
-              "GetTableOptimizer",
-              "GetTables",
-              "GetTableVersion",
-              "GetTableVersions",
-              "ListTableOptimizerRuns",
-              "UpdateDatabase",
-              "UpdatePartition",
-              "UpdateTable",
-              "UpdateTableOptimizer"
-            ]
-          },
-          "runtime_kinds": [
-            "python",
-            "emr",
-            "glue"
-          ],
-          "services": [
-            "emr",
-            "glue"
-          ],
-          "versions": {
-            "boto3": "1.43.66",
-            "botocore": "1.43.66"
-          }
-        },
-        "glue-spark-hive-iceberg": {
+        "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1": {
           "capabilities": [
             "hive-metastore",
-            "complex-glue-types",
             "partition-pruning",
             "partition-ddl",
-            "partition-repair",
             "table-alter",
             "iceberg-glue-catalog",
-            "iceberg-open-table-format-input",
-            "schema-evolution",
-            "iceberg-hidden-partitioning",
-            "iceberg-partition-evolution",
-            "iceberg-sort-evolution",
-            "iceberg-identifier-fields",
             "iceberg-row-level-dml",
-            "iceberg-dynamic-overwrite",
-            "iceberg-copy-on-write",
-            "iceberg-merge-on-read",
-            "iceberg-concurrent-commit-retry",
             "iceberg-time-travel",
-            "iceberg-branches-tags",
-            "iceberg-metadata-tables",
-            "iceberg-snapshot-procedures",
-            "iceberg-maintenance-procedures",
-            "iceberg-managed-table-optimizers",
-            "iceberg-orphan-s3-cleanup",
-            "iceberg-rename",
-            "iceberg-catalog-drop",
-            "iceberg-purge"
+            "iceberg-maintenance-procedures"
           ],
           "client": "spark-glue-catalog",
           "model_fingerprints": {
             "glue": "b2a63983f6537c78842bab0bb8764922ecb54ea57d5b8606c0bac0ea0d50ac1d"
           },
-          "official_sources": [
-            "glue-5.0",
-            "glue-hive",
-            "glue-iceberg",
-            "glue-open-table-format",
-            "glue-table-optimizers",
-            "iceberg-evolution",
-            "iceberg-spark-writes",
-            "iceberg-configuration",
-            "iceberg-spark-queries",
-            "iceberg-spark-ddl",
-            "iceberg-spark-procedures",
-            "iceberg-branching",
-            "iceberg-glue-catalog-source"
-          ],
-          "operation_ids": {
-            "glue": [
-              "CreateDatabase",
-              "CreateTable",
-              "CreateTableOptimizer",
-              "DeleteTableOptimizer",
-              "GetDatabase",
-              "GetTable",
-              "ListTableOptimizerRuns",
-              "UpdateTable"
-            ]
-          },
-          "runtime_kinds": [
-            "glue"
+          "reference_urls": [
+            "https://docs.aws.amazon.com/glue/latest/dg/migrating-version-50.html",
+            "https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-glue-data-catalog-hive.html",
+            "https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html",
+            "https://github.com/boto/botocore/tree/develop/botocore/data"
           ],
           "services": [
-            "glue",
-            "s3"
+            "glue"
           ],
           "versions": {
+            "boto3": "1.43.66",
+            "botocore": "1.43.66",
             "glue": "5.0",
             "iceberg": "1.7.1",
             "spark": "3.5.4"
           }
         }
       },
-      "evidence_sha256": "4fa3c08945ba9aed74b19590c2e518f6f0b585a81d0cae3e18b1601c03909585",
+      "evidence_sha256": "11f660670568d59389d3105a81de868baa92eb21b42e9ea8e45766fb3c44392f",
       "expected_duration_minutes": 60,
       "id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
       "lane": "required",
+      "operations": {
+        "glue": [
+          "CreateDatabase",
+          "CreateTable",
+          "CreateTableOptimizer",
+          "DeleteTableOptimizer",
+          "GetDatabase",
+          "GetTable",
+          "ListTableOptimizerRuns",
+          "UpdateTable"
+        ]
+      },
       "release_blocking": true,
       "runner": {
-        "allowed_runtime_kinds": [
-          "emr",
-          "glue"
-        ],
         "command_prefix": [
           "uv",
           "run",
           "pytest"
         ],
         "kind": "docker-pytest",
-        "source": "docker-compose",
         "timeout_config_path": "tests.e2e_timeout_seconds"
       },
       "runner_adapter_id": "docker-e2e",
       "runtime": {
-        "config_profile": "glue-5.0",
-        "glue_version": "5.0",
-        "iceberg_version": "1.7.1",
-        "java_version": "17",
         "kind": "glue",
-        "python_version": "3.11",
-        "source": "glue-5.0",
-        "spark_version": "3.5.4"
+        "python_version": "3.11"
       },
       "runtime_profile_id": "glue-5.0-spark-3.5.4",
       "scenario": {
@@ -1058,21 +700,27 @@
           "iceberg-multi-container-contention"
         ],
         "test_nodes": [
-          "tests/e2e/test_glue_spark_catalog.py"
+          "tests/e2e/test_glue_spark_catalog.py::test_real_glue_spark_hive_and_iceberg_through_public_proxy"
         ]
       },
-      "scenario_set_id": "glue-real-spark-catalogs",
+      "scenario_set_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
+      "support": "verified",
+      "test_nodes": [
+        "tests/e2e/test_glue_spark_catalog.py::test_real_glue_spark_hive_and_iceberg_through_public_proxy"
+      ],
       "title_en": "Glue Spark Hive and Iceberg catalogs",
       "title_ko": "Glue Spark Hive\uc640 Iceberg catalog"
     }
   ],
   "fix_hints": [
-    "Client drift: add a new exact artifact and case to compatibility/cases.yaml.",
-    "Protocol drift: update the owning adapter and modeled-error tests before the model fingerprint.",
-    "Runtime drift: update config/mystack.yaml, the Dockerfile lock, and the matching runtime profile together.",
-    "Scenario drift: update only the named scenario set; do not create an implicit version cross-product."
+    "Case drift: add or update a typed pytest compatibility annotation.",
+    "Scope drift: update only the explicit compatibility-scope policy.",
+    "Operation drift: update implementation inventory or NOT_PLANNED policy."
   ],
-  "generated_from": "compatibility/cases.yaml",
+  "generated_from": {
+    "annotated_evidence": "contracts/compatibility-evidence.generated.json",
+    "scope_policy": "contracts/compatibility-scope-policy.yaml"
+  },
   "github_matrices": {
     "nightly_contract": {
       "include": []
@@ -1090,7 +738,7 @@
       "include": [
         {
           "case_id": "boto3-botocore-1.43.66-contract",
-          "evidence_sha256": "60bcf2133f5fb289e3eaa67693ebbdf9c246c2f80b0cd9104cff3cf4b29cc1d7",
+          "evidence_sha256": "f8c41f3007dc6d50f085a3554976faabdb0667845c3e3f2934af317c30670084",
           "python_version": "3.11",
           "timeout_minutes": 15
         }
@@ -1100,25 +748,25 @@
       "include": [
         {
           "case_id": "awswrangler-3.17.0-glue-s3",
-          "evidence_sha256": "74e5c09a57ec0c32a38b438cb9c8b964d4c6055ed35698551e5c29adec49a339",
+          "evidence_sha256": "2ca200c2978f172e0f19cbfa33dfa661e74a08bb70dc74ad5c3d1c9f2afde04b",
           "python_version": "3.11",
           "timeout_minutes": 60
         },
         {
           "case_id": "boto3-botocore-1.43.66-public-proxy",
-          "evidence_sha256": "8598a4f9863fce32982e6e090ef9ddcbdf7e15cb7253fb015581f7a39063defd",
+          "evidence_sha256": "19130720ce06069814dfb605d9c2947ff2648b8dbeab6783047e95f19679e394",
           "python_version": "3.11",
           "timeout_minutes": 60
         },
         {
           "case_id": "emr-7.8.0-spark-3.5.4",
-          "evidence_sha256": "b70383d9abced9024296de8b77c5a84291670fd5847ef534599be44bb7f155f9",
+          "evidence_sha256": "7af9b050b4ac5de84d62c12e5e775b9d32f554c32b0ee1a83561d2b11218f022",
           "python_version": "3.11",
           "timeout_minutes": 60
         },
         {
           "case_id": "glue-5.0-spark-3.5.4-hive-iceberg-1.7.1",
-          "evidence_sha256": "4fa3c08945ba9aed74b19590c2e518f6f0b585a81d0cae3e18b1601c03909585",
+          "evidence_sha256": "11f660670568d59389d3105a81de868baa92eb21b42e9ea8e45766fb3c44392f",
           "python_version": "3.11",
           "timeout_minutes": 60
         }
@@ -1155,10 +803,6 @@
     }
   },
   "official_sources": {
-    "amazon-linux-image": {
-      "title": "Amazon Linux public ECR image",
-      "url": "https://gallery.ecr.aws/amazonlinux/amazonlinux"
-    },
     "aws-sdk-pandas": {
       "title": "AWS SDK for pandas API",
       "url": "https://aws-sdk-pandas.readthedocs.io/en/stable/api.html"
@@ -1167,17 +811,9 @@
       "title": "botocore AWS service models",
       "url": "https://github.com/boto/botocore/tree/develop/botocore/data"
     },
-    "docker-compose": {
-      "title": "Docker Compose in CI",
-      "url": "https://docs.docker.com/compose/how-tos/ci-cd/"
-    },
     "emr-7.8.0": {
       "title": "Amazon EMR 7.8.0 release",
       "url": "https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-780-release.html"
-    },
-    "github-matrix": {
-      "title": "GitHub Actions shared matrices",
-      "url": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations"
     },
     "glue-5.0": {
       "title": "AWS Glue 5.0 migration guide",
@@ -1190,10 +826,6 @@
     "glue-iceberg": {
       "title": "Using Apache Iceberg with AWS Glue",
       "url": "https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-format-iceberg.html"
-    },
-    "glue-libs-image": {
-      "title": "AWS Glue libraries public ECR image",
-      "url": "https://gallery.ecr.aws/glue/aws-glue-libs"
     },
     "glue-open-table-format": {
       "title": "AWS Glue Open Table Format CreateTable input",
@@ -1234,20 +866,8 @@
     "iceberg-spark-writes": {
       "title": "Apache Iceberg 1.7.1 Spark writes",
       "url": "https://iceberg.apache.org/docs/1.7.1/spark-writes/"
-    },
-    "pypi-file-api": {
-      "title": "Python Package Index file API",
-      "url": "https://docs.pypi.org/api/json/"
-    },
-    "pytest": {
-      "title": "pytest invocation",
-      "url": "https://docs.pytest.org/en/stable/how-to/usage.html"
-    },
-    "spark-downloads": {
-      "title": "Apache Spark downloads and release verification",
-      "url": "https://spark.apache.org/downloads.html"
     }
   },
   "schema_version": 1,
-  "source_sha256": "25e391107147c9b7083c1286209f6790fd03fc0816c55e049615995d8547bc7a"
+  "source_sha256": "aef10acb7ab14b9f92a95e1eb402e4be6d611566940637b976ecb28b058ca855"
 }

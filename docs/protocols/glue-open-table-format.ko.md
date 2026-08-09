@@ -129,7 +129,7 @@ botocore, Glue, Iceberg upgrade 후 이 경로가 깨지면 다음 순서로 확
 2. Type/action/transform/Iceberg spec 변경: `glue/domain/open_table_format.py`
 3. 실행 순서/CAS/보상 변경: `glue/application/open_table_format.py`
 4. LocalStack/S3 codec 또는 endpoint 변경: `glue/adapters/outbound/iceberg_metadata.py`
-5. 실제 client 근거: `glue/scripts/e2e/open_table_format.py`, `compatibility/cases.yaml`
+5. 실제 client 근거: `glue/scripts/e2e/open_table_format.py`, typed pytest compatibility annotation
 
 <!-- section: evidence -->
 ## 검증 근거와 한계

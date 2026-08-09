@@ -225,16 +225,16 @@ jobs:
           uv run python scripts/model_manifest.py
           --check contracts/service-model-manifest.json
           --report model-drift-report.json
-      - name: Verify manifest-driven interoperability evidence
-        run: uv run python scripts/compatibility_matrix.py --check
       - name: Verify test-declared interoperability evidence
         run: make compatibility-evidence-check
+      - name: Verify annotation-backed interoperability evidence
+        run: uv run python scripts/compatibility_matrix.py --check
       - name: Verify deterministic Glue error contracts
         run: make glue-errors-check
       - name: Verify complete API classification and generated bilingual matrix
         run: >-
           uv run python scripts/api_coverage.py
-          --check contracts/api-coverage.json
+          --check contracts/api-coverage.generated.json
           --english docs/compatibility/api-coverage.generated.md
           --korean docs/compatibility/api-coverage.ko.generated.md
           --report api-coverage-drift-report.json
