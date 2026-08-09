@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.ci_test_report import JUnitInput, ReportStatus, ReportWriter, parse_input
+from scripts.quality.ci_test_report import JUnitInput, ReportStatus, ReportWriter, parse_input
 
 ROOT = Path(__file__).parents[1]
 
