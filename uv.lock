@@ -407,6 +407,7 @@ source = { editable = "emr" }
 dependencies = [
     { name = "boto3" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "mystack-aws-protocol" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -415,6 +416,7 @@ dependencies = [
 requires-dist = [
     { name = "boto3", specifier = "==1.43.66" },
     { name = "fastapi", specifier = ">=0.116,<1" },
+    { name = "httpx", specifier = ">=0.28,<0.29" },
     { name = "mystack-aws-protocol", editable = "shared" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.35,<1" },
 ]
