@@ -5,38 +5,22 @@
 
 # CI, 의존성, 릴리스 자동화
 
-<!-- toc:start -->
-## 목차
-
-- [Workflow](#workflow)
-- [기여자가 바로 보는 test report](#기여자가-바로-보는-test-report)
-- [Frontend test 격리](#frontend-test-격리)
-- [Branch protection 기대값](#branch-protection-기대값)
-- [Dependency update](#dependency-update)
-- [GHCR 게시](#ghcr-게시)
-- [실패 진단과 release 근거](#실패-진단과-release-근거)
-<!-- toc:end -->
-
 <!-- section: workflows -->
 ## Workflow
 
 | Workflow | Trigger | 계약 |
 | --- | --- | --- |
-| `ci.yml` | `main`/`develop`/`feature/*` push, PR, manual | Version 준비 상태, Python 3.11 계약, required case matrix, source-free GHCR Compose 검증, frozen Dev Container build를 실행하고 `Required CI`로 결과 집계 |
+| `ci.yml` | `main`/`develop`/`feature/*` push, PR, manual | Version 준비 상태, Python 3.11/3.12 계약, required case matrix, source-free GHCR Compose 검증, frozen Dev Container build를 실행하고 `Required CI`로 결과 집계 |
 | `model-drift.yml` | 주간, manual | 최신 botocore와 pinned model 비교, 실행 가능한 단일 issue 생성/갱신 |
 | `e2e.yml` | 관련 PR, nightly, manual | 명시적 required boto3/AWS SDK for pandas/Spark/Hive/Iceberg case별 독립 Docker job과 Chromium console 접근성 E2E |
 | `release.yml` → reusable `container-publish.yml` | `develop`/`main` 직접 push의 `CI` 성공 `workflow_run` | Snapshot 또는 정식 정책 판정, required 검증, local scan, 같은 SHA의 변경 불가 게시, 익명 검증, 정식 GitHub Release |
 | `prepare-version-pr.yml` | manual | Version file 변경 branch와 `develop` 대상 PR 생성, package/tag/release 변경 없음 |
 
 Workflow는 [GitHub Actions 공식 문서](https://docs.github.com/actions/writing-workflows)를 따릅니다. CI timeout은 명시하며 local에서는 YAML 값을 사용합니다.
-Actions는 pytest annotation에서 생성한 `contracts/compatibility-evidence.generated.json`의 `include`
-entry만 읽으며 client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이행 기간에는
-typed pytest annotation과 생성 matrix를 필수 증거 기준으로 유지합니다. 이 구성은 GitHub의 [공유 matrix
+Actions는 `contracts/compatibility-matrix.generated.json`에 생성된 `include` entry만 읽으며
+client/runtime 전수 조합을 암묵적으로 만들지 않습니다. 이 구성은 GitHub의 [공유 matrix
 방식](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations)을
 따릅니다.
-생성한 profile의 `expected_duration_minutes`는 명시적인 바깥 job 시간 상한입니다. Local에서
-collection만 수행하는 generator에는 별도의 `tests.compatibility_collection_timeout_seconds` 제한이
-있고 test body를 실행하지 않습니다.
 PR과 push는 `required`, manual 실행은 `preview`, 정기·manual E2E는 `nightly`를 추가합니다. 선택
 lane을 비워도 항상 비어 있지 않은 required lane과 합치므로 유효합니다.
 Dev Container job은 [공식 CLI](https://github.com/devcontainers/cli)의
@@ -61,24 +45,10 @@ runner가 제공하는 JUnit XML을 작성합니다. Repository-local renderer�
 
 [Spark CI](https://github.com/apache/spark/blob/master/.github/workflows/build_and_test.yml)처럼 모든 실행에는 구조화된 결과와 summary를 제공하고 상세 log는 실패 시에만 남깁니다. [Trino의 result-processing action](https://github.com/trinodb/trino/blob/master/.github/actions/process-test-results/action.yml)도 test report를 보존하고 별도 확인 절차를 만들지 않고 현재 job에 annotation을 연결합니다.
 
-일반 `*-test-report` artifact의 보존 기간은 14일입니다. `service-ui-builds-<SHA>`는 이틀간 보존되는
-내부 build artifact이며 test 결과나 Docker image artifact가 아닙니다. 부분 key restore를 사용하지 않는 exact-key
-cache가 같은 호환 producer lane의 재build를 막습니다. manifest는 source SHA, platform, lock/config 입력, producer run,
-bundle file digest를 묶고 Python CI, Docker E2E, release preflight가 재사용 전
-검증합니다. artifact가 없으면 local build로 전환합니다. 기존 test deadline도 유지합니다. pytest는 선택된 YAML
-timeout을 받고 Vitest는 설정된 test와 hook deadline을 받습니다.
-
-CI는 pull request와 `main` 또는 `develop` push에서 실행합니다. 같은 feature branch revision에 frontend
-producer lane이 두 번 생기는 것을 막습니다.
-
-<!-- section: frontend-test-isolation -->
-## Frontend test 격리
-
-Root Vitest 설정은 각 test file 전에 `ui/tests/setup.ts`를 불러옵니다. 공유 setup은 Vitest
-`afterEach` hook에서 React Testing Library `cleanup`을 호출하므로 render된 React tree가 jsdom 종료 전에
-unmount됩니다. 이 동작은 test harness에 두고 EMR 또는 Glue production component에는 test 전용
-`window` guard를 추가하지 않습니다. 구현은 공식 [Vitest setup-file 안내](https://vitest.dev/config/setupfiles)와
-[React Testing Library cleanup 안내](https://testing-library.com/docs/react-testing-library/setup/)를 따릅니다.
+일반 `*-test-report` artifact의 보존 기간은 14일입니다. `service-ui-builds` artifact는 frontend와
+Python job 사이에서만 쓰는 하루짜리 내부 handoff이며 test 결과나 Docker image artifact가 아닙니다.
+기존 test deadline도 유지합니다. pytest는 선택된 YAML timeout을 받고 Vitest는 설정된 test와 hook
+deadline을 받습니다.
 
 <!-- section: branch-protection -->
 ## Branch protection 기대값
@@ -127,7 +97,6 @@ Compose/service/Spark log, optimizer-run file, model/API drift JSON은 실패한
 component와 case 맥락을 남길 수 있습니다. 진단 log는 경계와 side effect event를 담되 secret을
 포함하면 안 됩니다.
 
-Release workflow는 검토한 수용 근거를 별도로 14일 보존합니다. 생성한 [테스트 선언 호환성
-근거](compatibility/annotated-evidence.ko.generated.md), [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
-유지하는 parity matrix, API 분류, 결정적 Glue 오류 catalog가 대상입니다. Local image preflight scan
-근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.
+Release workflow는 검토한 수용 근거(생성된 [release 수용 범위](compatibility/release-acceptance.ko.generated.md),
+compiled matrix, API 분류, 결정적 Glue 오류 catalog)를 별도로 14일 보존합니다. Local image preflight
+scan 근거는 release authorization 근거이며 사용자용 test-result artifact가 아닙니다.
