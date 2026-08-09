@@ -39,7 +39,7 @@ packages require no registry token or registry login, as documented in GitHub's
 [package permissions guide](https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages).
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
+export MYSTACK_IMAGE_TAG=v0.1.1  # replace with a published tag
 mkdir mystack-runtime && cd mystack-runtime
 curl --fail --location --output compose.ghcr.yaml \
   "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"

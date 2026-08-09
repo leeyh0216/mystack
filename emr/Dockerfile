@@ -23,7 +23,7 @@ ARG SPARK_DISTRIBUTION=hadoop3
 ARG SPARK_ARCHIVE_BASE_URL=https://archive.apache.org/dist/spark
 ARG AWS_CLI_VERSION=2.27.41
 ARG TARGETARCH
-ARG MYSTACK_VERSION=0.1.0
+ARG MYSTACK_VERSION=0.1.1
 ARG MYSTACK_CONFIG_SOURCE=config/mystack.yaml
 LABEL org.opencontainers.image.title="Mystack EMR Spark Emulator" \
       org.opencontainers.image.version="${MYSTACK_VERSION}" \

@@ -31,7 +31,7 @@ image는 익명으로 접근할 수 있습니다. 세 `mystack-*` package에 모
 존재하는 tag를 선택하세요. `latest`는 의도적으로 제공하지 않습니다.
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.0  # 실제 게시 tag로 교체
+export MYSTACK_IMAGE_TAG=v0.1.1  # 실제 게시 tag로 교체
 mkdir mystack-runtime && cd mystack-runtime
 curl --fail --location --output compose.ghcr.yaml \
   "https://raw.githubusercontent.com/leeyh0216/mystack/$MYSTACK_IMAGE_TAG/compose.ghcr.yaml"

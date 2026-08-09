@@ -17,7 +17,7 @@ Replace the placeholder certificate path before starting. The directory is mount
 Docker's [bind-mount contract](https://docs.docker.com/engine/storage/bind-mounts/).
 
 ```bash
-export MYSTACK_IMAGE_TAG=v0.1.0  # replace with a published tag
+export MYSTACK_IMAGE_TAG=v0.1.1  # replace with a published tag
 mkdir -p mystack-runtime/emr-prestart.d && cd mystack-runtime
 for path in compose.ghcr.yaml compose.emr-prestart.yaml; do
   gh api -H "Accept: application/vnd.github.raw+json" \
