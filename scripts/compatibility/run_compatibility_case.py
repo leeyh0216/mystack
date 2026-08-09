@@ -14,14 +14,18 @@ import json
 import logging
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
-
-from scripts.compatibility.artifacts import EVIDENCE_JSON
-
 ROOT = Path(__file__).parents[2]
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(ROOT))
+
+import yaml  # noqa: E402
+
+from scripts.compatibility.artifacts import EVIDENCE_JSON  # noqa: E402
+
 LOGGER = logging.getLogger("mystack.compatibility.runner")
 APPROVED_RUNNERS = {
     "pytest": ("contract", ["uv", "run", "pytest"]),

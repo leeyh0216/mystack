@@ -242,7 +242,7 @@ jobs:
           MYSTACK_EMR_STARTUP_CLUSTERS_FILE: ${{ github.workspace }}/tests/e2e/assets/emr-startup-clusters.yaml
           MYSTACK_EMR_PRESTART_SOURCE: ${{ github.workspace }}/tests/e2e/assets/emr-prestart.d
         run: |
-          wait_timeout=$(uv run python scripts/config_value.py tests.compose_wait_timeout_seconds)
+          wait_timeout=$(uv run python scripts/development/config_value.py tests.compose_wait_timeout_seconds)
           docker compose -f compose.yaml \
             -f compose.emr-startup-clusters.yaml \
             -f compose.emr-prestart.yaml \
@@ -251,7 +251,7 @@ jobs:
         env:
           MYSTACK_STARTUP_CLUSTER_E2E_REQUIRED: "1"
         run: |
-          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          timeout=$(uv run python scripts/development/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_emr_startup.py -m e2e \
             --timeout "$timeout" --timeout-method thread -vv \
             --junitxml=ci-artifacts/console-e2e/startup-junit.xml
@@ -259,7 +259,7 @@ jobs:
         env:
           MYSTACK_PRESTART_E2E_REQUIRED: "1"
         run: |
-          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          timeout=$(uv run python scripts/development/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_emr_prestart.py -m e2e \
             --timeout "$timeout" --timeout-method thread -vv \
             --junitxml=ci-artifacts/console-e2e/prestart-junit.xml
@@ -268,7 +268,7 @@ jobs:
           MYSTACK_BROWSER_E2E_REQUIRED: "1"
           MYSTACK_STARTUP_CLUSTER_E2E_REQUIRED: "1"
         run: |
-          timeout=$(uv run python scripts/config_value.py tests.e2e_timeout_seconds)
+          timeout=$(uv run python scripts/development/config_value.py tests.e2e_timeout_seconds)
           uv run pytest tests/e2e/test_console_browser.py -m e2e \
             --timeout "$timeout" --timeout-method thread -vv \
             --junitxml=ci-artifacts/console-e2e/browser-junit.xml
