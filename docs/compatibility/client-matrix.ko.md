@@ -5,6 +5,16 @@
 
 # Client와 library 호환성
 
+<!-- toc:start -->
+## 목차
+
+- [상태 기준](#상태-기준)
+- [검증한 Client](#검증한-client)
+- [닫힌 Client 집합](#닫힌-client-집합)
+- [현재 제외](#현재-제외)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 문서는 AWS protocol을 사용하는 외부 client가 Mystack의 단일 공개 endpoint에서 실제로
 검증됐는지 기록합니다. 특정 library의 일부 경로 통과를 해당 library 전체 지원으로 확대해서
 해석하지 않습니다.

@@ -5,6 +5,18 @@
 
 # Iceberg snapshots, references, and procedures through GlueCatalog
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Guaranteed profile](#guaranteed-profile)
+- [Glue wire and atomicity contract](#glue-wire-and-atomicity-contract)
+- [Verification evidence](#verification-evidence)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Limits](#limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract fixes the snapshot inspection and maintenance surface for Glue 5.0, Spark 3.5.4,
 and Iceberg 1.7.1. The SQL behavior comes from Iceberg's official
 [queries](https://iceberg.apache.org/docs/1.7.1/spark-queries/),

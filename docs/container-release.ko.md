@@ -5,6 +5,17 @@
 
 # Public GHCR 이미지 게시
 
+<!-- toc:start -->
+## 목차
+
+- [Image와 소유권](#image와-소유권)
+- [게시 계약](#게시-계약)
+- [게시와 최초 visibility 설정](#게시와-최초-visibility-설정)
+- [취약점과 rollback 의미](#취약점과-rollback-의미)
+- [실패 대응표](#실패-대응표)
+- [게시하지 않는 local 검사](#게시하지-않는-local-검사)
+<!-- toc:end -->
+
 이 문서는 container 소비와 registry 운영을 설명합니다. Maintainer는 먼저 전체 [버전과 branch
 흐름](versioning.ko.md)을 읽어야 합니다. Mystack은 GitHub 공식 [Container
 registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)와

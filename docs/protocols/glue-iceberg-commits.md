@@ -5,6 +5,17 @@
 
 # Iceberg GlueCatalog commit contract
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Atomic decision and persistence order](#atomic-decision-and-persistence-order)
+- [File-lock configuration](#file-lock-configuration)
+- [Logging and repair locations](#logging-and-repair-locations)
+- [Evidence and exclusions](#evidence-and-exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract defines the catalog-pointer portion of Apache Iceberg 1.7.1 commits against the
 Mystack Glue emulator. AWS Glue 5.0 includes Iceberg 1.7.1 and uses optimistic locking by default;
 the Iceberg AWS integration uses Glue table `VersionId` to reject a stale metadata-pointer swap and

@@ -5,6 +5,16 @@
 
 # Glue partition expression
 
+<!-- toc:start -->
+## 목차
+
+- [문법과 우선순위](#문법과-우선순위)
+- [Type 기반 평가](#type-기반-평가)
+- [조회 pipeline과 설정](#조회-pipeline과-설정)
+- [검증](#검증)
+- [공식 출처](#공식-출처)
+<!-- toc:end -->
+
 Mystack은 문서화된 `GetPartitions.Expression` 언어를 ANTLR4 `.g4` grammar로 로컬에서
 구현합니다. 비교를 위해 AWS에
 요청하거나 AWS credential을 사용하지 않습니다. Protocol 기준은 SQL `WHERE`와 유사한 식,

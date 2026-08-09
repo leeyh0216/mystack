@@ -5,6 +5,17 @@
 
 # Iceberg GlueCatalog commit 계약
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [원자적 판단과 저장 순서](#원자적-판단과-저장-순서)
+- [File lock 설정](#file-lock-설정)
+- [Logging과 수정 위치](#logging과-수정-위치)
+- [검증과 제외 범위](#검증과-제외-범위)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 문서는 Apache Iceberg 1.7.1이 Mystack Glue emulator에 commit할 때 사용하는 catalog pointer
 부분을 정의합니다. AWS Glue 5.0에는 Iceberg 1.7.1이 포함되며 기본적으로 optimistic locking을
 사용합니다. Iceberg AWS integration은 Glue table `VersionId`로 오래된 metadata pointer 교체를

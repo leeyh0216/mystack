@@ -2,6 +2,14 @@
 
 # Catalog release acceptance (generated)
 
+<!-- toc:start -->
+## Contents
+
+- [Release-blocking guarantees](#release-blocking-guarantees)
+- [Explicit exclusions](#explicit-exclusions)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 This file is deterministically generated from `compatibility/cases.yaml`; do not edit it directly. Every case below is `required` and must pass before publication.
 
 Release acceptance is limited to the exact clients, runtimes, operations, and scenarios listed here; it is not a claim of complete AWS Glue or EMR compatibility.

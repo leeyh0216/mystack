@@ -5,6 +5,15 @@
 
 # ADR 0001: Hexagonal service boundaries
 
+<!-- toc:start -->
+## Contents
+
+- [Context](#context)
+- [Decision](#decision)
+- [Consequences](#consequences)
+- [Official reference](#official-reference)
+<!-- toc:end -->
+
 - Status: Accepted
 - Date: 2026-08-08
 

@@ -5,6 +5,18 @@
 
 # Glue partition과 batch 오류 계약
 
+<!-- toc:start -->
+## 목차
+
+- [검증 계층과 첫 번째 오류](#검증-계층과-첫-번째-오류)
+- [단일 operation 판단](#단일-operation-판단)
+- [Update와 Spark Hive rename](#update와-spark-hive-rename)
+- [Batch 순서와 부분 성공](#batch-순서와-부분-성공)
+- [Logging, 시험과 수정 위치](#logging-시험과-수정-위치)
+- [제외 범위](#제외-범위)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 문서는 Mystack이 구현한 partition operation 9개의 결정적인 동작을 정의합니다. 공개 AWS Glue
 API 문서와 고정한 botocore model을 기준으로 합니다. 실 AWS 계정을 호출하는 시험이나 판단은
 없습니다. Operation 목록의 단일 기준은 생성한 [Glue 오류

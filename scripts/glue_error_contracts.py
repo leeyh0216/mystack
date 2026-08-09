@@ -197,6 +197,8 @@ def _render(document: dict[str, Any], *, korean: bool) -> str:
         lang = "ko"
         counterpart = "glue-errors.generated.md"
         counterpart_label = "English"
+        toc_title = "목차"
+        toc_entries = ("- [결정 순서](#결정-순서)", "- [공식 출처](#공식-출처)")
     else:
         title = "Glue error contracts (generated)"
         intro = (
@@ -208,6 +210,11 @@ def _render(document: dict[str, Any], *, korean: bool) -> str:
         lang = "en"
         counterpart = "glue-errors.ko.generated.md"
         counterpart_label = "한국어"
+        toc_title = "Contents"
+        toc_entries = (
+            "- [Decision order](#decision-order)",
+            "- [Official sources](#official-sources)",
+        )
     lines = [
         "<!-- doc-id: compatibility/glue-errors-generated -->",
         f"<!-- lang: {lang} -->",
@@ -215,6 +222,12 @@ def _render(document: dict[str, Any], *, korean: bool) -> str:
         f"[{counterpart_label}]({counterpart})",
         "",
         f"# {title}",
+        "",
+        "<!-- toc:start -->",
+        f"## {toc_title}",
+        "",
+        *toc_entries,
+        "<!-- toc:end -->",
         "",
         intro,
         "",

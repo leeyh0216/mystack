@@ -1,8 +1,7 @@
-"""Enforce the source-free, anonymously pullable GHCR user contract.
+"""Enforce the image-only Compose contract and concise published-image guidance.
 
 Official references:
 - Compose interpolation: https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/
-- GHCR package permissions: https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages
 """
 
 from __future__ import annotations
@@ -16,10 +15,6 @@ from typing import Any, ClassVar
 
 import yaml
 
-PUBLIC_PACKAGE_SOURCE = (
-    "https://docs.github.com/en/packages/learn-github-packages/"
-    "about-permissions-for-github-packages"
-)
 DEFAULT_USER_DOCS = (
     Path("README.md"),
     Path("README.ko.md"),
@@ -94,8 +89,12 @@ class ImageComposePolicy:
         print(json.dumps({"event": event, **fields}, sort_keys=True), file=sys.stderr)
 
 
-class PublicImageDocumentationPolicy:
-    """Keep public-image onboarding free of consumer registry credentials."""
+class PublishedImageDocumentationPolicy:
+    """Keep user guides focused on the versioned Compose workflow.
+
+    Package visibility is a release-owner concern and is verified by the release workflow. It is
+    deliberately not required prose in the user-facing README or getting-started guide.
+    """
 
     FORBIDDEN: ClassVar[tuple[str, ...]] = (
         "docker login ghcr.io",
@@ -104,6 +103,7 @@ class PublicImageDocumentationPolicy:
         "private GHCR",
         "private published images",
     )
+    REQUIRED: ClassVar[tuple[str, ...]] = ("MYSTACK_IMAGE_TAG", "compose.ghcr.yaml")
 
     def validate(self, documents: dict[Path, str]) -> dict[str, Any]:
         ImageComposePolicy._emit(
@@ -115,19 +115,17 @@ class PublicImageDocumentationPolicy:
             for forbidden in self.FORBIDDEN:
                 if forbidden.casefold() in content.casefold():
                     violations.append(f"{path}:{forbidden}")
-            required_phrase = "익명" if path.name.endswith(".ko.md") else "anonym"
-            if required_phrase.casefold() not in content.casefold():
-                violations.append(f"{path}:missing-{required_phrase}")
-            if PUBLIC_PACKAGE_SOURCE not in content:
-                violations.append(f"{path}:missing-official-public-package-source")
+            for required in self.REQUIRED:
+                if required not in content:
+                    violations.append(f"{path}:missing-{required}")
         if violations:
             ImageComposePolicy._emit(
                 "ghcr_public_docs.validate.failed",
                 violations=violations,
-                fix_hint="describe-anonymous-public-pulls-without-consumer-registry-credentials",
+                fix_hint="document-the-versioned-compose-workflow-without-consumer-credentials",
             )
             raise ImageComposeContractError(
-                "public image onboarding policy violations: " + ", ".join(violations)
+                "published image documentation policy violations: " + ", ".join(violations)
             )
         ImageComposePolicy._emit(
             "ghcr_public_docs.validate.after",
@@ -137,7 +135,7 @@ class PublicImageDocumentationPolicy:
         return {
             "documents": [str(path) for path in documents],
             "consumer_registry_credentials": 0,
-            "visibility": "public",
+            "versioned_compose_workflow": True,
         }
 
 
@@ -178,7 +176,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         compose_report = ImageComposePolicy().validate(load_compose(args.compose))
-        public_docs_report = PublicImageDocumentationPolicy().validate(
+        public_docs_report = PublishedImageDocumentationPolicy().validate(
             load_documents(tuple(args.user_docs or DEFAULT_USER_DOCS))
         )
         report = {"compose": compose_report, "public_image_docs": public_docs_report}
@@ -190,7 +188,7 @@ def main() -> None:
                     "error": str(error),
                     "fix_hint": (
                         "remove-build-context-pin-explicit-published-images-and-keep-"
-                        "public-onboarding-anonymous"
+                        "user-guidance-actionable"
                     ),
                 },
                 sort_keys=True,

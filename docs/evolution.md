@@ -5,6 +5,15 @@
 
 # Upstream evolution policy
 
+<!-- toc:start -->
+## Contents
+
+- [Change isolation](#change-isolation)
+- [Detection and response](#detection-and-response)
+- [Adding a client or runtime version](#adding-a-client-or-runtime-version)
+- [Compatibility change checklist](#compatibility-change-checklist)
+<!-- toc:end -->
+
 Mystack treats botocore, AWS protocols, Spark, Hive, Iceberg, Java, Python, and container bases as independently evolving upstream contracts.
 
 <!-- section: isolation -->

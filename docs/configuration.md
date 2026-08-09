@@ -5,6 +5,15 @@
 
 # Configuration and reproducible containers
 
+<!-- toc:start -->
+## Contents
+
+- [Resolution order](#resolution-order)
+- [Docker modes](#docker-modes)
+- [Main sections](#main-sections)
+- [Reproducible build inputs](#reproducible-build-inputs)
+<!-- toc:end -->
+
 Mystack keeps runtime behavior in the versioned `config/mystack.yaml` document. The application
 does not contain fallback service endpoints, credentials, release mappings, process deadlines,
 Spark submit parsing tables, route registrations, or test deadlines. Docker's official guidance
@@ -40,7 +49,7 @@ between ordinary environment configuration and [secrets](https://docs.docker.com
 ## Docker modes
 
 The normal user command uses `compose.ghcr.yaml`. Each published image contains the reviewed
-`/etc/mystack/mystack.yaml` from the same release, so no repository clone or config mount is needed.
+`/etc/mystack/mystack.yaml` from the same release.
 `MYSTACK_IMAGE_TAG` is required and component-specific full image references can be supplied through
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, and `MYSTACK_GLUE_IMAGE` for digest pinning. Keep the tag
 defined even when all three overrides are present because Compose evaluates nested fallbacks.

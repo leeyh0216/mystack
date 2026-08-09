@@ -5,6 +5,16 @@
 
 # Spark Hive table ALTER through Glue
 
+<!-- toc:start -->
+## Contents
+
+- [SQL and protocol mapping](#sql-and-protocol-mapping)
+- [Glue API and persistence semantics](#glue-api-and-persistence-semantics)
+- [Verification and diagnosis](#verification-and-diagnosis)
+- [Exclusions](#exclusions)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 Mystack preserves the Glue catalog request selected by Spark and the official Glue Hive metastore
 client; it does not parse Spark SQL. Spark owns SQL analysis, V1/V2 capability checks, cache
 invalidation, and SQL exceptions. Mystack owns `UpdateTable`, immutable table versions, and atomic

@@ -5,6 +5,14 @@
 
 # Support scope
 
+<!-- toc:start -->
+## Contents
+
+- [Overview](#overview)
+- [Explicit exclusions](#explicit-exclusions)
+- [Version baseline](#version-baseline)
+<!-- toc:end -->
+
 <!-- section: overview -->
 ## Overview
 

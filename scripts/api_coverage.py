@@ -192,6 +192,9 @@ def render_matrix(baseline: dict[str, Any], *, korean: bool) -> str:
             "NOT_PLANNED": "Glue Job/JobRun/Crawler 범위 제외",
         }
         summary_heading = "## 요약"
+        operations_heading = "## Operation"
+        toc_title = "목차"
+        toc_entries = ("- [요약](#요약)", "- [Operation](#operation)")
     else:
         title = "# Generated API compatibility matrix"
         intro = (
@@ -207,9 +210,18 @@ def render_matrix(baseline: dict[str, Any], *, korean: bool) -> str:
             "NOT_PLANNED": "Glue Job/JobRun/Crawler family excluded",
         }
         summary_heading = "## Summary"
+        operations_heading = "## Operations"
+        toc_title = "Contents"
+        toc_entries = ("- [Summary](#summary)", "- [Operations](#operations)")
 
     lines = [
         title,
+        "",
+        "<!-- toc:start -->",
+        f"## {toc_title}",
+        "",
+        *toc_entries,
+        "<!-- toc:end -->",
         "",
         intro,
         "",
@@ -227,7 +239,7 @@ def render_matrix(baseline: dict[str, Any], *, korean: bool) -> str:
             f"| {service.upper()} | {counts['COMPATIBLE']} | {counts['PARTIAL']} | "
             f"{counts['PROTOCOL_ONLY']} | {counts['NOT_PLANNED']} | {len(operations)} |"
         )
-    lines.extend(["", headings])
+    lines.extend(["", operations_heading, "", headings])
     for service in SERVICES:
         for operation, value in baseline["services"][service]["operations"].items():
             status = value["status"]
@@ -247,6 +259,11 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--bootstrap", type=Path)
     mode.add_argument("--check", type=Path)
+    mode.add_argument(
+        "--write",
+        type=Path,
+        help="Render generated documents from an existing reviewed classification baseline",
+    )
     parser.add_argument("--english", type=Path, required=True)
     parser.add_argument("--korean", type=Path, required=True)
     parser.add_argument("--report", type=Path, default=Path("api-coverage-drift-report.json"))
@@ -257,11 +274,13 @@ def main() -> int:
         baseline = create_baseline(manifest)
         write_text(args.bootstrap, json.dumps(baseline, indent=2, sort_keys=True) + "\n")
     else:
-        baseline = json.loads(args.check.read_text(encoding="utf-8"))
+        baseline_path = args.check or args.write
+        assert baseline_path is not None
+        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
 
     english = render_matrix(baseline, korean=False)
     korean = render_matrix(baseline, korean=True)
-    if args.bootstrap:
+    if args.bootstrap or args.write:
         write_text(args.english, english)
         write_text(args.korean, korean)
         return 0

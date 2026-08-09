@@ -5,6 +5,15 @@
 
 # 상위 구성 요소 변경 대응 정책
 
+<!-- toc:start -->
+## 목차
+
+- [변경 격리](#변경-격리)
+- [탐지와 대응](#탐지와-대응)
+- [Client 또는 runtime version 추가](#client-또는-runtime-version-추가)
+- [호환성 변경 체크리스트](#호환성-변경-체크리스트)
+<!-- toc:end -->
+
 Mystack은 botocore, AWS protocol, Spark, Hive, Iceberg, Java, Python, container base가 서로 독립적으로 발전하는 upstream 계약이라고 봅니다.
 
 <!-- section: isolation -->

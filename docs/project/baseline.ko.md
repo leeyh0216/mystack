@@ -5,6 +5,20 @@
 
 # 프로젝트 기준선
 
+<!-- toc:start -->
+## 목차
+
+- [Metadata](#metadata)
+- [목적과 실행 환경](#목적과-실행-환경)
+- [코드 기준 확정 사실](#코드-기준-확정-사실)
+- [Entry point와 명령](#entry-point와-명령)
+- [확정 아키텍처 결정](#확정-아키텍처-결정)
+- [정합성 결과](#정합성-결과)
+- [남은 후보 차이](#남은-후보-차이)
+- [순차 확인 기록](#순차-확인-기록)
+- [다음 권장 순서](#다음-권장-순서)
+<!-- toc:end -->
+
 <!-- section: metadata -->
 ## Metadata
 
@@ -73,8 +87,7 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
   log를 포함합니다. Console mutation은 boto3와 같은 public AWS endpoint를 통과합니다.
 - 배포는 하나의 안정된 `VERSION` 원천, `feature/*` → `develop` → `main`, Python 3.11/3.12 CI,
   nightly/manual Docker E2E, 모델/API 변경 검사, 변경 불가 develop snapshot과 main release,
-  익명으로 소비할 수 있는 public GHCR multi-platform image, SBOM/provenance, OCI index 검증,
-  Trivy 정책을 포함합니다.
+  multi-platform GHCR image 게시, SBOM/provenance, OCI index 검증, Trivy 정책을 포함합니다.
 - Test 정책상 fast suite는 실 AWS 비교 없이 전부 local에서 실행합니다. 별도
   Docker/browser/Spark/Hive/Iceberg/AWS SDK for pandas E2E lane은 CI가 소유합니다. 두 계층 모두
   설정된 명시적 timeout을 적용합니다.
@@ -123,11 +136,15 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 - 이전 baseline과 UseCase catalog는 이미 구현된 EMR, Glue, Spark/Iceberg, Docker E2E, UI,
   compatibility 생성을 미래 미지원 항목으로 기록했습니다. 이번 scan에서 오래된 주장을 교체했습니다.
 - 이전 test 수는 현재 workspace가 아니라 초기 shared/Proxy 세로 경로를 설명했습니다.
+- 2026-08-09 문서·CI scan에서 공통 상단 index가 없는 Markdown 문서 92개, 사용자와 contributor
+  내용 혼합, 최상위만 설명한 configuration leaf path 115개, 사람이 읽기 어려운 raw test 진단을
+  확인했습니다. Markdown-first 재구성과 정적 site 결정은 분리해 관리합니다.
 
 ### 미확정
 
-- 최초 all-component GHCR 게시는 scan 도중 실행 중이었습니다. Workflow 구조는 구현됐지만 이
-  baseline은 세 remote package의 최초 scan 성공을 주장하지 않습니다.
+- `v0.1.3` workflow가 세 image를 모두 push했지만 package visibility가 아직 변경되지 않아 익명
+  external pull 검증에 실패했습니다. GitHub Release 생성은 건너뛰었고 외부 blocker는 #45에서
+  추적합니다.
 
 <!-- section: candidates -->
 ## 남은 후보 차이
@@ -140,10 +157,15 @@ Glue Job, JobRun, Crawler API는 제외합니다. Glue 범위는 Data Catalog와
 
 - 2026-08-08: 사용자가 이전 A/B/C 설계를 폐기하고 process 내부 SPI를 완전히 제거하되 Proxy route
   확장성은 유지하기로 확정했습니다.
+- 2026-08-09: Spark, Trino, 저장소 문서·CI 구조를 검토한 뒤 사용자가 Markdown-first 사용자 문서
+  재구성을 선택했습니다. 정적 문서 site는 나중에 결정합니다.
 
 <!-- section: next-sequence -->
 ## 다음 권장 순서
 
-1. GHCR release 게시 전 확인 절차와 GHCR-first onboarding을 강화합니다.
-2. Protocol·client 변경 대응 안내를 구현된 compatibility manifest와 동기화합니다.
-3. 새로 검토한 client와 runtime을 명시적인 비전수 조합 case로 추가합니다.
+1. Markdown-first 사용자 탐색, service 안내, 문서별 상단 index, contributor 경로를 완성합니다
+   (#75).
+2. SQLite catalog 설정이 안정된 뒤 service runtime architecture와 전체 configuration reference,
+   사용자 지원 표를 작성합니다 (#81, #79).
+3. Raw CI 진단을 간결한 job summary와 내려받을 수 있는 HTML/JUnit 근거로 교체합니다 (#80).
+4. 외부 GHCR visibility 검증과 GitHub Release를 완료합니다 (#45, #55).

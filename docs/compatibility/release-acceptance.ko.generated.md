@@ -2,6 +2,14 @@
 
 # Catalog release 수용 범위 (생성됨)
 
+<!-- toc:start -->
+## 목차
+
+- [Release-blocking 보장](#release-blocking-보장)
+- [명시적 제외](#명시적-제외)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 파일은 `compatibility/cases.yaml`에서 결정적으로 생성됩니다. 직접 수정하지 마세요. 아래 모든 case는 `required`이며 release 게시 전에 통과해야 합니다.
 
 Release 수용 범위는 여기에 명시한 client, runtime, operation, scenario로 제한하며 AWS Glue 또는 EMR 전체 호환성을 의미하지 않습니다.

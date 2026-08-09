@@ -5,6 +5,17 @@
 
 # CI, 의존성, 릴리스 자동화
 
+<!-- toc:start -->
+## 목차
+
+- [Workflow](#workflow)
+- [기여자가 바로 보는 test report](#기여자가-바로-보는-test-report)
+- [Branch protection 기대값](#branch-protection-기대값)
+- [Dependency update](#dependency-update)
+- [GHCR 게시](#ghcr-게시)
+- [실패 진단과 release 근거](#실패-진단과-release-근거)
+<!-- toc:end -->
+
 <!-- section: workflows -->
 ## Workflow
 

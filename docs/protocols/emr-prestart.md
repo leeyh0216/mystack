@@ -5,6 +5,19 @@
 
 # Configure the EMR image before Mystack starts
 
+<!-- toc:start -->
+## Contents
+
+- [Start a published image with reviewed scripts](#start-a-published-image-with-reviewed-scripts)
+- [Lifecycle and identity contract](#lifecycle-and-identity-contract)
+- [Trust and file checks](#trust-and-file-checks)
+- [Certificates, proxies, Python, and Java](#certificates-proxies-python-and-java)
+- [Inspect the image instead of guessing](#inspect-the-image-instead-of-guessing)
+- [Diagnose startup safely](#diagnose-startup-safely)
+- [Supported scope](#supported-scope)
+- [Official references](#official-references)
+<!-- toc:end -->
+
 Use this operator-only hook when a published EMR image needs enterprise CA certificates, proxy
 variables, or another machine-level prerequisite before its service, bootstrap actions, and Spark
 Steps start. It is disabled by default and runs only in the EMR container.

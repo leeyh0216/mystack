@@ -5,6 +5,19 @@
 
 # EMR and Glue wire protocol analysis
 
+<!-- toc:start -->
+## Contents
+
+- [Sources of truth](#sources-of-truth)
+- [Service metadata](#service-metadata)
+- [HTTP request contract](#http-request-contract)
+- [Serialization rules](#serialization-rules)
+- [HTTP response and errors](#http-response-and-errors)
+- [SigV4 behavior](#sigv4-behavior)
+- [EMR execution mapping](#emr-execution-mapping)
+- [Glue Catalog runtime mapping](#glue-catalog-runtime-mapping)
+<!-- toc:end -->
+
 <!-- section: sources -->
 ## Sources of truth
 

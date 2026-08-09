@@ -1,6 +1,16 @@
 # Generated client compatibility matrix
 
+<!-- toc:start -->
+## Contents
+
+- [Compatibility cases](#compatibility-cases)
+- [Lane policy](#lane-policy)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This file is deterministically generated from `compatibility/cases.yaml`; do not edit it. Each row is one explicit combination run by CI in an isolated process, not an unsupported cross-product.
+
+## Compatibility cases
 
 | Case | Lane | Runtime | Exact versions | Scenarios | Evidence |
 | --- | --- | --- | --- | --- | --- |

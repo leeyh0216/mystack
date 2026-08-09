@@ -5,6 +5,19 @@
 
 # Glue Open Table Format input contract
 
+<!-- toc:start -->
+## Contents
+
+- [Responsibility boundary](#responsibility-boundary)
+- [Create protocol](#create-protocol)
+- [Schema, partition, and sort support](#schema-partition-and-sort-support)
+- [Update and concurrency protocol](#update-and-concurrency-protocol)
+- [Errors and evaluation order](#errors-and-evaluation-order)
+- [Configuration, logging, and repair locations](#configuration-logging-and-repair-locations)
+- [Verification evidence and limits](#verification-evidence-and-limits)
+- [Official sources](#official-sources)
+<!-- toc:end -->
+
 This contract defines the supported `CreateTable.OpenTableFormatInput` and
 `UpdateTable.UpdateOpenTableFormatInput` paths. The wire shape comes from the official AWS Glue
 [`CreateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html),

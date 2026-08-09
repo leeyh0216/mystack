@@ -5,6 +5,17 @@
 
 # Public GHCR image publication
 
+<!-- toc:start -->
+## Contents
+
+- [Images and ownership](#images-and-ownership)
+- [Publication contract](#publication-contract)
+- [Publishing and first-time visibility](#publishing-and-first-time-visibility)
+- [Vulnerability and rollback semantics](#vulnerability-and-rollback-semantics)
+- [Failure map](#failure-map)
+- [Local non-publishing checks](#local-non-publishing-checks)
+<!-- toc:end -->
+
 This page covers container consumption and registry operations. Maintainers should read the full
 [version and branch workflow](versioning.md) first. Mystack uses GitHub's official [Container
 registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)

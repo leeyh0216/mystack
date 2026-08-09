@@ -5,6 +5,28 @@
 
 # 구현 기반 사용 사례 목록
 
+<!-- toc:start -->
+## 목차
+
+- [Metadata와 범위](#metadata와-범위)
+- [UC-001: AWS request routing](#uc-001-aws-request-routing)
+- [UC-002: AWS JSON 1.1 operation 실행](#uc-002-aws-json-11-operation-실행)
+- [UC-003: EMR cluster와 step 관리](#uc-003-emr-cluster와-step-관리)
+- [UC-004: Bootstrap/Spark artifact 준비와 local 실행](#uc-004-bootstrapspark-artifact-준비와-local-실행)
+- [UC-005: Glue database 관리](#uc-005-glue-database-관리)
+- [UC-006: Glue table과 version 관리](#uc-006-glue-table과-version-관리)
+- [UC-007: Glue partition과 batch result 관리](#uc-007-glue-partition과-batch-result-관리)
+- [UC-008: Service resource와 EMR log 조회](#uc-008-service-resource와-emr-log-조회)
+- [UC-009: Thread/task stack 조회](#uc-009-threadtask-stack-조회)
+- [UC-010: Browser management console 운영](#uc-010-browser-management-console-운영)
+- [UC-011: Public multi-platform image 게시와 검증](#uc-011-public-multi-platform-image-게시와-검증)
+- [UC-012: AWS SDK for pandas data와 metadata 왕복](#uc-012-aws-sdk-for-pandas-data와-metadata-왕복)
+- [UC-013: 문서화된 Glue timeout 또는 internal failure 재현](#uc-013-문서화된-glue-timeout-또는-internal-failure-재현)
+- [UC-014: 결정적인 Glue catalog 오류 판단 적용](#uc-014-결정적인-glue-catalog-오류-판단-적용)
+- [UC-015: Glue Iceberg table optimizer 관리와 실행](#uc-015-glue-iceberg-table-optimizer-관리와-실행)
+- [후보 차이: 사용자 문서와 contributor 근거](#후보-차이-사용자-문서와-contributor-근거)
+<!-- toc:end -->
+
 <!-- section: metadata -->
 ## Metadata와 범위
 
@@ -329,3 +351,16 @@
   `glue/tests/test_table_optimizer_runtime.py`, `tests/e2e/test_glue_spark_catalog.py`,
   `docs/protocols/glue-table-optimizers.ko.md`.
 - 신뢰도: 문서화한 Glue 5/Spark 3.5.4/Iceberg 1.7.1 경로는 High.
+
+<!-- section: candidate-documentation -->
+## 후보 차이: 사용자 문서와 contributor 근거
+
+- 범위: Markdown-first 탐색 계층이 사용자 작업과 구현 인벤토리를 분리하며 정적 문서 site는 나중에
+  결정합니다.
+- 사용자 결과: 사용자는 구현 detail 없이 Compose를 시작하고 Glue 또는 EMR을 고르며 설정·운영 문서와
+  지원 또는 미지원 client 경로를 찾을 수 있어야 합니다.
+- Contributor 결과: contributor는 사용자 문서를 과도하게 늘리지 않고 API/endpoint 인벤토리, runtime
+  architecture, configuration key, CI 근거, protocol 수정 위치를 찾을 수 있어야 합니다.
+- 근거: #75, #79, #80, #81; [Spark 문서 index](https://spark.apache.org/docs/latest/),
+  [Trino deployment 문서](https://trino.io/docs/current/installation/deployment.html).
+- 신뢰도: Candidate이며 구현은 issue로 추적하고 정적 site를 아직 확정하지 않았습니다.

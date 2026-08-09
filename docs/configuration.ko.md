@@ -5,6 +5,15 @@
 
 # 설정과 재현 가능한 컨테이너
 
+<!-- toc:start -->
+## 목차
+
+- [적용 순서](#적용-순서)
+- [Docker 실행 방식](#docker-실행-방식)
+- [주요 section](#주요-section)
+- [재현 가능한 build 입력](#재현-가능한-build-입력)
+<!-- toc:end -->
+
 Mystack의 runtime 동작은 versioned `config/mystack.yaml`에 둡니다. Service endpoint,
 credential, release mapping, process deadline, Spark submit parsing table, route 등록, test
 deadline의 fallback을 application 코드에 두지 않습니다. Docker 공식 지침이 구분하는
@@ -38,7 +47,7 @@ mystack-proxy
 ## Docker 실행 방식
 
 일반 사용자는 `compose.ghcr.yaml`을 사용합니다. 게시 image마다 같은 release에서 검토한
-`/etc/mystack/mystack.yaml`이 포함되므로 repository clone이나 config mount가 필요하지 않습니다.
+`/etc/mystack/mystack.yaml`이 포함됩니다.
 `MYSTACK_IMAGE_TAG`는 필수입니다. Digest를 고정할 때는 component별 전체 image reference를
 `MYSTACK_PROXY_IMAGE`, `MYSTACK_EMR_IMAGE`, `MYSTACK_GLUE_IMAGE`로 지정할 수 있습니다. Compose가
 nested fallback을 평가하므로 세 override를 모두 써도 tag를 정의해야 합니다.

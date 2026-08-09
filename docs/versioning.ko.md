@@ -5,6 +5,18 @@
 
 # 버전과 브랜치 전달 흐름
 
+<!-- toc:start -->
+## 목차
+
+- [Local 명령](#local-명령)
+- [GitHub UI 흐름](#github-ui-흐름)
+- [Branch와 event 정책](#branch와-event-정책)
+- [게시 transaction](#게시-transaction)
+- [Repository ruleset](#repository-ruleset)
+- [실패와 복구 대응표](#실패와-복구-대응표)
+- [지원 및 제외 정책](#지원-및-제외-정책)
+<!-- toc:end -->
+
 이 문서는 `feature/*` → `develop` → `main` 흐름을 관리하는 개발자를 위한 안내입니다. Commit하는
 버전 원천은 `VERSION` 하나입니다. 이 파일에는 `1.4.0` 같은 안정된 [Semantic
 Versioning](https://semver.org/) core만 넣으며 snapshot suffix는 commit하지 않습니다.

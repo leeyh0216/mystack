@@ -5,6 +5,13 @@
 
 # Proxy 코드 변경 없이 새 에뮬레이터 추가
 
+<!-- toc:start -->
+## 목차
+
+- [절차](#절차)
+- [Protocol 변경과 서비스 변경](#protocol-변경과-서비스-변경)
+<!-- toc:end -->
+
 Proxy route registry는 공식 AWS request 근거인 `X-Amz-Target`, SigV4 credential-scope service, service host prefix를 사용합니다. [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html)와 [botocore 서비스 모델](https://github.com/boto/botocore/tree/develop/botocore/data)을 참고하세요.
 
 <!-- section: procedure -->

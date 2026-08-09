@@ -5,6 +5,19 @@
 
 # Glue Open Table Format 입력 계약
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [Create protocol](#create-protocol)
+- [Schema, partition, sort 지원](#schema-partition-sort-지원)
+- [Update와 동시성 protocol](#update와-동시성-protocol)
+- [오류와 평가 순서](#오류와-평가-순서)
+- [설정, logging, 수정 위치](#설정-logging-수정-위치)
+- [검증 근거와 한계](#검증-근거와-한계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 계약은 지원하는 `CreateTable.OpenTableFormatInput`과
 `UpdateTable.UpdateOpenTableFormatInput` 경로를 정의합니다. Wire 구조는 AWS Glue 공식
 [`CreateTable`](https://docs.aws.amazon.com/glue/latest/webapi/API_CreateTable.html),

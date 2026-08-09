@@ -5,6 +5,16 @@
 
 # Testing strategy
 
+<!-- toc:start -->
+## Contents
+
+- [Layers](#layers)
+- [Contract rules](#contract-rules)
+- [Real-runtime E2E](#real-runtime-e2e)
+- [Reproducibility](#reproducibility)
+- [Local compatibility authority](#local-compatibility-authority)
+<!-- toc:end -->
+
 <!-- section: layers -->
 ## Layers
 

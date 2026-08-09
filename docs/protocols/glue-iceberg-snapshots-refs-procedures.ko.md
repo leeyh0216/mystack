@@ -5,6 +5,18 @@
 
 # GlueCatalog을 통한 Iceberg snapshot, reference, procedure
 
+<!-- toc:start -->
+## 목차
+
+- [책임 경계](#책임-경계)
+- [보장하는 profile](#보장하는-profile)
+- [Glue wire와 원자성 계약](#glue-wire와-원자성-계약)
+- [검증 근거](#검증-근거)
+- [Logging과 수정 위치](#logging과-수정-위치)
+- [한계](#한계)
+- [공식 참고 자료](#공식-참고-자료)
+<!-- toc:end -->
+
 이 계약은 Glue 5.0, Spark 3.5.4, Iceberg 1.7.1의 snapshot 탐색과 maintenance surface를
 고정합니다. SQL 동작은 Iceberg 공식
 [query](https://iceberg.apache.org/docs/1.7.1/spark-queries/),
