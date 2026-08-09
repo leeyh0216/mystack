@@ -44,7 +44,7 @@ runs:
           test -z "$junit_input" && continue
           arguments+=(--input "$junit_input")
         done <<<"$JUNIT_FILES"
-        python3 scripts/ci_test_report.py \
+        python3 scripts/quality/ci_test_report.py \
           --title "$REPORT_TITLE" \
           --output-dir "$OUTPUT_DIR" \
           --artifact-name "$ARTIFACT_NAME" \
