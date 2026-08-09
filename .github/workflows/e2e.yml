@@ -2,21 +2,37 @@
 name: Docker E2E
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  pull_request:
+    paths:
+      - "proxy/**"
+      - "shared/**"
+      - "emr/**"
+      - "glue/**"
+      - "ui/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "eslint.config.js"
+      - "vitest.config.ts"
+      - "tests/e2e/**"
+      - "compatibility/**"
+      - "contracts/compatibility-matrix.generated.json"
+      - "scripts/compatibility_matrix.py"
+      - "scripts/run_compatibility_case.py"
+      - "scripts/ci_test_report.py"
+      - "requirements/**"
+      - "config/**"
+      - "compose.yaml"
+      - "compose.mount-config.yaml"
+      - "compose.emr-startup-clusters.yaml"
+      - "compose.emr-prestart.yaml"
+      - "Makefile"
+      - "**/Dockerfile"
+      - ".github/workflows/e2e.yml"
+      - ".github/actions/publish-test-report/action.yml"
   schedule:
     - cron: "43 17 * * *"
   workflow_dispatch:
-    inputs:
-      source_sha:
-        description: Exact CI source SHA to verify (defaults to the selected ref)
-        required: false
-        type: string
-      producer_run_id:
-        description: CI run ID that owns the SHA-bound UI artifact
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -34,37 +50,26 @@ jobs:
     name: Resolve required Docker compatibility cases
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     outputs:
       contract_matrix: ${{ steps.matrix.outputs.contract_matrix }}
       e2e_matrix: ${{ steps.matrix.outputs.e2e_matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
-      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
-        with:
-          python-version: "3.11"
-          enable-cache: true
-      - name: Install the locked workspace and validate generated evidence
-        run: |
-          uv sync --locked --all-packages
-          make compatibility-check compatibility-evidence-check
       - id: matrix
-        name: Read the test-declared non-cross-product matrices
+        name: Read the event-selected non-cross-product matrices
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = schedule ]; then
-            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-matrix.generated.json)
           elif [ "$EVENT_NAME" = workflow_dispatch ]; then
-            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.preview_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '{include: ([.github_matrices.required_contract.include[], .github_matrices.preview_contract.include[], .github_matrices.nightly_contract.include[]])}' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '{include: ([.github_matrices.required_e2e.include[], .github_matrices.preview_e2e.include[], .github_matrices.nightly_e2e.include[]])}' contracts/compatibility-matrix.generated.json)
           else
-            contract_matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-evidence.generated.json)
-            e2e_matrix=$(jq -c '.github_matrices.required_e2e' contracts/compatibility-evidence.generated.json)
+            contract_matrix=$(jq -c '.github_matrices.required_contract' contracts/compatibility-matrix.generated.json)
+            e2e_matrix=$(jq -c '.github_matrices.required_e2e' contracts/compatibility-matrix.generated.json)
           fi
           test "$(jq '.include | length' <<<"$contract_matrix")" -gt 0
           test "$(jq '.include | length' <<<"$e2e_matrix")" -gt 0
@@ -78,14 +83,11 @@ jobs:
     needs: prepare-compatibility
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout_minutes }}
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-compatibility.outputs.contract_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: ${{ matrix.python_version }}
@@ -93,7 +95,7 @@ jobs:
       - name: Install and validate the locked workspace
         run: |
           uv sync --locked --all-packages
-          make compatibility-check compatibility-evidence-check
+          make compatibility-check
       - name: Run the selected contract case
         run: >-
           uv run python scripts/run_compatibility_case.py "${{ matrix.case_id }}"
@@ -113,47 +115,19 @@ jobs:
     needs: prepare-compatibility
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout_minutes }}
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.prepare-compatibility.outputs.e2e_matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: ${{ matrix.python_version }}
+          python-version: "3.11"
           enable-cache: true
       - name: Install E2E client dependencies
-        run: |
-          uv sync --locked --all-packages
-          npm ci --ignore-scripts
-      - id: reusable_ui
-        name: Download UI build from completed CI run
-        if: github.event_name == 'workflow_run' || inputs.producer_run_id != ''
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: service-ui-builds-${{ github.event.workflow_run.head_sha || inputs.source_sha }}
-          path: .
-          run-id: ${{ github.event.workflow_run.id || inputs.producer_run_id }}
-          github-token: ${{ github.token }}
-      - name: Verify downloaded UI build
-        if: steps.reusable_ui.outcome == 'success'
-        run: >-
-          python3 scripts/reusable_build_artifact.py verify
-          --manifest .mystack/reusable-ui/manifest.json
-          --source-sha "${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}"
-          --platform "$RUNNER_OS-$RUNNER_ARCH"
-          --input package-lock.json --input package.json --input .node-version
-          --artifact emr/src/mystack/emr/static/ui
-          --artifact glue/src/mystack/glue/static/ui
-      - name: Rebuild UI after artifact miss
-        if: steps.reusable_ui.outcome != 'success'
-        run: echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}' && npm run frontend:build
-      - name: Reject retained-manifest and test-declared evidence drift
-        run: make compatibility-check compatibility-evidence-check
+        run: uv sync --locked --all-packages
+      - name: Reject manifest and generated-evidence drift
+        run: make compatibility-check
       - name: Build and start Mystack
         run: make up
       - name: Run the explicit case in an isolated process
@@ -194,11 +168,8 @@ jobs:
     name: Console accessibility E2E
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}
       - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           python-version: "3.11"
@@ -206,31 +177,7 @@ jobs:
       - name: Install the locked workspace and browser
         run: |
           uv sync --locked --all-packages
-          npm ci --ignore-scripts
           uv run playwright install --with-deps chromium
-      - id: reusable_ui
-        name: Download UI build from completed CI run
-        if: github.event_name == 'workflow_run' || inputs.producer_run_id != ''
-        continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: service-ui-builds-${{ github.event.workflow_run.head_sha || inputs.source_sha }}
-          path: .
-          run-id: ${{ github.event.workflow_run.id || inputs.producer_run_id }}
-          github-token: ${{ github.token }}
-      - name: Verify downloaded UI build
-        if: steps.reusable_ui.outcome == 'success'
-        run: >-
-          python3 scripts/reusable_build_artifact.py verify
-          --manifest .mystack/reusable-ui/manifest.json
-          --source-sha "${{ github.event.workflow_run.head_sha || inputs.source_sha || github.sha }}"
-          --platform "$RUNNER_OS-$RUNNER_ARCH"
-          --input package-lock.json --input package.json --input .node-version
-          --artifact emr/src/mystack/emr/static/ui
-          --artifact glue/src/mystack/glue/static/ui
-      - name: Rebuild UI after artifact miss
-        if: steps.reusable_ui.outcome != 'success'
-        run: echo '{"event":"reusable_ui.fallback","reason":"artifact-unavailable"}' && npm run frontend:build
       - name: Build and start Mystack
         env:
           MYSTACK_EMR_STARTUP_CLUSTERS_FILE: ${{ github.workspace }}/tests/e2e/assets/emr-startup-clusters.yaml
