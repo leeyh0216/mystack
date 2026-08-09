@@ -1,5 +1,5 @@
-# Run from this directory: docker compose up --build --abort-on-container-exit
-# The client image is the same pinned Glue 5/Spark 3.5 runtime used by Mystack's CI scenario.
+# Run from this directory: docker compose up --build --abort-on-container-exit.
+# Reuse the base Compose Glue image; this lab deliberately has no second client image build.
 name: mystack-spark-client-lab
 
 include:
@@ -8,12 +8,8 @@ include:
 
 services:
   spark-client:
-    image: mystack/spark-client-lab:dev
-    build:
-      context: .
-      args:
-        MYSTACK_GLUE_CLIENT_IMAGE: ${MYSTACK_GLUE_CLIENT_IMAGE:-mystack/glue:dev}
-    entrypoint: [/workspace/run.sh]
+    image: ${MYSTACK_GLUE_IMAGE:-mystack/glue:dev}
+    entrypoint: [bash, /workspace/run.sh]
     command:
       - --master
       - local[2]
@@ -31,3 +27,6 @@ services:
       AWS_ENDPOINT_URL_S3: http://localstack:4566
       AWS_ENDPOINT_URL_STS: http://localstack:4566
     networks: [mystack]
+    volumes:
+      - ./run.sh:/workspace/run.sh:ro
+      - ./verify.py:/workspace/verify.py:ro
