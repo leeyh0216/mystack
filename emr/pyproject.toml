@@ -1,6 +1,6 @@
 [project]
 name = "mystack-emr"
-version = "0.1.4"
+version = "0.1.5"
 description = "Protocol-compatible Amazon EMR emulator for Mystack"
 requires-python = ">=3.11,<3.12"
 dependencies = [
