@@ -79,6 +79,7 @@ def test_workflows_use_exact_cache_and_verified_cross_run_artifacts() -> None:
     assert "actions/cache/restore" in ci
     assert "actions/cache/save" in ci
     assert "restore-keys:" not in ci
+    assert "uv run python scripts/reusable_build_artifact.py" not in ci
     assert "service-ui-builds-${{ github.sha }}" in ci
     assert "workflow_run:" in e2e
     assert "run-id: ${{ github.event.workflow_run.id }}" in e2e
