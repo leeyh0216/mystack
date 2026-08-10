@@ -6,6 +6,12 @@
 **/__pycache__
 **/*.pyc
 **/tests
+# The Glue image contains these bounded Spark workloads as its runtime smoke
+# programs. Re-include the parent directories because the broad test rule
+# above otherwise removes them from the Docker build context.
+!glue/tests/
+!glue/tests/workloads/
+!glue/tests/workloads/**
 node_modules
 emr/src/mystack/emr/static/ui
 glue/src/mystack/glue/static/ui
