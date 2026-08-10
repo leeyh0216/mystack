@@ -53,7 +53,10 @@ class E2ESettings:
         tests = _mapping(loaded.document.get("tests"), "tests")
         e2e = _mapping(tests.get("e2e"), "tests.e2e")
         localstack = _mapping(loaded.document.get("localstack"), "localstack")
-        source_root = Path(loaded.source).parent.parent
+        # Runtime configuration lives at config/runtime/mystack.yaml. Resolve
+        # relative E2E paths from the repository root, not config/, so Docker
+        # Compose commands receive the project's compose.yaml.
+        source_root = Path(loaded.source).parents[2]
         compose_file = Path(str(e2e["compose_file"]))
         if not compose_file.is_absolute():
             compose_file = source_root / compose_file
