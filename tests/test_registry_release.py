@@ -437,7 +437,11 @@ def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     assert set(trigger["branches"]) == {"main", "develop"}
     publish = workflow["jobs"]["publish"]
     assert publish["uses"] == "./.github/workflows/container-publish.yml"
-    assert publish["permissions"] == {"contents": "write", "packages": "write"}
+    assert publish["permissions"] == {
+        "actions": "read",
+        "contents": "write",
+        "packages": "write",
+    }
     assert publish["with"]["ci_run_id"] == "${{ github.event.workflow_run.id }}"
     assert "pull_request" not in json.dumps(workflow["on"])
 

@@ -78,6 +78,10 @@ jobs:
       needs.plan.outputs.action == 'snapshot-publish' ||
       needs.plan.outputs.action == 'release-publish'
     permissions:
+      # The called workflow downloads the immutable UI artifact from the
+      # successful CI run, so this permission must cross the workflow-call
+      # boundary as well as the package and contents permissions.
+      actions: read
       contents: write
       packages: write
     uses: ./.github/workflows/container-publish.yml
