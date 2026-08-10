@@ -446,6 +446,17 @@ def test_release_entrypoint_only_calls_the_reusable_pipeline() -> None:
     assert "pull_request" not in json.dumps(workflow["on"])
 
 
+def test_required_release_validation_regenerates_ci_only_compatibility_evidence() -> None:
+    workflow = _workflow(".github/workflows/container-publish.yml")
+    steps = workflow["jobs"]["required-validation"]["steps"]
+    evidence = next(
+        step
+        for step in steps
+        if step.get("name") == "Generate release-local compatibility evidence"
+    )
+    assert evidence["uses"] == "./.github/actions/generate-compatibility-evidence"
+
+
 def test_prepare_version_pr_can_change_git_but_never_packages_or_releases() -> None:
     workflow = _workflow(".github/workflows/prepare-version-pr.yml")
 

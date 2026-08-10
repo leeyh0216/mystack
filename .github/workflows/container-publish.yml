@@ -163,6 +163,13 @@ jobs:
         run: |
           uv sync --locked --all-packages
           npm ci --ignore-scripts
+      # Generated compatibility evidence is intentionally CI-only. Recreate it
+      # in this independent release runner before validating it or selecting
+      # the exact required contract and Docker cases.
+      - name: Generate release-local compatibility evidence
+        uses: ./.github/actions/generate-compatibility-evidence
+      - name: Run repository-local required checks
+        run: |
           uv run pre-commit run --all-files
           npm run frontend:typecheck
           npm run frontend:test
