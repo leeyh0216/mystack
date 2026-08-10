@@ -547,6 +547,11 @@ def _ensure_releasable(
             )
         tagged_versions = tuple(value for value in tagged_versions if value != current)
         released_versions = tuple(value for value in released_versions if value != current)
+    # A failed publication leaves the source version on main without creating a tag or release.
+    # Permit a repair PR to publish that still-unreleased version. Once a tag or release exists,
+    # the existing-at-SHA rule above remains the only retry path.
+    if not current_exists and base == current:
+        return
     _ensure_incrementing(
         current,
         base=base,

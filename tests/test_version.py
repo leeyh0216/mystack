@@ -106,6 +106,31 @@ def test_release_retry_allows_only_the_same_version_on_the_same_sha() -> None:
         )
 
 
+def test_unpublished_release_repair_may_keep_the_main_version() -> None:
+    """A failed release has no tag/release, so its repair must not require a new version."""
+
+    current = StableVersion.parse("1.2.3")
+
+    _ensure_releasable(
+        current,
+        base=current,
+        tagged=(),
+        released=(),
+        existing_at_sha=None,
+        tag_commit=None,
+    )
+
+    with pytest.raises(VersionError, match="greater than base"):
+        _ensure_releasable(
+            StableVersion.parse("1.2.2"),
+            base=current,
+            tagged=(),
+            released=(),
+            existing_at_sha=None,
+            tag_commit=None,
+        )
+
+
 def test_dry_run_renders_all_configured_file_kinds_without_writing(tmp_path: Path) -> None:
     (tmp_path / "VERSION").write_text("1.2.3\n", encoding="utf-8")
     (tmp_path / "pyproject.toml").write_text(
