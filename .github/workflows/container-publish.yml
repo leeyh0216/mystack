@@ -69,8 +69,8 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          config=config/registry-release.json
-          python3 scripts/registry_release.py --config "$config" check-config
+          config=config/release/registry-release.json
+          python3 scripts/release/registry_release.py --config "$config" check-config
           python3 scripts/release/version.py check
           test "$SOURCE_SHA" = "$(git rev-parse HEAD)"
           grep -Eq '^[0-9a-f]{40}$' <<<"$SOURCE_SHA"
@@ -91,7 +91,7 @@ jobs:
               [[ "$PYTHON_VERSION" == "$stable.dev"*"+g"* ]]
               ;;
           esac
-          publication_plan=$(python3 scripts/registry_release.py --config "$config" resolve-plan)
+          publication_plan=$(python3 scripts/release/registry_release.py --config "$config" resolve-plan)
           component_matrix=$(jq -c '.component_matrix' <<<"$publication_plan")
           preflight_matrix=$(jq -c '.preflight_matrix' <<<"$publication_plan")
 
@@ -294,7 +294,7 @@ jobs:
           fi
           echo "event=registry.preflight.scan.before component=${{ matrix.name }} platform=${{ matrix.platform }} image_id=$IMAGE_ID"
           "${command[@]}" "$IMAGE_NAME"
-          python3 scripts/registry_release.py record-preflight \
+          python3 scripts/release/registry_release.py record-preflight \
             --component "${{ matrix.name }}" \
             --platform "${{ matrix.platform }}" \
             --image-id "$IMAGE_ID" \
@@ -335,7 +335,7 @@ jobs:
           SOURCE_SHA: ${{ inputs.source_sha }}
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          python3 scripts/registry_release.py verify-gate \
+          python3 scripts/release/registry_release.py verify-gate \
             --evidence-root preflight-evidence \
             --selection "$SELECTION" \
             --source-sha "$SOURCE_SHA" \
@@ -409,7 +409,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          result=$(python3 scripts/registry_release.py authorize-publication \
+          result=$(python3 scripts/release/registry_release.py authorize-publication \
             --gate release-gate/gate.json \
             --selection "$SELECTION" \
             --source-sha "$SOURCE_SHA" \
@@ -435,7 +435,7 @@ jobs:
           image="$REGISTRY/$owner/${{ matrix.package }}"
           echo "event=registry.tag.check.before image=$image tag=$VERSION"
           if docker buildx imagetools inspect "$image:$VERSION" >/dev/null 2>&1; then
-            platform=$(jq -r '.platforms[0]' config/registry-release.json)
+            platform=$(jq -r '.platforms[0]' config/release/registry-release.json)
             config_json=$(docker buildx imagetools inspect \
               --format "{{json (index .Image \"$platform\")}}" "$image:$VERSION")
             if ! actual_sha=$(jq -er '.config.Labels["org.opencontainers.image.revision"]' \
@@ -510,7 +510,7 @@ jobs:
           echo "event=registry.index.fetch.before image=$IMAGE digest=$DIGEST"
           docker buildx imagetools inspect --raw "$IMAGE@$DIGEST" \
             >"release-artifacts/index.json"
-          python3 scripts/registry_release.py verify-index \
+          python3 scripts/release/registry_release.py verify-index \
             --component "${{ matrix.name }}" \
             --image "$IMAGE" \
             --tag "$VERSION" \
@@ -551,7 +551,7 @@ jobs:
           set -euo pipefail
           owner=${GITHUB_REPOSITORY_OWNER,,}
           mkdir -p release-evidence
-          jq -c '.components[]' config/registry-release.json | while IFS= read -r component; do
+          jq -c '.components[]' config/release/registry-release.json | while IFS= read -r component; do
             name=$(jq -r '.name' <<<"$component")
             package=$(jq -r '.package' <<<"$component")
             image="$REGISTRY/$owner/$package"
@@ -561,7 +561,7 @@ jobs:
             digest=$(jq -er '.digest' <<<"$manifest_json")
             docker buildx imagetools inspect --raw "$image:$VERSION" \
               >"release-evidence/$name-index.json"
-            jq -r '.platforms[]' config/registry-release.json | while IFS= read -r platform; do
+            jq -r '.platforms[]' config/release/registry-release.json | while IFS= read -r platform; do
               config_json=$(docker buildx imagetools inspect \
                 --format "{{json (index .Image \"$platform\")}}" "$image:$VERSION")
               if ! actual_sha=$(jq -er '.config.Labels["org.opencontainers.image.revision"]' \
@@ -590,7 +590,7 @@ jobs:
                 echo "event=registry.anonymous.sqlite_runtime.after image=$image digest=$platform_digest platform=$platform"
               fi
             done
-            python3 scripts/registry_release.py verify-index \
+            python3 scripts/release/registry_release.py verify-index \
               --component "$name" --image "$image" --tag "$VERSION" --digest "$digest" \
               --manifest "release-evidence/$name-index.json" \
               --report "release-evidence/$name-release.json"
