@@ -21,9 +21,9 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-botocore==1.43.66 \
-    --hash=sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325 \
-    --hash=sha256:dde324cbe8be14b536b78f4fafe192f94fffcc70716bde804044e62495af8c3c
+botocore==1.43.69 \
+    --hash=sha256:5caa46b740d9a886137146ffbb69edb691f702bfe74c64e85621947ae00181fd \
+    --hash=sha256:b1f0e01c53d6b84ee9c184ebf3636c3b3aef85e0ae8498c74afb8734ff224f87
     # via mystack-aws-protocol
 certifi==2026.7.22 \
     --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
