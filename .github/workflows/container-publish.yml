@@ -137,7 +137,7 @@ jobs:
       - id: reusable_ui
         name: Download UI build from the authorized CI run
         continue-on-error: true
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: service-ui-builds-${{ inputs.source_sha }}
           path: .
@@ -331,7 +331,7 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
       - name: Download every successful preflight record
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: preflight-*
           path: preflight-evidence
@@ -404,7 +404,7 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
       - name: Download the aggregate authorization only
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: publication-authorization
           path: release-gate
