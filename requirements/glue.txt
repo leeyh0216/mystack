@@ -24,13 +24,13 @@ attrs==26.1.0 \
     # via
     #   jsonschema
     #   referencing
-boto3==1.43.66 \
-    --hash=sha256:8d097a41e2f545c25252105570f782bb035b1ac13d6213c772d1c895dc7cedeb \
-    --hash=sha256:ffc77129a4e5519bdbd9b278e4fe9e6276c9d951e0d2b60d626977bdb957cb38
+boto3==1.43.69 \
+    --hash=sha256:4eb494d05b2bd08a7eee61b8ac4c34745c99e9bbce435c91f8d15d372dd8c2db \
+    --hash=sha256:76297a0b415849c63575ae08a4f1661b2dc8ee0100f104b86f98aa69b47fa2c7
     # via mystack-glue
-botocore==1.43.66 \
-    --hash=sha256:0fa62529579469a9224c186eba87e7e561db87dfad20c63ce5d52e427c7fa325 \
-    --hash=sha256:dde324cbe8be14b536b78f4fafe192f94fffcc70716bde804044e62495af8c3c
+botocore==1.43.69 \
+    --hash=sha256:5caa46b740d9a886137146ffbb69edb691f702bfe74c64e85621947ae00181fd \
+    --hash=sha256:b1f0e01c53d6b84ee9c184ebf3636c3b3aef85e0ae8498c74afb8734ff224f87
     # via
     #   boto3
     #   mystack-aws-protocol

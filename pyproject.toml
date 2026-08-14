@@ -8,7 +8,7 @@ dependencies = []
 [dependency-groups]
 dev = [
   "awswrangler==3.17.0",
-  "boto3==1.43.66",
+  "boto3==1.43.69",
   "httpx>=0.28,<0.29",
   "playwright>=1.54,<2",
   "pre-commit>=4.2,<5",
